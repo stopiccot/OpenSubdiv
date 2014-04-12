@@ -1,0 +1,296 @@
+This text file is written to accompany the opensubdiv/sdc source during review.  It is intended to
+give a high level overview of the organization of the source, the rationale for various decisions,
+as well as highlight open issues or situations where the choices made thus far warrant further
+deliberation.
+
+As previously noted, the primary goal of Sdc is to separate the core subdivision logic from Hbr
+to facilate other classes internal (and later external) to OpenSubdiv generating consistent and
+compliant results.  For the purposes of this overview I've divided it into three sections, with
+varying numbers of header files for each:
+
+    1) types, traits and options for the supported subdivision schemes
+    2) computations required to support semi-sharp creasing
+    3) computing stencil weights for subdivided vertices for all schemes
+
+Each section will reference a specific subset of a small number of headers.  Comments within the
+headers may elaborate on the details provided in the synopses, but enough context will be provided
+here to raise the main issues -- the source should then serve as an illustration.
+
+Overall the approach taken was to extract the functionality at as low a level as possible.  In some
+cases they are not far from being simple global functions.  The intent was to start at a low level
+and build any higher level functionality as needed.  What exists now is functional for ongoing
+development and anticipated needs within OpenSubdiv for the near future.
+
+
+1) Types, traits and options for supported subdivision schemes:
+
+Associated headers:
+    sdc/type.h
+    sdc/options.h
+
+Synopsis:
+    The most basic addition here is an enumerated type that identifies the fixed set of subdivision
+schemes supported by OpenSubdiv:  Bilinear, Catmark and Loop.  With this alone, we should be able
+to avoid all of the existing dynamic casting issues related to the scheme by simply adding members
+to the associated subclasses for inspection.  In addition to the type enum itself, a class defining
+a set of TypeTraits<TYPE> for each scheme is provided, which is to be specialized for each scheme.
+
+The second contribution is the collection of all variations that can be applied to the subdivision
+schemes in one place, i.e. the boundary interpolation rules, creasing method, edge subdivision
+choices, etc.  The fact that these are all declared in one place alone should help clients see the
+full set of variations that are possible.
+
+A simple Options struct (a set of bitfields) aggregates all of these variations into a single
+object (an integer in this case) that are passed around to other Sdc classes and/or methods and
+are expected to be used at a higher level both within OpenSubdiv and externally.  By aggregating
+the options and passing them around as a group, it allows us to extend the set easily in future
+without the need to rewire a lot of interfaces to accomodate the new choice.  Clients can enables
+new choices at the highest level and be assured that they will propogate to the lowest level where
+they are relevant.
+
+This aggregating pattern is something I prefer to use and hope to see employed in other places,
+e.g. a set of options for refinement choices.  Some do not prefer this though, and there are some
+legitimate objections that can be made.  Since this is the mechanism I intend to use to pass
+options from the client's mesh, through the refinement process and eventually to Sdc calls, I hope
+we can sign off on this.  If we choose not to adopt it, I am likely to introduce something similar
+for internal use.  In its absence we will need to be more explicit in passing the individual
+options around appropriately.
+
+It's worth looking ahead here and noting that a simple Scheme<TYPE> class combines both the Type
+and the Options in an instance, which is then used to make queries.  There are some debates as to
+when the term Type vs Schemes should be used -- I'm less concerned about naming at this point than
+with the factoring of the functionality.  Once we agree that the factoring is appropriate, we can
+change the labels later.
+
+Questions:
+    - is the aggregate Options worthwhile, or do individual enums suffice?
+
+    - is TypeTraits<> worth it, vs static methods in the Scheme<> class?
+
+    - to nest the various enum options the Options class or not?
+
+
+2)  Support for semi-sharp creasing:
+
+Associated headers:
+    sdc/crease.h:
+
+Synopsis:
+    Support for semi-sharp creasing is currently independent of the subdivision scheme.  Most of
+the computations involving sharpness values are also somewhat independent of topology -- there are
+vertices and edges with sharpness values, but knowledge of faces or boundary edges is not required.
+So the complexity of topological neighborhoods that is required for stencil queries is arguably
+not necessary here.
+
+As a result, creasing computations are methods defined on a Crease class that is constructed with
+a set of Options.  Its methods typically take sharpness values as inputs and compute one or a
+corresponding set of new sharpness values as a result.  For the "Normal" creasing method, the
+computations may be so trivial as to question whether such an interface is worth it, but for
+"Chaikin" or other schemes in future that are non-trivial, the benefits should be clear.
+
+With this division between triviality vs complexity, I wondered if it was worth given the client
+hints as to when they need the full power of these methods.  I added a method IsSimple() to return
+if the trivial Normal crease method was in use -- I choose "Simple" rather than "Normal" to
+emphasize that the associated computations are "simple".  This might give the client some
+opportunity to avoid a little added overhead via branching on its own, but its likely not going
+to be much and this encourages external emulation of what we are trying to encapsulate, so I am
+now considering removing it.
+
+Also included as part of the Crease class is the Rule enum -- this indicates if a vertex is Smooth,
+Crease, Dart or Corner (referred to as the "mask" in Hbr) and is a function of the sharpness values
+at and around a vertex.  Knowing the Rule for a vertex can accelerate stencil queries, and the Rule
+can often be inferred based on the origin of a vertex, e.g. it originated from the middle of a
+face, was the child of a Smooth vertex, etc.
+
+Constants are also defined as static members -- requiring a .cpp for its shared instance.  This is
+a point that warrants discussion as there were no clear examples to follow within the OpenSubdiv
+code.  Constants for SMOOTH (0.0) and INFINITE (10.0) are provided and declared as the float values
+they are -- in contrast to Hbr which had them as enumerations.  The "sharp" value of 1.0 that was
+defined and used by Hbr is not included -- specifically as any comparison to 1.0 typically assumes
+the simple creasing method and is not applicable for Chaikin or potentially other schemes (e.g. a
+sharpness of 0.9 may remain non-zero after one level of subdivision, just as a sharpness value of
+1.1 may decay to zero between the same levels).  The only significance of 1.0 is that it is what is
+subtracted either the original or an intermediate sharpness value between levels.
+
+Methods are defined for the Crease class to:
+
+    - subdivide edge and vertex sharpness values
+    - determine the Rule for a vertex based on incident sharpness values
+    - determine the transitional weight between two sets of sharpness values
+
+Being all low-level and working directly on sharpness values, it is a client's responsibility to
+coordinate the application of any hierarchical crease edits with their computations.
+
+Similarly, in keeping with this as a low-level interface, values are passed as primitive arrays.
+This follows the trend in OpenSubdiv of dealing with data of various kinds (e.g. weights, component
+indices, now sharpness values, etc.) in small contiguous sets of values.  In most internal cases
+we can refer to a set of values or gather what will typically be a small number of values on the
+stack for temporary use.
+
+Questions:
+    - should we allow/promote the use of the IsSimple() test?
+
+    - is it reasonable to require that topological features be embedded in the sharpness values
+      (only applied once at level 0)?
+
+    - would methods to apply sharp edges given the topological neighborhood and associated
+      options be worthwhile?
+
+
+3)  Vertex stencils and topological neighborhoods:
+
+Associated headers:
+    sdc/faceNeighborhood.h
+    sdc/edgeNeighborhood.h
+    sdc/vertexNeighborhood.h
+    sdc/stencil.h
+    sdc/scheme.h
+
+Synopsis:
+    An immediate issue with this section is that the term "stencil" is potentially overloaded.  It
+is used in far to refer to a set of weights for a subdivided vertex relative to the original base
+cage rather than the immediate subdivision level above.  The term "mask" is often used in place of
+stencil in the field, but Hbr uses "mask" for another purpose -- to describe if a feature is smooth,
+a crease, corner or dart.  We've adopted "rule" in place of "mask", freeing that up for potential
+use, but using both "mask" and "stencil" is likely no better.  For the purpose here we'll continue
+to use "stencil" and qualify it now as referring to the relationship of a subdivided vertex to
+components in the parent level from which it originated.
+
+The "Neighborhood" classes encapsulate topological neighborhoods for each component type of a mesh
+(face, edge and vertex), the "Stencil" class is a simple utility class that associates weights with
+topology, and the "Scheme" class template is where the stencil queries are defined and implemented
+for each of the supported subdivision schemes.
+
+The computation of stencil weights for subdivided vertices is arguably the most significant
+contributions of Sdc.  The use of semi-sharp creasing with each non-linear subdivision scheme
+complicates what are otherwise simple stencils detemined solely by the topology, and packaging
+that functionality has been the challenge here.
+
+In general, the set of weights for a subdivided vertex is dependent on the following data:
+
+    - the topology around the parent component from which the vertex originates
+    - the type of subdivision Rule applicable to the parent component
+        - requiring the sharpness values at and around that component
+    - the type of subdivision Rule applicable to the new child vertex
+        - requiring the subdivided sharpness values at and around the new vertex
+        - sometimes trivially inferred from the parent rule
+    - a weight blending the effect between differing rules for parent and child
+        - requiring all parent and child sharpness values
+
+Clearly the sharpness values are inspected multiple times and so it pays to have them available
+as input -- trying to compute them on an as-needed basis is not only complex, given the need to
+address topological neighborhoods, but it can also be costly.  The "Normal" creasing method is
+trivial, and if it were all that was available this would not be necessary.  But the "Chaikin"
+method requires more information and more computation, and should ideally only be done once.  The
+Chaikin method is better than Normal in its attempt to produce neatly tapering creases, but is
+still lacking somewhat, so the possibility for an alternative to Chaikin is not unreasonable to
+expect in future.
+
+The point here is that it is potentially unreasonable to expect to evaluate the stencil weights
+completely independent of any other consideration.  Expecting and encouraging the client to have
+subdivided sharpness values first, for use in more than one place, is the approach that has been
+taken here.
+
+The complexity of the general case above is also unnecessary for most vertices.  Any client using
+Sdc typically has more information about the nature of the vertex being subdivided and much of
+this can be avoided -- particularly for the smooth interior case that often dominates.  More on
+that in the details of the Scheme classes.
+
+There are three classes involved in stencil queries:  a Scheme<T> class template (parameterized
+by the three supported schemes) with methods to compute the stencils, a Neighborhood class that
+describes the topological neighborhood for each of the three mesh component types (face, edge and
+vertex) and a Stencil class that contains the stencil weights bundled into a manageable form and
+populated by the queries.  So the method signatures are fairly simple, with the complexity deferred
+to the Neighborhood and Stencil classes.  Given the nature of these two classes, we may later
+choose to define alternatives, in which case overloading of the Scheme<T> methods to accept, for
+instance, an alternative specification of the topology to the Neighborhhods, will be simple and
+not clutter the interface.
+
+The Neighbborhood classes:
+    The Neighborhood classes are what I expect to be the most contentious and are what I am least
+satisfied with.  They are responsible for specifying and/or gathering the requirements to compute
+the stencil weights for a vertex, and that set of information can be considerable in some cases,
+but not in general.
+
+The approach discussed in the past has alluded to iterator classes that clients would write to
+traverse their meshes.  The Neighborhood classes or the Scheme<T> queries themselves would then
+be parameterized in terms of these iterators or some higher level class that invokes them.  The
+advantage here is the iterators are written once, then traversal is left to the query and only
+what is necessary is gathered.  The disadvantages are that clients are forced to write these to
+do anything, getting them correct and efficient may not be trivial (or possible in some cases),
+and that the same data (e.g. subdivided sharpness) may be gathered or computed multiple times
+for different purposes.
+
+The approach taken here is to assume that the clients know what they are doing, are generally
+subdividing sharpness values ahead of vertex stencil computation and so have them available.  They
+are capable of specifying most of what is required with little effort.  Potential usage within Hbr
+and Vtr is specific to each subdivision scheme at that level, and so the full generality may never
+be required (e.g. Loop subdivision requires triangles always, so there is never a need to inspect
+the number of vertices per face).  It's also known in some cases that a vertex is smooth, and so
+all sharpness can be ignored.
+
+So these Neighborhood classes are simple classes that allow any or all expected data to be
+specified, but they are also potential base classes to allow the "virtual gathering" of any
+missing data that might turn out to be required.  Use of virtual methods is therefore voluntary
+and, even when defined for a subclass, should only be invoked sparingly.  Since subclass instances
+will typically be destroyed where constructed, there should also be no virtual overhead in
+destruction (and a single instance can be reused if that is a concern).
+
+Questions:
+    - is this "virtual gathering" approach acceptable?
+
+
+The Stencil class:
+    The Stencil class is nothing more than a simple struct (potentially parameterized to support
+either float or double precision, and so a template) to identify the destination for weights when
+computing a stencil (again we follow the trend of primitive arrays appropriately allocated and
+specified by the client).  The set of weights is divided into vertex-weights, edge-weights and
+face-weights -- consistent with existing usage in OpenSubdiv and giving some correllation between
+the full set of weights and topology.  The vertex-weights refer to parent vertices incident the
+parent component, the edge-weights the vertices opposite incident edges, and the face-weights the
+center of indicent faces (note the latter is NOT in terms of vertices in the parent).
+
+Expected usage is to initialize a Stencil with the location of buffers (arrays) of adequate size
+for the three kinds of weights.  These can be references to local arrays on the stack, in tables,
+or otherwise allocated.  If maximal sizes are known, a single instance of Stencil can be
+initialized once and used for all queries.  The stencil queries will set the populated sizes of
+these arrays based on each query, which will depend on the topology, the applicable rule, etc.
+
+It is important to remember here that these stencils are being defined in terms of existing usage
+within OpenSubdiv -- both Hbr and the subdivision tables generated by Far.  As noted above, the
+"face weights" correspond to the centers of incident faces, i.e. vertices on the same level as
+the vertex for which the stencil is being computed, and not relative to vertices in the parent
+level as with the other sets of weights.  Its true that the weights can be translated into a set
+in terms solely of parent vertices, but in the general case (i.e. Catmark subdivision with
+non-quads in the base mesh) this requires additional topological association.  In general we would
+need N-3 weights for the N-3 vertices between the two incident edges, where N is the number of
+vertices of each face (typically 4 even at level 0).  Perhaps such a translation method could be
+provided on the Stencil class, with an optional indication of the incident face topology for the
+irregular cases.
+
+Questions:
+    - do we need to support stencils relative to the one-ring rather than using the face-centers
+      as is currently done everywhere in OSD now?
+
+    - is the single Stencil class preferable to three separate classes, one for each type of
+     component?
+
+
+The Scheme<TYPE> class template:
+    Given that most of the complexity has been moved into the Neighborhood classes, the Scheme
+class remains fairly simple.  Like the Crease class, it is instantiated with a set of Options to
+avoid them cluttering the interface.  It is currently little more than three methods for the
+stencil queries for each vertex type.  The set of stencils may need to be extended in future to
+include limit stencils and (potentially) stencils for face-varying data sets (whose neighborhoods
+may vary in their definition).
+
+Additional considerations arise given the desire to parameterize the Stencil class in terms of
+floating point precision.  If Scheme remains primarily a class to populate instances of
+Stencil<REAL>, then we may prefer to define the Scheme template as Scheme<TYPE,REAL=float>.
+Some exploration in that direction may be reflected in the original code.  (I backed out of it
+not knowing how widely supported partial template specialization is supported for the compilers
+of the platforms we expect to be targetted.)
+
+Questions:
+    - should Scheme<TYPE> include more than just stencil queries, e.g. should it absorb the
+      TypeTraits<TYPE> of <sdc/type.hh>?
