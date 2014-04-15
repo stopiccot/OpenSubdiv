@@ -1,15 +1,32 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #ifndef SDC_CREASE_H
 #define SDC_CREASE_H
 
 #include "../version.h"
 
 #include "../sdc/options.h"
-#include "../sdc/arrayInterface.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -29,12 +46,12 @@ namespace OPENSUBDIV_VERSION {
 //  more flexibility.  We also follow the trend of using primitive arrays in the interface.
 //
 //  Note on the need for and use of sharpness values:
-//      In general, stencil queries rely on the sharpness values.  The common case of a smooth
+//      In general, mask queries rely on the sharpness values.  The common case of a smooth
 //  vertex, when known, avoids the need to inspect them, but unless the rules are well understood,
-//  users will be expected to provided them -- particularly when they expect the stencil queries
+//  users will be expected to provided them -- particularly when they expect the mask queries
 //  to do all of the work (just determining if a vertex is smooth will require inspection of
 //  incident edge sharpness). 
-//      Stencil queries will occassionally require the subdivided sharpness values around the
+//      Mask queries will occassionally require the subdivided sharpness values around the
 //  child vertex.  So users will be expected to either provide them up front when known, or to be
 //  gathered on demand.  Any implementation of subdivision with creasing cannot avoid subdividing
 //  the sharpness values first, so keeping them available for re-use is a worthwhile consideration.
@@ -53,15 +70,15 @@ public:
 
     //
     //  Enum for the types of subdivision rules applied based on sharpness values (note these
-    //  correspond to Hbr's vertex "mask").  Note that the values explicitly assigned the
-    //  enumerations correspond to the number of sharp edges encountered (with Corner >= 3).
+    //  correspond to Hbr's vertex "mask" + 1).  Note that the values explicitly assigned the
+    //  enumerations correspond to the number of sharp edges encountered + 1 (Corner >= 4).
     //
     enum Rule {
-        RULE_SMOOTH  = 0,
-        RULE_DART    = 1,
-        RULE_CREASE  = 2,
-        RULE_CORNER  = 3,
-        RULE_UNKNOWN = 255
+        RULE_UNKNOWN = 0,
+        RULE_SMOOTH  = 1,
+        RULE_DART    = 2,
+        RULE_CREASE  = 3,
+        RULE_CORNER  = 4
     };
 
 public:
@@ -75,7 +92,19 @@ public:
     //  and take some "simple" action in some cases to avoid the higher costs of dealing with
     //  more complex implementations.
     //
-    bool IsSimple() const { return _options.GetCreasingMethod() == SdcOptions::CREASE_NORMAL; }
+    bool IsUniform() const { return _options.GetCreasingMethod() == SdcOptions::CREASE_UNIFORM; }
+
+    //
+    //  Optional sharp features:
+    //      Since options treat certain topological features as infinitely sharp -- boundaries
+    //  or nonmanifold features -- sharpness values should be adjust before use.  The following
+    //  methods will adjust specific  according to the options applied.
+    //
+    float SharpenBoundaryEdge(float edgeSharpness) const; 
+    float SharpenBoundaryVertex(float edgeSharpness) const; 
+
+    float SharpenNonManifoldEdge(float edgeSharpness) const; 
+    float SharpenNonManifoldVertex(float edgeSharpness) const; 
 
     //
     //  Sharpness subdivision:
@@ -89,19 +118,20 @@ public:
     //  corresponding to the child.  For this reason, an alternative to subdividing sharpness
     //  that computes all child edges around a vertex is given.
     //
+
     float SubdivideVertexSharpness(float vertexSharpness) const;
 
     float SubdivideEdgeSharpnessAtVertex(float        edgeSharpness,
                                          int          incidentEdgeCountAtEndVertex,
                                          float const* edgeSharpnessAroundEndVertex) const;
 
-    void SubdivideEdgeSharpnessAroundVertex(int          incidentEdgeCountAtVertex,
-                                            float const* incidentEdgeSharpnessAroundVertex,
-                                            float*       childEdgesSharpnessAroundVertex) const;
+    void SubdivideEdgeSharpnessesAroundVertex(int          incidentEdgeCountAtVertex,
+                                              float const* incidentEdgeSharpnessAroundVertex,
+                                              float*       childEdgesSharpnessAroundVertex) const;
 
     //
     //  Rule determination:
-    //      Stencil queries do not require the Rule to be known, it can be determined from
+    //      Mask queries do not require the Rule to be known, it can be determined from
     //  the information provided, but it is generally more efficient when the Rule is known
     //  and provided.  In particular, the Smooth case dominates and is known to be applicable
     //  based on the origin of the vertex without inspection of sharpness.
@@ -123,15 +153,20 @@ public:
     //  parent and child must be inspected, combined and clamped accordingly.
     //
     //  Open questions:
-    //      - does this method need to be public, or can it reside within the stencil
+    //      - does this method need to be public, or can it reside within the mask
     //        query classes? (though it would be the same for anything non-linear, so
     //        may be worth making a protected method somewhere)
     //      - does this need further consideration at an edge-vertex?
     //          - no, the edge-vertex case is far more trivial:  one non-zero sharpness
     //            for the edge that decays to zero for one or both child edges -- the
     //            transitional weight is simply the edge sharpness (clamped to 1)
+    //      ? why pass only the parent vertex sharpness...
+    //          - because it is so trivial to compute the child vertex sharpness?
+    //          - may be better off passing both parent and child for both vertex and edge
+    //            just to be clear here.
     //
     float ComputeFractionalWeightAtVertex(float        vertexSharpness,
+                                          float        childVertexSharpness,
                                           int          incidentEdgeCount,
                                           float const* incidentEdgeSharpness,
                                           float const* childEdgesSharpness) const;
@@ -164,11 +199,44 @@ private:
 //  Non-trivial inline declarations:
 //
 inline float
+SdcCrease::SharpenBoundaryEdge(float edgeSharpness) const
+{
+    return (_options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE) ?
+            INFINITE : edgeSharpness;
+}
+inline float
+SdcCrease::SharpenBoundaryVertex(float vertexSharpness) const
+{
+    return (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER) ?
+            INFINITE : vertexSharpness;
+}
+
+inline float
+SdcCrease::SharpenNonManifoldEdge(float edgeSharpness) const
+{
+    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
+    //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
+
+    return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
+            INFINITE : edgeSharpness;
+}
+inline float
+SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
+{
+    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
+    //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
+
+    return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
+            INFINITE : vertexSharpness;
+}
+
+
+inline float
 SdcCrease::decrementSharpness(float sharpness) const
 {
     if (isSmooth(sharpness)) return SdcCrease::SMOOTH;  // redundant but most common
     if (isInfinite(sharpness)) return SdcCrease::INFINITE;
-    if (sharpness > 1.0) return (sharpness - 1.0);
+    if (sharpness > 1.0f) return (sharpness - 1.0f);
     return SdcCrease::SMOOTH;
 }
 
@@ -190,7 +258,3 @@ using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
 
 #endif /* SDC_CREASE_H */
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.

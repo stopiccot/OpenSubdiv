@@ -507,8 +507,7 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
     if (cRule == pRule) return;
 
     //
-    //  Identify/gather child sharpness to determine the child Rule and/or combine masks for
-    //  the two differing Rules:
+    //  Identify/gather child sharpness to combine masks for the two differing Rules:
     //
     SdcCrease crease(_options);
 

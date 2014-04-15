@@ -1,8 +1,26 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #include "../sdc/type.h"
 
 namespace OpenSubdiv {
@@ -10,39 +28,39 @@ namespace OPENSUBDIV_VERSION {
 
 
 //
-//  Specializations for SdcTypeTraits<CATMARK>:
+//  Specializations for SdcTypeTraits<TYPE_CATMARK>:
 //
 template <>
 SdcSplit
-SdcTypeTraits<CATMARK>::TopologicalSplitType()
+SdcTypeTraits<TYPE_CATMARK>::TopologicalSplitType()
 {
     return SPLIT_TO_QUADS;
 }
 
 template <>
 int
-SdcTypeTraits<CATMARK>::LocalNeighborhoodSize()
+SdcTypeTraits<TYPE_CATMARK>::LocalNeighborhoodSize()
 {
     return 1;
 }
 
 template <>
 int
-SdcTypeTraits<CATMARK>::RegularVertexValence()
+SdcTypeTraits<TYPE_CATMARK>::RegularVertexValence()
 {
     return 4;
 }
 
 template <>
 int
-SdcTypeTraits<CATMARK>::RegularFaceValence()
+SdcTypeTraits<TYPE_CATMARK>::RegularFaceValence()
 {
     return 4;
 }
 
 template <>
 char const*
-SdcTypeTraits<CATMARK>::Label()
+SdcTypeTraits<TYPE_CATMARK>::Label()
 {
     //  Might need to declare static here to keep all compilers happy...
     return "catmark";
@@ -50,7 +68,3 @@ SdcTypeTraits<CATMARK>::Label()
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.

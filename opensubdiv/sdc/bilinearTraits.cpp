@@ -1,8 +1,26 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #include "../sdc/type.h"
 
 namespace OpenSubdiv {
@@ -10,39 +28,39 @@ namespace OPENSUBDIV_VERSION {
 
 
 //
-//  Specializations for SdcTypeTraits<BILINEAR>:
+//  Specializations for SdcTypeTraits<TYPE_BILINEAR>:
 //
 template <>
 SdcSplit
-SdcTypeTraits<BILINEAR>::TopologicalSplitType()
+SdcTypeTraits<TYPE_BILINEAR>::TopologicalSplitType()
 {
     return SPLIT_TO_QUADS;
 }
 
 template <>
 int
-SdcTypeTraits<BILINEAR>::LocalNeighborhoodSize()
+SdcTypeTraits<TYPE_BILINEAR>::LocalNeighborhoodSize()
 {
     return 0;
 }
 
 template <>
 int
-SdcTypeTraits<BILINEAR>::RegularVertexValence()
+SdcTypeTraits<TYPE_BILINEAR>::RegularVertexValence()
 {
     return 0;
 }
 
 template <>
 int
-SdcTypeTraits<BILINEAR>::RegularFaceValence()
+SdcTypeTraits<TYPE_BILINEAR>::RegularFaceValence()
 {
     return 0;
 }
 
 template <>
 char const*
-SdcTypeTraits<BILINEAR>::Label()
+SdcTypeTraits<TYPE_BILINEAR>::Label()
 {
     //  Might need to declare static here to keep all compilers happy...
     return "bilinear";
@@ -50,7 +68,3 @@ SdcTypeTraits<BILINEAR>::Label()
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.

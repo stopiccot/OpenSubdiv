@@ -21,50 +21,42 @@
 //   KIND, either express or implied. See the Apache License for the specific
 //   language governing permissions and limitations under the Apache License.
 //
-#include "../sdc/type.h"
+#ifndef SDC_BILINEAR_SCHEME_H
+#define SDC_BILINEAR_SCHEME_H
+
+#include "../version.h"
+
+#include "../sdc/scheme.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 
 //
-//  Specializations for SdcTypeTraits<TYPE_LOOP>:
+//  Current specializations:
 //
 template <>
-SdcSplit
-SdcTypeTraits<TYPE_LOOP>::TopologicalSplitType()
+template <typename EDGE, typename MASK>
+void
+SdcScheme<TYPE_BILINEAR>::ComputeEdgeVertexMask(EDGE const& edge, MASK& mask,
+                                                SdcCrease::Rule, SdcCrease::Rule) const
 {
-    return SPLIT_TO_TRIS;
+    //  This should be inline, otherwise trivially replicate it:
+    assignCreaseMaskForEdge(edge, mask);
 }
 
 template <>
-int
-SdcTypeTraits<TYPE_LOOP>::LocalNeighborhoodSize()
+template <typename VERTEX, typename MASK>
+void
+SdcScheme<TYPE_BILINEAR>::ComputeVertexVertexMask(VERTEX const& vertex, MASK& mask,
+                                                  SdcCrease::Rule, SdcCrease::Rule) const
 {
-    return 1;
+    //  This should be inline, otherwise trivially replicate it:
+    assignCornerMaskForVertex(vertex, mask);
 }
-
-template <>
-int
-SdcTypeTraits<TYPE_LOOP>::RegularVertexValence()
-{
-    return 6;
-}
-
-template <>
-int
-SdcTypeTraits<TYPE_LOOP>::RegularFaceValence()
-{
-    return 3;
-}
-
-template <>
-char const*
-SdcTypeTraits<TYPE_LOOP>::Label()
-{
-    //  Might need to declare static here to keep all compilers happy...
-    return "loop";
-};
 
 } // end namespace OPENSUBDIV_VERSION
+using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
+
+#endif /* SDC_BILINEAR_SCHEME_H */

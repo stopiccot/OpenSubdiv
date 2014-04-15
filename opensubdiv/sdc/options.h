@@ -1,8 +1,26 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #ifndef SDC_OPTIONS_H
 #define SDC_OPTIONS_H
 
@@ -35,32 +53,63 @@ namespace OPENSUBDIV_VERSION {
 //
 class SdcOptions {
 public:
-    enum BoundaryInterpolation {
-        BOUNDARY_NONE,
-        BOUNDARY_EDGE_ONLY,
-        BOUNDARY_EDGE_AND_CORNER,
-        BOUNDARY_ALWAYS_SHARP
+    //
+    //  Manuel suggested "VertexBoundaryInterpolation" here, but when used, that sounded
+    //  too much like boundary interpolation specific to a vertex -- I went with the VVar
+    //  and FVar naming here instead (abbreviating the FaceVaryingBoundaryInterpolation
+    //  that was suggested)...
+    //
+    enum VVarBoundaryInterpolation {
+        VVAR_BOUNDARY_NONE = 0,
+        VVAR_BOUNDARY_EDGE_ONLY,
+        VVAR_BOUNDARY_EDGE_AND_CORNER,
     };
+    enum FVarBoundaryInterpolation {
+        FVAR_BOUNDARY_BILINEAR = 0,
+        FVAR_BOUNDARY_EDGE_ONLY,
+        FVAR_BOUNDARY_EDGE_AND_CORNER,
+        FVAR_BOUNDARY_ALWAYS_SHARP
+    };
+
+    //
+    //  Tony has expressed a preference of UNIFORM vs NORMAL here, which diverges from
+    //  Hbr/RenderMan, but makes a lot more sense as it allows us to distinguish between
+    //  uniform and non-uniform creasing computations (with uniform being trivial).
+    //
     enum CreasingMethod {
-        CREASE_NORMAL,
+        CREASE_UNIFORM = 0,
         CREASE_CHAIKIN
     };
+
+    //
+    //  Is it possible to get rid of this entirely?  It is specific to Catmark, seems to
+    //  be little used and only applies to the first level of subdivision.  Getting rid
+    //  of the code that supports this (though it is localized) would be a relief...
+    //
     enum TriangleSubdivision {
-        TRI_SUB_NORMAL,
+        TRI_SUB_NORMAL = 0,
         TRI_SUB_OLD,
         TRI_SUB_NEW
     };
+
+    //
+    //  This is speculative for now and included for illustration purposes -- the simplest
+    //  set of interpolation rules for non-manifold features is to make them infinitely
+    //  sharp, which fits into existing evaluation schemes.  Allowing them to be smooth is
+    //  less well-defined and requires additional cases in the masks to properly support.
+    //
     enum NonManifoldInterpolation {
-        NON_MANIFOLD_NONE,
+        NON_MANIFOLD_NONE = 0,
         NON_MANIFOLD_SMOOTH,
         NON_MANIFOLD_SHARP
     };
 
 public:
     //  Trivial constructor and destructor:
-    SdcOptions() : _boundaryInterp(BOUNDARY_NONE),
+    SdcOptions() : _vvarBoundInterp(VVAR_BOUNDARY_NONE),
+                   _fvarBoundInterp(FVAR_BOUNDARY_BILINEAR),
                    _nonManInterp(NON_MANIFOLD_NONE),
-                   _creasingMethod(CREASE_NORMAL),
+                   _creasingMethod(CREASE_UNIFORM),
                    _triangleSub(TRI_SUB_NORMAL),
                    _hbrCompatible(false) { }
     ~SdcOptions() { }
@@ -68,17 +117,20 @@ public:
     //
     //  Trivial get/set methods:
     //
-    BoundaryInterpolation GetBoundaryInterpolation() const { return (BoundaryInterpolation)_boundaryInterp; }
-    void                  SetBoundaryInterpolation(BoundaryInterpolation b) { _boundaryInterp = b; }
+    VVarBoundaryInterpolation GetVVarBoundaryInterpolation() const { return (VVarBoundaryInterpolation) _vvarBoundInterp; }
+    void SetVVarBoundaryInterpolation(VVarBoundaryInterpolation b) { _vvarBoundInterp = b; }
 
-    CreasingMethod GetCreasingMethod() const { return (CreasingMethod)_creasingMethod; }
-    void           SetCreasingMethod(CreasingMethod c) { _creasingMethod = c; }
+    FVarBoundaryInterpolation GetFVarBoundaryInterpolation() const { return (FVarBoundaryInterpolation) _fvarBoundInterp; }
+    void SetFVarBoundaryInterpolation(FVarBoundaryInterpolation b) { _fvarBoundInterp = b; }
 
-    NonManifoldInterpolation GetNonManifoldInterpolation() const { return (NonManifoldInterpolation)_nonManInterp; }
-    void                     SetNonManifoldInterpolation(NonManifoldInterpolation n) { _nonManInterp = n; }
+    CreasingMethod GetCreasingMethod() const { return (CreasingMethod) _creasingMethod; }
+    void SetCreasingMethod(CreasingMethod c) { _creasingMethod = c; }
 
-    TriangleSubdivision GetTriangleSubdivision() const { return (TriangleSubdivision)_triangleSub; }
-    void                SetTriangleSubdivision(TriangleSubdivision t) { _triangleSub = t; }
+    NonManifoldInterpolation GetNonManifoldInterpolation() const { return (NonManifoldInterpolation) _nonManInterp; }
+    void SetNonManifoldInterpolation(NonManifoldInterpolation n) { _nonManInterp = n; }
+
+    TriangleSubdivision GetTriangleSubdivision() const { return (TriangleSubdivision) _triangleSub; }
+    void SetTriangleSubdivision(TriangleSubdivision t) { _triangleSub = t; }
 
     //
     //  This may be premature, but it is useful to have some kind of flag so that users can be assured
@@ -90,11 +142,12 @@ public:
 
 private:
     //  Bitfield members:
-    unsigned int _boundaryInterp : 2;
-    unsigned int _nonManInterp   : 2;
-    unsigned int _creasingMethod : 2;
-    unsigned int _triangleSub    : 2;
-    unsigned int _hbrCompatible  : 1;
+    unsigned int _vvarBoundInterp : 2;
+    unsigned int _fvarBoundInterp : 2;
+    unsigned int _nonManInterp    : 2;
+    unsigned int _creasingMethod  : 2;
+    unsigned int _triangleSub     : 2;
+    unsigned int _hbrCompatible   : 1;
 };
 
 } // end namespace OPENSUBDIV_VERSION
@@ -102,7 +155,3 @@ using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
 
 #endif /* SDC_OPTIONS_H */
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
