@@ -10,7 +10,7 @@ varying numbers of header files for each:
 
     1) types, traits and options for the supported subdivision schemes
     2) computations required to support semi-sharp creasing
-    3) computing stencil weights for subdivided vertices for all schemes
+    3) computing mask weights for subdivided vertices for all schemes
 
 Each section will reference a specific subset of a small number of headers.  Comments within the
 headers may elaborate on the details provided in the synopses, but enough context will be provided
@@ -35,8 +35,8 @@ to avoid all of the existing dynamic casting issues related to the scheme by sim
 to the associated subclasses for inspection.  In addition to the type enum itself, a class defining
 a set of TypeTraits<TYPE> for each scheme is provided, which is to be specialized for each scheme.
 
-The second contribution is the collection of all variations that can be applied to the subdivision
-schemes in one place, i.e. the boundary interpolation rules, creasing method, edge subdivision
+The second contribution is the collection of all variations in one place that can be applied to the
+subdivision schemes, i.e. the boundary interpolation rules, creasing method, edge subdivision
 choices, etc.  The fact that these are all declared in one place alone should help clients see the
 full set of variations that are possible.
 
@@ -63,11 +63,15 @@ with the factoring of the functionality.  Once we agree that the factoring is ap
 change the labels later.
 
 Questions:
+    - is TypeTraits<> worth it having vs static methods in the Scheme<> class?
+
+    - inline specializations for TypeTraits<> or .cpp files? (prefer to avoid header bloat
+      and not include all via <sdc/type.h>)
+
     - is the aggregate Options worthwhile, or do individual enums suffice?
 
-    - is TypeTraits<> worth it, vs static methods in the Scheme<> class?
+    - do we want to nest the various enum options within the Options class or not?
 
-    - to nest the various enum options the Options class or not?
 
 
 2)  Support for semi-sharp creasing:
@@ -79,8 +83,8 @@ Synopsis:
     Support for semi-sharp creasing is currently independent of the subdivision scheme.  Most of
 the computations involving sharpness values are also somewhat independent of topology -- there are
 vertices and edges with sharpness values, but knowledge of faces or boundary edges is not required.
-So the complexity of topological neighborhoods that is required for stencil queries is arguably
-not necessary here.
+So the complexity of topological neighborhoods that is required for mask queries is arguably not
+necessary here.
 
 As a result, creasing computations are methods defined on a Crease class that is constructed with
 a set of Options.  Its methods typically take sharpness values as inputs and compute one or a
@@ -89,16 +93,18 @@ computations may be so trivial as to question whether such an interface is worth
 "Chaikin" or other schemes in future that are non-trivial, the benefits should be clear.
 
 With this division between triviality vs complexity, I wondered if it was worth given the client
-hints as to when they need the full power of these methods.  I added a method IsSimple() to return
-if the trivial Normal crease method was in use -- I choose "Simple" rather than "Normal" to
-emphasize that the associated computations are "simple".  This might give the client some
-opportunity to avoid a little added overhead via branching on its own, but its likely not going
-to be much and this encourages external emulation of what we are trying to encapsulate, so I am
-now considering removing it.
+hints as to when they need the full power of these methods.  I initially added a method IsSimple()
+to return if the trivial Normal crease method was in use -- I choose "Simple" rather than "Normal"
+to emphasize that the associated computations are "simple".  Unaware that Hbr/RenderMan referred
+to the basic creasing method as "Normal" had suggested it be called "Uniform", which is a better
+distinction as it reflects the nature of the evaluations and the dependencies on neighborhoods.
+So I've included IsUniform() instead -- with the intent being that we may rename some of the
+methods to include "Uniform" or "NonUniform" in their names -- typically any method requiring
+the full neighborhood of sharpness values around a vertex is non-uniform.
 
 Also included as part of the Crease class is the Rule enum -- this indicates if a vertex is Smooth,
 Crease, Dart or Corner (referred to as the "mask" in Hbr) and is a function of the sharpness values
-at and around a vertex.  Knowing the Rule for a vertex can accelerate stencil queries, and the Rule
+at and around a vertex.  Knowing the Rule for a vertex can accelerate mask queries, and the Rule
 can often be inferred based on the origin of a vertex, e.g. it originated from the middle of a
 face, was the child of a Smooth vertex, etc.
 
@@ -128,45 +134,51 @@ we can refer to a set of values or gather what will typically be a small number 
 stack for temporary use.
 
 Questions:
-    - should we allow/promote the use of the IsSimple() test?
+    - should we allow/promote the use of the IsUniform() test?
 
-    - is it reasonable to require that topological features be embedded in the sharpness values
-      (only applied once at level 0)?
+    - is it reasonable to require that topological features, e.g. boundaries, be embedded in the
+      sharpness values (only applied once at level 0)?  (consensus thus far is Yes)
 
     - would methods to apply sharp edges given the topological neighborhood and associated
-      options be worthwhile?
+      options be worthwhile?  (consensus this far is No, not necessary)
 
 
-3)  Vertex stencils and topological neighborhoods:
+3)  Vertex masks and topological neighborhoods:
 
 Associated headers:
-    sdc/faceNeighborhood.h
-    sdc/edgeNeighborhood.h
-    sdc/vertexNeighborhood.h
-    sdc/stencil.h
     sdc/scheme.h
+    sdc/catmarkScheme.h
+    sdc/bilinearScheme.h
 
 Synopsis:
-    An immediate issue with this section is that the term "stencil" is potentially overloaded.  It
-is used in far to refer to a set of weights for a subdivided vertex relative to the original base
-cage rather than the immediate subdivision level above.  The term "mask" is often used in place of
-stencil in the field, but Hbr uses "mask" for another purpose -- to describe if a feature is smooth,
-a crease, corner or dart.  We've adopted "rule" in place of "mask", freeing that up for potential
-use, but using both "mask" and "stencil" is likely no better.  For the purpose here we'll continue
-to use "stencil" and qualify it now as referring to the relationship of a subdivided vertex to
-components in the parent level from which it originated.
+    Recently referred as "stencils", we've now adopted the term "mask" to refer to the collection
+of weights defining a subdivided vertex in terms of its parent vertices in the subdivision level
+preceding it.  Stencils define a vertex in terms of vertices in the base cage, and public classes
+Unfortulately Hbr uses "mask" for another purpose -- to describe if a feature is smooth, a crease,
+corner or dart.  We've adopted "rule" in place of "mask" for that purpose.
 
-The "Neighborhood" classes encapsulate topological neighborhoods for each component type of a mesh
-(face, edge and vertex), the "Stencil" class is a simple utility class that associates weights with
-topology, and the "Scheme" class template is where the stencil queries are defined and implemented
-for each of the supported subdivision schemes.
-
-The computation of stencil weights for subdivided vertices is arguably the most significant
+The computation of mask weights for subdivided vertices is arguably the most significant
 contributions of Sdc.  The use of semi-sharp creasing with each non-linear subdivision scheme
-complicates what are otherwise simple stencils detemined solely by the topology, and packaging
-that functionality has been the challenge here.
+complicates what are otherwise simple masks detemined solely by the topology, and packaging
+that functionality for widespread usage has been the challenge here.
 
-In general, the set of weights for a subdivided vertex is dependent on the following data:
+Mask queries are defined in the "Scheme" class template, which has specializations for each of the
+supported subdivision schemes.  In an earlier version for review, the mask queries were defined in
+terms of two kinds of classes:  "Neighborhood" classes that defined the topological neighborhoods
+for each component type of a mesh (face, edge and vertex) and a "Stencil" class to contain the set
+of weights associated with the topology.  We've shifted to a more generic solution where both of
+these are classes are now provided as template parameters, i.e.:
+
+    template <typename FACE, typename MASK>
+    void ComputeFaceVertexMask(FACE const& faceNeighborhood, MASK& faceVertexMask) const;
+
+Each mask query is expected to call methods defined for the FACE, EDGE or VERTEX classes to obtain
+the information they require -- typically these methods are simple queries about the topology and
+associated sharpness values.  Clients are free to use their own mesh representations to gather the
+requested information as quickly as possible, or to cache some subset as member variables for
+immediate inline retrieval.
+
+In general, the set of weights for a subdivided vertex is dependent on the following:
 
     - the topology around the parent component from which the vertex originates
     - the type of subdivision Rule applicable to the parent component
@@ -178,119 +190,149 @@ In general, the set of weights for a subdivided vertex is dependent on the follo
         - requiring all parent and child sharpness values
 
 Clearly the sharpness values are inspected multiple times and so it pays to have them available
-as input -- trying to compute them on an as-needed basis is not only complex, given the need to
-address topological neighborhoods, but it can also be costly.  The "Normal" creasing method is
-trivial, and if it were all that was available this would not be necessary.  But the "Chaikin"
-method requires more information and more computation, and should ideally only be done once.  The
-Chaikin method is better than Normal in its attempt to produce neatly tapering creases, but is
-still lacking somewhat, so the possibility for an alternative to Chaikin is not unreasonable to
-expect in future.
+for retrieval.  Computing them on an as-needed basis may be simple for uniform creasing, but a
+non-uniform creasing method requires traversing topological neighborhoods, and that in addition to
+the computation itself can be costly.
 
-The point here is that it is potentially unreasonable to expect to evaluate the stencil weights
+The point here is that it is potentially unreasonable to expect to evaluate the mask weights
 completely independent of any other consideration.  Expecting and encouraging the client to have
-subdivided sharpness values first, for use in more than one place, is the approach that has been
-taken here.
+subdivided sharpness values first, for use in more than one place, is therefore recommended.
 
 The complexity of the general case above is also unnecessary for most vertices.  Any client using
 Sdc typically has more information about the nature of the vertex being subdivided and much of
 this can be avoided -- particularly for the smooth interior case that often dominates.  More on
 that in the details of the Scheme classes.
 
-There are three classes involved in stencil queries:  a Scheme<T> class template (parameterized
-by the three supported schemes) with methods to compute the stencils, a Neighborhood class that
-describes the topological neighborhood for each of the three mesh component types (face, edge and
-vertex) and a Stencil class that contains the stencil weights bundled into a manageable form and
-populated by the queries.  So the method signatures are fairly simple, with the complexity deferred
-to the Neighborhood and Stencil classes.  Given the nature of these two classes, we may later
-choose to define alternatives, in which case overloading of the Scheme<T> methods to accept, for
-instance, an alternative specification of the topology to the Neighborhhods, will be simple and
-not clutter the interface.
+The Neighbborhood template parameters:
+    The Neighborhood "classes" are template parameters currently labeled FACE, EDGE and VERTEX.
+This naming perhaps implies more generality than intended as the classes are only expected to
+provide the methods required of the mask queries to complete their task.  While all methods
+must be defined, some may rarely be invoked, and the client has considerable flexibility in the
+implementation of these -- they can defer some evaluations lazily until required, or be pro-active
+and cache other information in member variables for immediate access.
 
-The Neighbborhood classes:
-    The Neighborhood classes are what I expect to be the most contentious and are what I am least
-satisfied with.  They are responsible for specifying and/or gathering the requirements to compute
-the stencil weights for a vertex, and that set of information can be considerable in some cases,
-but not in general.
-
-The approach discussed in the past has alluded to iterator classes that clients would write to
-traverse their meshes.  The Neighborhood classes or the Scheme<T> queries themselves would then
-be parameterized in terms of these iterators or some higher level class that invokes them.  The
+An approach discussed in the past has alluded to iterator classes that clients would write to
+traverse their meshes.  The mask queries would then be parameterized in terms of a more general
+and generic mesh component that would make use of more general traversal iterators.  The
 advantage here is the iterators are written once, then traversal is left to the query and only
 what is necessary is gathered.  The disadvantages are that clients are forced to write these to
 do anything, getting them correct and efficient may not be trivial (or possible in some cases),
 and that the same data (e.g. subdivided sharpness) may be gathered or computed multiple times
 for different purposes.
 
-The approach taken here is to assume that the clients know what they are doing, are generally
-subdividing sharpness values ahead of vertex stencil computation and so have them available.  They
-are capable of specifying most of what is required with little effort.  Potential usage within Hbr
-and Vtr is specific to each subdivision scheme at that level, and so the full generality may never
-be required (e.g. Loop subdivision requires triangles always, so there is never a need to inspect
-the number of vertices per face).  It's also known in some cases that a vertex is smooth, and so
-all sharpness can be ignored.
+The other extreme was to gather everything possible required at once, but that is objectionable.
+The approach taken here provides a reasonable compromise between the two.  The mask queries ask
+for exactly what they want, and the provided classes are expected to deliver it as efficiently
+as possible.  In some cases the client may already be storing it in a more accessible form and
+general topological iteration can be avoided.
 
-So these Neighborhood classes are simple classes that allow any or all expected data to be
-specified, but they are also potential base classes to allow the "virtual gathering" of any
-missing data that might turn out to be required.  Use of virtual methods is therefore voluntary
-and, even when defined for a subclass, should only be invoked sparingly.  Since subclass instances
-will typically be destroyed where constructed, there should also be no virtual overhead in
-destruction (and a single instance can be reused if that is a concern).
+The information requested of these classes in the three mask queries is as follows:
+
+    For FACE:
+        - the number of incident vertices
+
+    For EDGE:
+        - the number of incident faces
+        - the sharpness value of the parent edge
+        - the sharpness values of the two child edges
+        - the number of vertices per incident face
+
+    For VERTEX:
+        - the number of incident faces
+        - the number of incident edges
+        - the sharpness value of the parent vertex
+        - the sharpness values for each incident parent edge
+        - the sharpness value of the child vertex
+        - the sharpness values for each incident child edge
+
+The latter should not be surprising given the dependencies noted above.  There are also a few
+more to consider for future use, e.g. whether the EDGE or VERTEX is manifold or not.  In most
+cases additional information can be provided to the mask queries (i.e. pre-determined Rules)
+and most of the child sharpness values are not necessary.  The most demanding sitation is a
+fractional crease that decays to zero -- in which case all parent and child sharpness values in
+the neighborhood are required to determine the proper transitional weight.
 
 Questions:
-    - is this "virtual gathering" approach acceptable?
+    - any ideas for labeling these in a way that more reflects their purpose, i.e. other than
+      FACE, EDGE or VERTEX?
+
+    - how do we document the interfaces expected of <class FACE, EDGE, VERTEX>?
 
 
-The Stencil class:
-    The Stencil class is nothing more than a simple struct (potentially parameterized to support
-either float or double precision, and so a template) to identify the destination for weights when
-computing a stencil (again we follow the trend of primitive arrays appropriately allocated and
-specified by the client).  The set of weights is divided into vertex-weights, edge-weights and
+The MASK template parameter:
+    Previously we were considering a concrete class to contain the results of the mask queries,
+but with the shift to class template parameters for the topology -- and the resulting need to
+export the full implementation in public headers -- I decided to do the same with the mask class.
+
+    The MASK template parameter, that all mask queries are required to populate, is now completely
+determined by the client.  The set of mask weights is divided into vertex-weights, edge-weights and
 face-weights -- consistent with existing usage in OpenSubdiv and giving some correllation between
 the full set of weights and topology.  The vertex-weights refer to parent vertices incident the
 parent component, the edge-weights the vertices opposite incident edges, and the face-weights the
-center of indicent faces (note the latter is NOT in terms of vertices in the parent).
+center of indicent faces (note the latter is NOT in terms of vertices in the parent, at least not
+for Catmark, possibly for Loop -- this is a point needing attention).
 
-Expected usage is to initialize a Stencil with the location of buffers (arrays) of adequate size
-for the three kinds of weights.  These can be references to local arrays on the stack, in tables,
-or otherwise allocated.  If maximal sizes are known, a single instance of Stencil can be
-initialized once and used for all queries.  The stencil queries will set the populated sizes of
-these arrays based on each query, which will depend on the topology, the applicable rule, etc.
+So the mask queries require the following capabilities:
 
-It is important to remember here that these stencils are being defined in terms of existing usage
-within OpenSubdiv -- both Hbr and the subdivision tables generated by Far.  As noted above, the
+    - assign the number of vertex, edge and/or face weights
+    - retrieve the number of vertex, edge and/or face weights
+    - assign individual vertex, edge and/or face weights by index
+    - retrieve individual vertex, edge and/or face weights by index
+
+through a set of methods required of all MASK classes.  Knowing the maximum nunber of weights based
+on the topology, typical usage within Vtr, Far or Hbr is expected to simply define buffers on the
+stack or in pre-allocated tables to be partitioned into the three sets of weights on construction
+of a MASK and then populated by the mask queries.
+
+A potentially useful side-effect of this is that the client can define their weights to be stored
+in either single- or double-precision.  With that possibility in mind, care was taken within the
+mask queries to make use of a declared type in the MASK interface (MASK::Weight) for intermediate
+calculations.  Having support for double-precision masks in Sdc does enable it at higher levels in
+OpenSubdiv if later desired, and that support is made almost trivial with MASK being generic.
+
+It is important to remember here that these masks are being defined consistent with existing usage
+within OpenSubdiv:  both Hbr and the subdivision tables generated by Far.  As noted above, the
 "face weights" correspond to the centers of incident faces, i.e. vertices on the same level as
-the vertex for which the stencil is being computed, and not relative to vertices in the parent
-level as with the other sets of weights.  Its true that the weights can be translated into a set
-in terms solely of parent vertices, but in the general case (i.e. Catmark subdivision with
+the vertex for which the mask is being computed, and not relative to vertices in the parent
+level as with the other sets of weights.  It is true that the weights can be translated into a
+set in terms solely of parent vertices, but in the general case (i.e. Catmark subdivision with
 non-quads in the base mesh) this requires additional topological association.  In general we would
 need N-3 weights for the N-3 vertices between the two incident edges, where N is the number of
 vertices of each face (typically 4 even at level 0).  Perhaps such a translation method could be
-provided on the Stencil class, with an optional indication of the incident face topology for the
-irregular cases.
+provided on the mask class, with an optional indication of the incident face topology for the
+irregular cases.  The Loop scheme does not have "face weights", for a vertex-vertex mask, but for
+an edge-vertex mask it does require weights associated with the faces incident the edge -- either
+the vertex opposite the edge for each triangle, or its center (which has no other use for Loop).
 
 Questions:
-    - do we need to support stencils relative to the one-ring rather than using the face-centers
-      as is currently done everywhere in OSD now?
+    - how do we document the interfaces expected of <class MASK>?
 
-    - is the single Stencil class preferable to three separate classes, one for each type of
-     component?
+    - do we need to support masks relative to the one-ring rather than using the face-centers
+      as is currently done everywhere for Catmark now?  Could this differ per scheme (would
+      warrant a TypeTrait<> if so)?
 
 
 The Scheme<TYPE> class template:
-    Given that most of the complexity has been moved into the Neighborhood classes, the Scheme
-class remains fairly simple.  Like the Crease class, it is instantiated with a set of Options to
-avoid them cluttering the interface.  It is currently little more than three methods for the
-stencil queries for each vertex type.  The set of stencils may need to be extended in future to
-include limit stencils and (potentially) stencils for face-varying data sets (whose neighborhoods
-may vary in their definition).
+    Given that most of the complexity has been moved into the template parameters for the mask
+queries, the Scheme class remains fairly simple.  Like the Crease class, it is instantiated with
+a set of Options to avoid them cluttering the interface.  It is currently little more than three
+methods for the mask queries for each vertex type.  The set of masks may need to be extended in
+future to include limit masks and (potentially) masks for face-varying data sets (whose
+neighborhoods may vary in their definition).
 
-Additional considerations arise given the desire to parameterize the Stencil class in terms of
-floating point precision.  If Scheme remains primarily a class to populate instances of
-Stencil<REAL>, then we may prefer to define the Scheme template as Scheme<TYPE,REAL=float>.
-Some exploration in that direction may be reflected in the original code.  (I backed out of it
-not knowing how widely supported partial template specialization is supported for the compilers
-of the platforms we expect to be targetted.)
+The mask queries have been written in a way that should simplify the specializations required
+for each scheme.  The generic implementation for both the edge-vertex and vertex-vertex masks
+take care of all of the creasing logic, requiring only a small set of specific masks to be
+assigned for each Scheme:  smooth and crease masks for an edge-vertex, and smooth, crease and
+corner masks for a vertex-vertex.  Other than the Bilinear case, which will specialize the mask
+queries to trivialize them for linear interpolation, the specializations for each Scheme should
+only require defining this set of masks -- and with two of them common (edge-vertex crease and
+vertex-vertex corner) the Catmark scheme only needs to define three.
 
 Questions:
-    - should Scheme<TYPE> include more than just stencil queries, e.g. should it absorb the
-      TypeTraits<TYPE> of <sdc/type.hh>?
+    - should Scheme<TYPE> include more than just mask queries, e.g. should it absorb the
+      funtionality of TypeTraits<TYPE> in <sdc/type.h> as static methods?
+
+    - is a class template with a set interface preferable to separate and independent classes
+      that provides an expected interfce, e.g. Scheme<CATMARK> vs CatmarkScheme (we don't
+      want the overhead of a common base class here)?
