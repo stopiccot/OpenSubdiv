@@ -23,91 +23,26 @@
 #
 
 #-------------------------------------------------------------------------------
-include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
 
 #-------------------------------------------------------------------------------
 # source & headers
+set(CPU_SOURCE_FILES
+)
 
 set(PUBLIC_HEADER_FILES
-    adaptiveEvaluator.h
-    batch.h
-    drawItem.h
-    drawController.h
-    evaluator_capi.h    
-    mesh.h
-    multiMeshFactory.h
-    patchPartitioner.h
-    refiner.h
-    topology.h
-    uniformEvaluator.h        
 )
-
-add_library(osdutil
-    adaptiveEvaluator.h
-    adaptiveEvaluator.cpp
-    evaluator_capi.h
-    evaluator_capi.cpp            
-    mesh.h
-    mesh.cpp
-    refiner.h
-    refiner.cpp
-    topology.h
-    topology.cpp
-    uniformEvaluator.h
-    uniformEvaluator.cpp            
-)
-
-set_target_properties(osdutil PROPERTIES OUTPUT_NAME osdutil CLEAN_DIRECT_OUTPUT 1)
-
-target_link_libraries(
-    osdutil    
-    "${PLATFORM_LIBRARIES}"
-)
-        
-                
-set(DOXY_HEADER_FILES ${PUBLIC_HEADER_FILES})
 
 #-------------------------------------------------------------------------------
-# platform dependent tweaks
-if(APPLE OR UNIX)
-    set(PLATFORM_COMPILE_FLAGS
-        -fPIC
-    )
-elseif(WIN32)
+_add_doxy_headers( "${PUBLIC_HEADER_FILES}" )
 
-endif()
-
-add_definitions(
-    ${PLATFORM_COMPILE_FLAGS}
-)
-               
-#-------------------------------------------------------------------------------
-# OpenCL code & dependencies
-
-set(OPENCL_PUBLIC_HEADER_FILES
-    batchCL.h
-)
-
-if ( OPENCL_FOUND )
-    list(APPEND PUBLIC_HEADER_FILES ${OPENCL_PUBLIC_HEADER_FILES} )
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${OPENCL_PUBLIC_HEADER_FILES} )
-
-#-------------------------------------------------------------------------------
-
-_add_doxy_headers( "${DOXY_HEADER_FILES}" )
-
-install(
-    FILES 
+install( 
+    FILES
         ${PUBLIC_HEADER_FILES}
     DESTINATION
-        "${CMAKE_INCDIR_BASE}/osdutil"
+        "${CMAKE_INCDIR_BASE}/vtr"
     PERMISSIONS
         OWNER_READ
         GROUP_READ
         WORLD_READ )
 
-install( TARGETS osdutil DESTINATION "${CMAKE_LIBDIR_BASE}")
-                  
 #-------------------------------------------------------------------------------

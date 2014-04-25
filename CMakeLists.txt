@@ -575,23 +575,20 @@ function(_stringify src_files varname)
 
     foreach(src_file ${src_files})
 
-        string(REGEX REPLACE ".*[.](.*)" "\\1" extension "${src_file}")
+    string(REGEX REPLACE ".*[.](.*)" "\\1" extension "${src_file}")
 
-        if(NOT ${extension} STREQUAL "cu")
+        string(REGEX REPLACE "(.*)[.].*" "\\1.gen.h" inc_file "${src_file}")
+        list(APPEND inc_files "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}")
 
-            string(REGEX REPLACE "(.*)[.].*" "\\1.gen.h" inc_file "${src_file}")
-            list(APPEND inc_files "${inc_file}")
+        add_custom_command(
+            OUTPUT 
+                "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
+            COMMAND 
+                stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}" "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
+            DEPENDS 
+                stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}"
+        )
 
-            add_custom_command(
-                OUTPUT 
-                    "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
-                COMMAND 
-                    stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}" "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
-                DEPENDS 
-                    stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}"
-            )
-
-        endif()
     endforeach()
     set(${varname} ${inc_files} PARENT_SCOPE)
 endfunction()
