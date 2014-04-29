@@ -1,11 +1,29 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #include "../sdc/type.h"
 #include "../sdc/crease.h"
-#include "../sdc/arrayInterface.h"
+#include "../vtr/array.h"
 #include "../vtr/level.h"
 #include "../vtr/refinement.h"
 
@@ -18,7 +36,8 @@
 //      This was developed to prototype some ideas, and some issues were simplified
 //  (or just plain ignored) in order to validate the more general cases first.  Use
 //  the following list of keywords to search for notes in comments where these issues
-//  are discussed:
+//  are discussed -- though most code that they may have referred to may have since
+//  been moved to VtrRefinement:
 //
 //  CORRECTNESS:
 //      - shortcuts taken when progress was more important than correctness
@@ -57,47 +76,6 @@ VtrLevel::~VtrLevel()
 
 
 //
-//  Method to "classify" a vertex by inspecting its neighborhood (which we only
-//  need for child vertices generated from a parent or for all vertices at the
-//  coarsest level).
-//    
-//  The resulting classication is one of a topological type, i.e. Corner, Crease,
-//  Dart or Smooth based on the following information:
-//
-//    - sharpness value of the given vertex
-//    - boundary status of its incident edges
-//    - sharpness values of its incident edges
-//
-//  NOTE:  this is where using sharpness to tag boundary features really pays
-//  off.  Testing sharpness and topology independently or combined is a real
-//  pain here otherwise.
-//
-//  What we are really doing here is counting the number of "singular" edges,
-//  where singularity may be determined topologically by a boundary, or by
-//  the presence of sharp edges.  Face-varying data will need a similar kind
-//  of classification, and having some edge-related property would help.
-//
-//  Given the above point, and the eventual need to classify face-varying
-//  data, putting the topology information in the sharpness would help both.
-//  We can create a seperate sharpness vector for face-varying data and that
-//  can be used to detect the singular edges.
-//
-//  (Note this is likely to move to an Sdc query in some form, though Tony has
-//  expressed the desire to hide these "masks" as an implementation detail.  It
-//  may be difficult to port Hbr to Sdc without them.)
-//
-/*
-SdcRule
-VtrLevel::classifyVertFromTopology(VtrIndex vIndex)
-{
-    return SdcVertexRuleFromGlobalSharpness(accessVertEdges(vIndex),
-                                            SdcConstArrayInterface<float>(mEdgeSharpness),
-                                            vertSharpness(vIndex));
-}
-*/
-
-
-//
 //  Debugging method to validate topology, i.e. verify appropriate symmetry
 //  between the relations, etc.
 //
@@ -126,14 +104,14 @@ VtrLevel::validateTopology() const
 
     //  Verify each face-vert has corresponding vert-face and child:
     for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
-        VtrIndexAccessor fVerts      = accessFaceVerts(fIndex);
-        int              fVertCount  = fVerts.size();
+        VtrIndexArray const fVerts      = accessFaceVerts(fIndex);
+        int                 fVertCount  = fVerts.size();
 
         for (int i = 0; i < fVertCount; ++i) {
             VtrIndex vIndex = fVerts[i];
 
-            VtrIndexAccessor      vFaces = accessVertFaces(vIndex);
-            VtrLocalIndexAccessor vInFace = accessVertFaceLocalIndices(vIndex);
+            VtrIndexArray const      vFaces = accessVertFaces(vIndex);
+            VtrLocalIndexArray const vInFace = accessVertFaceLocalIndices(vIndex);
 
             bool vertFaceOfFaceExists = false;
             for (int j = 0; j < vFaces.size(); ++j) {
@@ -154,14 +132,14 @@ VtrLevel::validateTopology() const
 
     //  Verify each face-edge has corresponding edge-face:
     for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
-        VtrIndexAccessor fEdges      = accessFaceEdges(fIndex);
-        int              fEdgeCount  = fEdges.size();
+        VtrIndexArray const fEdges      = accessFaceEdges(fIndex);
+        int                 fEdgeCount  = fEdges.size();
 
         for (int i = 0; i < fEdgeCount; ++i) {
             int eIndex = fEdges[i];
 
-            VtrIndexAccessor eFaces      = accessEdgeFaces(eIndex);
-            int              eFaceCount  = eFaces.size();
+            VtrIndexArray const eFaces      = accessEdgeFaces(eIndex);
+            int                 eFaceCount  = eFaces.size();
 
             bool edgeFaceOfFaceExists = false;
             for (int j = 0; j < eFaceCount; ++j) {
@@ -182,13 +160,13 @@ VtrLevel::validateTopology() const
 
     //  Verify each edge-vert has corresponding vert-edge and child:
     for (int eIndex = 0; eIndex < edgeCount(); ++eIndex) {
-        VtrIndexAccessor eVerts = accessEdgeVerts(eIndex);
+        VtrIndexArray const eVerts = accessEdgeVerts(eIndex);
 
         for (int i = 0; i < 2; ++i) {
             VtrIndex vIndex = eVerts[i];
 
-            VtrIndexAccessor      vEdges = accessVertEdges(vIndex);
-            VtrLocalIndexAccessor vInEdge = accessVertEdgeLocalIndices(vIndex);
+            VtrIndexArray const      vEdges = accessVertEdges(vIndex);
+            VtrLocalIndexArray const vInEdge = accessVertEdgeLocalIndices(vIndex);
 
             bool vertEdgeOfEdgeExists = false;
             for (int j = 0; j < vEdges.size(); ++j) {
@@ -216,11 +194,11 @@ VtrLevel::validateTopology() const
 namespace {
     template <typename INT_TYPE>
     void
-    printIndexAccessor(SdcConstArrayInterface<INT_TYPE> const& accessor)
+    printIndexArray(VtrArray<INT_TYPE> const& array)
     {
-        printf("%d [%d", accessor.size(), accessor[0]);
-        for (int i = 1; i < accessor.size(); ++i) {
-            printf(" %d", accessor[i]);
+        printf("%d [%d", array.size(), array[0]);
+        for (int i = 1; i < array.size(); ++i) {
+            printf(" %d", array[i]);
         }
         printf("]\n");
     }
@@ -271,17 +249,17 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     printf("      face-vert indices = %lu\n", mFaceVertIndices.size());
     for (int i = 0; printFaceVerts && i < faceCount(); ++i) {
         printf("        face %4d verts:  ", i);
-        printIndexAccessor(accessFaceVerts(i));
+        printIndexArray(accessFaceVerts(i));
     }
     printf("      face-edge indices = %lu\n", mFaceEdgeIndices.size());
     for (int i = 0; printFaceEdges && i < faceCount(); ++i) {
         printf("        face %4d edges:  ", i);
-        printIndexAccessor(accessFaceEdges(i));
+        printIndexArray(accessFaceEdges(i));
     }
     if (pRefinement) {
-        printf("      face child-verts = %lu\n", pRefinement->mFaceChildVertIndex.size());
-        for (int i = 0; printFaceChildVerts && i < (int)pRefinement->mFaceChildVertIndex.size(); ++i) {
-            printf("        face %4d child vert:  %d\n", i, pRefinement->mFaceChildVertIndex[i]);
+        printf("      face child-verts = %lu\n", pRefinement->_faceChildVertIndex.size());
+        for (int i = 0; printFaceChildVerts && i < (int)pRefinement->_faceChildVertIndex.size(); ++i) {
+            printf("        face %4d child vert:  %d\n", i, pRefinement->_faceChildVertIndex[i]);
         }
     }
 
@@ -289,18 +267,18 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     printf("      edge-vert indices = %lu\n", mEdgeVertIndices.size());
     for (int i = 0; printEdgeVerts && i < edgeCount(); ++i) {
         printf("        edge %4d verts:  ", i);
-        printIndexAccessor(accessEdgeVerts(i));
+        printIndexArray(accessEdgeVerts(i));
     }
     printf("      edge-face counts/offset = %lu\n", mEdgeFaceCountsAndOffsets.size());
     printf("      edge-face indices = %lu\n", mEdgeFaceIndices.size());
     for (int i = 0; printEdgeFaces && i < edgeCount(); ++i) {
         printf("        edge %4d faces:  ", i);
-        printIndexAccessor(accessEdgeFaces(i));
+        printIndexArray(accessEdgeFaces(i));
     }
     if (pRefinement) {
-        printf("      edge child-verts = %lu\n", pRefinement->mEdgeChildVertIndex.size());
-        for (int i = 0; printEdgeChildVerts && i < (int)pRefinement->mEdgeChildVertIndex.size(); ++i) {
-            printf("        edge %4d child vert:  %d\n", i, pRefinement->mEdgeChildVertIndex[i]);
+        printf("      edge child-verts = %lu\n", pRefinement->_edgeChildVertIndex.size());
+        for (int i = 0; printEdgeChildVerts && i < (int)pRefinement->_edgeChildVertIndex.size(); ++i) {
+            printf("        edge %4d child vert:  %d\n", i, pRefinement->_edgeChildVertIndex[i]);
         }
     }
     printf("      edge sharpness = %lu\n", mEdgeSharpness.size());
@@ -314,25 +292,25 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     printf("      vert-face children = %lu\n", mVertFaceLocalIndices.size());
     for (int i = 0; printVertFaces && i < vertCount(); ++i) {
         printf("        vert %4d faces:  ", i);
-        printIndexAccessor(accessVertFaces(i));
+        printIndexArray(accessVertFaces(i));
 
         printf("             face-verts:  ");
-        printIndexAccessor(accessVertFaceLocalIndices(i));
+        printIndexArray(accessVertFaceLocalIndices(i));
     }
     printf("      vert-edge counts/offset = %lu\n", mVertEdgeCountsAndOffsets.size());
     printf("      vert-edge indices  = %lu\n", mVertEdgeIndices.size());
     printf("      vert-edge children = %lu\n", mVertEdgeLocalIndices.size());
     for (int i = 0; printVertEdges && i < vertCount(); ++i) {
         printf("        vert %4d edges:  ", i);
-        printIndexAccessor(accessVertEdges(i));
+        printIndexArray(accessVertEdges(i));
 
         printf("             edge-verts:  ");
-        printIndexAccessor(accessVertEdgeLocalIndices(i));
+        printIndexArray(accessVertEdgeLocalIndices(i));
     }
     if (pRefinement) {
-        printf("      vert child-verts = %lu\n", pRefinement->mVertChildVertIndex.size());
-        for (int i = 0; printVertChildVerts && i < (int)pRefinement->mVertChildVertIndex.size(); ++i) {
-            printf("        vert %4d child vert:  %d\n", i, pRefinement->mVertChildVertIndex[i]);
+        printf("      vert child-verts = %lu\n", pRefinement->_vertChildVertIndex.size());
+        for (int i = 0; printVertChildVerts && i < (int)pRefinement->_vertChildVertIndex.size(); ++i) {
+            printf("        vert %4d child vert:  %d\n", i, pRefinement->_vertChildVertIndex[i]);
         }
     }
     printf("      vert sharpness = %lu\n", mVertSharpness.size());
@@ -347,7 +325,3 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.

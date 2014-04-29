@@ -1,8 +1,26 @@
-// DreamWorks Animation LLC Confidential Information.
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.
-
+//
+//   Copyright 2014 DreamWorks Animation LLC.
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
 #ifndef VTR_LEVEL_H
 #define VTR_LEVEL_H
 
@@ -27,6 +45,7 @@ template <class MESH> class FarRefineTablesFactory;
 class FarRefineTablesFactoryBase;
 class FarRefineTables;
 class VtrRefinement;
+class VtrSelector;
 
 //
 //  VtrLevel:
@@ -58,11 +77,14 @@ class VtrRefinement;
 //  the Far layer essentially store 5 of these 6 in a permuted form -- we add
 //  the face-edges here to simplify refinement.
 //  
-//  Notes/limitations/stuff to do:
-//      - verify public/protected/friend accessibility
-//      - finish replacing local "m" member prefix with "_" (easier after above)
-//      - keep in mind desired similarity with FarMesh tables for ease of transfer
-//        (contradicts previous point to some degree)
+//  Notes/limitations/stuff to do -- much of this code still reflects the early days
+//  when it was being prototyped and so it does not conform to OSD standards in many
+//  ways:
+//      - superficial stylistic issues:
+//          - replacing "m" prefix with "_" on member variables
+//          - use of Vertex vs Vert in non-local methods
+//          - removal of "access" and "modify" prefixes on VtrArray methods
+//      - review public/protected/friend accessibility
 //      - short cuts that need revisiting:
 //          - support for face-vert counts > 4
 //          - support for edge-face counts > 2
@@ -79,6 +101,8 @@ class VtrRefinement;
 //      - apply classification of vertices (computing Rules or masks)
 //          - apply to base/course level on conversion
 //          - apply to child level after subdivision of sharpness
+//      - keep in mind desired similarity with FarMesh tables for ease of transfer
+//        (contradicts previous point to some degree)
 //
 
 class VtrLevel
@@ -112,14 +136,15 @@ public:
     //
     //  Methods to access and modify the six topological relations:
     //
-    VtrIndexAccessor      accessFaceVerts(VtrIndex faceIndex) const;
-    VtrIndexAccessor      accessFaceEdges(VtrIndex faceIndex) const;
-    VtrIndexAccessor      accessEdgeVerts(VtrIndex edgeIndex) const;
-    VtrIndexAccessor      accessEdgeFaces(VtrIndex edgeIndex) const;
-    VtrIndexAccessor      accessVertFaces(           VtrIndex vertIndex) const;
-    VtrLocalIndexAccessor accessVertFaceLocalIndices(VtrIndex vertIndex) const;
-    VtrIndexAccessor      accessVertEdges(           VtrIndex vertIndex) const;
-    VtrLocalIndexAccessor accessVertEdgeLocalIndices(VtrIndex vertIndex) const;
+    VtrIndexArray const accessFaceVerts(VtrIndex faceIndex) const;
+    VtrIndexArray const accessFaceEdges(VtrIndex faceIndex) const;
+    VtrIndexArray const accessEdgeVerts(VtrIndex edgeIndex) const;
+    VtrIndexArray const accessEdgeFaces(VtrIndex edgeIndex) const;
+    VtrIndexArray const accessVertFaces(VtrIndex vertIndex) const;
+    VtrIndexArray const accessVertEdges(VtrIndex vertIndex) const;
+
+    VtrLocalIndexArray const accessVertFaceLocalIndices(VtrIndex vertIndex) const;
+    VtrLocalIndexArray const accessVertEdgeLocalIndices(VtrIndex vertIndex) const;
 
     VtrSharpness edgeSharpness(VtrIndex edgeIndex) const;
     VtrSharpness vertSharpness(VtrIndex vertIndex) const;
@@ -134,6 +159,7 @@ protected:
     friend class FarRefineTablesFactoryBase;
     friend class FarRefineTables;
     friend class VtrRefinement;
+    friend class VtrSelector;
 
     //
     //  Sizing methods used to construct a level to populate:
@@ -153,14 +179,14 @@ protected:
     //
     //  Modifiers to populate the relations for each component:
     //
-    VtrIndexModifier      modifyFaceVerts(VtrIndex faceIndex);
-    VtrIndexModifier      modifyFaceEdges(VtrIndex faceIndex);
-    VtrIndexModifier      modifyEdgeVerts(VtrIndex edgeIndex);
-    VtrIndexModifier      modifyEdgeFaces(VtrIndex edgeIndex);
-    VtrIndexModifier      modifyVertFaces(           VtrIndex vertIndex);
-    VtrLocalIndexModifier modifyVertFaceLocalIndices(VtrIndex vertIndex);
-    VtrIndexModifier      modifyVertEdges(           VtrIndex vertIndex);
-    VtrLocalIndexModifier modifyVertEdgeLocalIndices(VtrIndex vertIndex);
+    VtrIndexArray      modifyFaceVerts(VtrIndex faceIndex);
+    VtrIndexArray      modifyFaceEdges(VtrIndex faceIndex);
+    VtrIndexArray      modifyEdgeVerts(VtrIndex edgeIndex);
+    VtrIndexArray      modifyEdgeFaces(VtrIndex edgeIndex);
+    VtrIndexArray      modifyVertFaces(           VtrIndex vertIndex);
+    VtrLocalIndexArray modifyVertFaceLocalIndices(VtrIndex vertIndex);
+    VtrIndexArray      modifyVertEdges(           VtrIndex vertIndex);
+    VtrLocalIndexArray modifyVertEdgeLocalIndices(VtrIndex vertIndex);
 
     VtrSharpness& edgeSharpness(VtrIndex edgeIndex);
     VtrSharpness& vertSharpness(VtrIndex vertIndex);
@@ -268,7 +294,7 @@ protected:
     //  may be useful to compute/store this "ranking" as the Type is determined for a
     //  vertex at the next level, and store counts associated with these instead.)
 
-protected:
+public:
     //
     //  Debugging aides -- unclear what will remain...
     //
@@ -279,17 +305,17 @@ protected:
 //
 //  Access/modify the vertices indicent a given face:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessFaceVerts(VtrIndex faceIndex) const
 {
-    return VtrIndexAccessor(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                             mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
+                          mFaceVertCountsAndOffsets[faceIndex*2]);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyFaceVerts(VtrIndex faceIndex)
 {
-    return VtrIndexModifier(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                             mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
+                          mFaceVertCountsAndOffsets[faceIndex*2]);
 }
 
 inline void
@@ -304,46 +330,46 @@ VtrLevel::resizeFaceVerts(VtrIndex faceIndex, int count)
 //
 //  Access/modify the edges indicent a given face:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessFaceEdges(VtrIndex faceIndex) const
 {
-    return VtrIndexAccessor(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                             mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
+                          mFaceVertCountsAndOffsets[faceIndex*2]);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyFaceEdges(VtrIndex faceIndex)
 {
-    return VtrIndexModifier(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                             mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
+                          mFaceVertCountsAndOffsets[faceIndex*2]);
 }
 
 //
 //  Access/modify the faces indicent a given vertex:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessVertFaces(VtrIndex vertIndex) const
 {
-    return VtrIndexAccessor(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                             mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
+                          mVertFaceCountsAndOffsets[vertIndex*2]);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyVertFaces(VtrIndex vertIndex)
 {
-    return VtrIndexModifier(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                             mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
+                          mVertFaceCountsAndOffsets[vertIndex*2]);
 }
 
-inline VtrLocalIndexAccessor
+inline VtrLocalIndexArray const
 VtrLevel::accessVertFaceLocalIndices(VtrIndex vertIndex) const
 {
-    return VtrLocalIndexAccessor(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                             mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
+                               mVertFaceCountsAndOffsets[vertIndex*2]);
 }
-inline VtrLocalIndexModifier
+inline VtrLocalIndexArray
 VtrLevel::modifyVertFaceLocalIndices(VtrIndex vertIndex)
 {
-    return VtrLocalIndexModifier(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                             mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
+                               mVertFaceCountsAndOffsets[vertIndex*2]);
 }
 
 inline void
@@ -363,30 +389,30 @@ VtrLevel::trimVertFaces(VtrIndex vertIndex, int count)
 //
 //  Access/modify the edges indicent a given vertex:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessVertEdges(VtrIndex vertIndex) const
 {
-    return VtrIndexAccessor(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                             mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
+                          mVertEdgeCountsAndOffsets[vertIndex*2]);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyVertEdges(VtrIndex vertIndex)
 {
-    return VtrIndexModifier(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                             mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
+                          mVertEdgeCountsAndOffsets[vertIndex*2]);
 }
 
-inline VtrLocalIndexAccessor
+inline VtrLocalIndexArray const
 VtrLevel::accessVertEdgeLocalIndices(VtrIndex vertIndex) const
 {
-    return VtrLocalIndexAccessor(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                                 mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
+                               mVertEdgeCountsAndOffsets[vertIndex*2]);
 }
-inline VtrLocalIndexModifier
+inline VtrLocalIndexArray
 VtrLevel::modifyVertEdgeLocalIndices(VtrIndex vertIndex)
 {
-    return VtrLocalIndexModifier(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                                 mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
+                               mVertEdgeCountsAndOffsets[vertIndex*2]);
 }
 
 inline void
@@ -406,31 +432,31 @@ VtrLevel::trimVertEdges(VtrIndex vertIndex, int count)
 //
 //  Access/modify the vertices indicent a given edge:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessEdgeVerts(VtrIndex edgeIndex) const
 {
-    return VtrIndexAccessor(&mEdgeVertIndices[edgeIndex*2], 2);
+    return VtrIndexArray(&mEdgeVertIndices[edgeIndex*2], 2);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyEdgeVerts(VtrIndex edgeIndex)
 {
-    return VtrIndexModifier(&mEdgeVertIndices[edgeIndex*2], 2);
+    return VtrIndexArray(&mEdgeVertIndices[edgeIndex*2], 2);
 }
 
 //
 //  Access/modify the faces indicent a given edge:
 //
-inline VtrIndexAccessor
+inline VtrIndexArray const
 VtrLevel::accessEdgeFaces(VtrIndex edgeIndex) const
 {
-    return VtrIndexAccessor(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
-                             mEdgeFaceCountsAndOffsets[edgeIndex*2]);
+    return VtrIndexArray(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
+                          mEdgeFaceCountsAndOffsets[edgeIndex*2]);
 }
-inline VtrIndexModifier
+inline VtrIndexArray
 VtrLevel::modifyEdgeFaces(VtrIndex edgeIndex)
 {
-    return VtrIndexModifier(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
-                             mEdgeFaceCountsAndOffsets[edgeIndex*2]);
+    return VtrIndexArray(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
+                          mEdgeFaceCountsAndOffsets[edgeIndex*2]);
 }
 
 inline void
@@ -550,7 +576,3 @@ using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
 
 #endif /* VTR_LEVEL_H */
-
-// TM and (c) 2014 DreamWorks Animation LLC.  All Rights Reserved.
-// Reproduction in whole or in part without prior written permission of a
-// duly authorized representative is prohibited.

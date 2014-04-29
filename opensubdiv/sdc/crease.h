@@ -118,6 +118,7 @@ public:
     //  corresponding to the child.  For this reason, an alternative to subdividing sharpness
     //  that computes all child edges around a vertex is given.
     //
+    float SubdivideUniformSharpness(float vertexOrEdgeSharpness) const;
 
     float SubdivideVertexSharpness(float vertexSharpness) const;
 
@@ -238,6 +239,12 @@ SdcCrease::decrementSharpness(float sharpness) const
     if (isInfinite(sharpness)) return SdcCrease::INFINITE;
     if (sharpness > 1.0f) return (sharpness - 1.0f);
     return SdcCrease::SMOOTH;
+}
+
+inline float
+SdcCrease::SubdivideUniformSharpness(float vertexOrEdgeSharpness) const
+{
+    return decrementSharpness(vertexOrEdgeSharpness);
 }
 
 inline float
