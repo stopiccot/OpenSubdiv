@@ -29,6 +29,7 @@
 
 #include <cassert>
 #include <vector>
+#include <cstdio>
 
 
 //
@@ -207,10 +208,12 @@ namespace {
     ruleString(SdcRule rule)
     {
         switch (rule) {
-        case SdcCrease::RULE_SMOOTH:  return "Smooth";
-        case SdcCrease::RULE_DART:    return "Dart";
-        case SdcCrease::RULE_CREASE:  return "Crease";
-        case SdcCrease::RULE_CORNER:  return "Corner";
+            case SdcCrease::RULE_SMOOTH:  return "Smooth";
+            case SdcCrease::RULE_DART:    return "Dart";
+            case SdcCrease::RULE_CREASE:  return "Crease";
+            case SdcCrease::RULE_CORNER:  return "Corner";
+            default:
+                assert(0);
         }
         return 0;
     }

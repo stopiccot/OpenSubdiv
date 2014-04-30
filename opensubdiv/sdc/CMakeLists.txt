@@ -23,11 +23,6 @@
 #
 
 #-------------------------------------------------------------------------------
-include_directories(
-    "${PROJECT_SOURCE_DIR}/opensubdiv"
-)
-
-#-------------------------------------------------------------------------------
 set(PUBLIC_HEADER_FILES
     bilinearScheme.h
     catmarkScheme.h
@@ -65,7 +60,7 @@ if (NOT NO_LIB)
 endif()
 
 #-------------------------------------------------------------------------------
-_add_doxy_headers( "${PUBLIC_HEADER_FILES}" )
+_add_doxy_headers( "${DOXY_HEADER_FILES}" )
 
 install(
     FILES

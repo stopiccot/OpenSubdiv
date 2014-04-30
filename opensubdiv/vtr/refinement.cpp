@@ -30,6 +30,7 @@
 #include "../vtr/maskInterfaces.h"
 
 #include <cassert>
+#include <cstdio>
 
 
 //
@@ -103,7 +104,7 @@ void
 VtrRefinement::initializeParentToChildMappings(VtrIndex initValue)
 {
     //  What is the history behind this assertion?
-    assert(_parent->mVertRule.size() == _parent->vertCount());
+    assert(_parent->vertCount() == (int)_parent->mVertRule.size());
 
     //
     //  Initialize the vectors of indices mapping parent components to those child components
@@ -1037,7 +1038,7 @@ VtrRefinement::populateVertexEdgesFromParentVertices()
 //        - child faces from all parent faces
 //    - populate topology relations:
 //        - iterate through each child of each parent component
-//            - populate "uninherited" relations directly 
+//            - populate "uninherited" relations directly
 //                - includes face-vert, edge-vert, face-edge
 //                - these will always be completely defined
 //            - populate "inherited" relations by mapping parent->child
@@ -1299,7 +1300,7 @@ VtrRefinement::subdivideTopology()
     //  account when marking/generating children.
     //
     int childVertFaceIndexSizeEstimate = parent.mFaceVertIndices.size()
-                                        + parent.mEdgeFaceIndices.size() * 2 
+                                        + parent.mEdgeFaceIndices.size() * 2
                                         + parent.mVertFaceIndices.size();
 
     child.mVertFaceCountsAndOffsets.resize(child.vertCount() * 2);
@@ -1339,7 +1340,7 @@ VtrRefinement::subdivideTopology()
     //          - same as parent vert for verts from parent verts (catmark)
     //
     int childVertEdgeIndexSizeEstimate = parent.mFaceVertIndices.size()
-                                       + parent.mEdgeFaceIndices.size() + parent.edgeCount() * 2 
+                                       + parent.mEdgeFaceIndices.size() + parent.edgeCount() * 2
                                        + parent.mVertEdgeIndices.size();
 
     child.mVertEdgeCountsAndOffsets.resize(child.vertCount() * 2);
@@ -1545,7 +1546,7 @@ VtrRefinement::classifyChildVerticesFromParentVertices()
             //  for child edges of the parent that were not generated (due to sparse refinement).
             //
             SdcCrease creasing(_schemeOptions);
-            
+
             //  Note that the child edges will be empty if child topology was not generated...
             VtrIndexArray const childEdges  = child.accessVertEdges(cVert);
             VtrIndexArray const parentEdges = parent.accessVertEdges(pVert);
@@ -1646,7 +1647,7 @@ VtrRefinement::populateChildTags()
     //  Populate the "incomplete" tag for vertices -- this is really best determined as
     //  the topology is subdivided.  To do so now is awkward given we haven't set up the
     //  child-to-parent mapping yet, so we iterate through all parent components and
-    //  identify and tag their child vertices: 
+    //  identify and tag their child vertices:
     //
     //  Note:  the current metrics for detecting completeness are not fully general, e.g.
     //  do not work for a non-quad-split or non-manifold cases with bare edges.
@@ -1737,7 +1738,7 @@ VtrRefinement::computeMaskWeights()
             //
             eHood.SetIndex(pEdge);
 
-            SdcRule pRule = (parent.edgeSharpness(pEdge) > 0.0) ? SdcRule::RULE_CREASE : SdcRule::RULE_SMOOTH;
+            SdcRule pRule = (parent.edgeSharpness(pEdge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
             SdcRule cRule = child.vertRule(cVert);
 
             scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);

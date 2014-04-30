@@ -76,7 +76,7 @@ class VtrSelector;
 //  represenation, the intent is that it be amenable to refinement.  Classes in
 //  the Far layer essentially store 5 of these 6 in a permuted form -- we add
 //  the face-edges here to simplify refinement.
-//  
+//
 //  Notes/limitations/stuff to do -- much of this code still reflects the early days
 //  when it was being prototyped and so it does not conform to OSD standards in many
 //  ways:
@@ -234,7 +234,7 @@ protected:
 
     //
     //  Topology vectors:
-    //      Note that of all of these, only data for the face-edge relation is not 
+    //      Note that of all of these, only data for the face-edge relation is not
     //      stored in the osd::FarTables in any form.  The FarTable vectors combine
     //      the edge-vert and edge-face relations.  The eventual goal is that this
     //      data be part of the osd::Far classes and be a superset of the FarTable
@@ -244,7 +244,7 @@ protected:
     //
     //      The vert-face-child and vert-edge-child indices are also arguably not
     //      a topology relation but more one for parent/child relations.  But it is
-    //      a topological relationship, and if named differently would not likely 
+    //      a topological relationship, and if named differently would not likely
     //      raise this.  It has been named with "child" in the name as it does play
     //      a more significant role during subdivision in mapping between parent
     //      and child components, and so has been named to reflect that more clearly.

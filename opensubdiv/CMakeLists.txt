@@ -118,6 +118,8 @@ if (NOT NO_LIB)
 
     add_subdirectory(sdc)
 
+    add_subdirectory(vtr)
+
     add_subdirectory(far)
 
     add_subdirectory(osd)
@@ -140,6 +142,7 @@ if (NOT NO_LIB)
     add_library(osd_static_cpu
         STATIC
         $<TARGET_OBJECTS:sdc_obj>
+        $<TARGET_OBJECTS:vtr_obj>
         $<TARGET_OBJECTS:osd_cpu_obj>
     )
     set_target_properties(osd_static_cpu PROPERTIES OUTPUT_NAME osdCPU CLEAN_DIRECT_OUTPUT 1)
@@ -183,6 +186,7 @@ if (NOT NO_LIB)
         add_library(osd_dynamic_cpu
             SHARED
             $<TARGET_OBJECTS:sdc_obj>
+            $<TARGET_OBJECTS:vtr_obj>
             $<TARGET_OBJECTS:osd_cpu_obj>
         )
 

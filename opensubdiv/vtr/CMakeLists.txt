@@ -26,16 +26,43 @@
 
 #-------------------------------------------------------------------------------
 # source & headers
-set(CPU_SOURCE_FILES
+set(SOURCE_FILES
+     level.cpp
+     refinement.cpp
+     sparseSelector.cpp
 )
 
 set(PUBLIC_HEADER_FILES
+     array.h
+     level.h
+     maskInterfaces.h
+     refinement.h
+     sparseSelector.h
+     types.h
 )
 
-#-------------------------------------------------------------------------------
-_add_doxy_headers( "${PUBLIC_HEADER_FILES}" )
+set(PRIVATE_HEADER_FILES )
 
-install( 
+set(DOXY_HEADER_FILES ${PUBLIC_HEADER_FILES})
+
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
+if (NOT NO_LIB)
+
+    # Compile objs first for both the CPU and GPU libs -----
+    add_library(vtr_obj
+        OBJECT
+            ${SOURCE_FILES}
+            ${PRIVATE_HEADER_FILES}
+            ${PUBLIC_HEADER_FILES}
+    )
+
+endif()
+
+#-------------------------------------------------------------------------------
+_add_doxy_headers( "${DOXY_HEADER_FILES}" )
+
+install(
     FILES
         ${PUBLIC_HEADER_FILES}
     DESTINATION
