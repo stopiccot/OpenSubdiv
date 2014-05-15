@@ -193,6 +193,28 @@ protected:
     SdcRule&      vertRule(     VtrIndex vertIndex);
 
     //
+    //  Counts and offsets for all relation types:
+    //
+    int faceVertCount( VtrIndex faceIndex) const { return mFaceVertCountsAndOffsets[2*faceIndex]; }
+    int faceVertOffset(VtrIndex faceIndex) const { return mFaceVertCountsAndOffsets[2*faceIndex + 1]; }
+
+    int faceEdgeCount( VtrIndex faceIndex) const { return faceVertCount(faceIndex); }
+    int faceEdgeOffset(VtrIndex faceIndex) const { return faceVertOffset(faceIndex); }
+
+    int edgeVertCount( VtrIndex )          const { return 2; }
+    int edgeVertOffset(VtrIndex edgeIndex) const { return 2 * edgeIndex; }
+
+    int edgeFaceCount( VtrIndex edgeIndex) const { return mEdgeFaceCountsAndOffsets[2*edgeIndex]; }
+    int edgeFaceOffset(VtrIndex edgeIndex) const { return mEdgeFaceCountsAndOffsets[2*edgeIndex + 1]; }
+
+    int vertFaceCount( VtrIndex vertIndex) const { return mVertFaceCountsAndOffsets[2*vertIndex]; }
+    int vertFaceOffset(VtrIndex vertIndex) const { return mVertFaceCountsAndOffsets[2*vertIndex + 1]; }
+
+    int vertEdgeCount( VtrIndex vertIndex) const { return mVertEdgeCountsAndOffsets[2*vertIndex]; }
+    int vertEdgeOffset(VtrIndex vertIndex) const { return mVertEdgeCountsAndOffsets[2*vertIndex + 1]; }
+
+
+    //
     //  Note that for some relations, the size of the relations for a child component
     //  can vary radically from its parent due to the sparsity of the refinement.  So
     //  in these cases a few additional utilities are provided to help define the set
