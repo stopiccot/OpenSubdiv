@@ -45,15 +45,28 @@ namespace OPENSUBDIV_VERSION {
 //  the creation.  Overloading Create() to "close" the tables (copying the base level
 //  and other data, but refining differently) are also possibilities.
 //
-//  Current thinking is to simply specify the subdiv type/options on construction if
-//  they are expected to be fixed for a set of meshes.  Otherwise we'll need the
-//  client to specify them for each instance.
+//  The subdiv type/options are specified on construction of the factory and are passed
+//  on to each instance of FarRefineTables that it creates.  They can be modified as
+//  there is nothing in the Factory tied to these properties.  Consider overloading
+//  the Create() method (defined by subclasses) to vary these if greater flexibility
+//  per instance is desired.
 //
 class FarRefineTablesFactoryBase
 {
 public:
-    FarRefineTablesFactoryBase() { }
+    FarRefineTablesFactoryBase()
+            : _schemeType(TYPE_CATMARK), _schemeOptions() { }
+
+    FarRefineTablesFactoryBase(SdcType type, SdcOptions options = SdcOptions())
+            : _schemeType(type), _schemeOptions(options) { }
+
     virtual ~FarRefineTablesFactoryBase() { }
+
+    SdcType    GetSchemeType() const    { return _schemeType; }
+    SdcOptions GetSchemeOptions() const { return _schemeOptions; }
+
+    void SetSchemeType(SdcType type)          { _schemeType = type; }
+    void SetSchemeOptions(SdcOptions options) { _schemeOptions = options; }
 
     //  The Create() method is defined by the subclass template as it needs an argument
     //  of the subclass mesh type.
@@ -64,7 +77,8 @@ protected:
     void computeBaseVertexRules(FarRefineTables& refTables);
 
 protected:
-    //  Are there any useful members to retain in the Factory class?
+    SdcType    _schemeType;
+    SdcOptions _schemeOptions;
 };
 
 
@@ -84,32 +98,59 @@ class FarRefineTablesFactory : public FarRefineTablesFactoryBase
 {
 public:
     FarRefineTablesFactory() : FarRefineTablesFactoryBase() { }
+
+    FarRefineTablesFactory(SdcType type, SdcOptions options = SdcOptions())
+            : FarRefineTablesFactoryBase(type, options) { }
+
     ~FarRefineTablesFactory() { }
 
+    //
+    //  Need to start bundling these options up more -- adding feature-adaptive to start.
+    //  Current testing is making separate calls to Create(mesh) to create just the base
+    //  level, then calling FarRefineTables::RefineAdaptive(), e.g.:
+    //
+    //      MyRefineTablesFactory refTablesFactory(type, options);
+    //      FarRefineTables*      refTablesPtr = refTablesFactory.Create(myMesh);
+    //      refTablesPtr->RefineAdaptive(maxLevel, fullTopology, computeMasks);
+    //
+    //  Given the public ability to re-refine the FarRefineTables (making use of the same
+    //  base mesh), the definition of the Options belongs with FarRefineTables and not
+    //  these Factory classes, though we may want the Factory to have an instance member
+    //  for repeated application to the meshes it processes.
+    //
     FarRefineTables* Create(MESH const& mesh, int maxLevel = 0, bool fullTopology = false);
 
 protected:
-    void populateBaseLevel(FarRefineTables& refTables, MESH const& mesh);
-
     //
-    //  Methods to be specialized that implement all details specific to class MESH
-    //  required to convert MESH data to FarRefineTables.  Note that some of these
-    //  *must* be specialized in order to complete construction.
+    //  Methods to be specialized that implement all details specific to class MESH required
+    //  to convert MESH data to FarRefineTables.  Note that some of these *must* be specialized
+    //  in order to complete construction.
     //
-    //  Minimal construction requirements:
+    //  There are two minimal construction requirements and one optional.
+    //
+    //  See the comments in the generic stubs for details on how to write these.
+    //  
+    //  Required:
     void resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh);
     void assignComponentTopology(FarRefineTables& refTables, MESH const& mesh);
 
     //  Optional:
     void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
+
+protected:
+    //  Other protected details -- not to be specialized:
+    void populateBaseLevel(FarRefineTables& refTables, MESH const& mesh);
 };
 
 
+//
+//  Generic implementations:
+//
 template <class MESH>
 FarRefineTables*
 FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTopology)
 {
-    FarRefineTables *refTables = new FarRefineTables;
+    FarRefineTables *refTables = new FarRefineTables(_schemeType, _schemeOptions);
 
     populateBaseLevel(*refTables, mesh);
 
@@ -163,26 +204,35 @@ FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& refTables
     assert("Missing specialization for FarRefineTablesFactory<MESH>::resizeComponentTopology()" == 0);
 
     //
-    //  This method is for determining the sizes of various data types associated with the
-    //  mesh.  Once completed, the appropriate memory will be allocated and an additional
-    //  method will populate it accordingly.
+    //  Sizing the topology tables:
+    //      This method is for determining the sizes of the various topology tables (and other
+    //  data) associated with the mesh.  Once completed, appropriate memory will be allocated
+    //  and an additional method invoked to populate it accordingly.
     //
-    //  Make use of the following methods to populate the vertex, edge and face data --
-    //  the size of faces, edges and vertices must be specified before any of the methods
-    //  requiring face, edge and vertex indices:
+    //  The following methods should be called -- first those to specify the number of faces,
+    //  edges and vertices in the mesh:
     //
-    //      void FarRefineTables::resizeFaces(int size);
-    //      void FarRefineTables::resizeEdges(int size);
-    //      void FarRefineTables::resizeVerts(int size);
+    //      void FarRefineTables::setBaseFaceCount(int count)
+    //      void FarRefineTables::setBaseEdgeCount(int count)
+    //      void FarRefineTables::setBaseVertexCount(int count)
     //
-    //      void FarRefineTables::resizeFaceVerts(int faceIndex, int size);
-    //      void FarRefineTables::resizeEdgeFaces(int edgeIndex, int size);
-    //      void FarRefineTables::resizeVertFaces(int vertIndex, int size);
-    //      void FarRefineTables::resizeVertEdges(int vertIndex, int size);
+    //  and then for each face, edge and vertex, the number of its incident components:
     //
-    //  Note that it is only necessary to size 4 of the 6 possible relations -- the number
-    //  of edge-verts is simply twice the number of edges, and the number of face-edges is
-    //  the same as the number of face-verts.
+    //      void FarRefineTables::setBaseFaceVertexCount(Index face, int count)
+    //      void FarRefineTables::setBaseEdgeFaceCount(  Index edge, int count)
+    //      void FarRefineTables::setBaseVertexFaceCount(Index vertex, int count)
+    //      void FarRefineTables::setBaseVertexEdgeCount(Index vertex, int count)
+    //
+    //  The count/size for a component type must be set before indices associated with that
+    //  component type can be used.
+    //
+    //  Note that it is only necessary to size 4 of the 6 supported topological relations --
+    //  the number of edge-vertices is fixed at two per edge, and the number of face-edges is
+    //  the same as the number of face-vertices.
+    //
+    //  So a single pass through your mesh to gather up all of this sizing information will
+    //  allow the Tables to be allocated appropriately once and avoid any dynamic resizing as
+    //  it grows.
     //
 }
 
@@ -191,6 +241,39 @@ void
 FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& refTables, MESH const& mesh)
 {
     assert("Missing specialization for FarRefineTablesFactory<MESH>::assignComponentTopology()" == 0);
+
+    //
+    //  Assigning the topology tables:
+    //      Once the topology tables have been allocated, the six required topological
+    //  relations can be directly populated using the following methods:
+    //
+    //      void IndexArray FarRefineTables::baseFaceVertices(Index face)
+    //      void IndexArray FarRefineTables::baseFaceEdges(Index face)
+    //
+    //      void IndexArray FarRefineTables::baseEdgeVertices(Index edge)
+    //      void IndexArray FarRefineTables::baseEdgeFaces(Index edge)
+    //
+    //      void IndexArray FarRefineTables::baseVertexEdges(Index vertex)
+    //      void IndexArray FarRefineTables::baseVertexFaces(Index vertex)
+    //
+    //  For the last two relations -- the faces and edges incident a vertex -- there are
+    //  also "local indices" that must be specified (considering doing this internally),
+    //  where the "local index" of each incident face or edge is the index of the vertex
+    //  within that face or edge, and so ranging from 0-3 for incident quads and 0-1 for
+    //  incident edges.  These are assigned through similarly retrieved arrays:
+    //
+    //      LocalIndexArray FarRefineTables::baseVertexFaceLocalIndices(Index vertex)
+    //      LocalIndexArray FarRefineTables::baseVertexEdgeLocalIndices(Index vertex)
+    //
+    //  As noted, we are considering determining these internally to avoid this complexity,
+    //  but that will require iteration through the sets of vertex-faces and edges to find
+    //  the location of the vertex within each.  If that is known at the time the incident
+    //  componets are assigned, they we can avoid that separate pass.
+    //
+    //  We also need to tag vertices as manifold or not here.  Failure to do so explicitly
+    //  will require the factory analyze the local neighborhood of each component, which
+    //  is costly and often unnecessary.
+    //
 }
 
 template <class MESH>
@@ -198,12 +281,17 @@ void
 FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& refTables, MESH const& mesh)
 {
     //
-    //  This method is for specify edge and vertex creasing and face holes:
+    //  Optional tagging:
+    //      This is where any additional feature tags -- sharpness, holes, etc. -- can be
+    //  specified.  For now, this is limited to sharpness using the following:
     //
-    //  Make use of the following methods fo populate the vertex, edge and face data:
-    //      void FarRefineTables::edgeSharpness(Index edgeIndex);
-    //      void FarRefineTables::vertSharpness(Index vertIndex);
-    //      void FarRefineTables::faceHole(     Index faceIndex);
+    //      float& FarRefineTables::baseEdgeSharpness(Index edge)
+    //      float& FarRefineTables::baseVertexSharpness(Index vertex)
+    //
+    //  which can be used on the LHS of assignments.
+    //
+    //  Tagging holes will become available in the near future as sets of bitfields for
+    //  each component type are introduced and propogated through the refinement hierarchy.
     //
 }
 

@@ -31,14 +31,6 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-namespace {
-    int
-    countAndOffsetVectorSize(const std::vector<int>& vector)
-    {
-        const int* lastCountOffsetPair = &vector[vector.size() - 2];
-        return lastCountOffsetPair[0] + lastCountOffsetPair[1];
-    }
-}
 
 //
 //  Methods for the Factory base class -- general enough to warrant including in
@@ -51,9 +43,11 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 {
     VtrLevel& baseLevel = refTables.GetBaseLevel();
 
-    assert(baseLevel.vertCount() > 0);
-    assert(baseLevel.edgeCount() > 0);
-    assert(baseLevel.faceCount() > 0);
+    int vCount = baseLevel.vertCount();
+    int eCount = baseLevel.edgeCount();
+    int fCount = baseLevel.faceCount();
+
+    assert((vCount > 0) && (eCount > 0) && (fCount > 0));
 
     //
     //  This still needs a little work -- currently we are assuming all counts and offsets
@@ -61,12 +55,12 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
     //  order) and we will need to accumulate the offsets to get the total sizes.  That
     //  will require new methods on VtrLevel -- we do not want direct member access here.
     //
-    baseLevel.resizeFaceVerts(countAndOffsetVectorSize(baseLevel.mFaceVertCountsAndOffsets));
+    baseLevel.resizeFaceVerts(baseLevel.faceVertCount(fCount-1) + baseLevel.faceVertOffset(fCount-1));
     baseLevel.resizeFaceEdges(baseLevel.faceVertCount());
     baseLevel.resizeEdgeVerts();
-    baseLevel.resizeEdgeFaces(countAndOffsetVectorSize(baseLevel.mEdgeFaceCountsAndOffsets));
-    baseLevel.resizeVertFaces(countAndOffsetVectorSize(baseLevel.mVertFaceCountsAndOffsets));
-    baseLevel.resizeVertEdges(countAndOffsetVectorSize(baseLevel.mVertEdgeCountsAndOffsets));
+    baseLevel.resizeEdgeFaces(baseLevel.edgeFaceCount(eCount-1) + baseLevel.edgeFaceOffset(eCount-1));
+    baseLevel.resizeVertFaces(baseLevel.vertFaceCount(vCount-1) + baseLevel.vertFaceOffset(vCount-1));
+    baseLevel.resizeVertEdges(baseLevel.vertEdgeCount(vCount-1) + baseLevel.vertEdgeOffset(vCount-1));
 
     assert(baseLevel.faceVertCount() > 0);
     assert(baseLevel.faceEdgeCount() > 0);
@@ -79,22 +73,34 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 void
 FarRefineTablesFactoryBase::applyBoundariesToSharpness(FarRefineTables& refTables)
 {
-    VtrLevel& baseLevel = refTables.GetBaseLevel();
+    VtrLevel&  baseLevel = refTables.GetBaseLevel();
+    SdcOptions options   = refTables.GetSchemeOptions();
 
     //
-    //  Need to inspect the subd options from the factory member:
+    //  Apply (infinite) sharpness based on assigned boundary interpolation options
     //
-    bool markBoundariesBySharpness = true;
-    bool markCornersBySharpness = true;
-
-    if (markBoundariesBySharpness) {
+    //  Note/question:
+    //      - it is assumed internally that boundary edges are *always* creased to simplify
+    //  the logic of dealing with them (i.e. avoiding having to test both the sharpness and
+    //  topology to determine a crease/boundary rule -- just test the sharpness)
+    //      ? when is a vertex on a boundary NOT treated like a crease, i.e. a B-spline?
+    //          - is the EDGE_ONLY option really redundant?
+    //      - so this differs from Hbr in its implementation, but yields the same limit
+    //      ? does it matter that edges are sharpened as a side effect?
+    //      - if so, we need to crease boundary edges prior to calling SdcCrease methods
+    //
+    //bool sharpenEdges = (options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE);
+    bool sharpenEdges = true;
+    if (sharpenEdges) {
         for (int i = 0; i < baseLevel.edgeCount(); ++i) {
             if (baseLevel.mEdgeFaceCountsAndOffsets[i*2 + 0] != 2) {
                 baseLevel.mEdgeSharpness[i] = SdcCrease::INFINITE;
             }
         }
     }
-    if (markCornersBySharpness) {
+
+    bool sharpenVerts = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
+    if (sharpenVerts) {
         for (int i = 0; i < baseLevel.vertCount(); ++i) {
             if (baseLevel.mVertFaceCountsAndOffsets[i*2 + 0] == 1) {
                 baseLevel.mVertSharpness[i] = SdcCrease::INFINITE;
@@ -106,7 +112,7 @@ FarRefineTablesFactoryBase::applyBoundariesToSharpness(FarRefineTables& refTable
 void
 FarRefineTablesFactoryBase::computeBaseVertexRules(FarRefineTables& refTables)
 {
-    SdcCrease creasing;  //  Should be passing _options member here...
+    SdcCrease creasing(_schemeOptions);
 
     VtrLevel& baseLevel = refTables.GetBaseLevel();
 

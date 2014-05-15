@@ -34,9 +34,9 @@ namespace OPENSUBDIV_VERSION {
 //  Relatively trivial construction/destruction -- the base level (level[0]) needs
 //  to be explicitly initialized after construction and refinement then applied
 //
-FarRefineTables::FarRefineTables() :
-    _subdivType(TYPE_CATMARK),
-    _subdivOptions(),
+FarRefineTables::FarRefineTables(SdcType schemeType, SdcOptions schemeOptions) :
+    _subdivType(schemeType),
+    _subdivOptions(schemeOptions),
     _isUniform(true),
     _maxLevel(0),
     _levels(1)
@@ -48,6 +48,15 @@ FarRefineTables::~FarRefineTables()
 }
 
 void
+FarRefineTables::Unrefine()
+{
+    if (_levels.size()) {
+        _levels.resize(1);
+    }
+    _refinements.clear();
+}
+
+void
 FarRefineTables::Clear()
 {
     _levels.clear();
@@ -56,60 +65,8 @@ FarRefineTables::Clear()
 
 
 //
-//  Accessor to the refinement options:
-//
-bool
-FarRefineTables::IsUniform() const
-{
-    return _isUniform;
-}
-
-int
-FarRefineTables::GetMaxLevel() const
-{
-    return _maxLevel;
-}
-
-
-//
-//  Miscellaneous methods -- may not persist in the long run:
-//
-VtrLevel&
-FarRefineTables::GetBaseLevel()
-{
-    assert(_levels.size() > 0);  //  Make sure base level is always present
-
-    return _levels.front();
-}
-
-VtrLevel&
-FarRefineTables::GetLastLevel()
-{
-    assert(_levels.size() > 0);  //  Make sure base level is always present
-
-    return _levels.back();
-}
-
-
-//
 //  Accessors to the topology information:
 //
-int
-FarRefineTables::GetVertCount(int level) const
-{
-    return _levels[level].vertCount();
-}
-int
-FarRefineTables::GetEdgeCount(int level) const
-{
-    return _levels[level].edgeCount();
-}
-int
-FarRefineTables::GetFaceCount(int level) const
-{
-    return _levels[level].faceCount();
-}
-
 int
 FarRefineTables::GetVertCount() const
 {
@@ -253,7 +210,43 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology, bool compute
     }
 }
 
-
+//
+//   Below is a prototype of a method to select features for sparse refinement at each level.
+//   It assumes we have a freshly initialized VtrSparseSelector (i.e. nothing already selected)
+//   and will select all relevant topological features for inclusion in the subsequent sparse
+//   refinement.
+//
+//   A couple general points on "feature adaptive selection" in general...
+//
+//   1)  With appropriate topological tags on the components, i.e. which vertices are
+//       extra-ordinary, non-manifold, etc., there's no reason why this can't be written
+//       in a way that is independent of the subdivision scheme.  All of the creasing
+//       cases are independent, leaving only the regularity associated with the scheme.
+//
+//   2)  Since feature adaptive refinement is all about the generation of patches, it is
+//       inherently more concerned with the topology of faces than of vertices or edges.
+//       In order to fully exploit the generation of regular patches in the presence of
+//       infinitely sharp edges, we need to consider the face as a whole and not trigger
+//       refinement based on a vertex, e.g. an extra-ordinary vertex may be present, but
+//       with all infinitely sharp edges around it, every patch is potentially a regular
+//       corner.  It is currently difficult to extract all that is needed from the edges
+//       and vertices of a face, but once more tags are added to the edges and vertices,
+//       this can be greatly simplified.
+//       
+//  So once more tagging of components is in place, I favor a more face-centric approach than
+//  what exists below.  We should be able to iterate through the faces once and make optimal
+//  decisions without any additional passes through the vertices or edges here.  Most common
+//  cases will be readily detected, i.e. smooth regular patches or those with any semi-sharp
+//  feature, leaving only those with a mixture of smooth and infinitely sharp features for
+//  closer analysis.
+//
+//  Given that we cannot avoid the need to traverse the face list for level 0 in order to
+//  identify irregular faces for subdivision, we will hopefully only have to visit N faces
+//  and skip the additional traversal of the N vertices and 2*N edges present here.  The
+//  argument against the face-centric approach is that shared vertices and edges are
+//  inspected multiple times, but with relevant data stored in tags in these components,
+//  that work should be minimal.
+//
 void
 FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
 {
@@ -263,11 +256,54 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //  For faces, we only need to select irregular faces from level 0 -- which will
     //  generate an extra-ordinary vertex in its interior:
     //
+    //  Not so fast...
+    //      According to far/meshFactory.h, we must also account for the following cases:
+    //
+    //  "Quad-faces with 2 non-consecutive boundaries need to be flagged for refinement as
+    //  boundary patches."
+    //
+    //       o ........ o ........ o ........ o
+    //       .          |          |          .     ... boundary edge
+    //       .          |   needs  |          .
+    //       .          |   flag   |          .     --- regular edge
+    //       .          |          |          .
+    //       o ........ o ........ o ........ o
+    //
+    //  ... presumably because this type of "incomplete" B-spline patch is not supported by
+    //  the set of patch types in FarPatchTables (though it is regular).
+    //
+    //  And additionally we must isolate sharp corners if they are on a face with any
+    //  more boundary edges (than the two defining the corner).  So in the above diagram,
+    //  if all corners are sharp, then all three faces need to be subdivided, but only
+    //  the one level.
+    //
+    //  Fortunately this only needs to be tested at level 0 too -- its analogous to the
+    //  isolation required of extra-ordinary patches, required here for regular patches
+    //  since only a specific set of B-spline boundary patches is supported.
+    //
+    //  Arguably, for the sharp corner case, we can deal with that during the vertex
+    //  traversal, but it requires knowledge of a greater topological neighborhood than
+    //  the vertex itself -- knowledge we have when detecting the opposite boundary case
+    //  and so might as well detect here.  Whether the corner is sharp or not is irrelevant
+    //  as both the extraordinary smooth, or the regular sharp cases need isolation.
+    //
     if (level.depth() == 0) {
         for (VtrIndex face = 0; face < level.faceCount(); ++face) {
             VtrIndexArray const faceVerts = level.accessFaceVerts(face);
+
             if (faceVerts.size() != 4) {
                 selector.selectFace(face);
+            } else {
+                VtrIndexArray const faceEdges = level.accessFaceEdges(face);
+
+                int boundaryEdgeSum = (level.accessEdgeFaces(faceEdges[0]).size() == 1) +
+                                      (level.accessEdgeFaces(faceEdges[1]).size() == 1) +
+                                      (level.accessEdgeFaces(faceEdges[2]).size() == 1) +
+                                      (level.accessEdgeFaces(faceEdges[3]).size() == 1);
+                if ((boundaryEdgeSum > 2) || ((boundaryEdgeSum == 2) &&
+                    (level.accessEdgeFaces(faceEdges[0]).size() == level.accessEdgeFaces(faceEdges[2]).size()))) {
+                    selector.selectFace(face);
+                }
             }
         }
     }

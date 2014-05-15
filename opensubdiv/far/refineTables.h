@@ -37,48 +37,99 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+template <class MESH> class FarRefineTablesFactory;
+
 //
 //  Class to store topology data for a specified set of refinement options.
 //
 class FarRefineTables
 {
 public:
-    FarRefineTables();
+    typedef VtrIndex       Index;
+    typedef VtrLocalIndex  LocalIndex;
+
+    typedef VtrIndexArray      IndexArray;
+    typedef VtrLocalIndexArray LocalIndexArray;
+
+public:
+    FarRefineTables(SdcType type, SdcOptions options = SdcOptions());
     ~FarRefineTables();
 
     //  Accessors:
-    bool IsUniform() const;
-    int  GetMaxLevel() const;
+    SdcType    GetSchemeType() const    { return _subdivType; }
+    SdcOptions GetSchemeOptions() const { return _subdivOptions; }
+
+    bool IsUniform() const   { return _isUniform; }
+    int  GetMaxLevel() const { return _maxLevel; }
 
     //
-    //  The "counts" return the number of elements at a specific level
-    //  or the sum of all levels:
+    //  The "counts" return the number of components at a specific level or for the sum
+    //  of all levels:
     //
+    //  Should cache these results as members for trivial return...
     int GetVertCount() const;
-    int GetVertCount(int level) const;
-
-    int GetFaceCount() const;
-    int GetFaceCount(int level) const;
-
     int GetEdgeCount() const;
-    int GetEdgeCount(int level) const;
+    int GetFaceCount() const;
+
+    int GetVertCount(int level) const { return _levels[level].vertCount(); }
+    int GetEdgeCount(int level) const { return _levels[level].edgeCount(); }
+    int GetFaceCount(int level) const { return _levels[level].faceCount(); }
 
     //
     //  Main refinement method(s) -- we will need some variants here to support
-    //  different refinement options:
+    //  different refinement options, i.e. eventually struct RefineOptions:
     //
     void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = true,
-                                     bool computeStencilsPerLevel = false);
+                                     bool computeMasksPerLevel = false);
     void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = true,
-                                      bool computeStencilsPerLevel = false);
+                                      bool computeMasksPerLevel = false);
+
+    void Unrefine();  // Clear all but base level
+    void Clear();
 
     //  Level access for converting to/from base/last levels (ultimately these
     //  need to be protected and the required functionality provided through an
     //  extended public interface)
-    VtrLevel& GetBaseLevel();
-    VtrLevel& GetLastLevel();
+    VtrLevel& GetBaseLevel() { return _levels.front(); }
+    VtrLevel& GetLastLevel() { return _levels.back(); }
 
-    void Clear();
+protected:
+    //
+    //  For use by the Factory base and subclasses to construct the base level:
+    //
+    template <class MESH> friend class FarRefineTablesFactory;
+
+    //  Sizing specifications required before allocation:
+    void setBaseFaceCount(  int count) { _levels[0].resizeFaces(count); }
+    void setBaseEdgeCount(  int count) { _levels[0].resizeEdges(count); }
+    void setBaseVertexCount(int count) { _levels[0].resizeVerts(count); }
+
+    void setBaseFaceVertexCount(Index f, int count) { _levels[0].resizeFaceVerts(f, count); }
+    void setBaseEdgeFaceCount(  Index e, int count) { _levels[0].resizeEdgeFaces(e, count); }
+    void setBaseVertexFaceCount(Index v, int count) { _levels[0].resizeVertFaces(v, count); }
+    void setBaseVertexEdgeCount(Index v, int count) { _levels[0].resizeVertEdges(v, count); }
+
+    //  Access to populate the base level topology after allocation:
+    int        getBaseFaceCount() const  { return GetFaceCount(0); }
+    IndexArray baseFaceVertices(Index f) { return _levels[0].modifyFaceVerts(f); }
+    IndexArray baseFaceEdges(   Index f) { return _levels[0].modifyFaceEdges(f); }
+
+    int        getBaseEdgeCount() const  { return GetEdgeCount(0); }
+    IndexArray baseEdgeVertices(Index e) { return _levels[0].modifyEdgeVerts(e); }
+    IndexArray baseEdgeFaces(   Index e) { return _levels[0].modifyEdgeFaces(e); }
+
+    int        getBaseVertexCount() const { return GetVertCount(0); }
+    IndexArray baseVertexFaces(Index v)   { return _levels[0].modifyVertFaces(v); }
+    IndexArray baseVertexEdges(Index v)   { return _levels[0].modifyVertEdges(v); }
+
+    //  Not sure yet if we will determine these internally...
+    LocalIndexArray baseVertexFaceLocalIndices(Index v) { return _levels[0].modifyVertFaceLocalIndices(v); }
+    LocalIndexArray baseVertexEdgeLocalIndices(Index v) { return _levels[0].modifyVertEdgeLocalIndices(v); }
+
+    //  Optionally available to get/set sharpness values:
+    float& baseEdgeSharpness(Index e)   { return _levels[0].edgeSharpness(e); }
+    float& baseVertexSharpness(Index v) { return _levels[0].vertSharpness(v); }
+
 
 private:
     //  Prototype -- mainly for illustrative purposes right now...
