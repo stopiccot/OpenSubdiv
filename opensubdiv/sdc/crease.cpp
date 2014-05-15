@@ -86,7 +86,7 @@ SdcCrease::ComputeFractionalWeightAtVertex(float        parentVertexSharpness,
         }
     }
     if (transitionCount == 0) return 0.0f;
-    float fractionalWeight = transitionSum / transitionCount;
+    float fractionalWeight = transitionSum / (float)transitionCount;
     return (fractionalWeight > 1.0f) ? 1.0f : fractionalWeight;
 }
 
@@ -114,7 +114,7 @@ SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
     if (sharpCount > 1) {
         //  Chaikin rule is 3/4 original sharpness + 1/4 average of the others
 
-        float avgSharpnessAtVertex = (sharpSum - edgeSharpness) / (sharpCount - 1);
+        float avgSharpnessAtVertex = (sharpSum - edgeSharpness) / (float)(sharpCount - 1);
 
         edgeSharpness = (0.75f * edgeSharpness) + (0.25f * avgSharpnessAtVertex);
     }
@@ -169,7 +169,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
                     //  Need special case here anyway to avoid divide by zero below...
                     cSharp = decrementSharpness(pSharp);
                 } else {
-                    float pOtherAverage = (sharpSum - pSharp) / (sharpCount - 1);
+                    float pOtherAverage = (sharpSum - pSharp) / (float)(sharpCount - 1);
 
                     //  Chaikin rule is 3/4 original sharpness + 1/4 average of the others
                     cSharp = ((0.75f * pSharp) + (0.25f * pOtherAverage)) - 1.0f;

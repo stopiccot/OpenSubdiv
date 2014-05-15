@@ -119,12 +119,12 @@ public:
     int edgeCount() const { return _edgeCount; }
 
     //  More global sizes may prove useful...
-    int faceVertCount() const { return mFaceVertIndices.size(); }
-    int faceEdgeCount() const { return mFaceEdgeIndices.size(); }
-    int edgeVertCount() const { return mEdgeVertIndices.size(); }
-    int edgeFaceCount() const { return mEdgeFaceIndices.size(); }
-    int vertFaceCount() const { return mVertFaceIndices.size(); }
-    int vertEdgeCount() const { return mVertEdgeIndices.size(); }
+    int faceVertCount() const { return (int) mFaceVertIndices.size(); }
+    int faceEdgeCount() const { return (int) mFaceEdgeIndices.size(); }
+    int edgeVertCount() const { return (int) mEdgeVertIndices.size(); }
+    int edgeFaceCount() const { return (int) mEdgeFaceIndices.size(); }
+    int vertFaceCount() const { return (int) mVertFaceIndices.size(); }
+    int vertEdgeCount() const { return (int) mVertEdgeIndices.size(); }
 
     //  Methods to access the relation tables/indices -- note that for some relations
     //  we store an additional "local index", e.g. for the case of vert-faces if one

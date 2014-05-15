@@ -88,7 +88,7 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) c
             mask.FaceWeight(0) = 0.25f;
             mask.FaceWeight(1) = 0.25f;
         } else {
-            Weight fWeight = 0.5f / faceCount;
+            Weight fWeight = 0.5f / (Weight)faceCount;
             for (int i = 0; i < faceCount; ++i) {
                 mask.FaceWeight(i) = fWeight;
             }

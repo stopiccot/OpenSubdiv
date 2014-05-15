@@ -830,7 +830,7 @@ VtrRefinement::populateVertexFacesFromParentVertices()
             VtrIndex pFaceChildIndex = this->faceChildFaces(pFaceIndex)[pFaceVert];
             if (VtrIndexIsValid(pFaceChildIndex)) {
                 cVertFaces[cVertFaceCount] = pFaceChildIndex;
-                cVertInFace[cVertFaceCount] = (pFaceCount > 4) ? pFaceVert : 2;
+                cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceCount > 4) ? pFaceVert : 2);
                 cVertFaceCount++;
             }
         }
@@ -1249,8 +1249,8 @@ VtrRefinement::subdivideTopology()
     //  that operation.  See populateEdgeFaceCountsAndOffsets() for possibilities
     //  of pre-computing these.
     //
-    int childEdgeFaceIndexSizeEstimate = parent.mFaceVertIndices.size() * 2 +
-                                         parent.mEdgeFaceIndices.size() * 2;
+    int childEdgeFaceIndexSizeEstimate = (int)parent.mFaceVertIndices.size() * 2 +
+                                         (int)parent.mEdgeFaceIndices.size() * 2;
 
     child.mEdgeFaceCountsAndOffsets.resize(child.edgeCount() * 2);
     child.mEdgeFaceIndices.resize(         childEdgeFaceIndexSizeEstimate);
@@ -1299,9 +1299,9 @@ VtrRefinement::subdivideTopology()
     //  subd Scheme requires a "neighborhood of 1", which will have been taken into
     //  account when marking/generating children.
     //
-    int childVertFaceIndexSizeEstimate = parent.mFaceVertIndices.size()
-                                        + parent.mEdgeFaceIndices.size() * 2
-                                        + parent.mVertFaceIndices.size();
+    int childVertFaceIndexSizeEstimate = (int)parent.mFaceVertIndices.size()
+                                        + (int)parent.mEdgeFaceIndices.size() * 2
+                                        + (int)parent.mVertFaceIndices.size();
 
     child.mVertFaceCountsAndOffsets.resize(child.vertCount() * 2);
     child.mVertFaceIndices.resize(         childVertFaceIndexSizeEstimate);
@@ -1339,9 +1339,9 @@ VtrRefinement::subdivideTopology()
     //              - any end vertex will require all N child faces (catmark)
     //          - same as parent vert for verts from parent verts (catmark)
     //
-    int childVertEdgeIndexSizeEstimate = parent.mFaceVertIndices.size()
-                                       + parent.mEdgeFaceIndices.size() + parent.edgeCount() * 2
-                                       + parent.mVertEdgeIndices.size();
+    int childVertEdgeIndexSizeEstimate = (int)parent.mFaceVertIndices.size()
+                                       + (int)parent.mEdgeFaceIndices.size() + parent.edgeCount() * 2
+                                       + (int)parent.mVertEdgeIndices.size();
 
     child.mVertEdgeCountsAndOffsets.resize(child.vertCount() * 2);
     child.mVertEdgeIndices.resize(         childVertEdgeIndexSizeEstimate);

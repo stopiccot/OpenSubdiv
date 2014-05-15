@@ -305,7 +305,7 @@ SdcScheme<SCHEME>::ComputeFaceVertexMask(FACE const& face, MASK& mask) const
     mask.SetEdgeWeightCount(0);
     mask.SetFaceWeightCount(0);
 
-    typename MASK::Weight vWeight = 1.0f / vertCount;
+    typename MASK::Weight vWeight = 1.0f / (typename MASK::Weight) vertCount;
     for (int i = 0; i < vertCount; ++i) {
         mask.VertexWeight(i) = vWeight;
     }
@@ -501,7 +501,7 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
         return;  //  As done on entry, we can return immediately if parent is Smooth/Dart
     } else if (pRule == SdcCrease::RULE_CREASE) {
         assignCreaseMaskForVertex(vertex, mask, pEdgeSharpness);
-    } else if (pRule == SdcCrease::RULE_CORNER) {
+    } else {
         assignCornerMaskForVertex(vertex, mask);
     }
     if (cRule == pRule) return;
@@ -533,7 +533,7 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
         assignSmoothMaskForVertex(vertex, cMask);
     } else if (cRule == SdcCrease::RULE_CREASE) {
         assignCreaseMaskForVertex(vertex, cMask, cEdgeSharpness);
-    } else if (cRule == SdcCrease::RULE_CORNER) {
+    } else {
         assignCornerMaskForVertex(vertex, cMask);
     }
 
