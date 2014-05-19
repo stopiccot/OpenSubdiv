@@ -110,8 +110,8 @@ if (NOT NO_LIB)
         endif()
     endif()
 
-    
-    
+
+
     #---------------------------------------------------------------------------
 
     add_subdirectory(hbr)
@@ -143,6 +143,7 @@ if (NOT NO_LIB)
         STATIC
         $<TARGET_OBJECTS:sdc_obj>
         $<TARGET_OBJECTS:vtr_obj>
+        $<TARGET_OBJECTS:far_obj>
         $<TARGET_OBJECTS:osd_cpu_obj>
     )
     set_target_properties(osd_static_cpu PROPERTIES OUTPUT_NAME osdCPU CLEAN_DIRECT_OUTPUT 1)
@@ -173,7 +174,7 @@ if (NOT NO_LIB)
     if (NOT WIN32 AND NOT IOS)
 
         # Evaluate 'soname' from OSD version
- 
+
             # replace '_' with '.'
             string(REGEX REPLACE "(_)" "." OSD_SONAME ${OpenSubdiv_VERSION})
 
@@ -187,6 +188,7 @@ if (NOT NO_LIB)
             SHARED
             $<TARGET_OBJECTS:sdc_obj>
             $<TARGET_OBJECTS:vtr_obj>
+            $<TARGET_OBJECTS:far_obj>
             $<TARGET_OBJECTS:osd_cpu_obj>
         )
 
@@ -225,7 +227,7 @@ if (NOT NO_LIB)
         install( TARGETS osd_dynamic_gpu LIBRARY DESTINATION "${CMAKE_LIBDIR_BASE}" )
 
     endif()
-    
+
 endif()
 
 #-------------------------------------------------------------------------------

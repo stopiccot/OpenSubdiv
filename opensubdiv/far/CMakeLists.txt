@@ -23,6 +23,12 @@
 #
 
 #-------------------------------------------------------------------------------
+# source & headers
+set(SOURCE_FILES
+     refineTables.cpp
+     refineTablesFactory.cpp
+)
+
 set(PUBLIC_HEADER_FILES
     bilinearSubdivisionTablesFactory.h
     catmarkSubdivisionTablesFactory.h
@@ -44,8 +50,25 @@ set(PUBLIC_HEADER_FILES
     vertexEditTablesFactory.h
 )    
 
+set(PRIVATE_HEADER_FILES )
+
+set(DOXY_HEADER_FILES ${PUBLIC_HEADER_FILES})
+
 #-------------------------------------------------------------------------------
-_add_doxy_headers( "${PUBLIC_HEADER_FILES}" )
+if (NOT NO_LIB)
+
+    # Compile objs first for both the CPU and GPU libs -----
+    add_library(far_obj
+        OBJECT
+            ${SOURCE_FILES}
+            ${PRIVATE_HEADER_FILES}
+            ${PUBLIC_HEADER_FILES}
+    )
+
+endif()
+
+#-------------------------------------------------------------------------------
+_add_doxy_headers( "${DOXY_HEADER_FILES}" )
 
 install( 
     FILES
