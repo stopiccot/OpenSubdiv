@@ -25,6 +25,7 @@
 #define FAR_REFINE_TABLES_FACTORY_H
 
 #include "../version.h"
+#include "../far/refineTables.h"
 
 #include <cassert>
 
@@ -154,8 +155,11 @@ FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTo
 
     populateBaseLevel(*refTables, mesh);
 
+printf("valid base level topology = %d\n", refTables->GetBaseLevel().validateTopology());
+//refTables->GetBaseLevel().print();
+
     if (maxLevel > 0) {
-        refTables->RefineUniform(maxLevel, fullTopology);
+        refTables->RefineUniform(maxLevel, fullTopology, true);
     }
     return refTables;
 }
@@ -199,7 +203,7 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh)
+FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */)
 {
     assert("Missing specialization for FarRefineTablesFactory<MESH>::resizeComponentTopology()" == 0);
 
@@ -238,7 +242,7 @@ FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& refTables
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& refTables, MESH const& mesh)
+FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */)
 {
     assert("Missing specialization for FarRefineTablesFactory<MESH>::assignComponentTopology()" == 0);
 
@@ -278,7 +282,7 @@ FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& refTables
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& refTables, MESH const& mesh)
+FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& /* refTables */, MESH const& /* mesh */)
 {
     //
     //  Optional tagging:

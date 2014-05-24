@@ -33,6 +33,7 @@ class GLhud;
 class GLFrameBuffer {
 
 public:
+    GLFrameBuffer();
 
     GLFrameBuffer();
 

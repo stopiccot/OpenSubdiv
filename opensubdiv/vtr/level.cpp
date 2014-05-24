@@ -227,12 +227,12 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     bool printFaceChildVerts = false;
 
     bool printEdgeVerts      = true;
-    bool printEdgeFaces      = false;
+    bool printEdgeFaces      = true;
     bool printEdgeChildVerts = true;
     bool printEdgeSharpness  = true;
 
-    bool printVertFaces      = false;
-    bool printVertEdges      = false;
+    bool printVertFaces      = true;
+    bool printVertEdges      = true;
     bool printVertChildVerts = false;
     bool printVertSharpness  = true;
     bool printVertRules      = true;
@@ -324,6 +324,7 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     for (int i = 0; printVertRules && i < (int)mVertRule.size(); ++i) {
         printf("        vert %4d type:  %s\n", i, ruleString(mVertRule[i]));
     }
+    fflush(stdout);
 }
 
 } // end namespace OPENSUBDIV_VERSION
