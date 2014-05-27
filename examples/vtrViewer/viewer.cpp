@@ -52,6 +52,7 @@
 #include <common/shape_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
+#include "../common/gl_common.h"
 #include "../common/gl_hud.h"
 #include "../common/patchColors.h"
 
@@ -129,6 +130,11 @@ float g_moveScale = 0.0f;
 
 GLuint g_queries[2] = {0, 0};
 
+GLuint g_transformUB = 0,
+       g_transformBinding = 0,
+       g_lightingUB = 0,
+       g_lightingBinding = 0;
+
 struct Transform {
     float ModelViewMatrix[16];
     float ProjectionMatrix[16];
@@ -136,7 +142,8 @@ struct Transform {
 } g_transformData;
 
 GLuint g_vao = 0,
-       g_refinedVertsVAO=0;
+       g_refinedVertsVAO=0,
+       g_refinedVertsEAO=0;
 
 GLuint g_cageEdgeVAO = 0,
        g_cageEdgeVBO = 0,
@@ -155,30 +162,6 @@ struct Program
     GLuint attrColor;
 } g_defaultProgram;
 
-
-//------------------------------------------------------------------------------
-
-static void
-checkGLErrors(std::string const & where = "")
-{
-    GLuint err;
-    while ((err = glGetError()) != GL_NO_ERROR) {
-        std::cerr << "GL error: "
-                  << (where.empty() ? "" : where + " ")
-                  << err << "\n";
-    }
-}
-
-//------------------------------------------------------------------------------
-static GLuint
-compileShader(GLenum shaderType, const char *source)
-{
-    GLuint shader = glCreateShader(shaderType);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-    checkGLErrors("compileShader");
-    return shader;
-}
 
 static bool
 linkDefaultProgram()
@@ -485,21 +468,21 @@ initializeRefinedVertsVBO(OpenSubdiv::FarRefineTables * refTables) {
                                          {0.0f,  0.5f,  0.5f},
                                          {0.5f,  0.0f,  1.0f},
                                          {1.0f,  0.5f,  1.0f}};
-#endif            
+#endif
 
 #ifdef COLOR_BY_PARENT_TYPE
     static float g_parentTypeColors[4][4] = {{0.9f,  0.9f,  0.9f},
                                              {0.4f,  0.8f,  0.4f},
                                              {0.8f,  0.8f,  0.4f},
                                              {0.8f,  0.4f,  0.4f}};
-#endif            
+#endif
     delete g_refinedVertsVBO;
     g_refinedVertsVBO = OpenSubdiv::OsdCpuGLVertexBuffer::Create(6, refTables->GetVertCount());
 
     Vertex * verts = (Vertex *)g_refinedVertsVBO->BindCpuBuffer(), * lverts=verts;
 
     for (int level=0; level<=g_refTables->GetMaxLevel(); ++level) {
-    
+
         // populate coarse mesh positions
         if (level==0) {
             for (int i=0; i<g_refTables->GetVertCount(0); ++i) {
@@ -511,7 +494,7 @@ initializeRefinedVertsVBO(OpenSubdiv::FarRefineTables * refTables) {
         for (int i=0; i<g_refTables->GetVertCount(level); ++i) {
             memcpy(&lverts[i].pos[0], g_levelColors[level], sizeof(float)*3);
         }
-#endif            
+#endif
 
 #ifdef COLOR_BY_PARENT_TYPE
         if (level==0) {
@@ -558,10 +541,33 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
     delete g_refTables;
     g_refTables = refFactory.Create(conv, level, /*full topology*/ true);
 
-    Vertex * verts = initializeRefinedVertsVBO(g_refTables);
+    {
+        glBindVertexArray(g_vao);
 
+        glBindVertexArray(g_refinedVertsVAO);
 
-    g_refTables->Interpolate<Vertex>(verts, verts + g_refTables->GetVertCount(0));
+        Vertex * verts = initializeRefinedVertsVBO(g_refTables);
+
+        g_refTables->Interpolate<Vertex>(verts, verts + g_refTables->GetVertCount(0));
+
+        if (not g_refinedVertsEAO) {
+            glGenBuffers(1, &g_refinedVertsEAO);
+        }
+
+        OpenSubdiv::VtrLevel const & vtrLevel = g_refTables->GetLevel(g_level);
+        OpenSubdiv::VtrIndexArray const fverts = vtrLevel.accessFaceVerts(0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_refinedVertsEAO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, vtrLevel.faceVertCount()*sizeof(int), &fverts[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, g_refinedVertsVBO->BindVBO());
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof (GLfloat), 0);
+        glDisableVertexAttribArray(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 
     //------------------------------------------------------
     g_positions.resize(g_orgPositions.size(),0.0f);
@@ -606,6 +612,7 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
     g_scheme = scheme;
 
     updateGeom();
+    checkGLErrors("createMesh");
 }
 
 //------------------------------------------------------------------------------
@@ -743,11 +750,126 @@ drawRefinedVerts() {
     glUseProgram(0);
 }
 
+static void
+bindRefinedProgram() {
+
+    static const char *shaderSource =
+#include "shader.gen.h"
+;
+
+    static GLuint g_program=0;
+
+    // Update and bind transform state
+    if (not g_program) {
+
+        g_program = glCreateProgram();
+
+        static char const versionStr[] = "#version 330\n",
+                          vtxDefineStr[] = "#define VERTEX_SHADER\n",
+                          geoDefineStr[] = "#define GEOMETRY_SHADER\n",
+                          fragDefineStr[] = "#define FRAGMENT_SHADER\n";
+
+        std::string vsSrc = std::string(versionStr) + vtxDefineStr + shaderSource,
+                    gsSrc = std::string(versionStr) + geoDefineStr + shaderSource,
+                    fsSrc = std::string(versionStr) + fragDefineStr + shaderSource;
+
+        GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vsSrc.c_str()),
+               geometryShader = compileShader(GL_GEOMETRY_SHADER, gsSrc.c_str()),
+               fragmentShader = compileShader(GL_FRAGMENT_SHADER, fsSrc.c_str());
+
+        glAttachShader(g_program, vertexShader);
+        glAttachShader(g_program, geometryShader);
+        glAttachShader(g_program, fragmentShader);
+
+        glLinkProgram(g_program);
+
+        GLint status;
+        glGetProgramiv(g_program, GL_LINK_STATUS, &status);
+        if (status == GL_FALSE) {
+            GLint infoLogLength;
+            glGetProgramiv(g_program, GL_INFO_LOG_LENGTH, &infoLogLength);
+            char *infoLog = new char[infoLogLength];
+            glGetProgramInfoLog(g_program, infoLogLength, NULL, infoLog);
+            printf("%s\n", infoLog);
+            delete[] infoLog;
+            exit(1);
+        }
+    }
+
+    glUseProgram(g_program);
+
+    // Update and bind transform state
+    if (! g_transformUB) {
+        glGenBuffers(1, &g_transformUB);
+        glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(g_transformData), NULL, GL_STATIC_DRAW);
+    };
+    glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(g_transformData), &g_transformData);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, g_transformBinding, g_transformUB);
+
+    // Update and bind lighting state
+    struct Lighting {
+        struct Light {
+            float position[4];
+            float ambient[4];
+            float diffuse[4];
+            float specular[4];
+        } lightSource[2];
+    } lightingData = {
+       {{  { 0.5,  0.2f, 1.0f, 0.0f },
+           { 0.1f, 0.1f, 0.1f, 1.0f },
+           { 0.7f, 0.7f, 0.7f, 1.0f },
+           { 0.8f, 0.8f, 0.8f, 1.0f } },
+
+         { { -0.8f, 0.4f, -1.0f, 0.0f },
+           {  0.0f, 0.0f,  0.0f, 1.0f },
+           {  0.5f, 0.5f,  0.5f, 1.0f },
+           {  0.8f, 0.8f,  0.8f, 1.0f } }}
+    };
+    if (! g_lightingUB) {
+        glGenBuffers(1, &g_lightingUB);
+        glBindBuffer(GL_UNIFORM_BUFFER, g_lightingUB);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(lightingData), NULL, GL_STATIC_DRAW);
+    };
+    glBindBuffer(GL_UNIFORM_BUFFER, g_lightingUB);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lightingData), &lightingData);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, g_lightingBinding, g_lightingUB);
+
+    checkGLErrors("bindRefinedProgram");
+}
+
+//------------------------------------------------------------------------------
+static void
+drawRefinedQuads() {
+
+
+    glBindVertexArray(g_refinedVertsVAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_refinedVertsEAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_refinedVertsVBO->BindVBO());
+
+    bindRefinedProgram();
+
+    OpenSubdiv::VtrLevel const & level = g_refTables->GetLevel(g_level);
+
+    glDrawArrays(GL_LINES_ADJACENCY, 0, level.faceVertCount());
+
+    //glDrawElements(GL_LINES_ADJACENCY, level.faceVertCount(), GL_UNSIGNED_INT,
+    //    (void *)&(level.accessFaceVerts(0)[0]));
+
+    glUseProgram(0);
+    checkGLErrors("drawRefinedQuads");
+}
+
 //------------------------------------------------------------------------------
 static void
 display() {
 
-    g_hud.GetFrameBuffer()->Bind();
+    //g_hud.GetFrameBuffer()->Bind();
 
     Stopwatch s;
     s.Start();
@@ -779,30 +901,34 @@ display() {
     glBindVertexArray(0);
 
     glUseProgram(0);
-
+/*
     // primitive counting
     glBeginQuery(GL_PRIMITIVES_GENERATED, g_queries[0]);
 #if defined(GL_VERSION_3_3)
     glBeginQuery(GL_TIME_ELAPSED, g_queries[1]);
 #endif
-
+*/
     if (g_drawCageEdges)
         drawCageEdges();
 
     if (g_drawCageVertices)
         drawCageVertices();
 
-    drawRefinedVerts();
+    if (0)
+        drawRefinedVerts();
 
-    g_hud.GetFrameBuffer()->ApplyImageShader();
+    if (1)
+        drawRefinedQuads();
 
+    //g_hud.GetFrameBuffer()->ApplyImageShader();
     GLuint numPrimsGenerated = 0;
     GLuint timeElapsed = 0;
+/*
     glGetQueryObjectuiv(g_queries[0], GL_QUERY_RESULT, &numPrimsGenerated);
 #if defined(GL_VERSION_3_3)
     glGetQueryObjectuiv(g_queries[1], GL_QUERY_RESULT, &timeElapsed);
 #endif
-
+*/
     float drawGpuTime = timeElapsed / 1000.0f / 1000.0f;
 
     if (g_hud.IsVisible()) {
@@ -819,10 +945,9 @@ display() {
 
         g_hud.Flush();
     }
-
     glFinish();
 
-    //checkGLErrors("display leave");
+    checkGLErrors("display leave");
 }
 
 //------------------------------------------------------------------------------
@@ -1204,6 +1329,7 @@ int main(int argc, char ** argv)
     initHUD();
     rebuildOsdMesh();
 
+    checkGLErrors("before loop");
     while (g_running) {
         idle();
         display();

@@ -25,6 +25,7 @@
 # *** vtrViewer ***
 
 set(SHADER_FILES
+    shader.glsl
 )
 
 include_directories(

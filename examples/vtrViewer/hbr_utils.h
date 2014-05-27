@@ -253,7 +253,7 @@ FarRefineTablesFactory<OsdHbrConverter>::resizeComponentTopology(
     for (int i=0; i<nverts; ++i) {
 
         OsdHbrVertex * v = hmesh.GetVertex(i);
-        
+
         class GatherOperator : public OpenSubdiv::HbrHalfedgeOperator<OpenSubdiv::OsdVertex> {
 
                 OsdHbrVertex const * _v;
@@ -286,7 +286,6 @@ FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
     typedef FarRefineTables::Index           Index;
     typedef FarRefineTables::IndexArray      IndexArray;
     typedef FarRefineTables::LocalIndex      LocalIndex;
-    typedef FarRefineTables::LocalIndexArray LocalIndexArray;
 
     OsdHbrMesh const & hmesh = conv.GetHbrMesh();
 
@@ -342,7 +341,7 @@ FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
                 Index * _dstVertFaces,
                       * _dstVertEdges;
                 LocalIndex * _dstVertInFaceIndices,
-                           * _dstVertInEdgeIndices; 
+                           * _dstVertInEdgeIndices;
             public:
 
                 GatherOperator(FarRefineTables & refTables, OsdHbrConverter const & conv,
@@ -356,7 +355,7 @@ FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
                 }
 
                 virtual void operator() (OsdHbrHalfedge &e) {
-                
+
                     OsdHbrFace * f=e.GetFace();
 
                     if (f and (e.GetOrgVertex()==_v)) {
@@ -368,13 +367,13 @@ FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
                             }
                         }
                     }
-                    
+
                     *_dstVertEdges++ = _conv.GetEdgeIndex(&e);
                     *_dstVertInEdgeIndices++ = _conv.GetEdgeVertIndex(&e, _v);
                 }
 
             };
-            
+
             GatherOperator op(refTables, conv, v, i);
             v->ApplyOperatorSurroundingEdges(op);
         }
