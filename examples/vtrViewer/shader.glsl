@@ -22,6 +22,12 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+layout(std140) uniform Transform {
+    mat4 ModelViewMatrix;
+    mat4 ProjectionMatrix;
+    mat4 ModelViewProjectionMatrix;
+};
+
 struct ControlVertex {
     vec4 position;
     centroid vec4 patchCoord; // u, v, level, faceID
@@ -36,12 +42,6 @@ struct OutputVertex {
     centroid vec2 tessCoord;  // tesscoord.st
     vec3 tangent;
     vec3 bitangent;
-};
-
-layout(std140) uniform Transform {
-    mat4 ModelViewMatrix;
-    mat4 ProjectionMatrix;
-    mat4 ModelViewProjectionMatrix;
 };
 
 //--------------------------------------------------------------
@@ -174,7 +174,7 @@ main()
 
     vec4 Cf = lighting(color, inpt.v.position.xyz, N);
 
-    outColor = vec4(1.0, 0.5, 1.0, 1.0);
+    outColor = Cf;
     outNormal = N;
 }
 

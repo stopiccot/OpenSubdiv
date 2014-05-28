@@ -158,6 +158,16 @@ public:
         return _nverts;
     }
 
+    // Number of edges in the mesh
+    int GetNumEdges() const {
+        return (int)_edgeset.size();
+    }
+
+    // Returns a point to the Hbr halfege of index 'idx'
+    OpenSubdiv::HbrHalfedge<T> const * GetEdge(int idx) const {
+        return _edgeids[idx];
+    }
+
     typedef std::map<OpenSubdiv::HbrHalfedge<T> const *, int> EdgeMap;
 
     // A map of unique edges between vertices
@@ -177,6 +187,7 @@ public:
         return it->second;
     }
 
+    // Returns the edgeVertIndex for a given Hbr halfedge 'e' and vertex 'v'
     int GetEdgeVertIndex(OpenSubdiv::HbrHalfedge<T> const * e, OpenSubdiv::HbrVertex<T> const * v) const {
         assert(e and v);
         if (_edgeset.find(e)==_edgeset.end()) {
@@ -186,7 +197,21 @@ public:
         return (v==e->GetOrgVertex() ? 0:1);
     }
 
+    // Must be called after the edge map has been populated
+    void FinishEdgeMap() const {
+        // Fudge const-ness because resizeComponentTopology() passes the converter
+        // as a const. The alternative is to add an iteration loop over Hbr before,
+        // which would waste time.
+        EdgeVec * edges = const_cast<EdgeVec *>(&_edgeids);
+        edges->resize(_edgeset.size());
+        for (typename EdgeMap::const_iterator it=_edgeset.begin(); it!=_edgeset.end(); ++it) {
+            (*edges)[it->second] = it->first;
+        }
+    }
+
 private:
+
+    typedef std::vector<OpenSubdiv::HbrHalfedge<T> const *> EdgeVec;
 
     OpenSubdiv::SdcType    _type;
     OpenSubdiv::SdcOptions _options;
@@ -197,6 +222,7 @@ private:
         _nverts;
 
     EdgeMap _edgeset;
+    EdgeVec _edgeids;
 };
 
 typedef HbrConverter<OpenSubdiv::OsdVertex>               OsdHbrConverter;
@@ -221,6 +247,7 @@ FarRefineTablesFactory<OsdHbrConverter>::resizeComponentTopology(
         nverts = hmesh.GetNumVertices();
 
     OsdHbrConverter::EdgeMap & edges = const_cast<OsdHbrConverter &>(conv).GetEdges();
+    assert(edges.size()==0);
 
     // Faces and face-verts:
     refTables.setBaseFaceCount(nfaces);
@@ -229,6 +256,7 @@ FarRefineTablesFactory<OsdHbrConverter>::resizeComponentTopology(
         OsdHbrFace const * f = hmesh.GetFace(i);
 
         int nv = f->GetNumVertices();
+        assert(nv==4); // temporary until n-gons are supported
 
         refTables.setBaseFaceVertexCount(i, nv);
 
@@ -236,16 +264,19 @@ FarRefineTablesFactory<OsdHbrConverter>::resizeComponentTopology(
 
             OsdHbrHalfedge const * e = f->GetEdge(j);
             if (e->IsBoundary() or (e->GetRightFace()->GetID()>f->GetID())) {
-                edges[e] = (int)edges.size()-1;
+                int id = (int)edges.size();
+                edges[e] = id;
             }
         }
     }
 
+    conv.FinishEdgeMap();
+
     // Edges and edge-faces
     refTables.setBaseEdgeCount((int)edges.size());
-    OsdHbrConverter::EdgeMap::iterator it=edges.begin();
-    for (int i=0; it!=edges.end(); ++i, ++it) {
-        refTables.setBaseEdgeFaceCount(i, it->first->GetRightFace() ? 2 : 1);
+    for (int i=0; i!=conv.GetNumEdges(); ++i) {
+        OsdHbrHalfedge const * e = conv.GetEdge(i);
+        refTables.setBaseEdgeFaceCount(i, e->GetRightFace() ? 2 : 1);
     }
 
     // Vertices and vert-faces and vert-edges
@@ -321,8 +352,8 @@ FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
 
             //  Edge-faces
             IndexArray dstEdgeFaces = refTables.baseEdgeFaces(eidx);
-            // half-edges only have 2 faces incident to an edge (no non-manifold)
             dstEdgeFaces[0] = e->GetLeftFace()->GetID();
+            // half-edges only have 2 faces incident to an edge (no non-manifold)
             if (e->GetRightFace()) {
                 dstEdgeFaces[1] = e->GetRightFace()->GetID();
             }

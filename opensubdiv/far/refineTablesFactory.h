@@ -155,7 +155,8 @@ FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTo
 
     populateBaseLevel(*refTables, mesh);
 
-printf("valid base level topology = %d\n", refTables->GetBaseLevel().validateTopology());
+//printf("-----------------------------------------------------------------\n");
+//printf("valid base level topology = %d\n", refTables->GetBaseLevel().validateTopology());
 //refTables->GetBaseLevel().print();
 
     if (maxLevel > 0) {
