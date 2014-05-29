@@ -35,8 +35,6 @@ class GLFrameBuffer {
 public:
     GLFrameBuffer();
 
-    GLFrameBuffer();
-
     int GetWidth() const {
         return _width;
     }
