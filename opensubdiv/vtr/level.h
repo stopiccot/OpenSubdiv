@@ -203,6 +203,8 @@ public:
     VtrSharpness vertSharpness(VtrIndex vertIndex) const;
     SdcRule      vertRule(     VtrIndex vertIndex) const;
 
+    VtrIndex findEdge(VtrIndex v0Index, VtrIndex v1Index) const;
+
 protected:
     //  Note this is an external class being used for testing...
     friend class ::FarDataTables;
@@ -286,6 +288,22 @@ protected:
 
     void resizeVertEdges(VtrIndex vertIndex, int count);
     void trimVertEdges(  VtrIndex vertIndex, int count);
+
+protected:
+    //
+    //  Plans where to have a few specific friend classes properly construct the topology,
+    //  e.g. the VtrRefinement class.  There is now clearly a need to have some class
+    //  construct full topology given only a simple face-vertex list.  That can be done
+    //  externally (either a Factory outside Vtr or another Vtr construction helper), but
+    //  until we decide where, the required implementation is defined here.
+    //
+    void completeTopologyFromFaceVertices();
+    VtrIndex findEdge(VtrIndex v0, VtrIndex v1, VtrIndexArray const& v0Edges) const;
+
+    //  Methods supporting the above:
+    void orientIncidentComponents();
+    bool orderVertFacesAndEdges(int vIndex);
+    void populateLocalIndices();
 
 protected:
     //  Its debatable whether we should retain a Type or Options associated with

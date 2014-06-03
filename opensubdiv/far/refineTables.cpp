@@ -453,14 +453,20 @@ FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selecto
                 //    - will want to defer inf-sharp treatment to below
                 selectFace = true;
             } else if (!(compFaceTag._rule & SdcCrease::RULE_SMOOTH)) {
-                //  Warrants further inspection -- isolate for now
-                //    - must have at least one Crease or Corner vert
-                //    - must have hard boundary edges and/or corner verts
-                //    - need to inspect face boundaries as a whole:
-                //        - want to detect/skip the regular sharp features
-                //        - unclear which regular cases can be skipped
-                //        - need to detect and isolate opposite boundary case
+                //  None of the vertices is Smooth, so we have all vertices
+                //  either Crease or Corner -- though some may be regular
+                //  patches, this currently warrants isolation as we only
+                //  support regular patches with one corner or one boundary.
                 selectFace = true;
+            } else {
+                //  This leaves us with at least one Smooth vertex (and so two
+                //  smooth adjacent edges of the quad) and the rest hard Creases
+                //  or Corners.  This includes the regular corner and boundary
+                //  cases that we don't want to isolate, but leaves a few others
+                //  that do warrant isolation -- needing further inspection.
+                //
+                //  For now go with the boundary cases and don't isolate...
+                selectFace = false;
             }
         }
         if (selectFace) {

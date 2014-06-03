@@ -48,10 +48,6 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
     int fCount = baseLevel.faceCount();
 
     assert((vCount > 0) && (fCount > 0));
-    if (eCount == 0) {
-        printf("WARNING - no edges specified in FarRefineTablesFactory, not yet supported.\n");
-        assert(eCount > 0);
-    }
 
     //
     //  This still needs a little work -- currently we are assuming all counts and offsets
@@ -95,7 +91,7 @@ FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables&
     bool completeMissingTopology = (baseLevel.edgeCount() == 0);
     if (completeMissingTopology) {
         //  Need to invoke some VtrLevel method to "fill in" the missing topology...
-        //  baseLevel.computeTopologyFromFaceVerts();
+        baseLevel.completeTopologyFromFaceVertices();
     }
 
     bool applyValidation = false;

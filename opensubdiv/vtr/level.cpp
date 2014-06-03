@@ -28,8 +28,10 @@
 #include "../vtr/refinement.h"
 
 #include <cassert>
-#include <vector>
 #include <cstdio>
+#include <algorithm>
+#include <vector>
+#include <map>
 
 
 //
@@ -382,6 +384,520 @@ VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
     return compTag;
 }
 
+
+//
+//  What follows is an internal/anonymous class and protected methods to complete all
+//  topological relations when only the face-vertex relations is defined.
+//
+//  In keeping with the original idea that VtrLevel is just data and relies on other
+//  classes to construct it, this functionality may be warranted elsewhere, but we are
+//  collectively unclear as to where that should be at present.  In the meantime, the
+//  implementation is provided here so that we can test and make use of it.
+//
+namespace {
+    //
+    //  This is an internal helper class to manage the assembly of the tological relations
+    //  that do not have a predictable size, i.e. faces-per-edge, faces-per-vertex and
+    //  edges-per-vertex.  VtrLevel manages these with two vectors:
+    //
+    //      - a vector of integer pairs for the "counts" and "offsets"
+    //      - a vector of incident members accessed by the "offset" of each
+    //
+    //  The "dynamic relation" allocates the latter vector of members based on a typical
+    //  number of members per component, e.g. we expect valence 4 vertices in a typical
+    //  quad-mesh, and so an "expected" number might be 6 to accomodate a few x-ordinary
+    //  vertices.  The member vector is allocated with this number per component and the
+    //  counts and offsets initialized to refer to them -- but with the counts set to 0.
+    //  The count will be incremented as members are identified and entered, and if any
+    //  component "overflows" the expected number of members, the members are moved to a
+    //  separate vector in an std::map for the component.
+    //
+    //  Once all incident members have been added, the main vector is compressed and may
+    //  need to merge entries from the map in the process.
+    //
+    typedef std::map<VtrIndex, VtrIndexVector> IrregIndexMap;
+
+    class DynamicRelation {
+    public:
+        DynamicRelation(VtrIndexVector& countAndOffsets, VtrIndexVector& indices, int membersPerComp);
+        ~DynamicRelation() { }
+
+    public:
+        //  Methods dealing with the members for each component:
+        VtrIndexArray accessCompMembers(VtrIndex index);
+        void          appendCompMember(VtrIndex index, VtrIndex member);
+
+        //  Methods dealing with the components:
+        void appendComponent();
+        void compressMemberIndices();
+
+    public:
+        int _compCount;
+        int _memberCountPerComp;
+
+        VtrIndexVector & _countsAndOffsets;
+        VtrIndexVector & _regIndices;
+
+        IrregIndexMap _irregIndices;
+    };
+
+    inline
+    DynamicRelation::DynamicRelation(VtrIndexVector& countAndOffsets, VtrIndexVector& indices, int membersPerComp) :
+            _compCount(0),
+            _memberCountPerComp(membersPerComp),
+            _countsAndOffsets(countAndOffsets),
+            _regIndices(indices)
+    {
+        _compCount = (int) _countsAndOffsets.size() / 2;
+
+        for (int i = 0; i < _compCount; ++i) {
+            _countsAndOffsets[2*i]   = 0;
+            _countsAndOffsets[2*i+1] = i * _memberCountPerComp;
+        }
+        _regIndices.resize(_compCount * _memberCountPerComp);
+    }
+
+    inline VtrIndexArray
+    DynamicRelation::accessCompMembers(VtrIndex compIndex)
+    {
+        int count = _countsAndOffsets[2*compIndex];
+        if (count > _memberCountPerComp) {
+            VtrIndexVector & irregMembers = _irregIndices[compIndex];
+            return VtrIndexArray(&irregMembers[0], (int)irregMembers.size());
+        } else {
+            int offset = _countsAndOffsets[2*compIndex+1];
+            return VtrIndexArray(&_regIndices[offset], count);
+        }
+    }
+    inline void
+    DynamicRelation::appendCompMember(VtrIndex compIndex, VtrIndex memberValue)
+    {
+        int count  = _countsAndOffsets[2*compIndex];
+        int offset = _countsAndOffsets[2*compIndex+1];
+
+        if (count < _memberCountPerComp) {
+            _regIndices[offset + count] = memberValue;
+        } else {
+            VtrIndexVector& irregMembers = _irregIndices[compIndex];
+
+            if (count > _memberCountPerComp) {
+                irregMembers.push_back(memberValue);
+            } else {
+                irregMembers.resize(_memberCountPerComp + 1);
+                std::memcpy(&irregMembers[0], &_regIndices[offset], sizeof(VtrIndex) * _memberCountPerComp);
+                irregMembers[_memberCountPerComp] = memberValue;
+            }
+        }
+        _countsAndOffsets[2*compIndex] ++;
+    }
+    inline void
+    DynamicRelation::appendComponent()
+    {
+        _countsAndOffsets.push_back(0);
+        _countsAndOffsets.push_back(_compCount * _memberCountPerComp);
+
+        ++ _compCount;
+        _regIndices.resize(_compCount * _memberCountPerComp);
+    }
+    void
+    DynamicRelation::compressMemberIndices()
+    {
+        if (_irregIndices.size() == 0) {
+            int memberCount = _countsAndOffsets[0];
+            for (int i = 1; i < _compCount; ++i) {
+                int count  = _countsAndOffsets[2*i];
+                int offset = _countsAndOffsets[2*i + 1];
+
+                memmove(&_regIndices[memberCount], &_regIndices[offset], count * sizeof(VtrIndex));
+
+                _countsAndOffsets[2*i + 1] = memberCount;
+                memberCount += count;
+            }
+            _regIndices.resize(memberCount);
+        } else {
+            //  Assign new offsets-per-component while determining if we can trivially compressed in place:
+            bool cannotBeCompressedInPlace = false;
+
+            int memberCount = _countsAndOffsets[0];
+            for (int i = 1; i < _compCount; ++i) {
+                _countsAndOffsets[2*i + 1] = memberCount;
+
+                cannotBeCompressedInPlace |= (memberCount > (_memberCountPerComp * i));
+
+                memberCount += _countsAndOffsets[2*i];
+            }
+            cannotBeCompressedInPlace = (memberCount > (_memberCountPerComp * _compCount));
+
+            //  Copy members into the original or temporary vector accordingly:
+            VtrIndexVector  tmpIndices;
+            if (cannotBeCompressedInPlace) {
+                tmpIndices.resize(memberCount);
+            }
+            VtrIndexVector& dstIndices = cannotBeCompressedInPlace ? tmpIndices : _regIndices;
+            for (int i = 0; i < _compCount; ++i) {
+                int count = _countsAndOffsets[2*i];
+
+                VtrIndex *dstMembers = &dstIndices[_countsAndOffsets[2*i + 1]];
+                VtrIndex *srcMembers = (count < _memberCountPerComp)
+                                     ? &_regIndices[i * _memberCountPerComp]
+                                     : &_irregIndices[i][0];
+                memmove(dstMembers, srcMembers, count * sizeof(VtrIndex));
+            }
+            if (cannotBeCompressedInPlace) {
+                _regIndices.swap(tmpIndices);
+            } else {
+                _regIndices.resize(memberCount);
+            }
+        }
+    }
+}
+
+
+//
+//  Methods to populate the missing topology relations of the VtrLevel:
+//
+inline VtrIndex
+VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Edges) const
+{
+    if (v0Index != v1Index) {
+        for (int j = 0; j < v0Edges.size(); ++j) {
+            VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+            if ((eVerts[0] == v1Index) || (eVerts[1] == v1Index)) {
+                return v0Edges[j];
+            }
+        }
+    } else {
+        for (int j = 0; j < v0Edges.size(); ++j) {
+            VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+            if ((eVerts[0] == eVerts[1])) {
+                return v0Edges[j];
+            }
+        }
+    }
+    return VTR_INDEX_INVALID;
+}
+
+VtrIndex
+VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index) const
+{
+    return this->findEdge(v0Index, v1Index, this->accessVertEdges(v0Index));
+}
+
+void
+VtrLevel::completeTopologyFromFaceVertices()
+{
+    //
+    //  Its assumed (a pre-condition) that face-vertices have been fully specified and that we
+    //  are to construct the remaining relations:  including the edge list.  We may want to 
+    //  support the existence of the edge list too in future:
+    //
+    int vCount = this->vertCount();
+    int fCount = this->faceCount();
+    int eCount = this->edgeCount();
+    assert((vCount > 0) && (fCount > 0) && (eCount == 0));
+
+    //  May be unnecessary depending on how the vertices and faces were defined, but worth a
+    //  call to ensure all data related to verts and faces is available -- this will be a
+    //  harmless call if all has been taken care of).
+    //
+    //  Remember to resize edges similarly after the edge list has been assembled...
+    this->resizeVerts(vCount);
+    this->resizeFaces(fCount);
+    this->resizeEdges(0);
+
+    //
+    //  Resize face-edges to match face-verts and reserve for edges based on an estimate:
+    //
+    this->mFaceEdgeIndices.resize(this->faceVertCount());
+
+    int eCountEstimate = (vCount << 1);
+
+    this->mEdgeVertIndices.reserve(eCountEstimate * 2);
+    this->mEdgeFaceIndices.reserve(eCountEstimate * 2);
+
+    this->mEdgeFaceCountsAndOffsets.reserve(eCountEstimate * 2);
+
+    //
+    //  Create the dynamic relations to be populated (edge-faces will remain empty as reserved
+    //  above since there are currently no edges) and iterate through the faces to do so:
+    //
+    const int avgSize = 6;
+
+    DynamicRelation dynEdgeFaces(this->mEdgeFaceCountsAndOffsets, this->mEdgeFaceIndices, 2);
+    DynamicRelation dynVertFaces(this->mVertFaceCountsAndOffsets, this->mVertFaceIndices, avgSize);
+    DynamicRelation dynVertEdges(this->mVertEdgeCountsAndOffsets, this->mVertEdgeIndices, avgSize);
+
+    for (VtrIndex fIndex = 0; fIndex < fCount; ++fIndex) {
+        VtrIndexArray fVerts = this->accessFaceVerts(fIndex);
+        VtrIndexArray fEdges = this->modifyFaceEdges(fIndex);
+
+        for (int i = 0; i < fVerts.size(); ++i) {
+            VtrIndex v0Index = fVerts[i];
+            VtrIndex v1Index = fVerts[(i+1) % fVerts.size()];
+
+            //  Look for the edge in v0's incident edge members:
+            VtrIndexArray v0Edges = dynVertEdges.accessCompMembers(v0Index);
+
+            VtrIndex eIndex = this->findEdge(v0Index, v1Index, v0Edges);
+
+            //  Really need this edge search to go somewhere else -- particularly given the
+            //  need to handle the degenerate case (easily overlooked)...
+            /*
+            if (v0Index != v1Index) {
+                for (int j = 0; j < v0Edges.size(); ++j) {
+                    VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+                    if ((eVerts[0] == v1Index) || (eVerts[1] == v1Index)) {
+                        eIndex = v0Edges[j];
+                        break;
+                    }
+                }
+            } else {
+                for (int j = 0; j < v0Edges.size(); ++j) {
+                    VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+                    if ((eVerts[0] == eVerts[1])) {
+                        eIndex = v0Edges[j];
+                        break;
+                    }
+                }
+            }
+            */
+
+            //  If no edge found, create/append a new one:
+            if (!VtrIndexIsValid(eIndex)) {
+                eIndex = (VtrIndex) this->_edgeCount;
+
+                this->_edgeCount ++;
+                this->mEdgeVertIndices.push_back(v0Index);
+                this->mEdgeVertIndices.push_back(v1Index);
+
+                dynEdgeFaces.appendComponent();
+
+                dynVertEdges.appendCompMember(v0Index, eIndex);
+                dynVertEdges.appendCompMember(v1Index, eIndex);
+            }
+            dynEdgeFaces.appendCompMember(eIndex,  fIndex);
+            dynVertFaces.appendCompMember(v0Index, fIndex);
+
+            fEdges[i] = eIndex;
+        }
+    }
+
+    dynEdgeFaces.compressMemberIndices();
+    dynVertFaces.compressMemberIndices();
+    dynVertEdges.compressMemberIndices();
+
+    //
+    //  At this point all incident members are associated with each component.  We now need
+    //  to populate the "local indices" for each -- accounting for on-manifold potential --
+    //  and orient each set.  There is little wortwhile advantage in having the local indices
+    //  available for the orientation as the orienting code "walks" around the components
+    //  independent of their given order.  And since determining the local indices is more
+    //  involved for non-manifold vertices (needing to deal with repeated entries) we are
+    //  better of orienting to determine manifold status and then computing local indices
+    //  according to the manifold status.
+    //
+    //  Resize edges with the Level to ensure anything else related to edges is created:
+    eCount = this->edgeCount();
+    this->resizeEdges(eCount);
+
+    memset(&this->mFaceTags[0], 0, fCount * sizeof(VtrLevel::FTag));
+    memset(&this->mEdgeTags[0], 0, eCount * sizeof(VtrLevel::ETag));
+    memset(&this->mVertTags[0], 0, vCount * sizeof(VtrLevel::VTag));
+
+    for (VtrIndex eIndex = 0; eIndex < eCount; ++eIndex) {
+        VtrLevel::ETag eTag = this->mEdgeTags[eIndex];
+
+        VtrIndexArray eFaces = this->accessEdgeFaces(eIndex);
+        VtrIndexArray eVerts = this->accessEdgeVerts(eIndex);
+
+        if ((eFaces.size() < 1) || (eFaces.size() > 2)) {
+            eTag._nonManifold = true;
+        }
+        if (eVerts[0] == eVerts[1]) {
+            printf("ASSERTION - degenerate edges not yet supported!\n");
+            assert(eVerts[0] != eVerts[1]);
+
+            eTag._nonManifold = true;
+        }
+
+        //  Mark incident vertices non-manifold to avoid attempting to orient them:
+        if (eTag._nonManifold) {
+            this->mVertTags[eVerts[0]]._nonManifold = true;
+            this->mVertTags[eVerts[1]]._nonManifold = true;
+            printf("WARNING - edge %d detected non-manifold\n", eIndex);
+            printf("WARNING - verts %d and %d marked non-manifold by edge\n", eVerts[0], eVerts[1]);
+        }
+    }
+    orientIncidentComponents();
+
+    populateLocalIndices();
+}
+
+void
+VtrLevel::populateLocalIndices()
+{
+    //
+    //  We have two sets of local indices -- vert-faces and vert-edges:
+    //
+    int vCount = this->vertCount();
+
+    this->mVertFaceLocalIndices.resize(this->mVertFaceIndices.size());
+    this->mVertEdgeLocalIndices.resize(this->mVertEdgeIndices.size());
+
+    for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
+        VtrIndexArray      vFaces   = this->accessVertFaces(vIndex);
+        VtrLocalIndexArray vInFaces = this->modifyVertFaceLocalIndices(vIndex);
+
+        for (int i = 0; i < vFaces.size(); ++i) {
+            VtrIndexArray fVerts = this->accessFaceVerts(vFaces[i]);
+
+            int vInFaceIndex = std::find(fVerts.begin(), fVerts.end(), vIndex) - fVerts.begin();
+            vInFaces[i] = (VtrLocalIndex) vInFaceIndex;
+        }
+    }
+
+    for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
+        VtrIndexArray      vEdges   = this->accessVertEdges(vIndex);
+        VtrLocalIndexArray vInEdges = this->modifyVertEdgeLocalIndices(vIndex);
+
+        for (int i = 0; i < vEdges.size(); ++i) {
+            VtrIndexArray eVerts = this->accessEdgeVerts(vEdges[i]);
+
+            vInEdges[i] = (vIndex == eVerts[1]);
+        }
+    }
+}
+
+void
+VtrLevel::orientIncidentComponents()
+{
+    int vCount = this->vertCount();
+
+    for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
+        VtrLevel::VTag vTag = this->mVertTags[vIndex];
+
+        if (!vTag._nonManifold) {
+            if (!orderVertFacesAndEdges(vIndex)) {
+                printf("WARNING - vertex %d detected non-manifold by orientation\n", vIndex);
+                vTag._nonManifold = true;
+            }
+        }
+    }
+}
+
+namespace {
+    inline int
+    findInArray(VtrIndexArray const& array, VtrIndex value)
+    {
+        return std::find(array.begin(), array.end(), value) - array.begin();
+    }
+}
+
+bool
+VtrLevel::orderVertFacesAndEdges(VtrIndex vIndex)
+{
+    VtrIndexArray vEdges   = this->modifyVertEdges(vIndex);
+    VtrIndexArray vFaces   = this->modifyVertFaces(vIndex);
+
+    int fCount = vFaces.size();
+    int eCount = vEdges.size();
+
+    if ((fCount == 0) || (eCount < 2) || ((eCount - fCount) > 1)) return false;
+    
+    //
+    //  Note we have already eliminated the possibility of incident degenerate edges
+    //  and other bad edges earlier -- marking its vertices non-manifold as a result
+    //  and explicitly avoiding this method:
+    //
+    VtrIndex fStart  = VTR_INDEX_INVALID;
+    VtrIndex eStart  = VTR_INDEX_INVALID;
+    int      fvStart = 0;
+
+    if (eCount == fCount) {
+        //  Interior case -- start with the first face
+
+        fStart  = vFaces[0];
+        fvStart = findInArray(this->accessFaceVerts(fStart), vIndex);
+        eStart  = this->accessFaceEdges(fStart)[fvStart];
+    } else {
+        //  Boundary case -- start with (identify) the leading of two boundary edges:
+
+        for (int i = 0; i < eCount; ++i) {
+            VtrIndexArray const eFaces = this->accessEdgeFaces(vEdges[i]);
+            if (eFaces.size() == 1) {
+                eStart = vEdges[i];
+                fStart = eFaces[0];
+                fvStart = findInArray(this->accessFaceVerts(fStart), vIndex);
+
+                //  Singular edge -- look for forward edge to this vertex:
+                if (eStart == (this->accessFaceEdges(fStart)[fvStart])) {
+                    break;
+                }
+            }
+        }
+    }
+
+    //
+    //  We have identified a starting face, face-vert and leading edge from
+    //  which to walk counter clockwise to identify manifold neighbors.  If
+    //  this vertex is really locally manifold, we will end up back at the
+    //  starting edge or at the other singular edge of a boundary:
+    //
+    VtrIndex vFacesOrdered[fCount];
+    VtrIndex vEdgesOrdered[eCount];
+
+    int orderedEdgesCount = 1;
+    int orderedFacesCount = 1;
+
+    vFacesOrdered[0] = fStart;
+    vEdgesOrdered[0] = eStart;
+
+    VtrIndex eFirst = eStart;
+
+    while (orderedEdgesCount < eCount) {
+        //
+        //  Find the next edge, i.e. the one counter-clockwise to the last:
+        //
+        VtrIndexArray const fVerts = this->accessFaceVerts(fStart);
+        VtrIndexArray const fEdges = this->accessFaceEdges(fStart);
+
+        int      feStart = fvStart;
+        int      feNext  = feStart ? (feStart - 1) : (fVerts.size() - 1);
+        VtrIndex eNext   = fEdges[feNext];
+
+        //  Two non-manifold situations detected:
+        //      - two subsequent edges the same, i.e. a "repeated edge" in a face
+        //      - back at the start before all edges processed
+        if ((eNext == eStart) || (eNext == eFirst)) return false;
+        
+        //
+        //  Add the next edge and if more faces to visit (not at the end of
+        //  a boundary) look to its opposite face:
+        //
+        vEdgesOrdered[orderedEdgesCount++] = eNext;
+
+        if (orderedFacesCount < fCount) {
+            VtrIndexArray const eFaces = this->accessEdgeFaces(eNext);
+            
+            if (eFaces.size() == 0) return false;
+            if ((eFaces.size() == 1) && (eFaces[0] == fStart)) return false;
+
+            fStart  = eFaces[eFaces[0] == fStart];
+            fvStart = findInArray(this->accessFaceEdges(fStart), eNext);
+
+            vFacesOrdered[orderedFacesCount++] = fStart;
+        }
+        eStart = eNext;
+    }
+    assert(orderedEdgesCount == eCount);
+    assert(orderedFacesCount == fCount);
+
+    //  All faces and edges have been ordered -- apply and return:
+    std::memcpy(&vFaces[0], vFacesOrdered, fCount * sizeof(VtrIndex));
+    std::memcpy(&vEdges[0], vEdgesOrdered, eCount * sizeof(VtrIndex));
+
+    return true;
+}
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
