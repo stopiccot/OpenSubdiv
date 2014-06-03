@@ -26,6 +26,7 @@
 
 set(SHADER_FILES
     shader.glsl
+    billboard.glsl
 )
 
 include_directories(
@@ -55,6 +56,7 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 _add_glfw_executable(vtrViewer
     viewer.cpp
+    gl_fontutils.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:examples_common_obj>

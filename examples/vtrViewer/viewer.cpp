@@ -57,6 +57,7 @@
 #include "../common/patchColors.h"
 
 #include "hbr_utils.h"
+#include "gl_fontutils.h"
 
 #include <typeinfo>
 #include <cfloat>
@@ -98,7 +99,7 @@ int   g_fullscreen = 0,
       g_running = 1;
 
 int   g_displayPatchColor = 1,
-      g_drawMode = 0;
+      g_drawMode = 1;
 
 float g_rotate[2] = {0, 0},
       g_dolly = 5,
@@ -113,6 +114,9 @@ int   g_width = 1024,
       g_height = 1024;
 
 GLhud g_hud;
+
+GLFont * g_font=0;
+
 
 // performance
 float g_cpuTime = 0;
@@ -132,9 +136,7 @@ float g_moveScale = 0.0f;
 GLuint g_queries[2] = {0, 0};
 
 GLuint g_transformUB = 0,
-       g_transformBinding = 0,
-       g_lightingUB = 0,
-       g_lightingBinding = 0;
+       g_lightingUB = 0;
 
 struct Transform {
     float ModelViewMatrix[16];
@@ -528,6 +530,38 @@ initializeRefinedVertsVBO(OpenSubdiv::FarRefineTables * refTables) {
 
 //------------------------------------------------------------------------------
 static void
+createComponents() {
+
+    assert(g_font);
+    
+    g_font->Clear();
+
+    Vertex * verts = (Vertex *)g_refinedVertsVBO->BindCpuBuffer();
+
+    for(int l=0; l<=g_level; ++l) {
+
+        int nverts = g_refTables->GetVertCount(l);
+
+        if (l==g_level) {
+
+            //OpenSubdiv::VtrLevel const & level = g_refTables->GetLevel(l);
+
+            for (int i=0; i<nverts; ++i) {
+
+                static char buff[16];
+                snprintf(buff, 16, "%d", i);
+
+                g_font->Print3D( &verts[i].pos[0], buff);
+            }
+
+        } else {
+            verts += nverts;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+static void
 createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
 
     // generate Hbr representation from "obj" description
@@ -582,6 +616,8 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
+    
+    createComponents();
 
     //------------------------------------------------------
     g_positions.resize(g_orgPositions.size(),0.0f);
@@ -764,20 +800,20 @@ drawRefinedVerts() {
     glUseProgram(0);
 }
 
-//------------------------------------------------------------------------------
+
+// Update and bind transform state
 static void
-drawRefinedQuads() {
+bindProgram( char const * shaderSource,
+             GLuint * program,
+             GLuint * transformBinding=0,
+             GLuint * lightingBinding=0) {
 
-    static const char *shaderSource =
-#include "shader.gen.h"
-;
-
-    static GLuint g_program=0;
+    assert(program);
 
     // Update and bind transform state
-    if (not g_program) {
+    if (not *program) {
 
-        g_program = glCreateProgram();
+        *program = glCreateProgram();
 
         static char const versionStr[] = "#version 330\n",
                           vtxDefineStr[] = "#define VERTEX_SHADER\n",
@@ -792,19 +828,19 @@ drawRefinedQuads() {
                geometryShader = compileShader(GL_GEOMETRY_SHADER, gsSrc.c_str()),
                fragmentShader = compileShader(GL_FRAGMENT_SHADER, fsSrc.c_str());
 
-        glAttachShader(g_program, vertexShader);
-        glAttachShader(g_program, geometryShader);
-        glAttachShader(g_program, fragmentShader);
+        glAttachShader(*program, vertexShader);
+        glAttachShader(*program, geometryShader);
+        glAttachShader(*program, fragmentShader);
 
-        glLinkProgram(g_program);
+        glLinkProgram(*program);
 
         GLint status;
-        glGetProgramiv(g_program, GL_LINK_STATUS, &status);
+        glGetProgramiv(*program, GL_LINK_STATUS, &status);
         if (status == GL_FALSE) {
             GLint infoLogLength;
-            glGetProgramiv(g_program, GL_INFO_LOG_LENGTH, &infoLogLength);
+            glGetProgramiv(*program, GL_INFO_LOG_LENGTH, &infoLogLength);
             char *infoLog = new char[infoLogLength];
-            glGetProgramInfoLog(g_program, infoLogLength, NULL, infoLog);
+            glGetProgramInfoLog(*program, infoLogLength, NULL, infoLog);
             printf("%s\n", infoLog);
             delete[] infoLog;
             exit(1);
@@ -812,17 +848,109 @@ drawRefinedQuads() {
 
         GLuint uboIndex;
 
-        g_transformBinding = 0;
-        uboIndex = glGetUniformBlockIndex(g_program, "Transform");
-        if (uboIndex != GL_INVALID_INDEX)
-            glUniformBlockBinding(g_program, uboIndex, g_transformBinding);
+        if (transformBinding) {
+            *transformBinding = 0;
+            uboIndex = glGetUniformBlockIndex(*program, "Transform");
+            if (uboIndex != GL_INVALID_INDEX)
+                glUniformBlockBinding(*program, uboIndex, *transformBinding);
 
-        g_lightingBinding = 1;
-        uboIndex = glGetUniformBlockIndex(g_program, "Lighting");
-        if (uboIndex != GL_INVALID_INDEX)
-            glUniformBlockBinding(g_program, uboIndex, g_lightingBinding);
+        }
+
+        if (lightingBinding) {
+            *lightingBinding = 1;
+            uboIndex = glGetUniformBlockIndex(*program, "Lighting");
+            if (uboIndex != GL_INVALID_INDEX)
+                glUniformBlockBinding(*program, uboIndex, *lightingBinding);
+        }
     }
-    glUseProgram(g_program);
+    glUseProgram(*program);
+
+    if (transformBinding) {
+        assert(g_transformUB);
+        glBindBufferBase(GL_UNIFORM_BUFFER, *transformBinding, g_transformUB);
+    }
+
+    if (lightingBinding) {
+        assert(g_lightingUB);
+        glBindBufferBase(GL_UNIFORM_BUFFER, *lightingBinding, g_lightingUB);
+    }
+}
+
+//------------------------------------------------------------------------------
+static void
+drawRefinedQuads() {
+
+    static const char *shaderSource =
+#include "shader.gen.h"
+;
+
+    static GLuint program=0,
+                  transformBinding=0,
+                  lightingBinding=0;
+
+    bindProgram(shaderSource, &program, &transformBinding, &lightingBinding);
+
+    GLuint diffuseColor = glGetUniformLocation(program, "diffuseColor");
+    glProgramUniform4f(program, diffuseColor, 0.4f, 0.4f, 0.8f, 1);
+
+    glBindVertexArray(g_refinedVAO);
+
+    OpenSubdiv::VtrLevel const & level = g_refTables->GetLevel(g_level);
+
+    glDrawElements(GL_LINES_ADJACENCY, level.faceVertCount(), GL_UNSIGNED_INT, 0);
+
+    glUseProgram(0);
+}
+
+//------------------------------------------------------------------------------
+static void
+drawComponents() {
+
+    g_font->Draw(g_transformUB);
+}
+
+//------------------------------------------------------------------------------
+static void
+display() {
+
+    g_hud.GetFrameBuffer()->Bind();
+
+    Stopwatch s;
+    s.Start();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glViewport(0, 0, g_width, g_height);
+
+    // prepare view matrix
+    double aspect = g_width/(double)g_height;
+    identity(g_transformData.ModelViewMatrix);
+    translate(g_transformData.ModelViewMatrix, -g_pan[0], -g_pan[1], -g_dolly);
+    rotate(g_transformData.ModelViewMatrix, g_rotate[1], 1, 0, 0);
+    rotate(g_transformData.ModelViewMatrix, g_rotate[0], 0, 1, 0);
+    rotate(g_transformData.ModelViewMatrix, -90, 1, 0, 0);
+    translate(g_transformData.ModelViewMatrix,
+              -g_center[0], -g_center[1], -g_center[2]);
+    perspective(g_transformData.ProjectionMatrix,
+                45.0f, (float)aspect, 0.1f, 500.0f);
+    multMatrix(g_transformData.ModelViewProjectionMatrix,
+               g_transformData.ModelViewMatrix,
+               g_transformData.ProjectionMatrix);
+
+    glEnable(GL_DEPTH_TEST);
+
+    s.Stop();
+    float drawCpuTime = float(s.GetElapsed() * 1000.0f);
+
+    glBindVertexArray(0);
+
+    glUseProgram(0);
+
+    // primitive counting
+    glBeginQuery(GL_PRIMITIVES_GENERATED, g_queries[0]);
+#if defined(GL_VERSION_3_3)
+    glBeginQuery(GL_TIME_ELAPSED, g_queries[1]);
+#endif
 
     // Update and bind transform state
     if (! g_transformUB) {
@@ -833,8 +961,6 @@ drawRefinedQuads() {
     glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(g_transformData), &g_transformData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, g_transformBinding, g_transformUB);
 
     // Update and bind lighting state
     struct Lighting {
@@ -864,63 +990,7 @@ drawRefinedQuads() {
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lightingData), &lightingData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, g_lightingBinding, g_lightingUB);
-
-    GLuint diffuseColor = glGetUniformLocation(g_program, "diffuseColor");
-    glProgramUniform4f(g_program, diffuseColor, 0.4f, 0.4f, 0.8f, 1);
-
-    glBindVertexArray(g_refinedVAO);
-
-    OpenSubdiv::VtrLevel const & level = g_refTables->GetLevel(g_level);
-
-    glDrawElements(GL_LINES_ADJACENCY, level.faceVertCount(), GL_UNSIGNED_INT, 0);
-
-    glUseProgram(0);
-}
-
-//------------------------------------------------------------------------------
-static void
-display() {
-
-    g_hud.GetFrameBuffer()->Bind();
-
-    Stopwatch s;
-    s.Start();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glViewport(0, 0, g_width, g_height);
-
-    // prepare view matrix
-    double aspect = g_width/(double)g_height;
-    identity(g_transformData.ModelViewMatrix);
-    translate(g_transformData.ModelViewMatrix, -g_pan[0], -g_pan[1], -g_dolly);
-    rotate(g_transformData.ModelViewMatrix, g_rotate[1], 1, 0, 0);
-    rotate(g_transformData.ModelViewMatrix, g_rotate[0], 0, 1, 0);
-    rotate(g_transformData.ModelViewMatrix, -90, 1, 0, 0);
-    translate(g_transformData.ModelViewMatrix,
-              -g_center[0], -g_center[1], -g_center[2]);
-    perspective(g_transformData.ProjectionMatrix,
-                45.0f, (float)aspect, 1.0f, 500.0f);
-    multMatrix(g_transformData.ModelViewProjectionMatrix,
-               g_transformData.ModelViewMatrix,
-               g_transformData.ProjectionMatrix);
-
-    glEnable(GL_DEPTH_TEST);
-
-    s.Stop();
-    float drawCpuTime = float(s.GetElapsed() * 1000.0f);
-
-    glBindVertexArray(0);
-
-    glUseProgram(0);
-
-    // primitive counting
-    glBeginQuery(GL_PRIMITIVES_GENERATED, g_queries[0]);
-#if defined(GL_VERSION_3_3)
-    glBeginQuery(GL_TIME_ELAPSED, g_queries[1]);
-#endif
-
+    // draw stuff
     if (g_drawCageEdges)
         drawCageEdges();
 
@@ -932,6 +1002,8 @@ display() {
     } else if (g_drawMode==1) {
         drawRefinedQuads();
     }
+
+    drawComponents();
 
     g_hud.GetFrameBuffer()->ApplyImageShader();
     GLuint numPrimsGenerated = 0;
@@ -1124,6 +1196,12 @@ callbackDrawMode(int m)
     g_drawMode = m;
 }
 
+static void
+callbackScale(float value, int)
+{
+    g_font->SetFontScale(value);
+}
+
 //------------------------------------------------------------------------------
 static void
 initHUD()
@@ -1150,6 +1228,8 @@ initHUD()
     g_hud.AddPullDownButton(drawing_pulldown, "Vertices", 0, g_drawMode==0);
     g_hud.AddPullDownButton(drawing_pulldown, "Quads", 1, g_drawMode==1);
 
+    g_hud.AddSlider("Font Scale", 0.0f, 0.25f, 0.03f,
+                    -850, -100, 100, false, callbackScale, 0);
 
     for (int i = 1; i < 11; ++i) {
         char level[16];
@@ -1160,6 +1240,10 @@ initHUD()
     int shapes_pulldown = g_hud.AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
     for (int i = 0; i < (int)g_defaultShapes.size(); ++i) {
         g_hud.AddPullDownButton(shapes_pulldown, g_defaultShapes[i].name.c_str(),i, (g_currentShape==i));
+    }
+
+    if (not g_font) {
+        g_font = new GLFont( g_hud.GetFontTexture() );
     }
 }
 

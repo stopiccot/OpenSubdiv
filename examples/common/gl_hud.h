@@ -64,6 +64,10 @@ public:
         return _frameBuffer;
     }
 
+    GLuint GetFontTexture() const {
+        return _fontTexture;
+    }
+
 private:
 
 
