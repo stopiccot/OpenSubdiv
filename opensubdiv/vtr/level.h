@@ -35,6 +35,7 @@
 
 //  Forward declaration for friend class temporarily used for testing...
 class FarDataTables;
+class VtrBuilder;
 
 
 namespace OpenSubdiv {
@@ -108,6 +109,58 @@ class VtrSelector;
 class VtrLevel
 {
 public:
+    //
+    //  Simple nested types to hold the tags for each component type -- some of
+    //  which are user-specified features (e.g. whether a face is a hole or not)
+    //  while others indicate the topological nature of the component, how it
+    //  is affected by creasing in its neighborhood, etc.
+    //
+    //  Most of these properties are passed down to child components during
+    //  refinement, but some -- notably the designation of a component as semi-
+    //  sharp -- require re-determination as sharpnes values are reduced at each
+    //  level.
+    //
+    struct VTag {
+        typedef unsigned short VTagSize;
+
+        VTag() { }
+
+        VTagSize _nonManifold  : 1;  // fixed
+        VTagSize _xordinary    : 1;  // fixed
+        VTagSize _boundary     : 1;  // fixed
+        VTagSize _infSharp     : 1;  // fixed
+        VTagSize _semiSharp    : 1;  // variable
+        VTagSize _rule         : 4;  // variable when _semiSharp
+
+        //  On deck -- coming soon...
+        //VTagSize _constSharp   : 1;  // variable when _semiSharp
+        //VTagSize _hasEdits     : 1;  // variable
+        //VTagSize _editsApplied : 1;  // variable
+    };
+    struct ETag {
+        typedef unsigned char ETagSize;
+
+        ETag() { }
+
+        ETagSize _nonManifold  : 1;  // fixed
+        ETagSize _boundary     : 1;  // fixed
+        ETagSize _infSharp     : 1;  // fixed
+        ETagSize _semiSharp    : 1;  // variable
+    };
+    struct FTag {
+        typedef unsigned char FTagSize;
+
+        FTag() { }
+
+        FTagSize _hole  : 1;  // fixed
+
+        //  On deck -- coming soon...
+        //FTagSize _hasEdits : 1;  // variable
+    };
+
+    VTag getFaceCompositeVTag(VtrIndexArray const& faceVerts) const;
+
+public:
     VtrLevel();
     ~VtrLevel();
 
@@ -153,6 +206,7 @@ public:
 protected:
     //  Note this is an external class being used for testing...
     friend class ::FarDataTables;
+    friend class ::VtrBuilder;
 
     template <class MESH>
     friend class FarRefineTablesFactory;
@@ -190,7 +244,6 @@ protected:
 
     VtrSharpness& edgeSharpness(VtrIndex edgeIndex);
     VtrSharpness& vertSharpness(VtrIndex vertIndex);
-    SdcRule&      vertRule(     VtrIndex vertIndex);
 
     //
     //  Counts and offsets for all relation types:
@@ -271,15 +324,12 @@ protected:
     //      a more significant role during subdivision in mapping between parent
     //      and child components, and so has been named to reflect that more clearly.
     //
-    //  Be sure this flag is set to indicate the presence of full valid topology
-    //  (it may eventually become a mask to indicate which relations are present
-    //  if refinement is allowed to generate a subset):
-    bool _hasTopology;
 
     //  Per-face:
     std::vector<VtrIndex> mFaceVertCountsAndOffsets;  // 2 per face, redundant after level 0
     std::vector<VtrIndex> mFaceVertIndices;           // 3 or 4 per face, variable at level 0
     std::vector<VtrIndex> mFaceEdgeIndices;           // matches face-vert indices
+    std::vector<FTag>     mFaceTags;                  // 1 per face:  includes "hole" tag
 
     //  Per-edge:
     std::vector<VtrIndex> mEdgeVertIndices;           // 2 per edge
@@ -287,6 +337,7 @@ protected:
     std::vector<VtrIndex> mEdgeFaceIndices;           // varies with faces per edge
 
     std::vector<VtrSharpness> mEdgeSharpness;             // 1 per edge
+    std::vector<ETag>         mEdgeTags;                  // 1 per edge:  manifold, boundary, etc.
 
     //  Per-vertex:
     std::vector<VtrIndex>      mVertFaceCountsAndOffsets;  // 2 per vertex
@@ -298,8 +349,7 @@ protected:
     std::vector<VtrLocalIndex> mVertEdgeLocalIndices;      // varies with valence, 8-bit for now
 
     std::vector<VtrSharpness>  mVertSharpness;             // 1 per vertex
-
-    std::vector<SdcRule>       mVertRule;  // classification of vertex based on topology and sharpness
+    std::vector<VTag>          mVertTags;                  // 1 per vertex:  manifold, SdcRule, etc.
 
     //  int mRuleCounts[RULE_MAX];
     //  Note that for the above classification (Type), it is useful later to group those
@@ -523,12 +573,7 @@ VtrLevel::vertSharpness(VtrIndex vertIndex)
 inline SdcRule
 VtrLevel::vertRule(VtrIndex vertIndex) const
 {
-    return mVertRule[vertIndex];
-}
-inline SdcRule&
-VtrLevel::vertRule(VtrIndex vertIndex)
-{
-    return mVertRule[vertIndex];
+    return (SdcRule) mVertTags[vertIndex]._rule;
 }
 
 //
@@ -539,6 +584,8 @@ VtrLevel::resizeFaces(int faceCount)
 {
     _faceCount = faceCount;
     mFaceVertCountsAndOffsets.resize(2 * faceCount);
+
+    mFaceTags.resize(faceCount);
 }
 inline void
 VtrLevel::resizeFaceVerts(int totalFaceVertCount)
@@ -558,6 +605,7 @@ VtrLevel::resizeEdges(int edgeCount)
     mEdgeFaceCountsAndOffsets.resize(2 * edgeCount);
 
     mEdgeSharpness.resize(edgeCount);
+    mEdgeTags.resize(edgeCount);
 }
 inline void
 VtrLevel::resizeEdgeVerts()
@@ -578,7 +626,7 @@ VtrLevel::resizeVerts(int vertCount)
     mVertEdgeCountsAndOffsets.resize(2 * vertCount);
 
     mVertSharpness.resize(vertCount);
-    mVertRule.resize(vertCount);
+    mVertTags.resize(vertCount);
 }
 inline void
 VtrLevel::resizeVertFaces(int totalVertFaceCount)

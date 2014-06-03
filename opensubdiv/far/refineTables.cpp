@@ -24,6 +24,7 @@
 #include "../far/refineTables.h"
 
 #include <cassert>
+#include <cstdio>
 
 
 namespace OpenSubdiv {
@@ -148,16 +149,11 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology, bool compute
     //
     //  Initialize refinement options for Vtr:
     //
-    //  Enabling both parent and child tagging for now
-    bool parentTagging = true;
-    bool childTagging  = true;
-
     VtrRefinement::Options refineOptions;
+
     refineOptions._sparse           = true;
     refineOptions._faceTopologyOnly = !fullTopology;
     refineOptions._computeMasks     = computeMasks;
-    refineOptions._parentTagging    = parentTagging;
-    refineOptions._childTagging     = childTagging;
 
     for (int i = 1; i <= subdivLevel; ++i) {
         //  Keeping full topology on for debugging -- may need to go back a level and "prune"
@@ -175,17 +171,11 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology, bool compute
         //  previous refinement may include tags on its child components that are relevant,
         //  which is why the Selector identifies it.
         //
-        //  It's ebatable whether our begin/end should be moved into the feature adaptive code
-        //  that uses the Selector -- or the use of the Selector entirely for that matter...
-        //
         VtrSparseSelector selector(refinement);
         selector.setPreviousRefinement((i-1) ? &_refinements[i-2] : 0);
 
-        selector.beginSelection(parentTagging);
-
-        catmarkFeatureAdaptiveSelector(selector);
-
-        selector.endSelection();
+        catmarkFeatureAdaptiveSelectorByFace(selector);
+        //catmarkFeatureAdaptiveSelector(selector);
 
         //
         //  Continue refining if something selected, otherwise terminate refinement and trim
@@ -318,9 +308,24 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //  will eventually become extraordinary once its sharpness has decayed -- so it is
     //  both sharp and irregular.
     //
+    //  Any vertex that is a dart should be selected -- regardless of the sharpness value.
+    //  Later inspection of edge sharpness may skip some faces bounding infinitely sharp
+    //  edges (since they are regular), so the test for Dart here ensures that the ends
+    //  of edge chains are isolated.
+    //
     //  For the remaining topological cases, non-manifold vertices should be considered
-    //  along with extra-ordinary, and we should be testing a vertex tag for thats (and
-    //  maybe the extra-ordinary too)
+    //  along with extra-ordinary -- both being considered "irregular" (i.e. !regular).
+    //
+    //  Tagging considerations:
+    //      All of the above information can be embedded in a vertex tag and most of these
+    //  properties are inherited/propogate by refinement and so do not warrant repeated
+    //  re-determination at every level.  The above tags include:
+    //      - completeness (wrt parent -- can change each level -- sparse only)
+    //      - semi-sharp or "fixed Rule" (Hbr's "volatil", can change)
+    //      - Rule
+    //      - hard (infinitely sharp)
+    //      - regular (wrt both subdiv scheme and topology)
+    //      - manifold
     //
     for (VtrIndex vert = 0; vert < level.vertCount(); ++vert) {
         if (selector.isVertexIncomplete(vert)) continue;
@@ -330,6 +335,8 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
         float vertSharpness = level.vertSharpness(vert);
         if (vertSharpness > 0.0) {
             selectVertex = (level.accessVertFaces(vert).size() != 1) || (vertSharpness < SdcCrease::INFINITE);
+        } else if (level.vertRule(vert) == SdcCrease::RULE_DART) {
+            selectVertex = true;
         } else {
             VtrIndexArray const vertFaces = level.accessVertFaces(vert);
             VtrIndexArray const vertEdges = level.accessVertEdges(vert);
@@ -357,17 +364,107 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //
     //  So reject boundaries, but in a way that includes non-manifold edges for selection.
     //
+    //  If the edge is infinitely sharp, perform further inspection (of neighboring faces)
+    //  to see if the incident faces are regular -- if not, select the face, not the end
+    //  vertices.
+    //
     //  And as for vertices, skip incomplete neighboring vertices from the previous level.
     //
     for (VtrIndex edge = 0; edge < level.edgeCount(); ++edge) {
-        if ((level.edgeSharpness(edge) <= 0.0) || (level.accessEdgeFaces(edge).size() < 2)) continue;
+        float               edgeSharpness = level.edgeSharpness(edge);
+        VtrIndexArray const edgeFaces     = level.accessEdgeFaces(edge);
 
-        VtrIndexArray const edgeVerts = level.accessEdgeVerts(edge);
-        if (!selector.isVertexIncomplete(edgeVerts[0])) {
-            selector.selectVertexFaces(edgeVerts[0]);
+        if ((edgeSharpness <= 0.0) || (edgeFaces.size() < 2)) continue;
+
+        if (edgeSharpness < SdcCrease::INFINITE) {
+            //
+            //  Semi-sharp -- definitely mark both end vertices (will have been marked above
+            //  in future when semi-sharp vertex tag in place):
+            //
+            VtrIndexArray const edgeVerts = level.accessEdgeVerts(edge);
+            if (!selector.isVertexIncomplete(edgeVerts[0])) {
+                selector.selectVertexFaces(edgeVerts[0]);
+            }
+            if (!selector.isVertexIncomplete(edgeVerts[1])) {
+                selector.selectVertexFaces(edgeVerts[1]);
+            }
+        } else {
+            //
+            //  If infinitely sharp, skip this edge if all incident faces are otherwise regular
+            //  (if they are not, the vertex selection above will have marked them)
+            //
+            bool edgeFacesAreRegular = true;
+
+            for (int i = 0; i < edgeFaces.size(); ++i) {
+                VtrIndexArray const faceEdges = level.accessFaceEdges(edgeFaces[i]);
+
+                bool edgeFaceIsRegular = false;
+                if (faceEdges.size() == 4) {
+                    int singularEdgeSum = (level.edgeSharpness(faceEdges[0]) >= SdcCrease::INFINITE) +
+                                          (level.edgeSharpness(faceEdges[1]) >= SdcCrease::INFINITE) +
+                                          (level.edgeSharpness(faceEdges[2]) >= SdcCrease::INFINITE) +
+                                          (level.edgeSharpness(faceEdges[3]) >= SdcCrease::INFINITE);
+                    edgeFaceIsRegular = (singularEdgeSum == 1);
+                } else {
+                    edgeFaceIsRegular = false;
+                }
+                if (!edgeFaceIsRegular) {
+                    selector.selectFace(edgeFaces[i]);
+                }
+            }
+
+            if (!edgeFacesAreRegular) {
+                //  We need to select this edge, but only select the end vertices that are not
+                //  creases -- a crease vertex that needs isolation will be identified by other
+                //  means (e.g. a semi-sharp edge on the other side)
+                VtrIndexArray const edgeVerts = level.accessEdgeVerts(edge);
+                for (int i = 0; i < 2; ++i) {
+                    if (!selector.isVertexIncomplete(edgeVerts[i]) &&
+                        (level.vertRule(edgeVerts[i]) != SdcCrease::RULE_CREASE)) {
+                        selector.selectVertexFaces(edgeVerts[i]);
+                    }
+                }
+            }
         }
-        if (!selector.isVertexIncomplete(edgeVerts[1])) {
-            selector.selectVertexFaces(edgeVerts[1]);
+    }
+}
+
+void
+FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector)
+{
+    VtrLevel const& level = selector.getRefinement().parent();
+
+    for (VtrIndex face = 0; face < level.faceCount(); ++face) {
+        VtrIndexArray const faceVerts = level.accessFaceVerts(face);
+
+        bool selectFace = false;
+        if (faceVerts.size() != 4) {
+            selectFace = true;
+        } else {
+            VtrLevel::VTag compFaceTag = level.getFaceCompositeVTag(faceVerts);
+
+            if (compFaceTag._xordinary || compFaceTag._semiSharp) {
+                selectFace = true;
+            } else if (compFaceTag._rule & SdcCrease::RULE_DART) {
+                //  Get this case out of the way before testing hard features
+                selectFace = true;
+            } else if (compFaceTag._nonManifold) {
+                //  Warrants further inspection -- isolate for now
+                //    - will want to defer inf-sharp treatment to below
+                selectFace = true;
+            } else if (!(compFaceTag._rule & SdcCrease::RULE_SMOOTH)) {
+                //  Warrants further inspection -- isolate for now
+                //    - must have at least one Crease or Corner vert
+                //    - must have hard boundary edges and/or corner verts
+                //    - need to inspect face boundaries as a whole:
+                //        - want to detect/skip the regular sharp features
+                //        - unclear which regular cases can be skipped
+                //        - need to detect and isolate opposite boundary case
+                selectFace = true;
+            }
+        }
+        if (selectFace) {
+            selector.selectFace(face);
         }
     }
 }

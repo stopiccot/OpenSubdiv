@@ -146,6 +146,7 @@ protected:
 private:
     //  Prototype -- mainly for illustrative purposes right now...
     void catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector);
+    void catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector);
 
     template <class T> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, T * dst) const;
 

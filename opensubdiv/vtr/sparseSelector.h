@@ -38,8 +38,19 @@ class VtrRefinement;
 
 //
 //  VtrSparseSelector:
-//      This is experimental at present -- just keeing all of the functionality related to sparse
+//      This is experimental at present -- just keeping all of the functionality related to sparse
 //  refinment out of VtrRefinement for now until it matures.
+//
+//  Expected usage is as follows:
+//
+//          VtrSparseSelector selector(refinement);
+//
+//          selector.selectFace(i);
+//          selector.selectFace(j);
+//          ...
+//
+//          //  To be later followed by:
+//          refinement.refine(usingSparseSelectionOptions);
 //
 //  Since it is expected this will be protected or integrated elsewhere into another Vtr class --
 //  which will be similarly protected -- all methods intentionally begin with lower case.
@@ -52,61 +63,52 @@ public:
 
     //
     //  A previous refinement may be used to indicate whether components are fully defined or
-    //  not -- note since optional is is specified/returned by pointer rather than reference
-    //  (could make these both ptr for consistency...)
+    //  not -- note since optional it is specified/returned by pointer rather than reference
+    //  (could make these both ptr for consistency...).
     //
-    void setRefinement(VtrRefinement& refine) { _refine = &refine; }
-    void setPreviousRefinement(VtrRefinement const* refine) { _prevRefine = refine; }
-
-    VtrRefinement&       getRefinement() const         { return *_refine; }
-    VtrRefinement const* getPreviousRefinement() const { return _prevRefine; }
-
+    //  It is (increasingly) possible that this property ends up in the tags for the parent level,
+    //  in which case this refinement that generated the parent will not be necessary
     //
-    //  Methods for bracketing the selection process -- unclear if these will be needed or
-    //  if they will be more implicit:
-    //
-    void beginSelection(bool tagParentComponents);
-    void endSelection();
+    void           setRefinement(VtrRefinement& refine) { _refine = &refine; }
+    VtrRefinement& getRefinement() const                { return *_refine; }
 
-    bool isSelectionEmpty() const { return !_selected; }
-
-    bool isVertexIncomplete(VtrIndex parentVertex) const {
-        //  A parent of this refinement was child of the previous refinement:
-        return _prevRefine && _prevRefine->isChildVertexIncomplete(parentVertex);
-    }
+    void                 setPreviousRefinement(VtrRefinement const* refine) { _prevRefine = refine; }
+    VtrRefinement const* getPreviousRefinement() const                      { return _prevRefine; }
 
     //
     //  Methods for selecting (and marking) components for refinement.  All component indices
     //  refer to components in the parent:
     //
-    void selectVertex(VtrIndex parentVertex);
-    void selectEdge(  VtrIndex parentEdge);
-    void selectFace(  VtrIndex parentFace);
+    void selectVertex(VtrIndex pVertex);
+    void selectEdge(  VtrIndex pEdge);
+    void selectFace(  VtrIndex pFace);
 
-    //  Mark all incident faces of a vertex -- common in feature-adaptive to warrant inclusion
-    void selectVertexFaces(VtrIndex parentVertex);
+    //  Mark all incident faces of a vertex -- common in the original feature-adaptive scheme
+    //  to warrant inclusion, but may not be necessary if it is switch to being face-driven
+    void selectVertexFaces(VtrIndex pVertex);
 
     //
-    //  Selection of specific child components may prove useful, but doing so significanly
-    //  complicates the marking of neighboring components.  An implementation was completed
-    //  and tested, but has been disabled until it is proved to be needed.
+    //  Useful queries during or after selection:
     //
-    void selectChildEdge(VtrIndex parentEdge, int childEdge);
-    void selectChildFace(VtrIndex parentFace, int childFace);
+    bool isSelectionEmpty() const { return !_selected; }
+
+    bool isVertexIncomplete(VtrIndex pVertex) const {
+        //  A parent of this refinement was child of the previous refinement:
+        return _prevRefine && _prevRefine->_childVertexTag[pVertex]._incomplete;
+    }
 
 private:
     VtrSparseSelector() { }
-    bool isVertexFullySelected(VtrIndex parentEdge) const;
-    bool isEdgeFullySelected(VtrIndex parentEdge) const;
-    bool isFaceFullySelected(VtrIndex parentEdge) const;
-    void markChildFace(VtrIndex parentFace, int childFace, int markingMask);
-    void markSparseNeighboringComponents();
 
-    //  Two different approaches being explored -- traversing faces and edges is simple and
-    //  effective but only if child components are not specified, while traversing vertices
-    //  is relatively simple but can result in a lot of overlapping effort.
-    void markSparseNeighboringComponentsByVertex();
-    void markSparseNeighboringComponentsByEdgeAndFace();
+    bool wasVertexSelected(VtrIndex pVertex) const { return _refine->_parentVertexTag[pVertex]._selected; }
+    bool wasEdgeSelected(  VtrIndex pEdge) const   { return _refine->_parentEdgeTag[pEdge]._selected; }
+    bool wasFaceSelected(  VtrIndex pFace) const   { return _refine->_parentFaceTag[pFace]._selected; }
+
+    void markVertexSelected(VtrIndex pVertex) const { _refine->_parentVertexTag[pVertex]._selected = true; }
+    void markEdgeSelected(  VtrIndex pEdge) const   { _refine->_parentEdgeTag[pEdge]._selected = true; }
+    void markFaceSelected(  VtrIndex pFace) const   { _refine->_parentFaceTag[pFace]._selected = true; }
+
+    void markSelection();
 
 private:
     VtrRefinement*       _refine;

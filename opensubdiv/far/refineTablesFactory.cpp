@@ -47,7 +47,11 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
     int eCount = baseLevel.edgeCount();
     int fCount = baseLevel.faceCount();
 
-    assert((vCount > 0) && (eCount > 0) && (fCount > 0));
+    assert((vCount > 0) && (fCount > 0));
+    if (eCount == 0) {
+        printf("WARNING - no edges specified in FarRefineTablesFactory, not yet supported.\n");
+        assert(eCount > 0);
+    }
 
     //
     //  This still needs a little work -- currently we are assuming all counts and offsets
@@ -55,85 +59,150 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
     //  order) and we will need to accumulate the offsets to get the total sizes.  That
     //  will require new methods on VtrLevel -- we do not want direct member access here.
     //
-    baseLevel.resizeFaceVerts(baseLevel.faceVertCount(fCount-1) + baseLevel.faceVertOffset(fCount-1));
-    baseLevel.resizeFaceEdges(baseLevel.faceVertCount());
-    baseLevel.resizeEdgeVerts();
-    baseLevel.resizeEdgeFaces(baseLevel.edgeFaceCount(eCount-1) + baseLevel.edgeFaceOffset(eCount-1));
-    baseLevel.resizeVertFaces(baseLevel.vertFaceCount(vCount-1) + baseLevel.vertFaceOffset(vCount-1));
-    baseLevel.resizeVertEdges(baseLevel.vertEdgeCount(vCount-1) + baseLevel.vertEdgeOffset(vCount-1));
-
+    int fVertCount = 0;
+    for (int i = 0; i < fCount; ++i) {
+        fVertCount += baseLevel.faceVertCount(i);
+    }
+    baseLevel.resizeFaceVerts(fVertCount);
     assert(baseLevel.faceVertCount() > 0);
-    assert(baseLevel.faceEdgeCount() > 0);
-    assert(baseLevel.edgeVertCount() > 0);
-    assert(baseLevel.edgeFaceCount() > 0);
-    assert(baseLevel.vertFaceCount() > 0);
-    assert(baseLevel.vertEdgeCount() > 0);
-}
 
-void
-FarRefineTablesFactoryBase::applyBoundariesToSharpness(FarRefineTables& refTables)
-{
-    VtrLevel&  baseLevel = refTables.GetBaseLevel();
-    SdcOptions options   = refTables.GetSchemeOptions();
+    if (eCount > 0) {
+        baseLevel.resizeFaceEdges(baseLevel.faceVertCount());
+        baseLevel.resizeEdgeVerts();
+        baseLevel.resizeEdgeFaces(baseLevel.edgeFaceCount(eCount-1) + baseLevel.edgeFaceOffset(eCount-1));
+        baseLevel.resizeVertFaces(baseLevel.vertFaceCount(vCount-1) + baseLevel.vertFaceOffset(vCount-1));
+        baseLevel.resizeVertEdges(baseLevel.vertEdgeCount(vCount-1) + baseLevel.vertEdgeOffset(vCount-1));
 
-    //
-    //  Apply (infinite) sharpness based on assigned boundary interpolation options
-    //
-    //  Note/question:
-    //      - it is assumed internally that boundary edges are *always* creased to simplify
-    //  the logic of dealing with them (i.e. avoiding having to test both the sharpness and
-    //  topology to determine a crease/boundary rule -- just test the sharpness)
-    //      ? when is a vertex on a boundary NOT treated like a crease, i.e. a B-spline?
-    //          - is the EDGE_ONLY option really redundant?
-    //      - so this differs from Hbr in its implementation, but yields the same limit
-    //      ? does it matter that edges are sharpened as a side effect?
-    //      - if so, we need to crease boundary edges prior to calling SdcCrease methods
-    //
-    //bool sharpenEdges = (options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE);
-    bool sharpenEdges = true;
-    if (sharpenEdges) {
-        for (int i = 0; i < baseLevel.edgeCount(); ++i) {
-            if (baseLevel.mEdgeFaceCountsAndOffsets[i*2 + 0] != 2) {
-                baseLevel.mEdgeSharpness[i] = SdcCrease::INFINITE;
-            }
-        }
-    }
-
-    bool sharpenVerts = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
-    if (sharpenVerts) {
-        for (int i = 0; i < baseLevel.vertCount(); ++i) {
-            if (baseLevel.mVertFaceCountsAndOffsets[i*2 + 0] == 1) {
-                baseLevel.mVertSharpness[i] = SdcCrease::INFINITE;
-            }
-        }
+        assert(baseLevel.faceEdgeCount() > 0);
+        assert(baseLevel.edgeVertCount() > 0);
+        assert(baseLevel.edgeFaceCount() > 0);
+        assert(baseLevel.vertFaceCount() > 0);
+        assert(baseLevel.vertEdgeCount() > 0);
     }
 }
 
 void
-FarRefineTablesFactoryBase::computeBaseVertexRules(FarRefineTables& refTables)
+FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables& refTables)
 {
-    SdcCrease creasing(_schemeOptions);
-
     VtrLevel& baseLevel = refTables.GetBaseLevel();
 
-    float const* levelEdgeSharpness = &baseLevel.mEdgeSharpness[0];
-    float const* levelVertSharpness = &baseLevel.mVertSharpness[0];
-
-    baseLevel.mVertRule.resize(baseLevel.vertCount());
-    for (VtrIndex vIndex = 0; vIndex < baseLevel.vertCount(); ++vIndex) {
-        //
-        //  Gather incident edge sharpness for the Rule query:
-        //
-        VtrIndexArray const vEdges = baseLevel.accessVertEdges(vIndex);
-
-        float incEdgeSharpness[vEdges.size()];
-        for (int i = 0; i < vEdges.size(); ++i) {
-            incEdgeSharpness[i] = levelEdgeSharpness[vEdges[i]];
-        }
-        baseLevel.mVertRule[vIndex] = creasing.DetermineVertexVertexRule(
-                        levelVertSharpness[vIndex], vEdges.size(), incEdgeSharpness);
-
+    //
+    //  In future we may want the ability to complete aspects of the topology that are incovenient
+    //  for clients to specify, e.g. the local indices associated with some relations, orienting
+    //  the vertex relations, etc.  For the near term we'll be assuming only face-vertices have
+    //  been specified and the absence of edges will trigger the construction of everything else:
+    //
+    bool completeMissingTopology = (baseLevel.edgeCount() == 0);
+    if (completeMissingTopology) {
+        //  Need to invoke some VtrLevel method to "fill in" the missing topology...
+        //  baseLevel.computeTopologyFromFaceVerts();
     }
+
+    bool applyValidation = false;
+    if (applyValidation) {
+        if (!baseLevel.validateTopology()) {
+            printf("Invalid topology detected in FarRefineTablesFactory (%s)\n",
+                completeMissingTopology ? "partially specified and completed" : "fully specified");
+            //baseLevel.print();
+            assert(false);
+        }
+    }
+}
+
+//
+//  This method combines the initialization of component tags with the sharpening of edges and
+//  vertices according to the given boundary interpolation rule in the Options.  Since both
+//  involve traversing the edge and vertex lists and noting the presence of boundaries -- best
+//  to do both at once...
+//
+void
+FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables)
+{
+    VtrLevel&  baseLevel = refTables.GetBaseLevel();
+
+    assert((int)baseLevel.mEdgeTags.size() == baseLevel.edgeCount());
+    assert((int)baseLevel.mVertTags.size() == baseLevel.vertCount());
+    assert((int)baseLevel.mFaceTags.size() == baseLevel.faceCount());
+
+    SdcOptions options = refTables.GetSchemeOptions();
+    SdcCrease  creasing(options);
+
+    bool sharpenCornerVerts    = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
+    bool sharpenNonManFeatures = (options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP);
+
+    //
+    //  Process the Edge tags first, as Vertex tags (notably the Rule) are dependent on
+    //  properties of their incident edges.
+    //
+    for (VtrIndex eIndex = 0; eIndex < baseLevel.edgeCount(); ++eIndex) {
+        VtrLevel::ETag& eTag       = baseLevel.mEdgeTags[eIndex];
+        float&          eSharpness = baseLevel.mEdgeSharpness[eIndex];
+
+        eTag._boundary = (baseLevel.mEdgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
+        if (eTag._boundary || (eTag._nonManifold && sharpenNonManFeatures)) {
+            eSharpness = SdcCrease::INFINITE;
+        }
+        eTag._infSharp  = SdcCrease::IsInfinite(eSharpness);
+        eTag._semiSharp = SdcCrease::IsSharp(eSharpness) && !eTag._infSharp;
+    }
+
+    //
+    //  Process the Vertex tags now -- for some tags (semi-sharp and its rule) we need
+    //  to inspect all incident edges:
+    //
+    for (VtrIndex vIndex = 0; vIndex < baseLevel.vertCount(); ++vIndex) {
+        VtrLevel::VTag& vTag       = baseLevel.mVertTags[vIndex];
+        float&          vSharpness = baseLevel.mVertSharpness[vIndex];
+
+        VtrIndexArray const vEdges = baseLevel.accessVertEdges(vIndex);
+        VtrIndexArray const vFaces = baseLevel.accessVertFaces(vIndex);
+
+        //
+        //  Sharpen the vertex before determining any tags that depend on it:
+        //
+        bool isCorner = (vFaces.size() == 1) && (vEdges.size() == 2);
+        if ((isCorner && sharpenCornerVerts) || (vTag._nonManifold && sharpenNonManFeatures)) {
+            vSharpness = SdcCrease::INFINITE;
+        }
+        vTag._infSharp = SdcCrease::IsInfinite(vSharpness);
+
+        //
+        //  The semi-sharp tag and the rule both depend on incident edge sharpness, but we
+        //  don't need the actual edge sharpness values here, just whether sharp or not:
+        //
+        vTag._semiSharp = 0;
+        int sharpEdgeCount = 0;
+        for (int i = 0; i < vEdges.size(); ++i) {
+            VtrLevel::ETag const& eTag = baseLevel.mEdgeTags[vEdges[i]];
+
+            vTag._semiSharp |= eTag._semiSharp;
+            sharpEdgeCount += eTag._semiSharp | eTag._infSharp;
+        }
+        vTag._semiSharp |= SdcCrease::IsSemiSharp(vSharpness);
+
+        vTag._rule = creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
+
+        //
+        //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
+        //  tag is still being considered, but regardless, it depends on the SdcScheme...
+        //
+        assert(_schemeType == TYPE_CATMARK);
+
+        vTag._boundary = (vFaces.size() < vEdges.size());
+        if (isCorner) {
+            vTag._xordinary = !sharpenCornerVerts;
+        } else if (vTag._boundary) {
+            vTag._xordinary = (vFaces.size() != 2);
+        } else {
+            vTag._xordinary = (vFaces.size() != 4);
+        }
+    }
+
+    //
+    //  Anything more to be done with Face tags? (eventually when processing edits perhaps)
+    //
+    //  for (VtrIndex fIndex = 0; fIndex < baseLevel.faceCount(); ++fIndex) {
+    //  }
 }
 
 } // end namespace OPENSUBDIV_VERSION

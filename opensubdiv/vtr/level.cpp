@@ -66,8 +66,7 @@ VtrLevel::VtrLevel() :
     _faceCount(0),
     _edgeCount(0),
     _vertCount(0),
-    _depth(0),
-    _hasTopology(false)
+    _depth(0)
 {
 }
 
@@ -208,6 +207,7 @@ namespace {
     ruleString(SdcRule rule)
     {
         switch (rule) {
+            case SdcCrease::RULE_UNKNOWN: return "<uninitialized>";
             case SdcCrease::RULE_SMOOTH:  return "Smooth";
             case SdcCrease::RULE_DART:    return "Dart";
             case SdcCrease::RULE_CREASE:  return "Crease";
@@ -225,17 +225,19 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     bool printFaceVerts      = true;
     bool printFaceEdges      = true;
     bool printFaceChildVerts = false;
+    bool printFaceTags       = true;
 
     bool printEdgeVerts      = true;
     bool printEdgeFaces      = true;
     bool printEdgeChildVerts = true;
     bool printEdgeSharpness  = true;
+    bool printEdgeTags       = true;
 
     bool printVertFaces      = true;
     bool printVertEdges      = true;
     bool printVertChildVerts = false;
     bool printVertSharpness  = true;
-    bool printVertRules      = true;
+    bool printVertTags       = true;
 
     printf("Level (0x%p):\n", this);
     printf("  Depth = %d\n", _depth);
@@ -258,6 +260,13 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     for (int i = 0; printFaceEdges && i < faceCount(); ++i) {
         printf("        face %4d edges:  ", i);
         printIndexArray(accessFaceEdges(i));
+    }
+    printf("      face tags = %lu\n", mFaceTags.size());
+    for (int i = 0; printFaceTags && i < (int)mFaceTags.size(); ++i) {
+        FTag const& fTag = mFaceTags[i];
+        printf("        face %4d:", i);
+        printf("  hole = %d",  (int)fTag._hole);
+        printf("\n");
     }
     if (pRefinement) {
         printf("      face child-verts = %lu\n", pRefinement->_faceChildVertIndex.size());
@@ -287,6 +296,15 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     printf("      edge sharpness = %lu\n", mEdgeSharpness.size());
     for (int i = 0; printEdgeSharpness && i < (int)mEdgeSharpness.size(); ++i) {
         printf("        edge %4d sharpness:  %f\n", i, mEdgeSharpness[i]);
+    }
+    printf("      edge tags = %lu\n", mEdgeTags.size());
+    for (int i = 0; printEdgeTags && i < (int)mEdgeTags.size(); ++i) {
+        ETag const& eTag = mEdgeTags[i];
+        printf("        edge %4d:", i);
+        printf("  boundary = %d",  (int)eTag._boundary);
+        printf(", semiSharp = %d", (int)eTag._semiSharp);
+        printf(", infSharp = %d",  (int)eTag._infSharp);
+        printf("\n");
     }
 
     printf("    Vert relations:\n");
@@ -320,12 +338,50 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     for (int i = 0; printVertSharpness && i < (int)mVertSharpness.size(); ++i) {
         printf("        vert %4d sharpness:  %f\n", i, mVertSharpness[i]);
     }
-    printf("      vert rules = %lu\n", mVertRule.size());
-    for (int i = 0; printVertRules && i < (int)mVertRule.size(); ++i) {
-        printf("        vert %4d type:  %s\n", i, ruleString(mVertRule[i]));
+    printf("      vert tags = %lu\n", mVertTags.size());
+    for (int i = 0; printVertTags && i < (int)mVertTags.size(); ++i) {
+        VTag const& vTag = mVertTags[i];
+        printf("        vert %4d:", i);
+        printf("  rule = %s",      ruleString((SdcRule)vTag._rule));
+        printf(", boundary = %d",  (int)vTag._boundary);
+        printf(", xordinary = %d", (int)vTag._xordinary);
+        printf(", semiSharp = %d", (int)vTag._semiSharp);
+        printf(", infSharp = %d",  (int)vTag._infSharp);
+        printf("\n");
     }
     fflush(stdout);
 }
+
+
+namespace {
+    template <typename TAG_TYPE, typename INT_TYPE>
+    void
+    combineTags(TAG_TYPE& dstTag, TAG_TYPE const& srcTag)
+    {
+        INT_TYPE const* srcInt = reinterpret_cast<INT_TYPE const*>(&srcTag);
+        INT_TYPE *      dstInt = reinterpret_cast<INT_TYPE *>     (&dstTag);
+
+        *dstInt |= *srcInt;
+    }
+}
+
+VtrLevel::VTag
+VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
+{
+    VTag compTag = mVertTags[faceVerts[0]];
+
+    for (int i = 1; i < faceVerts.size(); ++i) {
+        VTag const& vertTag = mVertTags[faceVerts[i]];
+
+        if (sizeof(VTag) == sizeof(unsigned short)) {
+            combineTags<VTag, unsigned short>(compTag, vertTag);
+        } else {
+            assert("VTag size is uint_32 -- need to adjust composite tag code..." == 0);
+        }
+    }
+    return compTag;
+}
+
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

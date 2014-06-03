@@ -74,8 +74,9 @@ public:
 
 protected:
     void validateComponentTopologySizing(FarRefineTables& refTables);
-    void applyBoundariesToSharpness(FarRefineTables& refTables);
-    void computeBaseVertexRules(FarRefineTables& refTables);
+    void validateComponentTopologyAssignment(FarRefineTables& refTables);
+
+    void applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables);
 
 protected:
     SdcType    _schemeType;
@@ -155,12 +156,10 @@ FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTo
 
     populateBaseLevel(*refTables, mesh);
 
-//printf("-----------------------------------------------------------------\n");
-//printf("valid base level topology = %d\n", refTables->GetBaseLevel().validateTopology());
-//refTables->GetBaseLevel().print();
-
     if (maxLevel > 0) {
-        refTables->RefineUniform(maxLevel, fullTopology, true);
+        //  I really dislike the idea of computing masks by default here...
+        bool computeMasks = true;
+        refTables->RefineUniform(maxLevel, fullTopology, computeMasks);
     }
     return refTables;
 }
@@ -169,8 +168,6 @@ template <class MESH>
 void
 FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH const& mesh)
 {
-    VtrLevel& level = refTables.GetBaseLevel();
-
     //
     //  The following three methods may end up virtual:
     //      - resize the component counts and relation counts for individual components:
@@ -188,18 +185,13 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
     //  Required specialization for MESH:
     assignComponentTopology(refTables, mesh);
 
+    validateComponentTopologyAssignment(refTables);
+
     //  Optional specialization for MESH:
     assignComponentTags(refTables, mesh);
 
-    level._hasTopology = true;
-
-    //
     //  Finalize the translation of the mesh after its full specification above:
-    //
-    applyBoundariesToSharpness(refTables);
-
-    //  Unclear if this is warranted now, or if it should be computed later if/when needed
-    computeBaseVertexRules(refTables);
+    applyComponentTagsAndBoundarySharpness(refTables);
 }
 
 template <class MESH>

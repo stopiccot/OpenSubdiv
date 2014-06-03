@@ -60,25 +60,27 @@ namespace OPENSUBDIV_VERSION {
 class SdcCrease {
 public:
     //
-    //  There is little reason to make sharpness anything other than a float -- maybe
-    //  half-float, but double is unnecessary.  So is a typedef for Sharpness worthwhile?
+    //  Constants and related queries of sharpness values:
     //
-    //typedef float Sharpness;
-
     static float const SMOOTH;    // =  0.0f, do we really need this?
     static float const INFINITE;  // = 10.0f;
 
+    static bool IsSmooth(float sharpness)    { return sharpness <= SMOOTH; }
+    static bool IsSharp(float sharpness)     { return sharpness > SMOOTH; }
+    static bool IsInfinite(float sharpness)  { return sharpness >= INFINITE; }
+    static bool IsSemiSharp(float sharpness) { return (SMOOTH < sharpness) && (sharpness < INFINITE); }
+
     //
     //  Enum for the types of subdivision rules applied based on sharpness values (note these
-    //  correspond to Hbr's vertex "mask" + 1).  Note that the values explicitly assigned the
-    //  enumerations correspond to the number of sharp edges encountered + 1 (Corner >= 4).
+    //  correspond to Hbr's vertex "mask").  The values are assigned to bit positions as it is
+    //  useful to OR the corners of faces to quickly inspect its applicable rules.
     //
     enum Rule {
         RULE_UNKNOWN = 0,
-        RULE_SMOOTH  = 1,
-        RULE_DART    = 2,
-        RULE_CREASE  = 3,
-        RULE_CORNER  = 4
+        RULE_SMOOTH  = (1 << 0),
+        RULE_DART    = (1 << 1),
+        RULE_CREASE  = (1 << 2),
+        RULE_CORNER  = (1 << 3)
     };
 
 public:
@@ -140,6 +142,8 @@ public:
     Rule DetermineVertexVertexRule(float        vertexSharpness,
                                    int          incidentEdgeCount,
                                    float const* incidentEdgeSharpness) const;
+    Rule DetermineVertexVertexRule(float        vertexSharpness,
+                                   int          sharpEdgeCount) const;
 
     //
     //  Transitional weighting:
@@ -178,17 +182,6 @@ public:
     //  Rule DetermineEdgeVertexRule(float childEdge1Sharpness, float childEdge2Sharpness) const;
 
 protected:
-    //
-    //  Unclear if its worth making these public -- may encourage decision making on the users
-    //  part that may be flawed and better left to public methods here (and Hbr has similar
-    //  methods that behave differently, e.g. IsSharp(), which may lead to confusion)...
-    //
-    //  Also consider making these static.
-    //
-    bool isSmooth(float sharpness) const   { return sharpness <= SMOOTH; }
-    bool isInfinite(float sharpness) const { return sharpness >= INFINITE; }
-    bool isSharp(float sharpness) const    { return !isSmooth(sharpness); }
-
     float decrementSharpness(float sharpness) const;
 
 private:
@@ -235,8 +228,8 @@ SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
 inline float
 SdcCrease::decrementSharpness(float sharpness) const
 {
-    if (isSmooth(sharpness)) return SdcCrease::SMOOTH;  // redundant but most common
-    if (isInfinite(sharpness)) return SdcCrease::INFINITE;
+    if (IsSmooth(sharpness)) return SdcCrease::SMOOTH;  // redundant but most common
+    if (IsInfinite(sharpness)) return SdcCrease::INFINITE;
     if (sharpness > 1.0f) return (sharpness - 1.0f);
     return SdcCrease::SMOOTH;
 }
