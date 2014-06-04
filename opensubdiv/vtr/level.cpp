@@ -29,6 +29,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <algorithm>
 #include <vector>
 #include <map>
