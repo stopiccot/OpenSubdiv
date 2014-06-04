@@ -33,11 +33,6 @@
 #include <vector>
 
 
-//  Forward declaration for friend class temporarily used for testing...
-class FarDataTables;
-class VtrBuilder;
-
-
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
@@ -206,10 +201,6 @@ public:
     VtrIndex findEdge(VtrIndex v0Index, VtrIndex v1Index) const;
 
 protected:
-    //  Note this is an external class being used for testing...
-    friend class ::FarDataTables;
-    friend class ::VtrBuilder;
-
     template <class MESH>
     friend class FarRefineTablesFactory;
     friend class FarRefineTablesFactoryBase;

@@ -539,7 +539,7 @@ namespace {
                 int count = _countsAndOffsets[2*i];
 
                 VtrIndex *dstMembers = &dstIndices[_countsAndOffsets[2*i + 1]];
-                VtrIndex *srcMembers = (count < _memberCountPerComp)
+                VtrIndex *srcMembers = (count <= _memberCountPerComp)
                                      ? &_regIndices[i * _memberCountPerComp]
                                      : &_irregIndices[i][0];
                 memmove(dstMembers, srcMembers, count * sizeof(VtrIndex));
@@ -706,7 +706,7 @@ VtrLevel::completeTopologyFromFaceVertices()
     memset(&this->mVertTags[0], 0, vCount * sizeof(VtrLevel::VTag));
 
     for (VtrIndex eIndex = 0; eIndex < eCount; ++eIndex) {
-        VtrLevel::ETag eTag = this->mEdgeTags[eIndex];
+        VtrLevel::ETag& eTag = this->mEdgeTags[eIndex];
 
         VtrIndexArray eFaces = this->accessEdgeFaces(eIndex);
         VtrIndexArray eVerts = this->accessEdgeVerts(eIndex);
@@ -725,8 +725,6 @@ VtrLevel::completeTopologyFromFaceVertices()
         if (eTag._nonManifold) {
             this->mVertTags[eVerts[0]]._nonManifold = true;
             this->mVertTags[eVerts[1]]._nonManifold = true;
-            printf("WARNING - edge %d detected non-manifold\n", eIndex);
-            printf("WARNING - verts %d and %d marked non-manifold by edge\n", eVerts[0], eVerts[1]);
         }
     }
     orientIncidentComponents();
@@ -779,7 +777,6 @@ VtrLevel::orientIncidentComponents()
 
         if (!vTag._nonManifold) {
             if (!orderVertFacesAndEdges(vIndex)) {
-                printf("WARNING - vertex %d detected non-manifold by orientation\n", vIndex);
                 vTag._nonManifold = true;
             }
         }

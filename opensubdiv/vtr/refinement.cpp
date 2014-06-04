@@ -1430,8 +1430,21 @@ VtrRefinement::reclassifySemisharpVertices()
         VtrLevel::VTag& cVertTag = _child->mVertTags[cVert];
         if (!cVertTag._semiSharp) continue;
 
-        //VtrIndex pEdge = _childVertexParentIndex[cVert];
-        // ...
+        VtrIndex pEdge = _childVertexParentIndex[cVert];
+
+        VtrIndexArray const cEdges = edgeChildEdges(pEdge);
+
+        if (_childVertexTag[cVert]._incomplete) {
+            //  One child edge likely missing -- assume Crease if remaining edge semi-sharp:
+            cVertTag._semiSharp = (VtrIndexIsValid(cEdges[0]) && _child->mEdgeTags[cEdges[0]]._semiSharp) ||
+                                  (VtrIndexIsValid(cEdges[1]) && _child->mEdgeTags[cEdges[1]]._semiSharp);
+            cVertTag._rule      = cVertTag._semiSharp ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+        } else {
+            int sharpEdgeCount = _child->mEdgeTags[cEdges[0]]._semiSharp + _child->mEdgeTags[cEdges[1]]._semiSharp;
+
+            cVertTag._semiSharp = (sharpEdgeCount > 0);
+            cVertTag._rule      = creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount);
+        }
     }
 
     //

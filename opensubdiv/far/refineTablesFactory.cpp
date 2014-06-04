@@ -154,27 +154,37 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         VtrIndexArray const vFaces = baseLevel.accessVertFaces(vIndex);
 
         //
-        //  Sharpen the vertex before determining any tags that depend on it:
+        //  Take inventory of properties of incident edges that affect this vertex:
         //
-        bool isCorner = (vFaces.size() == 1) && (vEdges.size() == 2);
-        if ((isCorner && sharpenCornerVerts) || (vTag._nonManifold && sharpenNonManFeatures)) {
-            vSharpness = SdcCrease::INFINITE;
-        }
-        vTag._infSharp = SdcCrease::IsInfinite(vSharpness);
-
-        //
-        //  The semi-sharp tag and the rule both depend on incident edge sharpness, but we
-        //  don't need the actual edge sharpness values here, just whether sharp or not:
-        //
-        vTag._semiSharp = 0;
-        int sharpEdgeCount = 0;
+        int infSharpEdgeCount    = 0;
+        int semiSharpEdgeCount   = 0;
+        int nonManifoldEdgeCount = 0;
         for (int i = 0; i < vEdges.size(); ++i) {
             VtrLevel::ETag const& eTag = baseLevel.mEdgeTags[vEdges[i]];
 
-            vTag._semiSharp |= eTag._semiSharp;
-            sharpEdgeCount += eTag._semiSharp | eTag._infSharp;
+            infSharpEdgeCount    += eTag._infSharp;
+            semiSharpEdgeCount   += eTag._semiSharp;
+            nonManifoldEdgeCount += eTag._nonManifold;
         }
-        vTag._semiSharp |= SdcCrease::IsSemiSharp(vSharpness);
+        int sharpEdgeCount = infSharpEdgeCount + semiSharpEdgeCount;
+
+        //
+        //  Sharpen the vertex before using it in conjunction with incident edge
+        //  properties to determine the semi-sharp tag and rule:
+        //
+        bool isCorner = (vFaces.size() == 1) && (vEdges.size() == 2);
+        if (isCorner && sharpenCornerVerts) {
+            vSharpness = SdcCrease::INFINITE;
+        } else if (vTag._nonManifold && sharpenNonManFeatures) {
+            //  Don't sharpen the vertex if a non-manifold crease:
+            if (nonManifoldEdgeCount != 2) {
+                vSharpness = SdcCrease::INFINITE;
+            }
+        }
+
+        vTag._infSharp = SdcCrease::IsInfinite(vSharpness);
+
+        vTag._semiSharp = SdcCrease::IsSemiSharp(vSharpness) || (semiSharpEdgeCount > 0);
 
         vTag._rule = creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
 
