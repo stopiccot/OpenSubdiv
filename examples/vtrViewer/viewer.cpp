@@ -49,7 +49,10 @@
 #include <osd/error.h>
 #include <osd/vertex.h>
 #include <osd/cpuGLVertexBuffer.h>
-#include <common/shape_utils.h>
+
+#include <common/hbr_utils.h>
+#include <common/vtr_utils.h>
+
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_common.h"
@@ -533,7 +536,7 @@ static void
 createComponents() {
 
     assert(g_font);
-    
+
     g_font->Clear();
 
     Vertex * verts = (Vertex *)g_refinedVertsVBO->BindCpuBuffer();
@@ -562,19 +565,16 @@ createComponents() {
 
 //------------------------------------------------------------------------------
 static void
-createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
+createMesh( const std::string &obj, int level, Scheme scheme=kCatmark ) {
 
-    // generate Hbr representation from "obj" description
-    OsdHbrMesh * hmesh = simpleHbr<OpenSubdiv::OsdVertex>(shape.c_str(), scheme, g_orgPositions, /*fvar*/false);
-
-    typedef HbrConverter<OpenSubdiv::OsdVertex> HbrConverter;
-
-    HbrConverter conv(*hmesh);
-
-    OpenSubdiv::FarRefineTablesFactory<HbrConverter> refFactory(conv.GetType(), conv.GetOptions());
-
+    Shape * shape = Shape::parseObj(obj.c_str(), scheme);
+   
     delete g_refTables;
-    g_refTables = refFactory.Create(conv, level, /*full topology*/ true);
+    OpenSubdiv::FarRefineTablesFactory<Shape> refFactory(GetSdcType(*shape), GetSdcOptions(*shape));
+    g_refTables = refFactory.Create(*shape, level, /*full topology*/ true);
+
+    g_orgPositions.resize(shape->GetNumVertices()*3);
+    std::copy(shape->verts.begin(), shape->verts.end(), g_orgPositions.begin());
 
     {
         glBindVertexArray(g_vao);
@@ -616,7 +616,7 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
-    
+
     createComponents();
 
     //------------------------------------------------------
@@ -626,19 +626,19 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
     g_coarseEdges.clear();
     g_coarseEdgeSharpness.clear();
     g_coarseVertexSharpness.clear();
-    int nf = hmesh->GetNumFaces();
-    for(int i=0; i<nf; ++i) {
-        OsdHbrFace *face = hmesh->GetFace(i);
-        int nv = face->GetNumVertices();
-        for(int j=0; j<nv; ++j) {
-            g_coarseEdges.push_back(face->GetVertex(j)->GetID());
-            g_coarseEdges.push_back(face->GetVertex((j+1)%nv)->GetID());
-            g_coarseEdgeSharpness.push_back(face->GetEdge(j)->GetSharpness());
+
+    OpenSubdiv::VtrLevel const & vtrlvl = g_refTables->GetBaseLevel();
+    for (int i=0; i<vtrlvl.faceCount(); ++i) {
+        OpenSubdiv::VtrIndexArray edges = vtrlvl.accessFaceEdges(i);
+        for (int j=0; j<edges.size(); ++j) {
+            OpenSubdiv::VtrIndexArray verts = vtrlvl.accessEdgeVerts(edges[j]);
+            g_coarseEdges.push_back(verts[0]);
+            g_coarseEdges.push_back(verts[1]);
+            g_coarseEdgeSharpness.push_back(vtrlvl.edgeSharpness(edges[j]));
         }
     }
-    int nv = hmesh->GetNumVertices();
-    for(int i=0; i<nv; ++i) {
-        g_coarseVertexSharpness.push_back(hmesh->GetVertex(i)->GetSharpness());
+    for(int i=0; i<vtrlvl.vertCount(); ++i) {
+        g_coarseVertexSharpness.push_back(vtrlvl.vertSharpness(i));
     }
 
     // compute model bounding
@@ -655,9 +655,6 @@ createMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
         g_center[j] = (min[j] + max[j]) * 0.5f;
         g_size += (max[j]-min[j])*(max[j]-min[j]);
     }
-
-    // Hbr mesh can be deleted
-    delete hmesh;
 
     g_scheme = scheme;
 
@@ -1003,7 +1000,7 @@ display() {
         drawRefinedQuads();
     }
 
-    drawComponents();
+    //drawComponents();
 
     g_hud.GetFrameBuffer()->ApplyImageShader();
     GLuint numPrimsGenerated = 0;
@@ -1228,8 +1225,8 @@ initHUD()
     g_hud.AddPullDownButton(drawing_pulldown, "Vertices", 0, g_drawMode==0);
     g_hud.AddPullDownButton(drawing_pulldown, "Quads", 1, g_drawMode==1);
 
-    g_hud.AddSlider("Font Scale", 0.0f, 0.25f, 0.03f,
-                    -850, -100, 100, false, callbackScale, 0);
+    g_hud.AddSlider("Font Scale", 0.0f, 0.1f, 0.03f,
+                    -900, -50, 100, false, callbackScale, 0);
 
     for (int i = 1; i < 11; ++i) {
         char level[16];
@@ -1355,7 +1352,7 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    static const char windowTitle[] = "OpenSubdiv glViewer";
+    static const char windowTitle[] = "OpenSubdiv vtrViewer";
 
 #define CORE_PROFILE
 #ifdef CORE_PROFILE

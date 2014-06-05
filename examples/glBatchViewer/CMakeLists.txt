@@ -61,6 +61,7 @@ _add_glfw_executable(glBatchViewer
     effectRegistry.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
+    $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
 

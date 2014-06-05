@@ -22,6 +22,8 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
+add_subdirectory(common)
+
 add_subdirectory(hbr_regression)
 
 add_subdirectory(far_regression)

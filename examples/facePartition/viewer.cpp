@@ -127,7 +127,7 @@ private:
 
 PartitionedMesh<OpenSubdiv::OsdCpuGLVertexBuffer, OpenSubdiv::OsdCpuComputeController> *g_mesh = NULL;
 
-#include <common/shape_utils.h>
+#include <common/hbr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"

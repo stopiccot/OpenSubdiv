@@ -58,6 +58,7 @@ _add_glfw_executable(glViewer
     viewer.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
+    $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
 

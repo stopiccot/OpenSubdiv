@@ -142,7 +142,7 @@ OpenSubdiv::OsdGLMeshInterface *g_mesh;
 #include "../common/gl_hud.h"
 #include "../common/patchColors.h"
 #include "../common/hdr_reader.h"
-#include "../../regression/common/shape_utils.h"
+#include "../../regression/common/hbr_utils.h"
 
 static const char *g_defaultShaderSource =
 #if defined(GL_ARB_tessellation_shader) || defined(GL_VERSION_4_0)
@@ -2716,7 +2716,7 @@ int main(int argc, char ** argv)
 
                 printf("Reading %s\r", animobjs[i].c_str());
                 std::string str = ss.str();
-                shape *shape = shape::parseShape(str.c_str());
+                Shape *shape = Shape::parseObj(str.c_str(), kCatmark);
 
                 if (shape->verts.size() != g_positions.size()) {
                     printf("Error: vertex count doesn't match.\n");

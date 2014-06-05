@@ -59,7 +59,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 #include <osd/glMesh.h>
 OpenSubdiv::OsdGLMeshInterface *g_mesh;
 
-#include <common/shape_utils.h>
+#include <common/hbr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"

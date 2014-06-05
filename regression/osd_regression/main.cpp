@@ -71,7 +71,7 @@
     #include "../../examples/common/clInit.h" // XXXX TODO move file out of examples
 #endif
 
-#include "../common/shape_utils.h"
+#include "../../regression/common/hbr_utils.h"
 
 //
 // Regression testing matching Osd to Hbr

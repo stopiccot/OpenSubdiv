@@ -22,41 +22,23 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-# *** dxViewer ***
-
-set(SHADER_FILES
-     shader.hlsl
+set(REGRESSION_COMMON_SOURCE_FILES
+    shape_utils.cpp
 )
 
-set(PLATFORM_LIBRARIES
-    "${OSD_LINK_TARGET}"
-    "${DXSDK_LIBRARIES}"
+set(REGRESSION_COMMON_HEADER_FILES
+    hbr_utils.h
+    shape_utils.h
+    vtr_utils.h
 )
 
 include_directories(
     "${PROJECT_SOURCE_DIR}/opensubdiv"
-    "${PROJECT_SOURCE_DIR}/regression"
-    "${DXSDK_INCLUDE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
-set(SOURCE_FILES
-    dxViewer.cpp
+add_library(regression_common_obj
+    OBJECT
+        ${REGRESSION_COMMON_SOURCE_FILES}
+        ${REGRESSION_COMMON_HEADER_FILES}
 )
-
-_stringify("${SHADER_FILES}" INC_FILES)
-
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-
-_add_possibly_cuda_executable(dxViewer WIN32
-    "${SOURCE_FILES}"
-    "${SHADER_FILES}"
-    "${INC_FILES}"
-    $<TARGET_OBJECTS:regression_common_obj>
-    $<TARGET_OBJECTS:examples_common_obj>
-)
-
-target_link_libraries(dxViewer
-    ${PLATFORM_LIBRARIES}
-)
-
-install(TARGETS dxViewer DESTINATION "${CMAKE_BINDIR_BASE}")

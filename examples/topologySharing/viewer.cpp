@@ -107,7 +107,7 @@
 #endif
 
 
-#include <common/shape_utils.h>
+#include <common/hbr_utils.h>
 #include <shapes/catmark_cube.h>
 #include <shapes/catmark_bishop.h>
 #include <shapes/catmark_pawn.h>

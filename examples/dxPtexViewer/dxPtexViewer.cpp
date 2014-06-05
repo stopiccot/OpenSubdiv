@@ -80,7 +80,7 @@ OpenSubdiv::OsdD3D11MeshInterface *g_mesh;
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/d3d11_hud.h"
-#include "../../regression/common/shape_utils.h"
+#include "../../regression/common/hbr_utils.h"
 
 static const char *g_shaderSource =
 #include "shader.gen.h"

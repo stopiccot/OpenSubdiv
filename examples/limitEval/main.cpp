@@ -57,7 +57,7 @@
 #include <osd/mesh.h>
 #include <osd/vertex.h>
 
-#include <common/shape_utils.h>
+#include <common/hbr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"
