@@ -22,36 +22,23 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(common)
+include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
 
-add_subdirectory(hbr_regression)
+set(SOURCE_FILES
+    main.cpp
+)
 
-add_subdirectory(far_regression)
+set(PLATFORM_LIBRARIES
+    "${OSD_LINK_TARGET}"
+)
 
-add_subdirectory(vtr_regression)
+_add_executable(vtr_regression
+    ${SOURCE_FILES}
+    $<TARGET_OBJECTS:sdc_obj>
+    $<TARGET_OBJECTS:vtr_obj>
+    $<TARGET_OBJECTS:far_obj>
+    $<TARGET_OBJECTS:regression_common_obj>
+)
 
-if(OPENGL_FOUND AND (GLEW_FOUND OR APPLE) AND GLFW_FOUND)
-    add_subdirectory(osd_regression)
-else()
-    set(MISSING "")
+install(TARGETS vtr_regression DESTINATION "${CMAKE_BINDIR_BASE}")
 
-    if (NOT OPENGL_FOUND)
-        list(APPEND MISSING OpenGL)
-    endif()
-
-    if (NOT GLEW_FOUND)
-        list(APPEND MISSING glew)
-    endif()
-
-    if (NOT GLFW_FOUND)
-        list(APPEND MISSING glfw)
-    endif()
-
-    message(WARNING
-        "The following libraries could not be found : ${MISSING}.  "
-        "The osd regression test will not be available.  "
-        "If you have these libraries installed, please specify their "
-        "path to cmake (through the GLEW_LOCATION and GLFW_LOCATION "
-        "command line arguments or environment variables)."
-    )
-endif()

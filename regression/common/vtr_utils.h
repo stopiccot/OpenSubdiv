@@ -155,22 +155,6 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
 
     typedef FarRefineTables::IndexArray IndexArray;
 
-    struct RefTableHelpers {
-        static inline int
-        GetEdge(FarRefineTables & refTables, int v0, int v1) {
-
-            IndexArray edges = refTables.baseVertexEdges(v0);
-
-            for (int i=0; i<edges.size();++i) {
-
-                IndexArray verts = refTables.baseEdgeVertices(edges[i]);
-                if (verts[0]==v1 or verts[1]==v1)
-                    return edges[i];
-            }
-            return -1;
-        }
-    };
-
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 
         Shape::tag * t = shape.tags[i];
@@ -178,8 +162,10 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
         if (t->name=="crease") {
 
             for (int j=0; j<(int)t->intargs.size()-1; j += 2) {
-                int edge = RefTableHelpers::GetEdge(refTables, t->intargs[j], t->intargs[j+1]);
-                if (edge<0) {
+
+                OpenSubdiv::VtrLevel const & level = refTables.GetBaseLevel();
+                OpenSubdiv::VtrIndex edge = level.findEdge(t->intargs[j], t->intargs[j+1]);
+                if (edge==OpenSubdiv::VTR_INDEX_INVALID) {
                     printf("cannot find edge for crease tag (%d,%d)\n", t->intargs[j], t->intargs[j+1] );
                 } else {
                     int nfloat = (int) t->floatargs.size();
