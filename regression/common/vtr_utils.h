@@ -94,6 +94,19 @@ GetSdcOptions(Shape const & shape) {
                 printf("the \"smoothtriangles\" tag can only be applied to Catmark meshes\n");
                 continue;
             }
+        } else if (t->name=="creasemethod") {
+
+            if ((int)t->stringargs.size()==0) {
+                printf("the \"creasemethod\" tag expects a string argument\n");
+                continue;
+            }
+
+            if( t->stringargs[0]=="normal" )
+                result.SetCreasingMethod(SdcOptions::CREASE_UNIFORM);
+            else if( t->stringargs[0]=="chaikin" )
+                result.SetCreasingMethod(SdcOptions::CREASE_CHAIKIN);
+            else
+                printf("the \"creasemethod\" tag only accepts \"normal\" or \"chaikin\" as value (%s)\n", t->stringargs[0].c_str());
         }
     }
 
@@ -152,8 +165,6 @@ template <>
 void
 FarRefineTablesFactory<Shape>::assignComponentTags(
     FarRefineTables & refTables, Shape const & shape) {
-
-    typedef FarRefineTables::IndexArray IndexArray;
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 
