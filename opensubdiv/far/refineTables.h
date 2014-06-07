@@ -28,9 +28,10 @@
 
 #include "../sdc/type.h"
 #include "../sdc/options.h"
+#include "../sdc/catmarkScheme.h"
 #include "../vtr/level.h"
-#include "../vtr/sparseSelector.h"
 #include "../vtr/refinement.h"
+#include "../vtr/maskInterfaces.h"
 
 #include <vector>
 #include <cassert>
@@ -40,6 +41,7 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 template <class MESH> class FarRefineTablesFactory;
+class VtrSparseSelector;
 
 //
 //  Class to store topology data for a specified set of refinement options.
@@ -81,16 +83,20 @@ public:
     //  Main refinement method(s) -- we will need some variants here to support
     //  different refinement options, i.e. eventually struct RefineOptions:
     //
-    void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = true,
-                                     bool computeMasksPerLevel = false);
-    void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = true,
-                                      bool computeMasksPerLevel = false);
+    void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = true);
+    void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = true);
 
-    // Clear all but base level
+    //
+    //  A few public utilities for consideration:
+    //      - clear all refinements, leaving the base level
+    //      - clear all refinements and all levels
+    //      - computing the mask weights
+    //
     void Unrefine();
-
-    // Clear all
     void Clear();
+#ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
+    void ComputeMaskWeights();
+#endif
 
     //  Level access for converting to/from base/last levels (ultimately these
     //  need to be protected and the required functionality provided through an
@@ -170,6 +176,8 @@ template <class T>
 inline void
 FarRefineTables::Interpolate(T const * src, T * dst) const {
 
+    assert(_subdivType == TYPE_CATMARK);
+
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
         InterpolateLevel(level, src, dst);
@@ -186,7 +194,6 @@ FarRefineTables::InterpolateLevel(int level, T const * src, T * dst) const {
     assert(level>0 and level<=(int)_refinements.size());
 
     VtrRefinement const & refinement = _refinements[level-1];
-    assert((int)refinement._faceVertWeights.size()>0);
 
     interpolateChildVertsFromFaces(refinement, src, dst);
     interpolateChildVertsFromEdges(refinement, src, dst);
@@ -197,6 +204,8 @@ template <class T>
 inline void
 FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement, T const * src, T * dst) const {
 
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
     const VtrLevel& parent = refinement.parent();
 
     for (int face = 0; face < parent.faceCount(); ++face) {
@@ -205,19 +214,22 @@ FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement
         if (!VtrIndexIsValid(cVert))
             continue;
 
-        //  Identify mask weights for this vertex relative to its parent face:
-        int          fVertCount   = parent.mFaceVertCountsAndOffsets[2*face];
-        int          fVertOffset  = parent.mFaceVertCountsAndOffsets[2*face + 1];
-        float const* fVertWeights = &refinement._faceVertWeights[fVertOffset];
-
-        //  Apply the weights to the parent face's vertices:
+        //  Declare and compute mask weights for this vertex relative to its parent face:
         VtrIndexArray const fVerts = parent.accessFaceVerts(face);
 
+        float fVertWeights[fVerts.size()];
+
+        VtrMaskInterface fMask(fVertWeights, 0, 0);
+        VtrFaceInterface fHood(fVerts.size());
+
+        scheme.ComputeFaceVertexMask(fHood, fMask);
+
+        //  Apply the weights to the parent face's vertices:
         T & vdst = dst[cVert];
 
         vdst.Clear();
 
-        for (int i = 0; i < fVertCount; ++i) {
+        for (int i = 0; i < fVerts.size(); ++i) {
             vdst.AddWithWeight(src[fVerts[i]], fVertWeights[i]);
             //vdst.AddVaryingWithWeight(src[fVerts[i]], fVertWeights[i]);
         }
@@ -228,7 +240,13 @@ template <class T>
 inline void
 FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement, T const * src, T * dst) const {
 
+    assert(_subdivType == TYPE_CATMARK);
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
     const VtrLevel& parent = refinement.parent();
+    const VtrLevel& child  = refinement.child();
+
+    VtrEdgeInterface eHood(parent);
 
     for (int edge = 0; edge < parent.edgeCount(); ++edge) {
 
@@ -236,37 +254,37 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
         if (!VtrIndexIsValid(cVert))
             continue;
 
-        //  Identify mask weights for this vertex relative to its parent edge:
-        int eFaceOffset = parent.mEdgeFaceCountsAndOffsets[2*edge + 1];
-        float const * eVertWeights = &refinement._edgeVertWeights[2*edge],
-                    * eFaceWeights = &refinement._edgeFaceWeights[eFaceOffset];
-
-        //  Apply the weights to the parent edges's vertices and the child vertices
-        //  of its incident faces (note that if any face-weight is zero, e.g. the
-        //  first, all will be zero, so we can ignore them)
+        //  Declare and compute mask weights for this vertex relative to its parent edge:
         VtrIndexArray const eVerts = parent.accessEdgeVerts(edge);
+        VtrIndexArray const eFaces = parent.accessEdgeFaces(edge);
 
+        float eVertWeights[2];
+        float eFaceWeights[eFaces.size()];
+
+        VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
+
+        eHood.SetIndex(edge);
+
+        SdcRule pRule = (parent.edgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+        SdcRule cRule = child.vertRule(cVert);
+
+        scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
+
+        //  Apply the weights to the parent edges's vertices and (if applicable) to
+        //  the child vertices of its incident faces:
         T & vdst = dst[cVert];
 
         vdst.Clear();
         vdst.AddWithWeight(src[eVerts[0]], eVertWeights[0]);
         vdst.AddWithWeight(src[eVerts[1]], eVertWeights[1]);
 
-        if (eFaceWeights[0] > 0.0f) {
+        if (eMask.GetFaceWeightCount() > 0) {
 
-            VtrIndexArray const eFaces = parent.accessEdgeFaces(edge);
             for (int i = 0; i < eFaces.size(); ++i) {
 
                 VtrIndex cVertOfFace = refinement.faceChildVertexIndex(eFaces[i]);
-                if (VtrIndexIsValid(cVertOfFace)) {
-                    vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
-                } else {
-                    VtrIndexArray const& faceVerts = parent.accessFaceVerts(eFaces[i]);
-                    float weight = eFaceWeights[i] / (float)faceVerts.size();
-                    for (int i = 1; i < faceVerts.size(); ++i) {
-                        vdst.AddWithWeight(src[faceVerts[i]], weight);
-                    }
-                }
+                assert(VtrIndexIsValid(cVertOfFace));
+                vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
             }
         }
     }
@@ -276,7 +294,13 @@ template <class T>
 inline void
 FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement, T const * src, T * dst) const {
 
+    assert(_subdivType == TYPE_CATMARK);
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
     const VtrLevel& parent = refinement.parent();
+    const VtrLevel& child  = refinement.child();
+
+    VtrVertexInterface vHood(parent, child);
 
     for (int vert = 0; vert < parent.vertCount(); ++vert) {
 
@@ -284,47 +308,47 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
         if (!VtrIndexIsValid(cVert))
             continue;
 
-        float vVertWeight = refinement._vertVertWeights[vert];
+        //  Declare and compute mask weights for this vertex relative to its parent edge:
+        VtrIndexArray const vEdges = parent.accessVertEdges(vert);
+        VtrIndexArray const vFaces = parent.accessVertFaces(vert);
 
-        int vEdgeOffset = parent.mVertEdgeCountsAndOffsets[2*vert + 1],
-            vFaceOffset = parent.mVertFaceCountsAndOffsets[2*vert + 1];
+        float  vVertWeight;
+        float  vEdgeWeights[2 * vEdges.size()];
+        float* vFaceWeights = vEdgeWeights + vEdges.size();
 
-        float const * vEdgeWeights = &refinement._vertEdgeWeights[vEdgeOffset],
-                    * vFaceWeights = &refinement._vertFaceWeights[vFaceOffset];
+        VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
+
+        vHood.SetIndex(vert, cVert);
+
+        SdcRule pRule = parent.vertRule(vert);
+        SdcRule cRule = child.vertRule(cVert);
+
+        scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
 
         //  Apply the weights to the parent vertex, the vertices opposite its incident
-        //  edges, the child vertices of its incident faces (note that if any face-weight
-        //  is zero, e.g. the first, all will be zero, so we can ignore them):
-
+        //  edges, and the child vertices of its incident faces:
         T & vdst = dst[cVert];
 
         vdst.Clear();
         vdst.AddWithWeight(src[vert], vVertWeight);
 
-        VtrIndexArray const vEdges = parent.accessVertEdges(vert);
-        for (int i = 0; i < vEdges.size(); ++i) {
+        if (vMask.GetEdgeWeightCount() > 0) {
 
-            VtrIndexArray const eVerts = parent.accessEdgeVerts(vEdges[i]);
-            VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+            for (int i = 0; i < vEdges.size(); ++i) {
 
-            vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
+                VtrIndexArray const eVerts = parent.accessEdgeVerts(vEdges[i]);
+                VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+
+                vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
+            }
         }
-        if (vFaceWeights[0] > 0.0) {
-
-            VtrIndexArray const vFaces = parent.accessVertFaces(vert);
+        if (vMask.GetFaceWeightCount() > 0) {
 
             for (int i = 0; i < vFaces.size(); ++i) {
 
                 VtrIndex cVertOfFace = refinement.faceChildVertexIndex(vFaces[i]);
-                if (VtrIndexIsValid(cVertOfFace)) {
-                    vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
-                } else {
-                    VtrIndexArray const& faceVerts = parent.accessFaceVerts(vFaces[i]);
-                    float weight = vFaceWeights[i] / (float)faceVerts.size();
-                    for (int i = 1; i < faceVerts.size(); ++i) {
-                        vdst.AddWithWeight(src[faceVerts[i]], weight);
-                    }
-                }
+                assert(VtrIndexIsValid(cVertOfFace));
+                vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
             }
         }
     }

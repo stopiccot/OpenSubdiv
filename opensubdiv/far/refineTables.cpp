@@ -22,6 +22,7 @@
 //   language governing permissions and limitations under the Apache License.
 //
 #include "../far/refineTables.h"
+#include "../vtr/sparseSelector.h"
 
 #include <cassert>
 #include <cstdio>
@@ -39,9 +40,12 @@ FarRefineTables::FarRefineTables(SdcType schemeType, SdcOptions schemeOptions) :
     _subdivType(schemeType),
     _subdivOptions(schemeOptions),
     _isUniform(true),
-    _maxLevel(0),
-    _levels(1)
+    _maxLevel(0)
 {
+    //  Need to revisit allocation scheme here -- want to use smart-ptrs for these
+    //  but will probably have to settle for explicit new/delete...
+    _levels.reserve(8);
+    _levels.resize(1);
 }
 
 FarRefineTables::~FarRefineTables()
@@ -100,7 +104,7 @@ FarRefineTables::GetFaceCount() const
 //  Main refinement method -- allocating and initializing levels and refinements:
 //
 void
-FarRefineTables::RefineUniform(int maxLevel, bool fullTopology, bool computeMasks)
+FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
 {
     assert(_levels[0].vertCount() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
@@ -118,8 +122,7 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology, bool computeMask
     //  Initialize refinement options for Vtr -- adjusting full-topology for the last level:
     //
     VtrRefinement::Options refineOptions;
-    refineOptions._sparse       = false;
-    refineOptions._computeMasks = computeMasks;
+    refineOptions._sparse = false;
 
     for (int i = 1; i <= maxLevel; ++i) {
         refineOptions._faceTopologyOnly = fullTopology ? false : (i == maxLevel);
@@ -131,7 +134,7 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology, bool computeMask
 
 
 void
-FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology, bool computeMasks)
+FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
 {
     assert(_levels[0].vertCount() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
@@ -153,7 +156,6 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology, bool compute
 
     refineOptions._sparse           = true;
     refineOptions._faceTopologyOnly = !fullTopology;
-    refineOptions._computeMasks     = computeMasks;
 
     for (int i = 1; i <= subdivLevel; ++i) {
         //  Keeping full topology on for debugging -- may need to go back a level and "prune"
@@ -474,6 +476,18 @@ FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selecto
         }
     }
 }
+
+#ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
+void
+FarRefineTables::ComputeMaskWeights()
+{
+    assert(_subdivType == TYPE_CATMARK);
+
+    for (int i = 0; i < _maxLevel; ++i) {
+        _refinements[i].computeMaskWeights();
+    }
+}
+#endif
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

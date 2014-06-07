@@ -95,12 +95,15 @@ public:
     //
     struct Options {
         Options() : _sparse(0),
-                    _faceTopologyOnly(0),
-                    _computeMasks(0) { }
+                    _faceTopologyOnly(0)
+                    { }
 
         unsigned int _sparse           : 1;
         unsigned int _faceTopologyOnly : 1;
-        unsigned int _computeMasks     : 1;
+
+        //  Currently under consideration:
+        //unsigned int _childToParentMap : 1;
+        //unsigned int _computeMasks     : 1;
     };
 
     void refine(Options options = Options());
@@ -370,6 +373,8 @@ public:
     //  stencil weights (i.e. for uniform refinement) will be allocated here if the
     //  corresonding counts/offset of the parent are to be used.
     //
+//#define _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
+#ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
     void computeMaskWeights();
 
     std::vector<float> _faceVertWeights;  // matches parent face vert counts and offsets
@@ -378,6 +383,7 @@ public:
     std::vector<float> _vertVertWeights;  // trivially 1 per parent vert
     std::vector<float> _vertEdgeWeights;  // matches parent vert edge counts and offsets
     std::vector<float> _vertFaceWeights;  // matches parent vert face counts and offsets
+#endif
 };
 
 inline VtrIndexArray const

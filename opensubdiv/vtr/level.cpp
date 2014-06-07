@@ -527,7 +527,7 @@ namespace {
 
                 memberCount += _countsAndOffsets[2*i];
             }
-            cannotBeCompressedInPlace = (memberCount > (_memberCountPerComp * _compCount));
+            cannotBeCompressedInPlace |= (memberCount > (_memberCountPerComp * _compCount));
 
             //  Copy members into the original or temporary vector accordingly:
             VtrIndexVector  tmpIndices;

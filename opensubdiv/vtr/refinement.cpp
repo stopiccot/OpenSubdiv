@@ -1079,17 +1079,6 @@ VtrRefinement::refine(Options refineOptions)
     //  to call a post-process to adjust the semisharp and rule tags:
     //
     reclassifySemisharpVertices();
-
-    //
-    //  This is intended to be temporary(!):
-    //      Optionally compute the mask weights -- this is preliminary and needs to deal with
-    //  the different schemes appropriately.  Assume Catmark for now.  Note also that computing
-    //  masks for Bilinear is trivial, but the application of them may end up far more costly
-    //  than necessary without specializing the application of them.
-    //
-    if (refineOptions._computeMasks) {
-        computeMaskWeights();
-    }
 }
 
 
@@ -1850,6 +1839,7 @@ VtrRefinement::populateChildToParentMapping()
     populateChildToParentTags();
 }
 
+#ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
 void
 VtrRefinement::computeMaskWeights()
 {
@@ -1961,6 +1951,7 @@ VtrRefinement::computeMaskWeights()
         }
     }
 }
+#endif
 
 
 //

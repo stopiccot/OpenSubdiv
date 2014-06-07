@@ -113,7 +113,7 @@ public:
     //
     //      MyRefineTablesFactory refTablesFactory(type, options);
     //      FarRefineTables*      refTablesPtr = refTablesFactory.Create(myMesh);
-    //      refTablesPtr->RefineAdaptive(maxLevel, fullTopology, computeMasks);
+    //      refTablesPtr->RefineAdaptive(maxLevel, fullTopology);
     //
     //  Given the public ability to re-refine the FarRefineTables (making use of the same
     //  base mesh), the definition of the Options belongs with FarRefineTables and not
@@ -157,9 +157,7 @@ FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTo
     populateBaseLevel(*refTables, mesh);
 
     if (maxLevel > 0) {
-        //  I really dislike the idea of computing masks by default here...
-        bool computeMasks = true;
-        refTables->RefineUniform(maxLevel, fullTopology, computeMasks);
+        refTables->RefineUniform(maxLevel, fullTopology);
     }
     return refTables;
 }
