@@ -121,16 +121,16 @@ public:
     VtrIndex edgeChildVertexIndex(VtrIndex e) const   { return _edgeChildVertIndex[e]; }
     VtrIndex vertexChildVertexIndex(VtrIndex v) const { return _vertChildVertIndex[v]; }
 
+    VtrIndexArray const faceChildFaces(VtrIndex parentFace) const;
+    VtrIndexArray const faceChildEdges(VtrIndex parentFace) const;
+    VtrIndexArray const edgeChildEdges(VtrIndex parentEdge) const;
+
 //
 //  Non-public methods:
 //
 protected:
     friend class VtrSparseSelector;
     template <class T> friend class FarPatchTablesFactory;
-
-    VtrIndexArray const faceChildFaces(VtrIndex parentFace) const;
-    VtrIndexArray const faceChildEdges(VtrIndex parentFace) const;
-    VtrIndexArray const edgeChildEdges(VtrIndex parentEdge) const;
 
     VtrIndexArray faceChildFaces(VtrIndex parentFace);
     VtrIndexArray faceChildEdges(VtrIndex parentFace);

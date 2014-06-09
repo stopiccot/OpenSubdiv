@@ -50,7 +50,7 @@ static bool g_debugmode = false;
 // Vertex class implementation
 struct xyzVV {
 
-    xyzVV() { }
+    xyzVV() { /* _pos[0]=_pos[1]=_pos[2]=0.0f; */ }
 
     xyzVV( int /*i*/ ) { }
 
@@ -97,6 +97,15 @@ struct xyzVV {
 
     const float * GetPos() const { return _pos; }
 
+    bool operator==(xyzVV const & other) const {
+        if (_pos[0]==other._pos[0] and
+            _pos[1]==other._pos[1] and
+            _pos[2]==other._pos[2]) {
+            return true;
+        }
+        return false;
+    }
+
 private:
     float _pos[3];
 };
@@ -111,7 +120,7 @@ static Hmesh *
 interpolateHbrVertexData(ShapeDesc const & desc, int maxlevel) {
 
     // Hbr interpolation
-    Hmesh * hmesh = simpleHbr<xyzVV>(desc.data.c_str(), desc.scheme, /*fvar*/ false);
+    Hmesh * hmesh = simpleHbr<xyzVV>(desc.data.c_str(), desc.scheme, /*verts vector*/ 0, /*fvar*/ false);
     assert(hmesh);
 
     for (int level=0, firstface=0; level<maxlevel; ++level ) {
@@ -162,11 +171,209 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
 }
 
 //------------------------------------------------------------------------------
+static void
+printVertexData(std::vector<xyzVV> const & hbrBuffer, std::vector<xyzVV> const & vtrBuffer) {
+
+    assert(hbrBuffer.size()==vtrBuffer.size());
+    for (int i=0; i<(int)hbrBuffer.size(); ++i) {
+
+        float const * hbr = hbrBuffer[i].GetPos(),
+                    * vtr = vtrBuffer[i].GetPos();
+
+        printf("%3d %d (%f %f %f) (%f %f %f)\n", i, hbrBuffer[i]==vtrBuffer[i],
+                                                    hbr[0], hbr[1], hbr[2],
+                                                    vtr[0], vtr[1], vtr[2]);
+    }
+}
+
+//------------------------------------------------------------------------------
+struct Mapper {
+
+    struct LevelMap {
+        std::vector<Hface *>     faces;
+        std::vector<Hhalfedge *> edges;
+        std::vector<Hvertex *>   verts;
+    };
+
+    std::vector<LevelMap> maps;
+    
+    Mapper(FRefineTables * refTables, Hmesh * hmesh) {
+
+        assert(refTables and hmesh);
+
+        maps.resize(refTables->GetMaxLevel()+1);
+
+        typedef OpenSubdiv::VtrIndex      VtrIndex;
+        typedef OpenSubdiv::VtrIndexArray VtrIndexArray;
+
+        {   // Populate base level
+            // note : topological ordering is identical between Hbr and Vtr for the
+            // base level
+
+            OpenSubdiv::VtrLevel & level = refTables->GetBaseLevel();
+
+            maps[0].faces.resize(level.faceCount(), 0);
+            maps[0].edges.resize(level.edgeCount(), 0);
+            maps[0].verts.resize(level.vertCount(), 0);
+
+            for (int face=0; face<level.faceCount(); ++face) {
+                maps[0].faces[face] = hmesh->GetFace(face);
+            }
+
+            for (int edge = 0; edge <level.edgeCount(); ++edge) {
+
+                VtrIndexArray vtrVerts = level.accessEdgeVerts(edge);
+
+                Hvertex const * v0 = hmesh->GetVertex(vtrVerts[0]),
+                              * v1 = hmesh->GetVertex(vtrVerts[1]);
+
+                Hhalfedge * e = v0->GetEdge(v1);
+                if (not e) {
+                    e = v1->GetEdge(v0);
+                }
+                assert(e);
+
+                maps[0].edges[edge] = e;
+            }
+
+            for (int vert = 0; vert < level.vertCount(); ++vert) {
+                maps[0].verts[vert] = hmesh->GetVertex(vert);
+            }
+        }
+
+        // Populate refined levels
+        for (int level=1, ecount=0; level<=refTables->GetMaxLevel(); ++level) {
+
+            OpenSubdiv::VtrRefinement const & refinement =
+                refTables->GetRefinement(level-1);
+
+            OpenSubdiv::VtrLevel const & parent = refinement.parent(),
+                                       & child = refinement.child();
+
+            LevelMap & previous = maps[level-1],
+                     & current = maps[level];
+
+            current.faces.resize(child.faceCount(), 0);
+            current.edges.resize(child.edgeCount(), 0);
+            current.verts.resize(child.vertCount(), 0);
+
+            for (int face=0; face < parent.faceCount(); ++face) {
+
+                // populate child faces
+                Hface * f = previous.faces[face];
+
+                VtrIndexArray childFaces = refinement.faceChildFaces(face);
+                assert(childFaces.size()==f->GetNumVertices());
+
+                for (int i=0; i<childFaces.size(); ++i) {
+                    current.faces[childFaces[i]] = f->GetChild(i);
+                }
+
+                // populate child face-verts
+                VtrIndex childVert = refinement.faceChildVertexIndex(face);
+                Hvertex * v = f->Subdivide();
+                assert(v->GetParentFace());
+                current.verts[childVert] = v;
+//#ifdef foo
+printf("face %-3d -> vtr=%-3d   hbr=%-3d (% .5f % .5f % .5f)    ", face, childVert, v->GetID(), v->GetData().GetPos()[0],
+                                                                                    v->GetData().GetPos()[1], 
+                                                                                    v->GetData().GetPos()[2]);
+
+printf("    verts=(%-3d %-3d %-3d %-3d)\n", f->GetVertex(0)->GetID(), 
+                                            f->GetVertex(1)->GetID(),
+                                            f->GetVertex(2)->GetID(),
+                                            f->GetVertex(3)->GetID() );
+//#endif
+            }
+
+            for (int edge=0; edge < parent.edgeCount(); ++edge) {
+                // populate child edge-verts
+                VtrIndex childVert = refinement.edgeChildVertexIndex(edge);
+                Hhalfedge * e = previous.edges[edge];
+                Hvertex * v = e->Subdivide();
+                assert(v->GetParentEdge());
+                current.verts[childVert] = v;
+
+//#ifdef foo
+printf("edge %-3d -> vtr=%-3d   hbr=%-3d (% .5f % .5f % .5f)    ", edge, childVert, v->GetID(), v->GetData().GetPos()[0],
+                                                                                    v->GetData().GetPos()[1], 
+                                                                                    v->GetData().GetPos()[2]);
+printf("    verts=(%-3d %-3d)\n", e->GetOrgVertex()->GetID(), e->GetDestVertex()->GetID());
+//#endif
+            }
+
+            for (int vert = 0; vert < parent.vertCount(); ++vert) {
+                // populate child vert-verts
+                VtrIndex childVert = refinement.vertexChildVertexIndex(vert);
+                Hvertex * v = previous.verts[vert]->Subdivide();
+                current.verts[childVert] = v;
+                assert(v->GetParentVertex());
+//#ifdef foo
+printf("vert %-3d -> vtr=%-3d   hbr=%-3d (% .5f % .5f % .5f)  \n", vert, childVert, v->GetID(), v->GetData().GetPos()[0],
+                                                                                    v->GetData().GetPos()[1], 
+                                                                                    v->GetData().GetPos()[2]);
+//#endif
+            }
+
+#ifdef foo
+for (int i=0; i<(int)current.verts.size(); ++i) {
+    printf("vtr %d -> hbr %d\n", i, current.verts[i]->GetID());
+}
+#endif
+
+
+            // populate child edges
+            for (int edge=0; edge <child.edgeCount(); ++edge) {
+
+                VtrIndexArray vtrVerts = child.accessEdgeVerts(edge);
+
+                Hvertex const * v0 = current.verts[vtrVerts[0]],
+                              * v1 = current.verts[vtrVerts[1]];
+                assert(v0 and v1);
+
+                Hhalfedge * e= v0->GetEdge(v1);
+                if (not e) {
+                    e = v1->GetEdge(v0);
+                }
+//#ifdef foo
+printf("searching for edge %-3d vtr(v0=%-3d v1=%-3d) hbr(v0=%-3d v1=%-3d) -> %p\n", edge, vtrVerts[0], vtrVerts[1], v0->GetID(), v1->GetID(), e);
+//#endif
+                assert(e);
+                current.edges[edge] = e;
+            }
+
+    ecount += parent.edgeCount();
+
+#ifdef foo
+for (int face=0; face <parent.faceCount(); ++face) {
+    VtrIndexArray children = refinement.faceChildFaces(face);
+    printf("face %-3d -> children  %-3d %-3d %-3d %-3d\n", face, children[0], children[1], children[2], children[3]);
+}
+
+for (int edge=0; edge <parent.edgeCount(); ++edge) {
+    VtrIndexArray children = refinement.edgeChildEdges(edge);
+    printf("edge %-3d -> children  %-3d %-3d\n", edge, children[0], children[1]);
+}
+
+for (int vert=0; vert <parent.vertCount(); ++vert) {
+    VtrIndex child = refinement.vertexChildVertexIndex(vert);
+    printf("vert %-3d -> children  %-3d\n", vert, child);
+}
+#endif
+
+printf("faces=%d edges=%d verts=%d\n", (int)current.faces.size(), 
+                                       (int)current.edges.size(), 
+                                       (int)current.verts.size());
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
 static int
 checkMesh(ShapeDesc const & desc, int maxlevel) {
 
     static char const * schemes[] = { "Bilinear", "Catmark", "Loop" };
-    printf("- %-25s ( %-8s ): ", desc.name.c_str(), schemes[desc.scheme]);
+    printf("- %-25s ( %-8s ): \n", desc.name.c_str(), schemes[desc.scheme]);
 
     int count=0;
     float deltaAvg[3] = {0.0f, 0.0f, 0.0f},
@@ -181,28 +388,27 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
     FRefineTables * refTables =
         interpolateVtrVertexData(desc, maxlevel, vtrVertexData);
 
-    { // copy Hbr vertex data into a buffer (for easier comparison)
+    {   // copy Hbr vertex data into a re-ordered buffer (for easier comparison)
+
+        Mapper mapper(refTables, hmesh);
+
         int nverts = hmesh->GetNumVertices();
+        assert( nverts==refTables->GetVertCount() );
 
         hbrVertexData.resize(nverts);
-        assert(hbrVertexData.size()==vtrVertexData.size());
 
-        for (int l=0, ofs=refTables->GetVertCount(0); l<maxlevel; ++l) {
+        for (int level=0, ofs=0; level<(maxlevel+1); ++level) {
 
-            OpenSubdiv::VtrLevel & level = refTables->GetLevel(l);
-            OpenSubdiv::VtrRefinement & ref = refTables->GetRefinement(l);
-
-            for (int i=0; i<level.faceCount(); ++i) {
-            
-                //hbrVertexData[ofs++] = 
-            }
-
-            //data[i] = hmesh->GetVertex(i)->GetData();
+           Mapper::LevelMap & map = mapper.maps[level];
+           for (int i=0; i<(int)map.verts.size(); ++i) {
+                Hvertex * v = map.verts[i];
+                hbrVertexData[ofs++] = v->GetData();
+           }
         }
-
-
+        
+        //printVertexData(hbrVertexData, vtrVertexData);
     }
-    
+
     int nverts = (int)vtrVertexData.size();
 
     for (int i=0; i<nverts; ++i) {
@@ -242,8 +448,24 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
                                                           vtrVert.GetPos()[2] );
            count++;
         }
+    }
 
+    if (deltaCnt[0])
+        deltaAvg[0]/=deltaCnt[0];
+    if (deltaCnt[1])
+        deltaAvg[1]/=deltaCnt[1];
+    if (deltaCnt[2])
+        deltaAvg[2]/=deltaCnt[2];
 
+    if (not g_debugmode) {
+        printf("  delta ratio : (%d/%d %d/%d %d/%d)\n", (int)deltaCnt[0], nverts,
+                                                        (int)deltaCnt[1], nverts,
+                                                        (int)deltaCnt[2], nverts );
+        printf("  average delta : (%.10f %.10f %.10f)\n", deltaAvg[0],
+                                                          deltaAvg[1],
+                                                          deltaAvg[2] );
+        if (count==0)
+            printf("  success !\n");
     }
 
     return count;
@@ -252,16 +474,16 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
 //------------------------------------------------------------------------------
 int main(int /* argc */, char ** /* argv */) {
 
-    int levels=1, total=0;
+    int levels=5, total=0;
 
     initShapes();
+
+checkMesh(g_shapes[11], levels); return 1;
 
     if (g_debugmode)
         printf("[ ");
     else
         printf("precision : %f\n",PRECISION);
-
-
     for (int i=0; i<(int)g_shapes.size(); ++i) {
         total+=checkMesh(g_shapes[i], levels);
     }
