@@ -96,6 +96,13 @@ VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
     child._depth = 1 + parent.depth();
 }
 
+void
+VtrRefinement::setScheme(SdcType const& schemeType, SdcOptions const& schemeOptions)
+{
+    _schemeType = schemeType;
+    _schemeOptions = schemeOptions;
+}
+
 
 //
 //  Methods for preparing for refinement:

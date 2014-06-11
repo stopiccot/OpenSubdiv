@@ -73,7 +73,7 @@ FarRefineTables::Clear()
 //  Accessors to the topology information:
 //
 int
-FarRefineTables::GetVertCount() const
+FarRefineTables::GetNumVerticesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
@@ -82,7 +82,7 @@ FarRefineTables::GetVertCount() const
     return sum;
 }
 int
-FarRefineTables::GetEdgeCount() const
+FarRefineTables::GetNumEdgesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
@@ -91,7 +91,7 @@ FarRefineTables::GetEdgeCount() const
     return sum;
 }
 int
-FarRefineTables::GetFaceCount() const
+FarRefineTables::GetNumFacesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
@@ -127,6 +127,7 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
     for (int i = 1; i <= maxLevel; ++i) {
         refineOptions._faceTopologyOnly = fullTopology ? false : (i == maxLevel);
 
+        _refinements[i-1].setScheme(_subdivType, _subdivOptions);
         _refinements[i-1].initialize(_levels[i-1], _levels[i]);
         _refinements[i-1].refine(refineOptions);
     }
@@ -166,6 +167,7 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
         VtrLevel& childLevel      = _levels[i];
         VtrRefinement& refinement = _refinements[i-1];
 
+        refinement.setScheme(_subdivType, _subdivOptions);
         refinement.initialize(parentLevel, childLevel);
 
         //

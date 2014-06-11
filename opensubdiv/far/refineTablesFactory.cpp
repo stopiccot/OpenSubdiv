@@ -41,7 +41,7 @@ namespace OPENSUBDIV_VERSION {
 void
 FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& refTables)
 {
-    VtrLevel& baseLevel = refTables.GetBaseLevel();
+    VtrLevel& baseLevel = refTables.getBaseLevel();
 
     int vCount = baseLevel.vertCount();
     int eCount = baseLevel.edgeCount();
@@ -80,7 +80,7 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 void
 FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables& refTables)
 {
-    VtrLevel& baseLevel = refTables.GetBaseLevel();
+    VtrLevel& baseLevel = refTables.getBaseLevel();
 
     //
     //  In future we may want the ability to complete aspects of the topology that are incovenient
@@ -114,7 +114,7 @@ FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables&
 void
 FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables)
 {
-    VtrLevel&  baseLevel = refTables.GetBaseLevel();
+    VtrLevel&  baseLevel = refTables.getBaseLevel();
 
     assert((int)baseLevel.mEdgeTags.size() == baseLevel.edgeCount());
     assert((int)baseLevel.mVertTags.size() == baseLevel.vertCount());

@@ -63,6 +63,7 @@ public:
     VtrRefinement();
     ~VtrRefinement();
 
+    void setScheme(SdcType const& schemeType, SdcOptions const& schemeOptions);
     void initialize(VtrLevel& parent, VtrLevel& child);
 
     VtrLevel const& parent() const { return *_parent; }

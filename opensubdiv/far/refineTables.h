@@ -43,107 +43,148 @@ namespace OPENSUBDIV_VERSION {
 template <class MESH> class FarRefineTablesFactory;
 class VtrSparseSelector;
 
+
+//
+//  Typedef's for indices we want at the Far level -- need to go elsewhere eventually...
+//
+typedef VtrIndex       FarIndex;
+typedef VtrLocalIndex  FarLocalIndex;
+
+typedef VtrIndexArray      FarIndexArray;
+typedef VtrLocalIndexArray FarLocalIndexArray;
+
 //
 //  Class to store topology data for a specified set of refinement options.
 //
 class FarRefineTables
 {
 public:
-    typedef VtrIndex       Index;
-    typedef VtrLocalIndex  LocalIndex;
+    //  Local typedef's for local notational convenience:
+    typedef FarIndex       Index;
+    typedef FarLocalIndex  LocalIndex;
 
-    typedef VtrIndexArray      IndexArray;
-    typedef VtrLocalIndexArray LocalIndexArray;
+    typedef FarIndexArray      IndexArray;
+    typedef FarLocalIndexArray LocalIndexArray;
 
 public:
     FarRefineTables(SdcType type, SdcOptions options = SdcOptions());
     ~FarRefineTables();
 
-    //  Accessors:
+    //
+    //  Queries for the instance as a whole:
+    //
     SdcType    GetSchemeType() const    { return _subdivType; }
     SdcOptions GetSchemeOptions() const { return _subdivOptions; }
 
     bool IsUniform() const   { return _isUniform; }
     int  GetMaxLevel() const { return _maxLevel; }
 
-    //
-    //  The "counts" return the number of components at a specific level or for the sum
-    //  of all levels:
-    //
-    //  Should cache these results as members for trivial return...
-    int GetVertCount() const;
-    int GetEdgeCount() const;
-    int GetFaceCount() const;
-
-    int GetVertCount(int level) const { return _levels[level].vertCount(); }
-    int GetEdgeCount(int level) const { return _levels[level].edgeCount(); }
-    int GetFaceCount(int level) const { return _levels[level].faceCount(); }
+    //  (Note to self -- should cache these internally for trivial return)
+    int GetNumVerticesTotal() const;
+    int GetNumEdgesTotal() const;
+    int GetNumFacesTotal() const;
 
     //
-    //  Main refinement method(s) -- we will need some variants here to support
-    //  different refinement options, i.e. eventually struct RefineOptions:
+    //  High level refinement and related methods:
+    //      - need some variants here for different refinement options, i.e.
+    //        single refine method plus struct RefineOptions
     //
     void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = true);
     void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = true);
-
-    //
-    //  A few public utilities for consideration:
-    //      - clear all refinements, leaving the base level
-    //      - clear all refinements and all levels
-    //      - computing the mask weights
-    //
     void Unrefine();
     void Clear();
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
     void ComputeMaskWeights();
 #endif
+    template <class T> void Interpolate(                T const * src, T * dst) const;
+    template <class T> void InterpolateLevel(int level, T const * src, T * dst) const;
 
-    //  Level access for converting to/from base/last levels (ultimately these
-    //  need to be protected and the required functionality provided through an
-    //  extended public interface)
-    VtrLevel& GetLevel(int l) { return _levels[l]; }
+    //
+    //  Inspection of components per level:
+    //
+    //  Component inventories:
+    int GetNumVertices(int level) const { return _levels[level].vertCount(); }
+    int GetNumEdges(   int level) const { return _levels[level].edgeCount(); }
+    int GetNumFaces(   int level) const { return _levels[level].faceCount(); }
 
-    VtrLevel& GetBaseLevel() { return _levels.front(); }
+    //  Component properties:
+    float   GetEdgeSharpness(  int level, Index edge) const { return _levels[level].edgeSharpness(edge); }
+    float   GetVertexSharpness(int level, Index vert) const { return _levels[level].vertSharpness(vert); }
+    SdcRule GetVertexRule(     int level, Index vert) const { return _levels[level].vertRule(vert); }
 
-    VtrLevel& GetLastLevel() { return _levels.back(); }
+    //  Topological relations -- incident/adjacent components:
+    IndexArray const GetFaceVertices(int level, Index face) const { return _levels[level].accessFaceVerts(face); }
+    IndexArray const GetFaceEdges(   int level, Index face) const { return _levels[level].accessFaceEdges(face); }
+    IndexArray const GetEdgeVertices(int level, Index edge) const { return _levels[level].accessEdgeVerts(edge); }
+    IndexArray const GetEdgeFaces(   int level, Index edge) const { return _levels[level].accessEdgeFaces(edge); }
+    IndexArray const GetVertexFaces( int level, Index vert) const { return _levels[level].accessVertFaces(vert); }
+    IndexArray const GetVertexEdges( int level, Index vert) const { return _levels[level].accessVertEdges(vert); }
+
+    //      ... and do we want to include these with the above?
+    //  LocalIndexArray const VertexFaceLocalIndices(int level, Index vert) const;
+    //  LocalIndexArray const VertexEdgeLocalIndices(int level, Index vert) const;
+
+    //  Other topological queries:
+    Index FindEdge(int level, Index v0, Index v1) const { return _levels[level].findEdge(v0, v1); }
+
+    //  Parent-to-child relationships, i.e. relationships between components in one level
+    //  and the next (entries may be invalid if sparse):
+    IndexArray const GetFaceChildFaces(int level, Index face) const { return _refinements[level].faceChildFaces(face); }
+    IndexArray const GetFaceChildEdges(int level, Index face) const { return _refinements[level].faceChildEdges(face); }
+    IndexArray const GetEdgeChildEdges(int level, Index edge) const { return _refinements[level].edgeChildEdges(edge); }
+
+    Index GetFaceChildVertex(  int level, Index face) const { return _refinements[level].faceChildVertexIndex(face); }
+    Index GetEdgeChildVertex(  int level, Index edge) const { return _refinements[level].edgeChildVertexIndex(edge); }
+    Index GetVertexChildVertex(int level, Index vert) const { return _refinements[level].vertexChildVertexIndex(vert); }
+
+    //  Debugging aides:
+    bool ValidateTopology(int level) const { return _levels[level].validateTopology(); }
+    void PrintTopology(int level, bool children = true) const { _levels[level].print(children ? &_refinements[level] : 0); }
+
+
+public:
+    //  Want to be protect or remove these entirely:
+    VtrLevel&       GetLevel(int l)       { return _levels[l]; }
+    VtrLevel const& GetLevel(int l) const { return _levels[l]; }
 
     VtrRefinement& GetRefinement(int l) { return _refinements[l]; }
 
-    template <class T> void Interpolate(T const * src, T * dst) const;
-
-    template <class T> void InterpolateLevel(int level, T const * src, T * dst) const;
-
 protected:
-
+    //
     //  For use by the Factory base and subclasses to construct the base level:
-    template <class MESH> friend class FarRefineTablesFactory;
+    //
+    template <class MESH>
+    friend class FarRefineTablesFactory;
+    friend class FarRefineTablesFactoryBase;
+
+    //  This really should not be needed by the Factory ultimately...
+    VtrLevel& getBaseLevel() { return _levels.front(); }
+
+    int getNumBaseFaces() const    { return GetNumFaces(0); }
+    int getNumBaseEdges() const    { return GetNumEdges(0); }
+    int getNumBaseVertices() const { return GetNumVertices(0); }
 
     //  Sizing specifications required before allocation:
-    void setBaseFaceCount(  int count) { _levels[0].resizeFaces(count); }
-    void setBaseEdgeCount(  int count) { _levels[0].resizeEdges(count); }
-    void setBaseVertexCount(int count) { _levels[0].resizeVerts(count); }
+    void setNumBaseFaces(   int count) { _levels[0].resizeFaces(count); }
+    void setNumBaseEdges(   int count) { _levels[0].resizeEdges(count); }
+    void setNumBaseVertices(int count) { _levels[0].resizeVerts(count); }
 
-    void setBaseFaceVertexCount(Index f, int count) { _levels[0].resizeFaceVerts(f, count); }
-    void setBaseEdgeFaceCount(  Index e, int count) { _levels[0].resizeEdgeFaces(e, count); }
-    void setBaseVertexFaceCount(Index v, int count) { _levels[0].resizeVertFaces(v, count); }
-    void setBaseVertexEdgeCount(Index v, int count) { _levels[0].resizeVertEdges(v, count); }
+    void setNumBaseFaceVertices(Index f, int count) { _levels[0].resizeFaceVerts(f, count); }
+    void setNumBaseEdgeFaces(   Index e, int count) { _levels[0].resizeEdgeFaces(e, count); }
+    void setNumBaseVertexFaces( Index v, int count) { _levels[0].resizeVertFaces(v, count); }
+    void setNumBaseVertexEdges( Index v, int count) { _levels[0].resizeVertEdges(v, count); }
 
     //  Access to populate the base level topology after allocation:
-    int        getBaseFaceCount() const  { return GetFaceCount(0); }
-    IndexArray baseFaceVertices(Index f) { return _levels[0].modifyFaceVerts(f); }
-    IndexArray baseFaceEdges(   Index f) { return _levels[0].modifyFaceEdges(f); }
-
-    int        getBaseEdgeCount() const  { return GetEdgeCount(0); }
-    IndexArray baseEdgeVertices(Index e) { return _levels[0].modifyEdgeVerts(e); }
-    IndexArray baseEdgeFaces(   Index e) { return _levels[0].modifyEdgeFaces(e); }
-
-    int        getBaseVertexCount() const { return GetVertCount(0); }
-    IndexArray baseVertexFaces(Index v)   { return _levels[0].modifyVertFaces(v); }
-    IndexArray baseVertexEdges(Index v)   { return _levels[0].modifyVertEdges(v); }
+    IndexArray setBaseFaceVertices(Index f) { return _levels[0].modifyFaceVerts(f); }
+    IndexArray setBaseFaceEdges(   Index f) { return _levels[0].modifyFaceEdges(f); }
+    IndexArray setBaseEdgeVertices(Index e) { return _levels[0].modifyEdgeVerts(e); }
+    IndexArray setBaseEdgeFaces(   Index e) { return _levels[0].modifyEdgeFaces(e); }
+    IndexArray setBaseVertexFaces( Index v) { return _levels[0].modifyVertFaces(v); }
+    IndexArray setBaseVertexEdges( Index v) { return _levels[0].modifyVertEdges(v); }
 
     //  Not sure yet if we will determine these internally...
-    LocalIndexArray baseVertexFaceLocalIndices(Index v) { return _levels[0].modifyVertFaceLocalIndices(v); }
-    LocalIndexArray baseVertexEdgeLocalIndices(Index v) { return _levels[0].modifyVertEdgeLocalIndices(v); }
+    LocalIndexArray setBaseVertexFaceLocalIndices(Index v) { return _levels[0].modifyVertFaceLocalIndices(v); }
+    LocalIndexArray setBaseVertexEdgeLocalIndices(Index v) { return _levels[0].modifyVertEdgeLocalIndices(v); }
 
     //  Optionally available to get/set sharpness values:
     float& baseEdgeSharpness(Index e)   { return _levels[0].edgeSharpness(e); }
@@ -183,7 +224,7 @@ FarRefineTables::Interpolate(T const * src, T * dst) const {
         InterpolateLevel(level, src, dst);
         
         src = dst;
-        dst += GetVertCount(level);
+        dst += GetNumVertices(level);
     }
 }
 
