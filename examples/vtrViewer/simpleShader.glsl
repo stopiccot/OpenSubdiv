@@ -22,53 +22,40 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#include "../common/gl_common.h"
-
-#include <vector>
-
-class GLFont {
-public:
-
-    GLFont(GLuint fontTexture);
-
-    ~GLFont();
-
-    void Draw(GLuint transforUB);
-
-    void Clear();
-
-    void Print3D(float const pos[3], const char * str, int color=0);
-    
-    void SetFontScale(float scale);
-
-    struct Char {
-        float pos[3];
-        float ofs[2];
-        float alpha;
-        float color;
-    };
-    
-    std::vector<Char> & GetChars() {
-        _dirty=true;
-        return _chars;
-    }
-    
-    
-private:
-
-    void bindProgram();
-
-    std::vector<Char> _chars;
-    bool _dirty;
-
-    GLuint _program,
-           _transformBinding,
-           _attrPosition,
-           _attrData,
-           _fontTexture,
-           _scale,
-           _VAO,
-           _EAO,
-           _VBO;
+layout(std140) uniform Transform {
+    mat4 ModelViewMatrix;
+    mat4 ProjectionMatrix;
+    mat4 ModelViewProjectionMatrix;
 };
 
+//--------------------------------------------------------------
+// Vertex Shader
+//--------------------------------------------------------------
+#ifdef VERTEX_SHADER
+
+layout (location=0) in vec3 position;
+layout (location=1) in vec3 color;
+
+out vec4 fragColor;
+
+void main()
+{
+    fragColor = vec4(color,1.0);
+    gl_Position = ModelViewProjectionMatrix * vec4(position, 1);
+}
+#endif
+
+//--------------------------------------------------------------
+// Fragment Shader
+//--------------------------------------------------------------
+#ifdef FRAGMENT_SHADER
+
+in vec4 fragColor;
+out vec4 color;
+
+void main() {
+
+  color = fragColor;
+};
+
+#endif

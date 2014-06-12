@@ -62,7 +62,7 @@ GLFont::~GLFont() {
 void GLFont::bindProgram() {
 
     static const char *shaderSource =
-#include "billboard.gen.h"
+#include "fontShader.gen.h"
 ;
     // Update and bind transform state
     if (not _program) {
@@ -133,7 +133,7 @@ GLFont::Clear() {
 
 //------------------------------------------------------------------------------
 void
-GLFont::Print3D(float pos[3], const char * str) {
+GLFont::Print3D(float const pos[3], const char * str, int color) {
 
     int len = strlen(str);
 
@@ -146,7 +146,7 @@ GLFont::Print3D(float pos[3], const char * str) {
         c.ofs[1]=0.0f;
 
         c.alpha = (float)str[i];
-        c.color = 0;
+        c.color = color;
 
         _chars.push_back(c);
     }
