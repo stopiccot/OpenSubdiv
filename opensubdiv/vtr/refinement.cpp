@@ -40,20 +40,13 @@
 //  the following list of keywords to search for notes in comments where these issues
 //  are discussed:
 //
-//  CORRECTNESS:
-//      - shortcuts taken when progress was more important than correctness
-//
-//  ORIENTATION:
-//      - OSD/HBr orient subdivided faces in a specific way, on which hierarchical
-//        edits strongly depend
-//      - regular faces (quads) are split so that the vertex in the middle of the
-//        faces is the i'th vertex in the i'th child face -- this preserves the
-//        rectangular parameterization of the new collection of faces.
-//      - extra-ordinary faces (including triangels) are split so that the vertex
-//        in the middle of the faces is the 0'th vertex in all child faces.
-//
-//  N-GONS:
-//      - OSD/HBr support N-sided faces at level 0, which will ultimately need support
+//  ORDERING:
+//      - shortcuts that may not order incident components as ultimately desired
+//          - typically the vert-face and/or vert-edge relations
+//          - vert-face much more critical than vert-edge (which is debatable)
+//      - these won't affect refinement but will affect patch construction
+//      - failure to address will lead to topology validation failures once ordering
+//        has been added to validation
 //
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -413,19 +406,34 @@ VtrRefinement::populateFaceVerticesFromParentFaces()
 
         VtrIndexArray const pFaceChildren = faceChildFaces(pFace);
 
-        int pFaceVertCount  = pFaceVerts.size();
+        int pFaceVertCount = pFaceVerts.size();
         for (int j = 0; j < pFaceVertCount; ++j) {
             VtrIndex cFace = pFaceChildren[j];
             if (VtrIndexIsValid(cFace)) {
-                VtrIndexArray cFaceVerts = _child->modifyFaceVerts(cFace);
-
                 int jPrev = j ? (j - 1) : (pFaceVertCount - 1);
 
-                //  Note ORIENTATION dependency -- regular vs extra-ordinary...
-                cFaceVerts[0] = _faceChildVertIndex[pFace];
-                cFaceVerts[1] = _edgeChildVertIndex[pFaceEdges[jPrev]];
-                cFaceVerts[2] = _vertChildVertIndex[pFaceVerts[j]];
-                cFaceVerts[3] = _edgeChildVertIndex[pFaceEdges[j]];
+                VtrIndex cVertOfFace  = _faceChildVertIndex[pFace];
+                VtrIndex cVertOfEPrev = _edgeChildVertIndex[pFaceEdges[jPrev]];
+                VtrIndex cVertOfVert  = _vertChildVertIndex[pFaceVerts[j]];
+                VtrIndex cVertOfENext = _edgeChildVertIndex[pFaceEdges[j]];
+
+                VtrIndexArray cFaceVerts = _child->modifyFaceVerts(cFace);
+
+                //  Note orientation wrt parent face -- quad vs non-quad...
+                if (pFaceVertCount == 4) {
+                    int jOpp  = jPrev ? (jPrev - 1) : 3;
+                    int jNext = jOpp  ? (jOpp  - 1) : 3;
+
+                    cFaceVerts[j]     = cVertOfVert;
+                    cFaceVerts[jNext] = cVertOfENext;
+                    cFaceVerts[jOpp]  = cVertOfFace;
+                    cFaceVerts[jPrev] = cVertOfEPrev;
+                } else {
+                    cFaceVerts[0] = cVertOfVert;
+                    cFaceVerts[1] = cVertOfENext;
+                    cFaceVerts[2] = cVertOfFace;
+                    cFaceVerts[3] = cVertOfEPrev;
+                }
             }
         }
     }
@@ -447,21 +455,24 @@ VtrRefinement::populateFaceEdgesFromParentFaces()
         VtrIndexArray const pFaceChildFaces = faceChildFaces(pFace);
         VtrIndexArray const pFaceChildEdges = faceChildEdges(pFace);
 
-        int pFaceValence = pFaceVerts.size();
+        int pFaceVertCount = pFaceVerts.size();
 
-        for (int j = 0; j < pFaceValence; ++j) {
+        for (int j = 0; j < pFaceVertCount; ++j) {
             VtrIndex cFace = pFaceChildFaces[j];
             if (VtrIndexIsValid(cFace)) {
                 VtrIndexArray cFaceEdges = _child->modifyFaceEdges(cFace);
 
-                int jPrev = j ? (j - 1) : (pFaceValence - 1);
+                int jPrev = j ? (j - 1) : (pFaceVertCount - 1);
 
-                //  Note ORIENTATION dependency -- regular vs extra-ordinary...
-
-                //  First, the two child-edges of the parent face:
-                cFaceEdges[0] = pFaceChildEdges[jPrev];
-                cFaceEdges[3] = pFaceChildEdges[j];
-
+                //
+                //  We have two edges thate are children of parent edges, and two child
+                //  edges perpendicular to these from the interior of the parent face:
+                //
+                //  Identifying the former should be simpler -- after identifying the two
+                //  parent edges, we have to identify which child-edge corresponds to this
+                //  vertex.  This may be ambiguous with a degenerate edge (DEGEN) if tested
+                //  this way, and may warrant higher level inspection of the parent face...
+                //
                 VtrIndex pCornerVert = pFaceVerts[j];
 
                 VtrIndex            pPrevEdge      = pFaceEdges[jPrev];
@@ -473,8 +484,27 @@ VtrRefinement::populateFaceEdgesFromParentFaces()
                 int cornerInPrevEdge = (pPrevEdgeVerts[0] != pCornerVert);
                 int cornerInNextEdge = (pNextEdgeVerts[0] != pCornerVert);
 
-                cFaceEdges[1] = edgeChildEdges(pPrevEdge)[cornerInPrevEdge];
-                cFaceEdges[2] = edgeChildEdges(pNextEdge)[cornerInNextEdge];
+                VtrIndex cEdgeOfEdgePrev = edgeChildEdges(pPrevEdge)[cornerInPrevEdge];
+                VtrIndex cEdgeOfEdgeNext = edgeChildEdges(pNextEdge)[cornerInNextEdge];
+
+                VtrIndex cEdgePerpEdgePrev = pFaceChildEdges[jPrev];
+                VtrIndex cEdgePerpEdgeNext = pFaceChildEdges[j];
+
+                //  Note orientation wrt parent face -- quad vs non-quad...
+                if (pFaceVertCount == 4) {
+                    int jOpp  = jPrev ? (jPrev - 1) : 3;
+                    int jNext = jOpp  ? (jOpp  - 1) : 3;
+
+                    cFaceEdges[j]     = cEdgeOfEdgeNext;
+                    cFaceEdges[jNext] = cEdgePerpEdgeNext;
+                    cFaceEdges[jOpp]  = cEdgePerpEdgePrev;
+                    cFaceEdges[jPrev] = cEdgeOfEdgePrev;
+                } else {
+                    cFaceEdges[0] = cEdgeOfEdgeNext;
+                    cFaceEdges[1] = cEdgePerpEdgeNext;
+                    cFaceEdges[2] = cEdgePerpEdgePrev;
+                    cFaceEdges[3] = cEdgeOfEdgePrev;
+                }
             }
         }
     }
@@ -692,13 +722,11 @@ VtrRefinement::populateVertexFacesFromParentFaces()
         int cVertFaceCount = 0;
         for (int j = 0; j < pFaceVertCount; ++j) {
             if (VtrIndexIsValid(pFaceChildren[j])) {
-                cVertFaces[cVertFaceCount] = pFaceChildren[j];
+                //  Note orientation wrt parent face -- quad vs non-quad...
+                VtrLocalIndex vertInFace = (pFaceVertCount == 4) ? ((j+2) & 3) : 2;
 
-                //  Note ORIENTATION dependency -- this will eventually need to vary
-                //  with the valence of the face to be consistent with hier edits...
-                //
-                // cVertInFace[j] = (pFaceVertCount == 4) ? j : 0;
-                cVertInFace[cVertFaceCount] = 0;
+                cVertFaces[cVertFaceCount]  = pFaceChildren[j];
+                cVertInFace[cVertFaceCount] = vertInFace;
                 cVertFaceCount++;
             }
         }
@@ -744,22 +772,25 @@ VtrRefinement::populateVertexFacesFromParentEdges()
             //  Identify the corresponding two child faces for this parent face and
             //  assign those of the two that are valid:
             //
+            int pFaceEdgeCount = pFaceEdges.size();
+
             int faceChild0 = 0;
             for ( ; pFaceEdges[faceChild0] != pEdgeIndex; ++faceChild0) ;
 
             int faceChild1 = faceChild0 + 1;
-            if (faceChild1 == pFaceEdges.size()) faceChild1 = 0;
+            if (faceChild1 == pFaceEdgeCount) faceChild1 = 0;
 
-            //  For counter-clockwise ordering of faces, consider the second face
-            //  first:
+            //  For counter-clockwise ordering of faces, consider the second face first:
+            //
+            //  Note orientation wrt incident parent faces -- quad vs non-quad...
             if (VtrIndexIsValid(pFaceChildren[faceChild1])) {
                 cVertFaces[cVertFaceCount] = pFaceChildren[faceChild1];
-                cVertInFace[cVertFaceCount] = 1;
+                cVertInFace[cVertFaceCount] = (pFaceEdgeCount == 4) ? faceChild0 : 3;
                 cVertFaceCount++;
             }
             if (VtrIndexIsValid(pFaceChildren[faceChild0])) {
                 cVertFaces[cVertFaceCount] = pFaceChildren[faceChild0];
-                cVertInFace[cVertFaceCount] = 3;
+                cVertInFace[cVertFaceCount] = (pFaceEdgeCount == 4) ? faceChild1 : 1;
                 cVertFaceCount++;
             }
         }
@@ -792,17 +823,16 @@ VtrRefinement::populateVertexFacesFromParentVertices()
 
         int cVertFaceCount = 0;
         for (int i = 0; i < pVertFaces.size(); ++i) {
-            VtrIndex      pFaceIndex  = pVertFaces[i];
-            VtrLocalIndex pFaceVert = pVertInFace[i];
+            VtrIndex      pFace      = pVertFaces[i];
+            VtrLocalIndex pFaceChild = pVertInFace[i];
 
-            //  Note ORIENTATION dependency -- this will eventually need to vary
-            //  with the valence of the face to be consistent with hier edits...
-            int pFaceCount = parent.accessFaceVerts(pFaceIndex).size();
+            VtrIndex cFace = this->faceChildFaces(pFace)[pFaceChild];
+            if (VtrIndexIsValid(cFace)) {
+                //  Note orientation wrt incident parent faces -- quad vs non-quad...
+                int pFaceCount = parent.accessFaceVerts(pFace).size();
 
-            VtrIndex pFaceChildIndex = this->faceChildFaces(pFaceIndex)[pFaceVert];
-            if (VtrIndexIsValid(pFaceChildIndex)) {
-                cVertFaces[cVertFaceCount] = pFaceChildIndex;
-                cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceCount > 4) ? pFaceVert : 2);
+                cVertFaces[cVertFaceCount] = cFace;
+                cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceCount == 4) ? pFaceChild : 0);
                 cVertFaceCount++;
             }
         }
@@ -915,13 +945,13 @@ VtrRefinement::populateVertexEdgesFromParentEdges()
         int edgeFromEdgeCount = cVertEdgeCount - edgeFromFaceCount;
 
         //
-        //  Note we have ignored the ordering of the edges here -- generating those
+        //  Note we have ignored the ORDERING of the edges here -- generating those
         //  perpendicular to the parent edge first and then its children.  A simple
         //  permutation of the results can produce a more desirable ordering, but we
         //  need a bit more information gathered above, e.g. (f0,f1,ex) is ambiguous
         //  as to whether it should be (f0,e0,f1) or (f1,e1,f0)...
         //
-        //  Do we need to bother here?  Is ordering of vert-edges ever necessary?
+        //  Do we need to bother here?  Is ORDERING of vert-edges ever necessary?
         //
         if (cVertEdgeCount == 4) {
         } else if (edgeFromFaceCount == 2) {

@@ -31,6 +31,7 @@
 #include "../vtr/types.h"
 
 #include <vector>
+#include <cassert>
 
 
 namespace OpenSubdiv {
@@ -51,7 +52,8 @@ class VtrSelector;
 //  be considered a complete mesh independent of its ancestors.  It currently
 //  does contain a "depth" member -- as some inferences can then be made about
 //  the topology (i.e. all quads or all tris if not level 0) but that is still
-//  under consideration.
+//  under consideration (e.g. a "regular" flag would serve the same purpose, and
+//  level 0 may even be regular).
 //
 //  This class is intended for private use within the library.  So really its
 //  interface should be fully protected and only those library classes that need
@@ -402,6 +404,8 @@ VtrLevel::modifyFaceVerts(VtrIndex faceIndex)
 inline void
 VtrLevel::resizeFaceVerts(VtrIndex faceIndex, int count)
 {
+    assert(count < 256);
+
     int* countOffsetPair = &mFaceVertCountsAndOffsets[faceIndex*2];
 
     countOffsetPair[0] = count;

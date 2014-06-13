@@ -36,27 +36,13 @@
 
 
 //
-//  NOTES on short-cuts and assumptions...
-//      This was developed to prototype some ideas, and some issues were simplified
-//  (or just plain ignored) in order to validate the more general cases first.  Use
-//  the following list of keywords to search for notes in comments where these issues
-//  are discussed -- though most code that they may have referred to may have since
-//  been moved to VtrRefinement:
-//
-//  CORRECTNESS:
-//      - shortcuts taken when progress was more important than correctness
-//
-//  ORIENTATION:
-//      - OSD/HBr orient subdivided faces in a specific way, on which hierarchical
-//        edits strongly depend
-//      - regular faces (quads) are split so that the vertex in the middle of the
-//        faces is the i'th vertex in the i'th child face -- this preserves the
-//        rectangular parameterization of the new collection of faces.
-//      - extra-ordinary faces (including triangels) are split so that the vertex
-//        in the middle of the faces is the 0'th vertex in all child faces.
-//
-//  N-GONS:
-//      - OSD/HBr support N-sided faces at level 0, which will ultimately need support
+//  VtrLevel:
+//      This is intended to be a fairly simple container of topology, sharpness and
+//  other information that is useful to retain for subdivision.  It is intended to
+//  be constructed by other friend classes, i.e. factories and class specialized to
+//  contruct topology based on various splitting schemes.  So its interface consists
+//  of simple methods for inspection, and low-level protected methods for populating
+//  it rather than high-level modifiers.
 //
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -106,6 +92,11 @@ VtrLevel::validateTopology() const
     bool isValid = true;
 
     //  Verify each face-vert has corresponding vert-face and child:
+    if ((faceVertCount() == 0) || (vertFaceCount() == 0)) {
+        if (faceVertCount() == 0) printf("Error:  missing face-verts\n");
+        if (vertFaceCount() == 0) printf("Error:  missing vert-faces\n");
+        return false;
+    }
     for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
         VtrIndexArray const fVerts      = accessFaceVerts(fIndex);
         int                 fVertCount  = fVerts.size();
@@ -134,6 +125,11 @@ VtrLevel::validateTopology() const
     }
 
     //  Verify each face-edge has corresponding edge-face:
+    if ((edgeFaceCount() == 0) || (faceEdgeCount() == 0)) {
+        if (edgeFaceCount() == 0) printf("Error:  missing edge-faces\n");
+        if (faceEdgeCount() == 0) printf("Error:  missing face-edges\n");
+        return false;
+    }
     for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
         VtrIndexArray const fEdges      = accessFaceEdges(fIndex);
         int                 fEdgeCount  = fEdges.size();
@@ -162,6 +158,11 @@ VtrLevel::validateTopology() const
     }
 
     //  Verify each edge-vert has corresponding vert-edge and child:
+    if ((edgeVertCount() == 0) || (vertEdgeCount() == 0)) {
+        if (edgeVertCount() == 0) printf("Error:  missing edge-verts\n");
+        if (vertEdgeCount() == 0) printf("Error:  missing vert-edges\n");
+        return false;
+    }
     for (int eIndex = 0; eIndex < edgeCount(); ++eIndex) {
         VtrIndexArray const eVerts = accessEdgeVerts(eIndex);
 
@@ -640,28 +641,6 @@ VtrLevel::completeTopologyFromFaceVertices()
             VtrIndexArray v0Edges = dynVertEdges.accessCompMembers(v0Index);
 
             VtrIndex eIndex = this->findEdge(v0Index, v1Index, v0Edges);
-
-            //  Really need this edge search to go somewhere else -- particularly given the
-            //  need to handle the degenerate case (easily overlooked)...
-            /*
-            if (v0Index != v1Index) {
-                for (int j = 0; j < v0Edges.size(); ++j) {
-                    VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
-                    if ((eVerts[0] == v1Index) || (eVerts[1] == v1Index)) {
-                        eIndex = v0Edges[j];
-                        break;
-                    }
-                }
-            } else {
-                for (int j = 0; j < v0Edges.size(); ++j) {
-                    VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
-                    if ((eVerts[0] == eVerts[1])) {
-                        eIndex = v0Edges[j];
-                        break;
-                    }
-                }
-            }
-            */
 
             //  If no edge found, create/append a new one:
             if (!VtrIndexIsValid(eIndex)) {
