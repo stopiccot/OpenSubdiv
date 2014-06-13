@@ -275,6 +275,7 @@ option(MAYA_LOCATION "Path to Maya" "")
 
 option(NO_LIB "Disable the opensubdiv libs build (caveat emptor)" OFF)
 option(NO_EXAMPLES "Disable examples build" OFF)
+option(NO_TUTORIALS "Disable tutorials build" OFF)
 option(NO_REGRESSION "Disable regression tests build" OFF)
 option(NO_PYTHON "Disable Python SWIG build" OFF)
 option(NO_MAYA "Disable Maya plugin build" OFF)
@@ -664,6 +665,10 @@ endif()
 
 if (NOT NO_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+if (NOT NO_TUTORIALS)
+    add_subdirectory(tutorials)
 endif()
 
 if (NOT NO_PYTHON)
