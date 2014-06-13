@@ -25,6 +25,7 @@
 #define FAR_REFINE_TABLES_FACTORY_H
 
 #include "../version.h"
+
 #include "../far/refineTables.h"
 
 #include <cassert>
@@ -52,35 +53,89 @@ namespace OPENSUBDIV_VERSION {
 //  the Create() method (defined by subclasses) to vary these if greater flexibility
 //  per instance is desired.
 //
-class FarRefineTablesFactoryBase
-{
+class FarRefineTablesFactoryBase {
+
 public:
-    FarRefineTablesFactoryBase()
-            : _schemeType(TYPE_CATMARK), _schemeOptions() { }
 
-    FarRefineTablesFactoryBase(SdcType type, SdcOptions options = SdcOptions())
-            : _schemeType(type), _schemeOptions(options) { }
+    /// \brief Instantiates FarRefineTables from indexing arrays.
+    ///
+    /// Note: because only face-vertices topological relationships are specified
+    ///       with this factory, edge relationships have to be inferred, which
+    ///       requires additional processing. If the client application can 
+    ///       provide these relationships, then FarRefineTablesFactory::Create()
+    ///       should be used instead.
+    ///
+    /// @param type          Subdivision scheme (catmark, loop ,..).
+    ///
+    /// @param options       Subdivision options (boundary interpolation rules, ...).
+    ///
+    /// @param numVertices   The number of vertices in the mesh.
+    ///
+    /// @param numFaces      The number of faces in the mesh.
+    ///
+    /// @param vertsPerFace  Array containing the number of vertices per face.
+    ///
+    /// @param vertIndices   Array containing the indices of the vertices for
+    ///                      each face
+    ///
+    /// @return              An instance of FarRefineTables
+    ///
+    static FarRefineTables * Create( SdcType type,
+                                     SdcOptions options,
+                                     unsigned int numVertices,
+                                     unsigned int numFaces,
+                                     unsigned int const * vertsPerFace,
+                                     unsigned int const * vertIndices   );
 
-    virtual ~FarRefineTablesFactoryBase() { }
 
-    SdcType    GetSchemeType() const    { return _schemeType; }
-    SdcOptions GetSchemeOptions() const { return _schemeOptions; }
+    /// \brief Adds edge crease weights to FarRefineTables
+    ///
+    /// Warning: this function will always fail and reutrn 0 if called after
+    ///          any type of Refinement has been applied.
+    ///
+    /// @param refTables       The topology to add creases to.
+    ///
+    /// @param numEdges        The number of edges to be creased.
+    ///
+    /// @param vertIndexPairs  An array containing pairs of vertex indices.
+    ///                        describing each edge
+    ///
+    /// @param creaseWeights   The creases sharpness.
+    ///
+    /// @return                The number of edges successfully sharpened.
+    ///
+    static unsigned int AddCreases( FarRefineTables & refTables,
+                                    unsigned int numEdges,
+                                    unsigned int const * vertIndexPairs,
+                                    float const * creaseWeights          );
 
-    void SetSchemeType(SdcType type)          { _schemeType = type; }
-    void SetSchemeOptions(SdcOptions options) { _schemeOptions = options; }
 
-    //  The Create() method is defined by the subclass template as it needs an argument
-    //  of the subclass mesh type.
 
+    /// \brief Adds corner crease weights to FarRefineTables
+    ///
+    /// Warning: this function will always fail and reutrn 0 if called after
+    ///          any type of Refinement has been applied.
+    ///
+    /// @param refTables       The topology to add creases to.
+    ///
+    /// @param numVertices     The number of vertices (corners) to be creased.
+    ///
+    /// @param vertIndices     An array containing the vertex indices.
+    ///
+    /// @param creaseWeights   The creases sharpness.
+    ///
+    /// @return                The number of corners successfully sharpened.
+    ///
+    static unsigned int AddCorners( FarRefineTables & refTables,
+                                    unsigned int numVertices,
+                                    unsigned int const * vertIndices,
+                                    float const * cornerWeights );
 protected:
-    void validateComponentTopologySizing(FarRefineTables& refTables);
-    void validateComponentTopologyAssignment(FarRefineTables& refTables);
 
-    void applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables);
+    static void validateComponentTopologySizing(FarRefineTables& refTables);
+    static void validateComponentTopologyAssignment(FarRefineTables& refTables);
 
-protected:
-    SdcType    _schemeType;
-    SdcOptions _schemeOptions;
+    static void applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables);
 };
 
 
@@ -96,8 +151,8 @@ protected:
 //  class MESH appropriately.
 //
 template <class MESH>
-class FarRefineTablesFactory : public FarRefineTablesFactoryBase
-{
+class FarRefineTablesFactory : public FarRefineTablesFactoryBase {
+
 public:
     FarRefineTablesFactory() : FarRefineTablesFactoryBase() { }
 
@@ -120,7 +175,8 @@ public:
     //  these Factory classes, though we may want the Factory to have an instance member
     //  for repeated application to the meshes it processes.
     //
-    FarRefineTables* Create(MESH const& mesh, int maxLevel = 0, bool fullTopology = false);
+    static FarRefineTables* Create(SdcType type, SdcOptions options, MESH const& mesh,
+        int maxLevel = 0, bool fullTopology = false);
 
 protected:
     //
@@ -131,17 +187,17 @@ protected:
     //  There are two minimal construction requirements and one optional.
     //
     //  See the comments in the generic stubs for details on how to write these.
-    //  
+    //
     //  Required:
-    void resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh);
-    void assignComponentTopology(FarRefineTables& refTables, MESH const& mesh);
+    static void resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh);
+    static void assignComponentTopology(FarRefineTables& refTables, MESH const& mesh);
 
     //  Optional:
-    void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
+    static void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
 
 protected:
     //  Other protected details -- not to be specialized:
-    void populateBaseLevel(FarRefineTables& refTables, MESH const& mesh);
+    static void populateBaseLevel(FarRefineTables& refTables, MESH const& mesh);
 };
 
 
@@ -150,9 +206,9 @@ protected:
 //
 template <class MESH>
 FarRefineTables*
-FarRefineTablesFactory<MESH>::Create(MESH const& mesh, int maxLevel, bool fullTopology)
+FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh, int maxLevel, bool fullTopology)
 {
-    FarRefineTables *refTables = new FarRefineTables(_schemeType, _schemeOptions);
+    FarRefineTables *refTables = new FarRefineTables(type, options);
 
     populateBaseLevel(*refTables, mesh);
 

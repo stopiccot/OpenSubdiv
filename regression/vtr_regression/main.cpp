@@ -150,9 +150,13 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
     // Vtr interpolation
     Shape * shape = Shape::parseObj(desc.data.c_str(), desc.scheme);
 
-    FRefineTablesFactory refFactory(GetSdcType(*shape), GetSdcOptions(*shape));
+    FRefineTablesFactory refFactory;
 
-    FRefineTables * refTables = refFactory.Create(*shape, maxlevel, /*full topology*/ true);
+    FRefineTables * refTables = refFactory.Create( GetSdcType(*shape),
+                                                   GetSdcOptions(*shape),
+                                                   *shape,
+                                                   maxlevel,
+                                                   true /*full topology*/ );
     assert(refTables);
 
     // populate coarse mesh positions
@@ -171,6 +175,7 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
 }
 
 //------------------------------------------------------------------------------
+#ifdef foo
 static void
 printVertexData(std::vector<xyzVV> const & hbrBuffer, std::vector<xyzVV> const & vtrBuffer) {
 
@@ -185,7 +190,7 @@ printVertexData(std::vector<xyzVV> const & hbrBuffer, std::vector<xyzVV> const &
                                                     vtr[0], vtr[1], vtr[2]);
     }
 }
-
+#endif
 //------------------------------------------------------------------------------
 struct Mapper {
 

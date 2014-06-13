@@ -31,7 +31,6 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-
 //
 //  Methods for the Factory base class -- general enough to warrant including in
 //  the base class rather than the subclass template (and so replicated for each
@@ -39,8 +38,8 @@ namespace OPENSUBDIV_VERSION {
 //
 //
 void
-FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& refTables)
-{
+FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& refTables) {
+
     VtrLevel& baseLevel = refTables.getBaseLevel();
 
     int vCount = baseLevel.vertCount();
@@ -78,8 +77,8 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 }
 
 void
-FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables& refTables)
-{
+FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables& refTables) {
+
     VtrLevel& baseLevel = refTables.getBaseLevel();
 
     //
@@ -112,8 +111,8 @@ FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables&
 //  to do both at once...
 //
 void
-FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables)
-{
+FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables) {
+
     VtrLevel&  baseLevel = refTables.getBaseLevel();
 
     assert((int)baseLevel.mEdgeTags.size() == baseLevel.edgeCount());
@@ -192,7 +191,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
         //  tag is still being considered, but regardless, it depends on the SdcScheme...
         //
-        assert(_schemeType == TYPE_CATMARK);
+        assert(refTables.GetSchemeType()==TYPE_CATMARK);
 
         vTag._boundary = (vFaces.size() < vEdges.size());
         if (isCorner) {
@@ -209,6 +208,104 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
     //
     //  for (VtrIndex fIndex = 0; fIndex < baseLevel.faceCount(); ++fIndex) {
     //  }
+}
+
+//
+// Instantiates FarRefineTables from indexing arrays.
+//
+FarRefineTables *
+FarRefineTablesFactoryBase::Create( SdcType type,
+                                    SdcOptions options,
+                                    unsigned int numVertices,
+                                    unsigned int numFaces,
+                                    unsigned int const * vertsPerFace,
+                                    unsigned int const * vertIndices) {
+
+    FarRefineTables *refTables = new FarRefineTables(type, options);
+
+    { // resize components
+        refTables->setNumBaseVertices(numVertices);
+        refTables->setNumBaseFaces(numFaces);
+
+        for (unsigned int face=0; face<numFaces; ++face) {
+            refTables->setNumBaseFaceVertices(face, vertsPerFace[face]);
+        }
+    }
+
+    validateComponentTopologySizing(*refTables);
+
+    { // assign face vertex indices
+
+        for (unsigned int face=0, idx=0; face<numFaces; ++face) {
+
+            FarIndexArray dstFaceVerts = refTables->setBaseFaceVertices(face);
+
+            for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
+
+                dstFaceVerts[vert] = vertIndices[idx++];
+            }
+        }
+    }
+
+    validateComponentTopologyAssignment(*refTables);
+
+    return refTables;
+}
+
+//
+// Adds edge creases.
+//
+unsigned int
+FarRefineTablesFactoryBase::AddCreases( FarRefineTables & refTables,
+                                        unsigned int numEdges,
+                                        unsigned int const * vertIndexPairs,
+                                        float const * creaseWeights ) {
+    int result=0;
+
+    if (refTables.GetMaxLevel()>0) {
+        // This function should never be called on topology that has
+        // been refined
+        return result;
+    }
+
+    for (unsigned int edge=0; edge<numEdges; ++edge, vertIndexPairs+=2) {
+
+        FarIndex idx = refTables.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
+        
+        if (idx!=VTR_INDEX_INVALID) {
+           refTables.baseEdgeSharpness(idx) = creaseWeights[edge];
+           ++result;
+        }
+    }
+    return result;
+}
+
+//
+// Adds vertex creases.
+//
+unsigned int
+FarRefineTablesFactoryBase::AddCorners( FarRefineTables & refTables,
+                                        unsigned int numVertices,
+                                        unsigned int const * vertIndices,
+                                        float const * cornerWeights ) {
+    int result=0;
+
+    if (refTables.GetMaxLevel()>0) {
+        // This function should never be called on topology that has
+        // been refined
+        return result;
+    }
+
+    for (unsigned int vert=0; vert<numVertices; ++vert) {
+
+        int idx = vertIndices[vert];
+
+        if (idx < refTables.GetNumVertices(0)) {
+           refTables.baseVertexSharpness(idx) = cornerWeights[vert];
+           ++result;
+        }
+    }
+    return result;
 }
 
 } // end namespace OPENSUBDIV_VERSION

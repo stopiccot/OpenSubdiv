@@ -433,9 +433,9 @@ createVtrMesh(Shape * shape, int maxlevel) {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTablesFactory<Shape> refFactory(sdctype, sdcoptions);
+    OpenSubdiv::FarRefineTablesFactory<Shape> refFactory;
     
-    OpenSubdiv::FarRefineTables * refTables = refFactory.Create(*shape, maxlevel, /*full topology*/ true);
+    OpenSubdiv::FarRefineTables * refTables = refFactory.Create(sdctype, sdcoptions, *shape, maxlevel, /*full topology*/ true);
 
     // create vertex primvar data buffer
     std::vector<Vertex> vertexBuffer(refTables->GetNumVerticesTotal());
