@@ -265,6 +265,9 @@ createVertNumbers(std::vector<Hface const *> faces) {
 static void
 createHbrMesh(Shape * shape, int maxlevel) {
 
+    Stopwatch s;
+    s.Start();
+
     // create Hbr mesh using functions from hbr_utils
     Hmesh * hmesh = createMesh<Vertex>(shape->scheme, /*fvarwidth*/ 0);
 
@@ -318,6 +321,8 @@ createHbrMesh(Shape * shape, int maxlevel) {
             firstface = nfaces;
             nfaces = hmesh->GetNumFaces();
         }
+        s.Stop();
+        printf("Hbr time: %f ms\n", float(s.GetElapsed())*1000.0f);
 
         if (g_HbrDrawVertIDs) {
             createVertNumbers(refinedFaces);
@@ -429,6 +434,9 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
 static void
 createVtrMesh(Shape * shape, int maxlevel) {
 
+    Stopwatch s;
+    s.Start();
+
     // create Vtr mesh (topology)
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
@@ -441,6 +449,10 @@ createVtrMesh(Shape * shape, int maxlevel) {
     std::vector<Vertex> vertexBuffer(refTables->GetNumVerticesTotal());
     Vertex * verts = &vertexBuffer[0];
 
+    s.Stop();
+    printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
+
+    s.Start();
     // copy coarse vertices positions
     int ncoarseverts = shape->GetNumVertices();
     for (int i=0; i<ncoarseverts; ++i) {
@@ -450,6 +462,10 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
     // populate buffer with Vtr interpolated vertex data
     refTables->Interpolate<Vertex>(verts, verts + ncoarseverts);
+    
+    s.Stop();
+    printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
+    printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
 
 
     if (g_VtrDrawVertIDs) {
@@ -487,8 +503,8 @@ createMeshes(ShapeDesc const & desc, int maxlevel) {
     Shape * shape = Shape::parseObj(desc.data.c_str(), desc.scheme);
 
     createHbrMesh(shape, maxlevel);
+    
     createVtrMesh(shape, maxlevel);
-
     delete shape;
 }
 
@@ -967,7 +983,7 @@ int main(int argc, char ** argv)
                 ss << ifs.rdbuf();
                 ifs.close();
                 str = ss.str();
-                g_shapes.push_back(ShapeDesc(str.c_str(), argv[1], kCatmark));
+                g_shapes.push_back(ShapeDesc(argv[1], str.c_str(), kCatmark));
             }
         }
     }

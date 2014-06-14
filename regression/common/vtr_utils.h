@@ -128,8 +128,6 @@ FarRefineTablesFactory<Shape>::resizeComponentTopology(
     for (int i=0; i<nfaces; ++i) {
 
         int nv = shape.nvertsPerFace[i];
-        assert(nv==4); // temporary until n-gons are supported
-
         refTables.setNumBaseFaceVertices(i, nv);
     }
 
@@ -191,7 +189,7 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
                     printf("cannot find vertex for corner tag (%d)\n", vertex );
                 } else {
                     int nfloat = (int) t->floatargs.size();
-                    refTables.baseVertexSharpness(i) =
+                    refTables.baseVertexSharpness(vertex) =
                         std::max(0.0f, ((nfloat > 1) ? t->floatargs[j] : t->floatargs[0]));
                 }
             }
