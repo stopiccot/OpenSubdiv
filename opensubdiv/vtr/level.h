@@ -42,7 +42,6 @@ template <class MESH> class FarRefineTablesFactory;
 class FarRefineTablesFactoryBase;
 class FarRefineTables;
 class VtrRefinement;
-class VtrSelector;
 
 //
 //  VtrLevel:
@@ -79,10 +78,15 @@ class VtrSelector;
 //  when it was being prototyped and so it does not conform to OSD standards in many
 //  ways:
 //      - superficial stylistic issues:
-//          - replacing "m" prefix with "_" on member variables
-//          - use of Vertex vs Vert in non-local methods
-//          - removal of "access" and "modify" prefixes on VtrArray methods
+//          . replacing "m" prefix with "_" on member variables
+//              - done
+//          . replace "access" and "modify" prefixes on VtrArray methods with "get"
+//              - done
+//          - replace use of "...Count" with "GetNum..."
+//          - use of Vertex vs Vert in non-local (or any?) methods
 //      - review public/protected/friend accessibility
+//
+//  Most are more relevant to the refinement, which used to be part of this class:
 //      - short cuts that need revisiting:
 //          - support for face-vert counts > 4
 //          - support for edge-face counts > 2
@@ -162,19 +166,19 @@ public:
     ~VtrLevel();
 
     //  Simple accessors:
-    int depth() const { return _depth; }
+    int getDepth() const { return _depth; }
 
-    int vertCount() const { return _vertCount; }
-    int faceCount() const { return _faceCount; }
-    int edgeCount() const { return _edgeCount; }
+    int getNumVertices() const { return _vertCount; }
+    int getNumFaces() const    { return _faceCount; }
+    int getNumEdges() const    { return _edgeCount; }
 
     //  More global sizes may prove useful...
-    int faceVertCount() const { return (int) mFaceVertIndices.size(); }
-    int faceEdgeCount() const { return (int) mFaceEdgeIndices.size(); }
-    int edgeVertCount() const { return (int) mEdgeVertIndices.size(); }
-    int edgeFaceCount() const { return (int) mEdgeFaceIndices.size(); }
-    int vertFaceCount() const { return (int) mVertFaceIndices.size(); }
-    int vertEdgeCount() const { return (int) mVertEdgeIndices.size(); }
+    int getNumFaceVerticesTotal() const { return (int) _faceVertIndices.size(); }
+    int getNumFaceEdgesTotal() const    { return (int) _faceEdgeIndices.size(); }
+    int getNumEdgeVerticesTotal() const { return (int) _edgeVertIndices.size(); }
+    int getNumEdgeFacesTotal() const    { return (int) _edgeFaceIndices.size(); }
+    int getNumVertexFacesTotal() const  { return (int) _vertFaceIndices.size(); }
+    int getNumVertexEdgesTotal() const  { return (int) _vertEdgeIndices.size(); }
 
     //  Methods to access the relation tables/indices -- note that for some relations
     //  we store an additional "local index", e.g. for the case of vert-faces if one
@@ -184,23 +188,29 @@ public:
     //  face index, but for now, given the need to support faces of potentially high
     //  valence we'll us an 8- or 16-bit integer.
     //
-    //  Methods to access and modify the six topological relations:
-    //
-    VtrIndexArray const accessFaceVerts(VtrIndex faceIndex) const;
-    VtrIndexArray const accessFaceEdges(VtrIndex faceIndex) const;
-    VtrIndexArray const accessEdgeVerts(VtrIndex edgeIndex) const;
-    VtrIndexArray const accessEdgeFaces(VtrIndex edgeIndex) const;
-    VtrIndexArray const accessVertFaces(VtrIndex vertIndex) const;
-    VtrIndexArray const accessVertEdges(VtrIndex vertIndex) const;
+    //  Methods to access the six topological relations:
+    VtrIndexArray const getFaceVertices(VtrIndex faceIndex) const;
+    VtrIndexArray const getFaceEdges(VtrIndex faceIndex) const;
+    VtrIndexArray const getEdgeVertices(VtrIndex edgeIndex) const;
+    VtrIndexArray const getEdgeFaces(VtrIndex edgeIndex) const;
+    VtrIndexArray const getVertexFaces(VtrIndex vertIndex) const;
+    VtrIndexArray const getVertexEdges(VtrIndex vertIndex) const;
 
-    VtrLocalIndexArray const accessVertFaceLocalIndices(VtrIndex vertIndex) const;
-    VtrLocalIndexArray const accessVertEdgeLocalIndices(VtrIndex vertIndex) const;
+    VtrLocalIndexArray const getVertexFaceLocalIndices(VtrIndex vertIndex) const;
+    VtrLocalIndexArray const getVertexEdgeLocalIndices(VtrIndex vertIndex) const;
 
-    VtrSharpness edgeSharpness(VtrIndex edgeIndex) const;
-    VtrSharpness vertSharpness(VtrIndex vertIndex) const;
-    SdcRule      vertRule(     VtrIndex vertIndex) const;
+    //  Replace these with access to sharpness buffers/arrays rather than elements:
+    VtrSharpness getEdgeSharpness(VtrIndex edgeIndex) const;
+    VtrSharpness getVertexSharpness(VtrIndex vertIndex) const;
+    SdcRule      getVertexRule(     VtrIndex vertIndex) const;
 
     VtrIndex findEdge(VtrIndex v0Index, VtrIndex v1Index) const;
+
+public:
+    //  Debugging aides -- unclear what will persist...
+    bool validateTopology() const;
+
+    void print(const VtrRefinement* parentRefinement = 0) const;
 
 protected:
     template <class MESH>
@@ -208,58 +218,53 @@ protected:
     friend class FarRefineTablesFactoryBase;
     friend class FarRefineTables;
     friend class VtrRefinement;
-    friend class VtrSelector;
 
-    //
     //  Sizing methods used to construct a level to populate:
-    //
-    void resizeFaces(    int faceCount);
-    void resizeFaceVerts(int totalFaceVertCount);
-    void resizeFaceEdges(int totalFaceEdgeCount);
+    void resizeFaces(       int numFaces);
+    void resizeFaceVertices(int numFaceVertsTotal);
+    void resizeFaceEdges(   int numFaceEdgesTotal);
 
-    void resizeEdges(    int edgeCount);
-    void resizeEdgeVerts();  // always 2*edgeCount
-    void resizeEdgeFaces(int totalEdgeFaceCount);
+    void resizeEdges(    int numEdges);
+    void resizeEdgeVertices();  // always 2*edgeCount
+    void resizeEdgeFaces(int numEdgeFacesTotal);
 
-    void resizeVerts(    int vertCount);
-    void resizeVertFaces(int totalVertFaceCount);
-    void resizeVertEdges(int totalVertEdgeCount);
+    void resizeVertices(   int numVertices);
+    void resizeVertexFaces(int numVertexFacesTotal);
+    void resizeVertexEdges(int numVertexEdgesTotal);
 
-    //
     //  Modifiers to populate the relations for each component:
-    //
-    VtrIndexArray      modifyFaceVerts(VtrIndex faceIndex);
-    VtrIndexArray      modifyFaceEdges(VtrIndex faceIndex);
-    VtrIndexArray      modifyEdgeVerts(VtrIndex edgeIndex);
-    VtrIndexArray      modifyEdgeFaces(VtrIndex edgeIndex);
-    VtrIndexArray      modifyVertFaces(           VtrIndex vertIndex);
-    VtrLocalIndexArray modifyVertFaceLocalIndices(VtrIndex vertIndex);
-    VtrIndexArray      modifyVertEdges(           VtrIndex vertIndex);
-    VtrLocalIndexArray modifyVertEdgeLocalIndices(VtrIndex vertIndex);
+    VtrIndexArray      getFaceVertices(VtrIndex faceIndex);
+    VtrIndexArray      getFaceEdges(VtrIndex faceIndex);
+    VtrIndexArray      getEdgeVertices(VtrIndex edgeIndex);
+    VtrIndexArray      getEdgeFaces(VtrIndex edgeIndex);
+    VtrIndexArray      getVertexFaces(           VtrIndex vertIndex);
+    VtrLocalIndexArray getVertexFaceLocalIndices(VtrIndex vertIndex);
+    VtrIndexArray      getVertexEdges(           VtrIndex vertIndex);
+    VtrLocalIndexArray getVertexEdgeLocalIndices(VtrIndex vertIndex);
 
-    VtrSharpness& edgeSharpness(VtrIndex edgeIndex);
-    VtrSharpness& vertSharpness(VtrIndex vertIndex);
+    //  Replace these with access to sharpness buffers/arrays rather than elements:
+    VtrSharpness& getEdgeSharpness(VtrIndex edgeIndex);
+    VtrSharpness& getVertexSharpness(VtrIndex vertIndex);
 
-    //
     //  Counts and offsets for all relation types:
-    //
-    int faceVertCount( VtrIndex faceIndex) const { return mFaceVertCountsAndOffsets[2*faceIndex]; }
-    int faceVertOffset(VtrIndex faceIndex) const { return mFaceVertCountsAndOffsets[2*faceIndex + 1]; }
+    //      - these may be unwarranted if we let VtrRefinement access members directly...
+    int getNumFaceVertices(     VtrIndex faceIndex) const { return _faceVertCountsAndOffsets[2*faceIndex]; }
+    int getOffsetOfFaceVertices(VtrIndex faceIndex) const { return _faceVertCountsAndOffsets[2*faceIndex + 1]; }
 
-    int faceEdgeCount( VtrIndex faceIndex) const { return faceVertCount(faceIndex); }
-    int faceEdgeOffset(VtrIndex faceIndex) const { return faceVertOffset(faceIndex); }
+    int getNumFaceEdges(     VtrIndex faceIndex) const { return getNumFaceVertices(faceIndex); }
+    int getOffsetOfFaceEdges(VtrIndex faceIndex) const { return getOffsetOfFaceVertices(faceIndex); }
 
-    int edgeVertCount( VtrIndex )          const { return 2; }
-    int edgeVertOffset(VtrIndex edgeIndex) const { return 2 * edgeIndex; }
+    int getNumEdgeVertices(     VtrIndex )          const { return 2; }
+    int getOffsetOfEdgeVertices(VtrIndex edgeIndex) const { return 2 * edgeIndex; }
 
-    int edgeFaceCount( VtrIndex edgeIndex) const { return mEdgeFaceCountsAndOffsets[2*edgeIndex]; }
-    int edgeFaceOffset(VtrIndex edgeIndex) const { return mEdgeFaceCountsAndOffsets[2*edgeIndex + 1]; }
+    int getNumEdgeFaces(     VtrIndex edgeIndex) const { return _edgeFaceCountsAndOffsets[2*edgeIndex]; }
+    int getOffsetOfEdgeFaces(VtrIndex edgeIndex) const { return _edgeFaceCountsAndOffsets[2*edgeIndex + 1]; }
 
-    int vertFaceCount( VtrIndex vertIndex) const { return mVertFaceCountsAndOffsets[2*vertIndex]; }
-    int vertFaceOffset(VtrIndex vertIndex) const { return mVertFaceCountsAndOffsets[2*vertIndex + 1]; }
+    int getNumVertexFaces(     VtrIndex vertIndex) const { return _vertFaceCountsAndOffsets[2*vertIndex]; }
+    int getOffsetOfVertexFaces(VtrIndex vertIndex) const { return _vertFaceCountsAndOffsets[2*vertIndex + 1]; }
 
-    int vertEdgeCount( VtrIndex vertIndex) const { return mVertEdgeCountsAndOffsets[2*vertIndex]; }
-    int vertEdgeOffset(VtrIndex vertIndex) const { return mVertEdgeCountsAndOffsets[2*vertIndex + 1]; }
+    int getNumVertexEdges(     VtrIndex vertIndex) const { return _vertEdgeCountsAndOffsets[2*vertIndex]; }
+    int getOffsetOfVertexEdges(VtrIndex vertIndex) const { return _vertEdgeCountsAndOffsets[2*vertIndex + 1]; }
 
 
     //
@@ -271,16 +276,16 @@ protected:
     //  both the size and the appropriate offset, while "trim" is use to quickly lower
     //  the size from an upper bound and nothing else.
     //
-    void resizeFaceVerts(VtrIndex FaceIndex, int count);
+    void resizeFaceVertices(VtrIndex FaceIndex, int count);
 
     void resizeEdgeFaces(VtrIndex edgeIndex, int count);
     void trimEdgeFaces(  VtrIndex edgeIndex, int count);
 
-    void resizeVertFaces(VtrIndex vertIndex, int count);
-    void trimVertFaces(  VtrIndex vertIndex, int count);
+    void resizeVertexFaces(VtrIndex vertIndex, int count);
+    void trimVertexFaces(  VtrIndex vertIndex, int count);
 
-    void resizeVertEdges(VtrIndex vertIndex, int count);
-    void trimVertEdges(  VtrIndex vertIndex, int count);
+    void resizeVertexEdges(VtrIndex vertIndex, int count);
+    void trimVertexEdges(  VtrIndex vertIndex, int count);
 
 protected:
     //
@@ -295,7 +300,7 @@ protected:
 
     //  Methods supporting the above:
     void orientIncidentComponents();
-    bool orderVertFacesAndEdges(int vIndex);
+    bool orderVertexFacesAndEdges(int vIndex);
     void populateLocalIndices();
 
 protected:
@@ -337,76 +342,54 @@ protected:
     //
 
     //  Per-face:
-    std::vector<VtrIndex> mFaceVertCountsAndOffsets;  // 2 per face, redundant after level 0
-    std::vector<VtrIndex> mFaceVertIndices;           // 3 or 4 per face, variable at level 0
-    std::vector<VtrIndex> mFaceEdgeIndices;           // matches face-vert indices
-    std::vector<FTag>     mFaceTags;                  // 1 per face:  includes "hole" tag
+    std::vector<VtrIndex> _faceVertCountsAndOffsets;  // 2 per face, redundant after level 0
+    std::vector<VtrIndex> _faceVertIndices;           // 3 or 4 per face, variable at level 0
+    std::vector<VtrIndex> _faceEdgeIndices;           // matches face-vert indices
+    std::vector<FTag>     _faceTags;                  // 1 per face:  includes "hole" tag
 
     //  Per-edge:
-    std::vector<VtrIndex> mEdgeVertIndices;           // 2 per edge
-    std::vector<VtrIndex> mEdgeFaceCountsAndOffsets;  // 2 per edge
-    std::vector<VtrIndex> mEdgeFaceIndices;           // varies with faces per edge
+    std::vector<VtrIndex> _edgeVertIndices;           // 2 per edge
+    std::vector<VtrIndex> _edgeFaceCountsAndOffsets;  // 2 per edge
+    std::vector<VtrIndex> _edgeFaceIndices;           // varies with faces per edge
 
-    std::vector<VtrSharpness> mEdgeSharpness;             // 1 per edge
-    std::vector<ETag>         mEdgeTags;                  // 1 per edge:  manifold, boundary, etc.
+    std::vector<VtrSharpness> _edgeSharpness;             // 1 per edge
+    std::vector<ETag>         _edgeTags;                  // 1 per edge:  manifold, boundary, etc.
 
     //  Per-vertex:
-    std::vector<VtrIndex>      mVertFaceCountsAndOffsets;  // 2 per vertex
-    std::vector<VtrIndex>      mVertFaceIndices;           // varies with valence
-    std::vector<VtrLocalIndex> mVertFaceLocalIndices;      // varies with valence, 8-bit for now
+    std::vector<VtrIndex>      _vertFaceCountsAndOffsets;  // 2 per vertex
+    std::vector<VtrIndex>      _vertFaceIndices;           // varies with valence
+    std::vector<VtrLocalIndex> _vertFaceLocalIndices;      // varies with valence, 8-bit for now
 
-    std::vector<VtrIndex>      mVertEdgeCountsAndOffsets;  // 2 per vertex
-    std::vector<VtrIndex>      mVertEdgeIndices;           // varies with valence
-    std::vector<VtrLocalIndex> mVertEdgeLocalIndices;      // varies with valence, 8-bit for now
+    std::vector<VtrIndex>      _vertEdgeCountsAndOffsets;  // 2 per vertex
+    std::vector<VtrIndex>      _vertEdgeIndices;           // varies with valence
+    std::vector<VtrLocalIndex> _vertEdgeLocalIndices;      // varies with valence, 8-bit for now
 
-    std::vector<VtrSharpness>  mVertSharpness;             // 1 per vertex
-    std::vector<VTag>          mVertTags;                  // 1 per vertex:  manifold, SdcRule, etc.
-
-    //  int mRuleCounts[RULE_MAX];
-    //  Note that for the above classification (Type), it is useful later to group those
-    //  vertices sharing the same Type.  This results in an expensive sort() operation
-    //  in the construction of the FarMesh tables.  We can help here by at least counting
-    //  the number of vertices of each Type as we assign it.  We should then be able to
-    //  size a vector, partition it according it to the counts for all Types, and assign
-    //  the vertices by iterating through all of the types -- thereby "sorting" them.
-    //
-    //  (There's actually a bit more to this...  The vertices are not grouped/sorted just
-    //  by the value of the Type itself, but by their "ranking" -- which is a measure of
-    //  the Type at both the previous and next level.  (For more details, see the function
-    //  used for sorting -- FarSubdivisionTablesFactory<T,U>::compareVertices()).  So it
-    //  may be useful to compute/store this "ranking" as the Type is determined for a
-    //  vertex at the next level, and store counts associated with these instead.)
-
-public:
-    //
-    //  Debugging aides -- unclear what will remain...
-    //
-    void print(const VtrRefinement* parentRefinement = 0) const;
-    bool validateTopology() const;
+    std::vector<VtrSharpness>  _vertSharpness;             // 1 per vertex
+    std::vector<VTag>          _vertTags;                  // 1 per vertex:  manifold, SdcRule, etc.
 };
 
 //
 //  Access/modify the vertices indicent a given face:
 //
 inline VtrIndexArray const
-VtrLevel::accessFaceVerts(VtrIndex faceIndex) const
+VtrLevel::getFaceVertices(VtrIndex faceIndex) const
 {
-    return VtrIndexArray(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                          mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&_faceVertIndices[_faceVertCountsAndOffsets[faceIndex*2+1]],
+                          _faceVertCountsAndOffsets[faceIndex*2]);
 }
 inline VtrIndexArray
-VtrLevel::modifyFaceVerts(VtrIndex faceIndex)
+VtrLevel::getFaceVertices(VtrIndex faceIndex)
 {
-    return VtrIndexArray(&mFaceVertIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                          mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&_faceVertIndices[_faceVertCountsAndOffsets[faceIndex*2+1]],
+                          _faceVertCountsAndOffsets[faceIndex*2]);
 }
 
 inline void
-VtrLevel::resizeFaceVerts(VtrIndex faceIndex, int count)
+VtrLevel::resizeFaceVertices(VtrIndex faceIndex, int count)
 {
     assert(count < 256);
 
-    int* countOffsetPair = &mFaceVertCountsAndOffsets[faceIndex*2];
+    int* countOffsetPair = &_faceVertCountsAndOffsets[faceIndex*2];
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (faceIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
@@ -416,138 +399,138 @@ VtrLevel::resizeFaceVerts(VtrIndex faceIndex, int count)
 //  Access/modify the edges indicent a given face:
 //
 inline VtrIndexArray const
-VtrLevel::accessFaceEdges(VtrIndex faceIndex) const
+VtrLevel::getFaceEdges(VtrIndex faceIndex) const
 {
-    return VtrIndexArray(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                          mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&_faceEdgeIndices[_faceVertCountsAndOffsets[faceIndex*2+1]],
+                          _faceVertCountsAndOffsets[faceIndex*2]);
 }
 inline VtrIndexArray
-VtrLevel::modifyFaceEdges(VtrIndex faceIndex)
+VtrLevel::getFaceEdges(VtrIndex faceIndex)
 {
-    return VtrIndexArray(&mFaceEdgeIndices[mFaceVertCountsAndOffsets[faceIndex*2+1]],
-                          mFaceVertCountsAndOffsets[faceIndex*2]);
+    return VtrIndexArray(&_faceEdgeIndices[_faceVertCountsAndOffsets[faceIndex*2+1]],
+                          _faceVertCountsAndOffsets[faceIndex*2]);
 }
 
 //
 //  Access/modify the faces indicent a given vertex:
 //
 inline VtrIndexArray const
-VtrLevel::accessVertFaces(VtrIndex vertIndex) const
+VtrLevel::getVertexFaces(VtrIndex vertIndex) const
 {
-    return VtrIndexArray(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                          mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&_vertFaceIndices[_vertFaceCountsAndOffsets[vertIndex*2+1]],
+                          _vertFaceCountsAndOffsets[vertIndex*2]);
 }
 inline VtrIndexArray
-VtrLevel::modifyVertFaces(VtrIndex vertIndex)
+VtrLevel::getVertexFaces(VtrIndex vertIndex)
 {
-    return VtrIndexArray(&mVertFaceIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                          mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&_vertFaceIndices[_vertFaceCountsAndOffsets[vertIndex*2+1]],
+                          _vertFaceCountsAndOffsets[vertIndex*2]);
 }
 
 inline VtrLocalIndexArray const
-VtrLevel::accessVertFaceLocalIndices(VtrIndex vertIndex) const
+VtrLevel::getVertexFaceLocalIndices(VtrIndex vertIndex) const
 {
-    return VtrLocalIndexArray(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                               mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&_vertFaceLocalIndices[_vertFaceCountsAndOffsets[vertIndex*2+1]],
+                               _vertFaceCountsAndOffsets[vertIndex*2]);
 }
 inline VtrLocalIndexArray
-VtrLevel::modifyVertFaceLocalIndices(VtrIndex vertIndex)
+VtrLevel::getVertexFaceLocalIndices(VtrIndex vertIndex)
 {
-    return VtrLocalIndexArray(&mVertFaceLocalIndices[mVertFaceCountsAndOffsets[vertIndex*2+1]],
-                               mVertFaceCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&_vertFaceLocalIndices[_vertFaceCountsAndOffsets[vertIndex*2+1]],
+                               _vertFaceCountsAndOffsets[vertIndex*2]);
 }
 
 inline void
-VtrLevel::resizeVertFaces(VtrIndex vertIndex, int count)
+VtrLevel::resizeVertexFaces(VtrIndex vertIndex, int count)
 {
-    int* countOffsetPair = &mVertFaceCountsAndOffsets[vertIndex*2];
+    int* countOffsetPair = &_vertFaceCountsAndOffsets[vertIndex*2];
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (vertIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
 }
 inline void
-VtrLevel::trimVertFaces(VtrIndex vertIndex, int count)
+VtrLevel::trimVertexFaces(VtrIndex vertIndex, int count)
 {
-    mVertFaceCountsAndOffsets[vertIndex*2] = count;
+    _vertFaceCountsAndOffsets[vertIndex*2] = count;
 }
 
 //
 //  Access/modify the edges indicent a given vertex:
 //
 inline VtrIndexArray const
-VtrLevel::accessVertEdges(VtrIndex vertIndex) const
+VtrLevel::getVertexEdges(VtrIndex vertIndex) const
 {
-    return VtrIndexArray(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                          mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&_vertEdgeIndices[_vertEdgeCountsAndOffsets[vertIndex*2+1]],
+                          _vertEdgeCountsAndOffsets[vertIndex*2]);
 }
 inline VtrIndexArray
-VtrLevel::modifyVertEdges(VtrIndex vertIndex)
+VtrLevel::getVertexEdges(VtrIndex vertIndex)
 {
-    return VtrIndexArray(&mVertEdgeIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                          mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrIndexArray(&_vertEdgeIndices[_vertEdgeCountsAndOffsets[vertIndex*2+1]],
+                          _vertEdgeCountsAndOffsets[vertIndex*2]);
 }
 
 inline VtrLocalIndexArray const
-VtrLevel::accessVertEdgeLocalIndices(VtrIndex vertIndex) const
+VtrLevel::getVertexEdgeLocalIndices(VtrIndex vertIndex) const
 {
-    return VtrLocalIndexArray(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                               mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&_vertEdgeLocalIndices[_vertEdgeCountsAndOffsets[vertIndex*2+1]],
+                               _vertEdgeCountsAndOffsets[vertIndex*2]);
 }
 inline VtrLocalIndexArray
-VtrLevel::modifyVertEdgeLocalIndices(VtrIndex vertIndex)
+VtrLevel::getVertexEdgeLocalIndices(VtrIndex vertIndex)
 {
-    return VtrLocalIndexArray(&mVertEdgeLocalIndices[mVertEdgeCountsAndOffsets[vertIndex*2+1]],
-                               mVertEdgeCountsAndOffsets[vertIndex*2]);
+    return VtrLocalIndexArray(&_vertEdgeLocalIndices[_vertEdgeCountsAndOffsets[vertIndex*2+1]],
+                               _vertEdgeCountsAndOffsets[vertIndex*2]);
 }
 
 inline void
-VtrLevel::resizeVertEdges(VtrIndex vertIndex, int count)
+VtrLevel::resizeVertexEdges(VtrIndex vertIndex, int count)
 {
-    int* countOffsetPair = &mVertEdgeCountsAndOffsets[vertIndex*2];
+    int* countOffsetPair = &_vertEdgeCountsAndOffsets[vertIndex*2];
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (vertIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
 }
 inline void
-VtrLevel::trimVertEdges(VtrIndex vertIndex, int count)
+VtrLevel::trimVertexEdges(VtrIndex vertIndex, int count)
 {
-    mVertEdgeCountsAndOffsets[vertIndex*2] = count;
+    _vertEdgeCountsAndOffsets[vertIndex*2] = count;
 }
 
 //
 //  Access/modify the vertices indicent a given edge:
 //
 inline VtrIndexArray const
-VtrLevel::accessEdgeVerts(VtrIndex edgeIndex) const
+VtrLevel::getEdgeVertices(VtrIndex edgeIndex) const
 {
-    return VtrIndexArray(&mEdgeVertIndices[edgeIndex*2], 2);
+    return VtrIndexArray(&_edgeVertIndices[edgeIndex*2], 2);
 }
 inline VtrIndexArray
-VtrLevel::modifyEdgeVerts(VtrIndex edgeIndex)
+VtrLevel::getEdgeVertices(VtrIndex edgeIndex)
 {
-    return VtrIndexArray(&mEdgeVertIndices[edgeIndex*2], 2);
+    return VtrIndexArray(&_edgeVertIndices[edgeIndex*2], 2);
 }
 
 //
 //  Access/modify the faces indicent a given edge:
 //
 inline VtrIndexArray const
-VtrLevel::accessEdgeFaces(VtrIndex edgeIndex) const
+VtrLevel::getEdgeFaces(VtrIndex edgeIndex) const
 {
-    return VtrIndexArray(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
-                          mEdgeFaceCountsAndOffsets[edgeIndex*2]);
+    return VtrIndexArray(&_edgeFaceIndices[_edgeFaceCountsAndOffsets[edgeIndex*2+1]],
+                          _edgeFaceCountsAndOffsets[edgeIndex*2]);
 }
 inline VtrIndexArray
-VtrLevel::modifyEdgeFaces(VtrIndex edgeIndex)
+VtrLevel::getEdgeFaces(VtrIndex edgeIndex)
 {
-    return VtrIndexArray(&mEdgeFaceIndices[mEdgeFaceCountsAndOffsets[edgeIndex*2+1]],
-                          mEdgeFaceCountsAndOffsets[edgeIndex*2]);
+    return VtrIndexArray(&_edgeFaceIndices[_edgeFaceCountsAndOffsets[edgeIndex*2+1]],
+                          _edgeFaceCountsAndOffsets[edgeIndex*2]);
 }
 
 inline void
 VtrLevel::resizeEdgeFaces(VtrIndex edgeIndex, int count)
 {
-    int* countOffsetPair = &mEdgeFaceCountsAndOffsets[edgeIndex*2];
+    int* countOffsetPair = &_edgeFaceCountsAndOffsets[edgeIndex*2];
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (edgeIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
@@ -555,38 +538,38 @@ VtrLevel::resizeEdgeFaces(VtrIndex edgeIndex, int count)
 inline void
 VtrLevel::trimEdgeFaces(VtrIndex edgeIndex, int count)
 {
-    mEdgeFaceCountsAndOffsets[edgeIndex*2] = count;
+    _edgeFaceCountsAndOffsets[edgeIndex*2] = count;
 }
 
 //
 //  Access/modify sharpness values:
 //
 inline VtrSharpness
-VtrLevel::edgeSharpness(VtrIndex edgeIndex) const
+VtrLevel::getEdgeSharpness(VtrIndex edgeIndex) const
 {
-    return mEdgeSharpness[edgeIndex];
+    return _edgeSharpness[edgeIndex];
 }
 inline VtrSharpness&
-VtrLevel::edgeSharpness(VtrIndex edgeIndex)
+VtrLevel::getEdgeSharpness(VtrIndex edgeIndex)
 {
-    return mEdgeSharpness[edgeIndex];
+    return _edgeSharpness[edgeIndex];
 }
 
 inline VtrSharpness
-VtrLevel::vertSharpness(VtrIndex vertIndex) const
+VtrLevel::getVertexSharpness(VtrIndex vertIndex) const
 {
-    return mVertSharpness[vertIndex];
+    return _vertSharpness[vertIndex];
 }
 inline VtrSharpness&
-VtrLevel::vertSharpness(VtrIndex vertIndex)
+VtrLevel::getVertexSharpness(VtrIndex vertIndex)
 {
-    return mVertSharpness[vertIndex];
+    return _vertSharpness[vertIndex];
 }
 
 inline SdcRule
-VtrLevel::vertRule(VtrIndex vertIndex) const
+VtrLevel::getVertexRule(VtrIndex vertIndex) const
 {
-    return (SdcRule) mVertTags[vertIndex]._rule;
+    return (SdcRule) _vertTags[vertIndex]._rule;
 }
 
 //
@@ -596,62 +579,62 @@ inline void
 VtrLevel::resizeFaces(int faceCount)
 {
     _faceCount = faceCount;
-    mFaceVertCountsAndOffsets.resize(2 * faceCount);
+    _faceVertCountsAndOffsets.resize(2 * faceCount);
 
-    mFaceTags.resize(faceCount);
+    _faceTags.resize(faceCount);
 }
 inline void
-VtrLevel::resizeFaceVerts(int totalFaceVertCount)
+VtrLevel::resizeFaceVertices(int totalFaceVertCount)
 {
-    mFaceVertIndices.resize(totalFaceVertCount);
+    _faceVertIndices.resize(totalFaceVertCount);
 }
 inline void
 VtrLevel::resizeFaceEdges(int totalFaceEdgeCount)
 {
-    mFaceEdgeIndices.resize(totalFaceEdgeCount);
+    _faceEdgeIndices.resize(totalFaceEdgeCount);
 }
 
 inline void
 VtrLevel::resizeEdges(int edgeCount)
 {
     _edgeCount = edgeCount;
-    mEdgeFaceCountsAndOffsets.resize(2 * edgeCount);
+    _edgeFaceCountsAndOffsets.resize(2 * edgeCount);
 
-    mEdgeSharpness.resize(edgeCount);
-    mEdgeTags.resize(edgeCount);
+    _edgeSharpness.resize(edgeCount);
+    _edgeTags.resize(edgeCount);
 }
 inline void
-VtrLevel::resizeEdgeVerts()
+VtrLevel::resizeEdgeVertices()
 {
-    mEdgeVertIndices.resize(2 * _edgeCount);
+    _edgeVertIndices.resize(2 * _edgeCount);
 }
 inline void
 VtrLevel::resizeEdgeFaces(int totalEdgeFaceCount)
 {
-    mEdgeFaceIndices.resize(totalEdgeFaceCount);
+    _edgeFaceIndices.resize(totalEdgeFaceCount);
 }
 
 inline void
-VtrLevel::resizeVerts(int vertCount)
+VtrLevel::resizeVertices(int vertCount)
 {
     _vertCount = vertCount;
-    mVertFaceCountsAndOffsets.resize(2 * vertCount);
-    mVertEdgeCountsAndOffsets.resize(2 * vertCount);
+    _vertFaceCountsAndOffsets.resize(2 * vertCount);
+    _vertEdgeCountsAndOffsets.resize(2 * vertCount);
 
-    mVertSharpness.resize(vertCount);
-    mVertTags.resize(vertCount);
+    _vertSharpness.resize(vertCount);
+    _vertTags.resize(vertCount);
 }
 inline void
-VtrLevel::resizeVertFaces(int totalVertFaceCount)
+VtrLevel::resizeVertexFaces(int totalVertFaceCount)
 {
-    mVertFaceIndices.resize(totalVertFaceCount);
-    mVertFaceLocalIndices.resize(totalVertFaceCount);
+    _vertFaceIndices.resize(totalVertFaceCount);
+    _vertFaceLocalIndices.resize(totalVertFaceCount);
 }
 inline void
-VtrLevel::resizeVertEdges(int totalVertEdgeCount)
+VtrLevel::resizeVertexEdges(int totalVertEdgeCount)
 {
-    mVertEdgeIndices.resize(totalVertEdgeCount);
-    mVertEdgeLocalIndices.resize(totalVertEdgeCount);
+    _vertEdgeIndices.resize(totalVertEdgeCount);
+    _vertEdgeLocalIndices.resize(totalVertEdgeCount);
 }
 
 } // end namespace OPENSUBDIV_VERSION

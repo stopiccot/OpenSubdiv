@@ -42,9 +42,9 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 
     VtrLevel& baseLevel = refTables.getBaseLevel();
 
-    int vCount = baseLevel.vertCount();
-    int eCount = baseLevel.edgeCount();
-    int fCount = baseLevel.faceCount();
+    int vCount = baseLevel.getNumVertices();
+    int eCount = baseLevel.getNumEdges();
+    int fCount = baseLevel.getNumFaces();
 
     assert((vCount > 0) && (fCount > 0));
 
@@ -56,23 +56,23 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
     //
     int fVertCount = 0;
     for (int i = 0; i < fCount; ++i) {
-        fVertCount += baseLevel.faceVertCount(i);
+        fVertCount += baseLevel.getNumFaceVertices(i);
     }
-    baseLevel.resizeFaceVerts(fVertCount);
-    assert(baseLevel.faceVertCount() > 0);
+    baseLevel.resizeFaceVertices(fVertCount);
+    assert(baseLevel.getNumFaceVerticesTotal() > 0);
 
     if (eCount > 0) {
-        baseLevel.resizeFaceEdges(baseLevel.faceVertCount());
-        baseLevel.resizeEdgeVerts();
-        baseLevel.resizeEdgeFaces(baseLevel.edgeFaceCount(eCount-1) + baseLevel.edgeFaceOffset(eCount-1));
-        baseLevel.resizeVertFaces(baseLevel.vertFaceCount(vCount-1) + baseLevel.vertFaceOffset(vCount-1));
-        baseLevel.resizeVertEdges(baseLevel.vertEdgeCount(vCount-1) + baseLevel.vertEdgeOffset(vCount-1));
+        baseLevel.resizeFaceEdges(baseLevel.getNumFaceVerticesTotal());
+        baseLevel.resizeEdgeVertices();
+        baseLevel.resizeEdgeFaces(  baseLevel.getNumEdgeFaces(eCount-1)   + baseLevel.getOffsetOfEdgeFaces(eCount-1));
+        baseLevel.resizeVertexFaces(baseLevel.getNumVertexFaces(vCount-1) + baseLevel.getOffsetOfVertexFaces(vCount-1));
+        baseLevel.resizeVertexEdges(baseLevel.getNumVertexEdges(vCount-1) + baseLevel.getOffsetOfVertexEdges(vCount-1));
 
-        assert(baseLevel.faceEdgeCount() > 0);
-        assert(baseLevel.edgeVertCount() > 0);
-        assert(baseLevel.edgeFaceCount() > 0);
-        assert(baseLevel.vertFaceCount() > 0);
-        assert(baseLevel.vertEdgeCount() > 0);
+        assert(baseLevel.getNumFaceEdgesTotal() > 0);
+        assert(baseLevel.getNumEdgeVerticesTotal() > 0);
+        assert(baseLevel.getNumEdgeFacesTotal() > 0);
+        assert(baseLevel.getNumVertexFacesTotal() > 0);
+        assert(baseLevel.getNumVertexEdgesTotal() > 0);
     }
 }
 
@@ -87,7 +87,7 @@ FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables&
     //  the vertex relations, etc.  For the near term we'll be assuming only face-vertices have
     //  been specified and the absence of edges will trigger the construction of everything else:
     //
-    bool completeMissingTopology = (baseLevel.edgeCount() == 0);
+    bool completeMissingTopology = (baseLevel.getNumEdges() == 0);
     if (completeMissingTopology) {
         //  Need to invoke some VtrLevel method to "fill in" the missing topology...
         baseLevel.completeTopologyFromFaceVertices();
@@ -115,9 +115,9 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
 
     VtrLevel&  baseLevel = refTables.getBaseLevel();
 
-    assert((int)baseLevel.mEdgeTags.size() == baseLevel.edgeCount());
-    assert((int)baseLevel.mVertTags.size() == baseLevel.vertCount());
-    assert((int)baseLevel.mFaceTags.size() == baseLevel.faceCount());
+    assert((int)baseLevel._edgeTags.size() == baseLevel.getNumEdges());
+    assert((int)baseLevel._vertTags.size() == baseLevel.getNumVertices());
+    assert((int)baseLevel._faceTags.size() == baseLevel.getNumFaces());
 
     SdcOptions options = refTables.GetSchemeOptions();
     SdcCrease  creasing(options);
@@ -129,11 +129,11 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
     //  Process the Edge tags first, as Vertex tags (notably the Rule) are dependent on
     //  properties of their incident edges.
     //
-    for (VtrIndex eIndex = 0; eIndex < baseLevel.edgeCount(); ++eIndex) {
-        VtrLevel::ETag& eTag       = baseLevel.mEdgeTags[eIndex];
-        float&          eSharpness = baseLevel.mEdgeSharpness[eIndex];
+    for (VtrIndex eIndex = 0; eIndex < baseLevel.getNumEdges(); ++eIndex) {
+        VtrLevel::ETag& eTag       = baseLevel._edgeTags[eIndex];
+        float&          eSharpness = baseLevel._edgeSharpness[eIndex];
 
-        eTag._boundary = (baseLevel.mEdgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
+        eTag._boundary = (baseLevel._edgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
         if (eTag._boundary || (eTag._nonManifold && sharpenNonManFeatures)) {
             eSharpness = SdcCrease::INFINITE;
         }
@@ -145,12 +145,12 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
     //  Process the Vertex tags now -- for some tags (semi-sharp and its rule) we need
     //  to inspect all incident edges:
     //
-    for (VtrIndex vIndex = 0; vIndex < baseLevel.vertCount(); ++vIndex) {
-        VtrLevel::VTag& vTag       = baseLevel.mVertTags[vIndex];
-        float&          vSharpness = baseLevel.mVertSharpness[vIndex];
+    for (VtrIndex vIndex = 0; vIndex < baseLevel.getNumVertices(); ++vIndex) {
+        VtrLevel::VTag& vTag       = baseLevel._vertTags[vIndex];
+        float&          vSharpness = baseLevel._vertSharpness[vIndex];
 
-        VtrIndexArray const vEdges = baseLevel.accessVertEdges(vIndex);
-        VtrIndexArray const vFaces = baseLevel.accessVertFaces(vIndex);
+        VtrIndexArray const vEdges = baseLevel.getVertexEdges(vIndex);
+        VtrIndexArray const vFaces = baseLevel.getVertexFaces(vIndex);
 
         //
         //  Take inventory of properties of incident edges that affect this vertex:
@@ -159,7 +159,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         int semiSharpEdgeCount   = 0;
         int nonManifoldEdgeCount = 0;
         for (int i = 0; i < vEdges.size(); ++i) {
-            VtrLevel::ETag const& eTag = baseLevel.mEdgeTags[vEdges[i]];
+            VtrLevel::ETag const& eTag = baseLevel._edgeTags[vEdges[i]];
 
             infSharpEdgeCount    += eTag._infSharp;
             semiSharpEdgeCount   += eTag._semiSharp;
@@ -191,7 +191,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
         //  tag is still being considered, but regardless, it depends on the SdcScheme...
         //
-        assert(refTables.GetSchemeType()==TYPE_CATMARK);
+        assert(refTables.GetSchemeType() == TYPE_CATMARK);
 
         vTag._boundary = (vFaces.size() < vEdges.size());
         if (isCorner) {
@@ -206,9 +206,10 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
     //
     //  Anything more to be done with Face tags? (eventually when processing edits perhaps)
     //
-    //  for (VtrIndex fIndex = 0; fIndex < baseLevel.faceCount(); ++fIndex) {
+    //  for (VtrIndex fIndex = 0; fIndex < baseLevel.getNumFaces(); ++fIndex) {
     //  }
 }
+
 
 //
 // Instantiates FarRefineTables from indexing arrays.

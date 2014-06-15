@@ -113,8 +113,8 @@ public:
     void SetIndex(int edgeIndex) { _eIndex = edgeIndex; }
 
 public:  //  Generic interface expected of <typename EDGE>:
-    int   GetFaceCount() const { return _level->accessEdgeFaces(_eIndex).size(); }
-    float GetSharpness() const { return _level->edgeSharpness(_eIndex); }
+    int   GetFaceCount() const { return _level->getEdgeFaces(_eIndex).size(); }
+    float GetSharpness() const { return _level->getEdgeSharpness(_eIndex); }
 
     void GetChildSharpnesses(SdcCrease const&, float s[2]) const
     {
@@ -124,9 +124,9 @@ public:  //  Generic interface expected of <typename EDGE>:
 
     void GetVertexCountPerFace(int vertsPerFace[]) const
     {
-        VtrIndexArray const eFaces = _level->accessEdgeFaces(_eIndex);
+        VtrIndexArray const eFaces = _level->getEdgeFaces(_eIndex);
         for (int i = 0; i < eFaces.size(); ++i) {
-            vertsPerFace[i] = _level->accessFaceVerts(eFaces[i]).size();
+            vertsPerFace[i] = _level->getFaceVertices(eFaces[i]).size();
         }
     }
 
@@ -149,25 +149,25 @@ public:
     void SetIndex(int parentIndex, int childIndex) {
         _pIndex = parentIndex;
         _cIndex = childIndex;
-        _eCount = _parent->accessVertEdges(_pIndex).size();
-        _fCount = _parent->accessVertFaces(_pIndex).size();
+        _eCount = _parent->getVertexEdges(_pIndex).size();
+        _fCount = _parent->getVertexFaces(_pIndex).size();
     }
 
 public:  //  Generic interface expected of <typename VERT>:
     int GetEdgeCount() const { return _eCount; }
     int GetFaceCount() const { return _fCount; }
 
-    float  GetSharpness() const { return _parent->vertSharpness(_pIndex); }
+    float  GetSharpness() const { return _parent->getVertexSharpness(_pIndex); }
     float* GetSharpnessPerEdge(float pSharpness[]) const
     {
-        VtrIndexArray const pEdges = _parent->accessVertEdges(_pIndex);
+        VtrIndexArray const pEdges = _parent->getVertexEdges(_pIndex);
         for (int i = 0; i < _eCount; ++i) {
-            pSharpness[i] = _parent->edgeSharpness(pEdges[i]);
+            pSharpness[i] = _parent->getEdgeSharpness(pEdges[i]);
         }
         return pSharpness;
     }
 
-    float  GetChildSharpness(SdcCrease const&) const { return _child->vertSharpness(_cIndex); }
+    float  GetChildSharpness(SdcCrease const&) const { return _child->getVertexSharpness(_cIndex); }
     float* GetChildSharpnessPerEdge(SdcCrease const& crease, float cSharpness[]) const
     {
         float pSharpness[_eCount];

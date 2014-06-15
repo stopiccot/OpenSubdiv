@@ -114,17 +114,17 @@ public:
     //  Access to members -- some testing classes (involving vertex interpolation)
     //  currently make use of these:
     //
-    int childVerticesFromFacesCount() const    { return _childVertFromFaceCount; }
-    int childVerticesFromEdgesCount() const    { return _childVertFromEdgeCount; }
-    int childVerticesFromVerticesCount() const { return _childVertFromVertCount; }
+    int getNumChildVerticesFromFaces() const    { return _childVertFromFaceCount; }
+    int getNumChildVerticesFromEdges() const    { return _childVertFromEdgeCount; }
+    int getNumChildVerticesFromVertices() const { return _childVertFromVertCount; }
 
-    VtrIndex faceChildVertexIndex(VtrIndex f) const   { return _faceChildVertIndex[f]; }
-    VtrIndex edgeChildVertexIndex(VtrIndex e) const   { return _edgeChildVertIndex[e]; }
-    VtrIndex vertexChildVertexIndex(VtrIndex v) const { return _vertChildVertIndex[v]; }
+    VtrIndex getFaceChildVertex(VtrIndex f) const   { return _faceChildVertIndex[f]; }
+    VtrIndex getEdgeChildVertex(VtrIndex e) const   { return _edgeChildVertIndex[e]; }
+    VtrIndex getVertexChildVertex(VtrIndex v) const { return _vertChildVertIndex[v]; }
 
-    VtrIndexArray const faceChildFaces(VtrIndex parentFace) const;
-    VtrIndexArray const faceChildEdges(VtrIndex parentFace) const;
-    VtrIndexArray const edgeChildEdges(VtrIndex parentEdge) const;
+    VtrIndexArray const getFaceChildFaces(VtrIndex parentFace) const;
+    VtrIndexArray const getFaceChildEdges(VtrIndex parentFace) const;
+    VtrIndexArray const getEdgeChildEdges(VtrIndex parentEdge) const;
 
 //
 //  Non-public methods:
@@ -133,9 +133,9 @@ protected:
     friend class VtrSparseSelector;
     template <class T> friend class FarPatchTablesFactory;
 
-    VtrIndexArray faceChildFaces(VtrIndex parentFace);
-    VtrIndexArray faceChildEdges(VtrIndex parentFace);
-    VtrIndexArray edgeChildEdges(VtrIndex parentEdge);
+    VtrIndexArray getFaceChildFaces(VtrIndex parentFace);
+    VtrIndexArray getFaceChildEdges(VtrIndex parentFace);
+    VtrIndexArray getEdgeChildEdges(VtrIndex parentEdge);
 
 protected:
     //
@@ -388,44 +388,44 @@ public:
 };
 
 inline VtrIndexArray const
-VtrRefinement::faceChildFaces(VtrIndex parentFace) const
+VtrRefinement::getFaceChildFaces(VtrIndex parentFace) const
 {
     //
     //  Note this will need to vary based on the topological split applied...
     //
-    return VtrIndexArray(&_faceChildFaceIndices[_parent->faceVertOffset(parentFace)],
-                                                _parent->faceVertCount(parentFace));
+    return VtrIndexArray(&_faceChildFaceIndices[_parent->getOffsetOfFaceVertices(parentFace)],
+                                                _parent->getNumFaceVertices(parentFace));
 }
 inline VtrIndexArray
-VtrRefinement::faceChildFaces(VtrIndex parentFace)
+VtrRefinement::getFaceChildFaces(VtrIndex parentFace)
 {
-    return VtrIndexArray(&_faceChildFaceIndices[_parent->faceVertOffset(parentFace)],
-                                                _parent->faceVertCount(parentFace));
+    return VtrIndexArray(&_faceChildFaceIndices[_parent->getOffsetOfFaceVertices(parentFace)],
+                                                _parent->getNumFaceVertices(parentFace));
 }
 
 inline VtrIndexArray const
-VtrRefinement::faceChildEdges(VtrIndex parentFace) const
+VtrRefinement::getFaceChildEdges(VtrIndex parentFace) const
 {
     //
     //  Note this *may* need to vary based on the topological split applied...
     //
-    return VtrIndexArray(&_faceChildEdgeIndices[_parent->faceVertOffset(parentFace)],
-                                                _parent->faceVertCount(parentFace));
+    return VtrIndexArray(&_faceChildEdgeIndices[_parent->getOffsetOfFaceVertices(parentFace)],
+                                                _parent->getNumFaceVertices(parentFace));
 }
 inline VtrIndexArray
-VtrRefinement::faceChildEdges(VtrIndex parentFace)
+VtrRefinement::getFaceChildEdges(VtrIndex parentFace)
 {
-    return VtrIndexArray(&_faceChildEdgeIndices[_parent->faceVertOffset(parentFace)],
-                                                _parent->faceVertCount(parentFace));
+    return VtrIndexArray(&_faceChildEdgeIndices[_parent->getOffsetOfFaceVertices(parentFace)],
+                                                _parent->getNumFaceVertices(parentFace));
 }
 
 inline VtrIndexArray const
-VtrRefinement::edgeChildEdges(VtrIndex parentEdge) const
+VtrRefinement::getEdgeChildEdges(VtrIndex parentEdge) const
 {
     return VtrIndexArray(&_edgeChildEdgeIndices[parentEdge*2], 2);
 }
 inline VtrIndexArray
-VtrRefinement::edgeChildEdges(VtrIndex parentEdge)
+VtrRefinement::getEdgeChildEdges(VtrIndex parentEdge)
 {
     return VtrIndexArray(&_edgeChildEdgeIndices[parentEdge*2], 2);
 }

@@ -65,7 +65,7 @@ VtrSparseSelector::selectEdge(VtrIndex parentEdge)
 
     if (!wasEdgeSelected(parentEdge)) {
         //  Mark the two end vertices:
-        VtrIndexArray const eVerts = _refine->parent().accessEdgeVerts(parentEdge);
+        VtrIndexArray const eVerts = _refine->parent().getEdgeVertices(parentEdge);
         markVertexSelected(eVerts[0]);
         markVertexSelected(eVerts[1]);
 
@@ -80,8 +80,8 @@ VtrSparseSelector::selectFace(VtrIndex parentFace)
 
     if (!wasFaceSelected(parentFace)) {
         //  Mark the face's incident verts and edges as selected:
-        VtrIndexArray const fEdges = _refine->parent().accessFaceEdges(parentFace);
-        VtrIndexArray const fVerts = _refine->parent().accessFaceVerts(parentFace);
+        VtrIndexArray const fEdges = _refine->parent().getFaceEdges(parentFace);
+        VtrIndexArray const fVerts = _refine->parent().getFaceVertices(parentFace);
 
         for (int i = 0; i < fVerts.size(); ++i) {
             markEdgeSelected(fEdges[i]);
@@ -99,7 +99,7 @@ VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex)
     //  vertex to distinguish it being selected by incidence of a selected face or
     //  selected explicitly here.
     //
-    VtrIndexArray const vertFaces = _refine->parent().accessVertFaces(parentVertex);
+    VtrIndexArray const vertFaces = _refine->parent().getVertexFaces(parentVertex);
     for (int i = 0; i < vertFaces.size(); ++i) {
         if (wasFaceSelected(vertFaces[i])) continue;
         

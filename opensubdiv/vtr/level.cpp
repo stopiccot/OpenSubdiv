@@ -92,20 +92,20 @@ VtrLevel::validateTopology() const
     bool isValid = true;
 
     //  Verify each face-vert has corresponding vert-face and child:
-    if ((faceVertCount() == 0) || (vertFaceCount() == 0)) {
-        if (faceVertCount() == 0) printf("Error:  missing face-verts\n");
-        if (vertFaceCount() == 0) printf("Error:  missing vert-faces\n");
+    if ((getNumFaceVerticesTotal() == 0) || (getNumVertexFacesTotal() == 0)) {
+        if (getNumFaceVerticesTotal() == 0) printf("Error:  missing face-verts\n");
+        if (getNumVertexFacesTotal() == 0) printf("Error:  missing vert-faces\n");
         return false;
     }
-    for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
-        VtrIndexArray const fVerts      = accessFaceVerts(fIndex);
+    for (int fIndex = 0; fIndex < getNumFaces(); ++fIndex) {
+        VtrIndexArray const fVerts      = getFaceVertices(fIndex);
         int                 fVertCount  = fVerts.size();
 
         for (int i = 0; i < fVertCount; ++i) {
             VtrIndex vIndex = fVerts[i];
 
-            VtrIndexArray const      vFaces = accessVertFaces(vIndex);
-            VtrLocalIndexArray const vInFace = accessVertFaceLocalIndices(vIndex);
+            VtrIndexArray const      vFaces = getVertexFaces(vIndex);
+            VtrLocalIndexArray const vInFace = getVertexFaceLocalIndices(vIndex);
 
             bool vertFaceOfFaceExists = false;
             for (int j = 0; j < vFaces.size(); ++j) {
@@ -125,19 +125,19 @@ VtrLevel::validateTopology() const
     }
 
     //  Verify each face-edge has corresponding edge-face:
-    if ((edgeFaceCount() == 0) || (faceEdgeCount() == 0)) {
-        if (edgeFaceCount() == 0) printf("Error:  missing edge-faces\n");
-        if (faceEdgeCount() == 0) printf("Error:  missing face-edges\n");
+    if ((getNumEdgeFacesTotal() == 0) || (getNumFaceEdgesTotal() == 0)) {
+        if (getNumEdgeFacesTotal() == 0) printf("Error:  missing edge-faces\n");
+        if (getNumFaceEdgesTotal() == 0) printf("Error:  missing face-edges\n");
         return false;
     }
-    for (int fIndex = 0; fIndex < faceCount(); ++fIndex) {
-        VtrIndexArray const fEdges      = accessFaceEdges(fIndex);
+    for (int fIndex = 0; fIndex < getNumFaces(); ++fIndex) {
+        VtrIndexArray const fEdges      = getFaceEdges(fIndex);
         int                 fEdgeCount  = fEdges.size();
 
         for (int i = 0; i < fEdgeCount; ++i) {
             int eIndex = fEdges[i];
 
-            VtrIndexArray const eFaces      = accessEdgeFaces(eIndex);
+            VtrIndexArray const eFaces      = getEdgeFaces(eIndex);
             int                 eFaceCount  = eFaces.size();
 
             bool edgeFaceOfFaceExists = false;
@@ -158,19 +158,19 @@ VtrLevel::validateTopology() const
     }
 
     //  Verify each edge-vert has corresponding vert-edge and child:
-    if ((edgeVertCount() == 0) || (vertEdgeCount() == 0)) {
-        if (edgeVertCount() == 0) printf("Error:  missing edge-verts\n");
-        if (vertEdgeCount() == 0) printf("Error:  missing vert-edges\n");
+    if ((getNumEdgeVerticesTotal() == 0) || (getNumVertexEdgesTotal() == 0)) {
+        if (getNumEdgeVerticesTotal() == 0) printf("Error:  missing edge-verts\n");
+        if (getNumVertexEdgesTotal() == 0) printf("Error:  missing vert-edges\n");
         return false;
     }
-    for (int eIndex = 0; eIndex < edgeCount(); ++eIndex) {
-        VtrIndexArray const eVerts = accessEdgeVerts(eIndex);
+    for (int eIndex = 0; eIndex < getNumEdges(); ++eIndex) {
+        VtrIndexArray const eVerts = getEdgeVertices(eIndex);
 
         for (int i = 0; i < 2; ++i) {
             VtrIndex vIndex = eVerts[i];
 
-            VtrIndexArray const      vEdges = accessVertEdges(vIndex);
-            VtrLocalIndexArray const vInEdge = accessVertEdgeLocalIndices(vIndex);
+            VtrIndexArray const      vEdges = getVertexEdges(vIndex);
+            VtrLocalIndexArray const vInEdge = getVertexEdgeLocalIndices(vIndex);
 
             bool vertEdgeOfEdgeExists = false;
             for (int j = 0; j < vEdges.size(); ++j) {
@@ -254,20 +254,20 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     printf("  Topology relation sizes:\n");
 
     printf("    Face relations:\n");
-    printf("      face-vert counts/offset = %lu\n", mFaceVertCountsAndOffsets.size());
-    printf("      face-vert indices = %lu\n", mFaceVertIndices.size());
-    for (int i = 0; printFaceVerts && i < faceCount(); ++i) {
+    printf("      face-vert counts/offset = %lu\n", _faceVertCountsAndOffsets.size());
+    printf("      face-vert indices = %lu\n", _faceVertIndices.size());
+    for (int i = 0; printFaceVerts && i < getNumFaces(); ++i) {
         printf("        face %4d verts:  ", i);
-        printIndexArray(accessFaceVerts(i));
+        printIndexArray(getFaceVertices(i));
     }
-    printf("      face-edge indices = %lu\n", mFaceEdgeIndices.size());
-    for (int i = 0; printFaceEdges && i < faceCount(); ++i) {
+    printf("      face-edge indices = %lu\n", _faceEdgeIndices.size());
+    for (int i = 0; printFaceEdges && i < getNumFaces(); ++i) {
         printf("        face %4d edges:  ", i);
-        printIndexArray(accessFaceEdges(i));
+        printIndexArray(getFaceEdges(i));
     }
-    printf("      face tags = %lu\n", mFaceTags.size());
-    for (int i = 0; printFaceTags && i < (int)mFaceTags.size(); ++i) {
-        FTag const& fTag = mFaceTags[i];
+    printf("      face tags = %lu\n", _faceTags.size());
+    for (int i = 0; printFaceTags && i < (int)_faceTags.size(); ++i) {
+        FTag const& fTag = _faceTags[i];
         printf("        face %4d:", i);
         printf("  hole = %d",  (int)fTag._hole);
         printf("\n");
@@ -280,16 +280,16 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     }
 
     printf("    Edge relations:\n");
-    printf("      edge-vert indices = %lu\n", mEdgeVertIndices.size());
-    for (int i = 0; printEdgeVerts && i < edgeCount(); ++i) {
+    printf("      edge-vert indices = %lu\n", _edgeVertIndices.size());
+    for (int i = 0; printEdgeVerts && i < getNumEdges(); ++i) {
         printf("        edge %4d verts:  ", i);
-        printIndexArray(accessEdgeVerts(i));
+        printIndexArray(getEdgeVertices(i));
     }
-    printf("      edge-face counts/offset = %lu\n", mEdgeFaceCountsAndOffsets.size());
-    printf("      edge-face indices = %lu\n", mEdgeFaceIndices.size());
-    for (int i = 0; printEdgeFaces && i < edgeCount(); ++i) {
+    printf("      edge-face counts/offset = %lu\n", _edgeFaceCountsAndOffsets.size());
+    printf("      edge-face indices = %lu\n", _edgeFaceIndices.size());
+    for (int i = 0; printEdgeFaces && i < getNumEdges(); ++i) {
         printf("        edge %4d faces:  ", i);
-        printIndexArray(accessEdgeFaces(i));
+        printIndexArray(getEdgeFaces(i));
     }
     if (pRefinement) {
         printf("      edge child-verts = %lu\n", pRefinement->_edgeChildVertIndex.size());
@@ -297,13 +297,13 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
             printf("        edge %4d child vert:  %d\n", i, pRefinement->_edgeChildVertIndex[i]);
         }
     }
-    printf("      edge sharpness = %lu\n", mEdgeSharpness.size());
-    for (int i = 0; printEdgeSharpness && i < (int)mEdgeSharpness.size(); ++i) {
-        printf("        edge %4d sharpness:  %f\n", i, mEdgeSharpness[i]);
+    printf("      edge sharpness = %lu\n", _edgeSharpness.size());
+    for (int i = 0; printEdgeSharpness && i < (int)_edgeSharpness.size(); ++i) {
+        printf("        edge %4d sharpness:  %f\n", i, _edgeSharpness[i]);
     }
-    printf("      edge tags = %lu\n", mEdgeTags.size());
-    for (int i = 0; printEdgeTags && i < (int)mEdgeTags.size(); ++i) {
-        ETag const& eTag = mEdgeTags[i];
+    printf("      edge tags = %lu\n", _edgeTags.size());
+    for (int i = 0; printEdgeTags && i < (int)_edgeTags.size(); ++i) {
+        ETag const& eTag = _edgeTags[i];
         printf("        edge %4d:", i);
         printf("  boundary = %d",  (int)eTag._boundary);
         printf(", semiSharp = %d", (int)eTag._semiSharp);
@@ -312,25 +312,25 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     }
 
     printf("    Vert relations:\n");
-    printf("      vert-face counts/offset = %lu\n", mVertFaceCountsAndOffsets.size());
-    printf("      vert-face indices  = %lu\n", mVertFaceIndices.size());
-    printf("      vert-face children = %lu\n", mVertFaceLocalIndices.size());
-    for (int i = 0; printVertFaces && i < vertCount(); ++i) {
+    printf("      vert-face counts/offset = %lu\n", _vertFaceCountsAndOffsets.size());
+    printf("      vert-face indices  = %lu\n", _vertFaceIndices.size());
+    printf("      vert-face children = %lu\n", _vertFaceLocalIndices.size());
+    for (int i = 0; printVertFaces && i < getNumVertices(); ++i) {
         printf("        vert %4d faces:  ", i);
-        printIndexArray(accessVertFaces(i));
+        printIndexArray(getVertexFaces(i));
 
         printf("             face-verts:  ");
-        printIndexArray(accessVertFaceLocalIndices(i));
+        printIndexArray(getVertexFaceLocalIndices(i));
     }
-    printf("      vert-edge counts/offset = %lu\n", mVertEdgeCountsAndOffsets.size());
-    printf("      vert-edge indices  = %lu\n", mVertEdgeIndices.size());
-    printf("      vert-edge children = %lu\n", mVertEdgeLocalIndices.size());
-    for (int i = 0; printVertEdges && i < vertCount(); ++i) {
+    printf("      vert-edge counts/offset = %lu\n", _vertEdgeCountsAndOffsets.size());
+    printf("      vert-edge indices  = %lu\n", _vertEdgeIndices.size());
+    printf("      vert-edge children = %lu\n", _vertEdgeLocalIndices.size());
+    for (int i = 0; printVertEdges && i < getNumVertices(); ++i) {
         printf("        vert %4d edges:  ", i);
-        printIndexArray(accessVertEdges(i));
+        printIndexArray(getVertexEdges(i));
 
         printf("             edge-verts:  ");
-        printIndexArray(accessVertEdgeLocalIndices(i));
+        printIndexArray(getVertexEdgeLocalIndices(i));
     }
     if (pRefinement) {
         printf("      vert child-verts = %lu\n", pRefinement->_vertChildVertIndex.size());
@@ -338,13 +338,13 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
             printf("        vert %4d child vert:  %d\n", i, pRefinement->_vertChildVertIndex[i]);
         }
     }
-    printf("      vert sharpness = %lu\n", mVertSharpness.size());
-    for (int i = 0; printVertSharpness && i < (int)mVertSharpness.size(); ++i) {
-        printf("        vert %4d sharpness:  %f\n", i, mVertSharpness[i]);
+    printf("      vert sharpness = %lu\n", _vertSharpness.size());
+    for (int i = 0; printVertSharpness && i < (int)_vertSharpness.size(); ++i) {
+        printf("        vert %4d sharpness:  %f\n", i, _vertSharpness[i]);
     }
-    printf("      vert tags = %lu\n", mVertTags.size());
-    for (int i = 0; printVertTags && i < (int)mVertTags.size(); ++i) {
-        VTag const& vTag = mVertTags[i];
+    printf("      vert tags = %lu\n", _vertTags.size());
+    for (int i = 0; printVertTags && i < (int)_vertTags.size(); ++i) {
+        VTag const& vTag = _vertTags[i];
         printf("        vert %4d:", i);
         printf("  rule = %s",      ruleString((SdcRule)vTag._rule));
         printf(", boundary = %d",  (int)vTag._boundary);
@@ -372,10 +372,10 @@ namespace {
 VtrLevel::VTag
 VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
 {
-    VTag compTag = mVertTags[faceVerts[0]];
+    VTag compTag = _vertTags[faceVerts[0]];
 
     for (int i = 1; i < faceVerts.size(); ++i) {
-        VTag const& vertTag = mVertTags[faceVerts[i]];
+        VTag const& vertTag = _vertTags[faceVerts[i]];
 
         if (sizeof(VTag) == sizeof(unsigned short)) {
             combineTags<VTag, unsigned short>(compTag, vertTag);
@@ -426,7 +426,7 @@ namespace {
 
     public:
         //  Methods dealing with the members for each component:
-        VtrIndexArray accessCompMembers(VtrIndex index);
+        VtrIndexArray getCompMembers(VtrIndex index);
         void          appendCompMember(VtrIndex index, VtrIndex member);
 
         //  Methods dealing with the components:
@@ -460,7 +460,7 @@ namespace {
     }
 
     inline VtrIndexArray
-    DynamicRelation::accessCompMembers(VtrIndex compIndex)
+    DynamicRelation::getCompMembers(VtrIndex compIndex)
     {
         int count = _countsAndOffsets[2*compIndex];
         if (count > _memberCountPerComp) {
@@ -563,14 +563,14 @@ VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Ed
 {
     if (v0Index != v1Index) {
         for (int j = 0; j < v0Edges.size(); ++j) {
-            VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+            VtrIndexArray eVerts = this->getEdgeVertices(v0Edges[j]);
             if ((eVerts[0] == v1Index) || (eVerts[1] == v1Index)) {
                 return v0Edges[j];
             }
         }
     } else {
         for (int j = 0; j < v0Edges.size(); ++j) {
-            VtrIndexArray eVerts = this->accessEdgeVerts(v0Edges[j]);
+            VtrIndexArray eVerts = this->getEdgeVertices(v0Edges[j]);
             if ((eVerts[0] == eVerts[1])) {
                 return v0Edges[j];
             }
@@ -582,7 +582,7 @@ VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Ed
 VtrIndex
 VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index) const
 {
-    return this->findEdge(v0Index, v1Index, this->accessVertEdges(v0Index));
+    return this->findEdge(v0Index, v1Index, this->getVertexEdges(v0Index));
 }
 
 void
@@ -593,9 +593,9 @@ VtrLevel::completeTopologyFromFaceVertices()
     //  are to construct the remaining relations:  including the edge list.  We may want to 
     //  support the existence of the edge list too in future:
     //
-    int vCount = this->vertCount();
-    int fCount = this->faceCount();
-    int eCount = this->edgeCount();
+    int vCount = this->getNumVertices();
+    int fCount = this->getNumFaces();
+    int eCount = this->getNumEdges();
     assert((vCount > 0) && (fCount > 0) && (eCount == 0));
 
     //  May be unnecessary depending on how the vertices and faces were defined, but worth a
@@ -603,21 +603,21 @@ VtrLevel::completeTopologyFromFaceVertices()
     //  harmless call if all has been taken care of).
     //
     //  Remember to resize edges similarly after the edge list has been assembled...
-    this->resizeVerts(vCount);
+    this->resizeVertices(vCount);
     this->resizeFaces(fCount);
     this->resizeEdges(0);
 
     //
     //  Resize face-edges to match face-verts and reserve for edges based on an estimate:
     //
-    this->mFaceEdgeIndices.resize(this->faceVertCount());
+    this->_faceEdgeIndices.resize(this->getNumFaceVerticesTotal());
 
     int eCountEstimate = (vCount << 1);
 
-    this->mEdgeVertIndices.reserve(eCountEstimate * 2);
-    this->mEdgeFaceIndices.reserve(eCountEstimate * 2);
+    this->_edgeVertIndices.reserve(eCountEstimate * 2);
+    this->_edgeFaceIndices.reserve(eCountEstimate * 2);
 
-    this->mEdgeFaceCountsAndOffsets.reserve(eCountEstimate * 2);
+    this->_edgeFaceCountsAndOffsets.reserve(eCountEstimate * 2);
 
     //
     //  Create the dynamic relations to be populated (edge-faces will remain empty as reserved
@@ -625,20 +625,20 @@ VtrLevel::completeTopologyFromFaceVertices()
     //
     const int avgSize = 6;
 
-    DynamicRelation dynEdgeFaces(this->mEdgeFaceCountsAndOffsets, this->mEdgeFaceIndices, 2);
-    DynamicRelation dynVertFaces(this->mVertFaceCountsAndOffsets, this->mVertFaceIndices, avgSize);
-    DynamicRelation dynVertEdges(this->mVertEdgeCountsAndOffsets, this->mVertEdgeIndices, avgSize);
+    DynamicRelation dynEdgeFaces(this->_edgeFaceCountsAndOffsets, this->_edgeFaceIndices, 2);
+    DynamicRelation dynVertFaces(this->_vertFaceCountsAndOffsets, this->_vertFaceIndices, avgSize);
+    DynamicRelation dynVertEdges(this->_vertEdgeCountsAndOffsets, this->_vertEdgeIndices, avgSize);
 
     for (VtrIndex fIndex = 0; fIndex < fCount; ++fIndex) {
-        VtrIndexArray fVerts = this->accessFaceVerts(fIndex);
-        VtrIndexArray fEdges = this->modifyFaceEdges(fIndex);
+        VtrIndexArray fVerts = this->getFaceVertices(fIndex);
+        VtrIndexArray fEdges = this->getFaceEdges(fIndex);
 
         for (int i = 0; i < fVerts.size(); ++i) {
             VtrIndex v0Index = fVerts[i];
             VtrIndex v1Index = fVerts[(i+1) % fVerts.size()];
 
             //  Look for the edge in v0's incident edge members:
-            VtrIndexArray v0Edges = dynVertEdges.accessCompMembers(v0Index);
+            VtrIndexArray v0Edges = dynVertEdges.getCompMembers(v0Index);
 
             VtrIndex eIndex = this->findEdge(v0Index, v1Index, v0Edges);
 
@@ -647,8 +647,8 @@ VtrLevel::completeTopologyFromFaceVertices()
                 eIndex = (VtrIndex) this->_edgeCount;
 
                 this->_edgeCount ++;
-                this->mEdgeVertIndices.push_back(v0Index);
-                this->mEdgeVertIndices.push_back(v1Index);
+                this->_edgeVertIndices.push_back(v0Index);
+                this->_edgeVertIndices.push_back(v1Index);
 
                 dynEdgeFaces.appendComponent();
 
@@ -677,18 +677,18 @@ VtrLevel::completeTopologyFromFaceVertices()
     //  according to the manifold status.
     //
     //  Resize edges with the Level to ensure anything else related to edges is created:
-    eCount = this->edgeCount();
+    eCount = this->getNumEdges();
     this->resizeEdges(eCount);
 
-    memset(&this->mFaceTags[0], 0, fCount * sizeof(VtrLevel::FTag));
-    memset(&this->mEdgeTags[0], 0, eCount * sizeof(VtrLevel::ETag));
-    memset(&this->mVertTags[0], 0, vCount * sizeof(VtrLevel::VTag));
+    memset(&this->_faceTags[0], 0, fCount * sizeof(VtrLevel::FTag));
+    memset(&this->_edgeTags[0], 0, eCount * sizeof(VtrLevel::ETag));
+    memset(&this->_vertTags[0], 0, vCount * sizeof(VtrLevel::VTag));
 
     for (VtrIndex eIndex = 0; eIndex < eCount; ++eIndex) {
-        VtrLevel::ETag& eTag = this->mEdgeTags[eIndex];
+        VtrLevel::ETag& eTag = this->_edgeTags[eIndex];
 
-        VtrIndexArray eFaces = this->accessEdgeFaces(eIndex);
-        VtrIndexArray eVerts = this->accessEdgeVerts(eIndex);
+        VtrIndexArray eFaces = this->getEdgeFaces(eIndex);
+        VtrIndexArray eVerts = this->getEdgeVertices(eIndex);
 
         if ((eFaces.size() < 1) || (eFaces.size() > 2)) {
             eTag._nonManifold = true;
@@ -702,8 +702,8 @@ VtrLevel::completeTopologyFromFaceVertices()
 
         //  Mark incident vertices non-manifold to avoid attempting to orient them:
         if (eTag._nonManifold) {
-            this->mVertTags[eVerts[0]]._nonManifold = true;
-            this->mVertTags[eVerts[1]]._nonManifold = true;
+            this->_vertTags[eVerts[0]]._nonManifold = true;
+            this->_vertTags[eVerts[1]]._nonManifold = true;
         }
     }
     orientIncidentComponents();
@@ -717,17 +717,17 @@ VtrLevel::populateLocalIndices()
     //
     //  We have two sets of local indices -- vert-faces and vert-edges:
     //
-    int vCount = this->vertCount();
+    int vCount = this->getNumVertices();
 
-    this->mVertFaceLocalIndices.resize(this->mVertFaceIndices.size());
-    this->mVertEdgeLocalIndices.resize(this->mVertEdgeIndices.size());
+    this->_vertFaceLocalIndices.resize(this->_vertFaceIndices.size());
+    this->_vertEdgeLocalIndices.resize(this->_vertEdgeIndices.size());
 
     for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
-        VtrIndexArray      vFaces   = this->accessVertFaces(vIndex);
-        VtrLocalIndexArray vInFaces = this->modifyVertFaceLocalIndices(vIndex);
+        VtrIndexArray      vFaces   = this->getVertexFaces(vIndex);
+        VtrLocalIndexArray vInFaces = this->getVertexFaceLocalIndices(vIndex);
 
         for (int i = 0; i < vFaces.size(); ++i) {
-            VtrIndexArray fVerts = this->accessFaceVerts(vFaces[i]);
+            VtrIndexArray fVerts = this->getFaceVertices(vFaces[i]);
 
             int vInFaceIndex = std::find(fVerts.begin(), fVerts.end(), vIndex) - fVerts.begin();
             vInFaces[i] = (VtrLocalIndex) vInFaceIndex;
@@ -735,11 +735,11 @@ VtrLevel::populateLocalIndices()
     }
 
     for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
-        VtrIndexArray      vEdges   = this->accessVertEdges(vIndex);
-        VtrLocalIndexArray vInEdges = this->modifyVertEdgeLocalIndices(vIndex);
+        VtrIndexArray      vEdges   = this->getVertexEdges(vIndex);
+        VtrLocalIndexArray vInEdges = this->getVertexEdgeLocalIndices(vIndex);
 
         for (int i = 0; i < vEdges.size(); ++i) {
-            VtrIndexArray eVerts = this->accessEdgeVerts(vEdges[i]);
+            VtrIndexArray eVerts = this->getEdgeVertices(vEdges[i]);
 
             vInEdges[i] = (vIndex == eVerts[1]);
         }
@@ -749,13 +749,13 @@ VtrLevel::populateLocalIndices()
 void
 VtrLevel::orientIncidentComponents()
 {
-    int vCount = this->vertCount();
+    int vCount = this->getNumVertices();
 
     for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
-        VtrLevel::VTag vTag = this->mVertTags[vIndex];
+        VtrLevel::VTag vTag = this->_vertTags[vIndex];
 
         if (!vTag._nonManifold) {
-            if (!orderVertFacesAndEdges(vIndex)) {
+            if (!orderVertexFacesAndEdges(vIndex)) {
                 vTag._nonManifold = true;
             }
         }
@@ -771,10 +771,10 @@ namespace {
 }
 
 bool
-VtrLevel::orderVertFacesAndEdges(VtrIndex vIndex)
+VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
 {
-    VtrIndexArray vEdges   = this->modifyVertEdges(vIndex);
-    VtrIndexArray vFaces   = this->modifyVertFaces(vIndex);
+    VtrIndexArray vEdges = this->getVertexEdges(vIndex);
+    VtrIndexArray vFaces = this->getVertexFaces(vIndex);
 
     int fCount = vFaces.size();
     int eCount = vEdges.size();
@@ -794,20 +794,20 @@ VtrLevel::orderVertFacesAndEdges(VtrIndex vIndex)
         //  Interior case -- start with the first face
 
         fStart  = vFaces[0];
-        fvStart = findInArray(this->accessFaceVerts(fStart), vIndex);
-        eStart  = this->accessFaceEdges(fStart)[fvStart];
+        fvStart = findInArray(this->getFaceVertices(fStart), vIndex);
+        eStart  = this->getFaceEdges(fStart)[fvStart];
     } else {
         //  Boundary case -- start with (identify) the leading of two boundary edges:
 
         for (int i = 0; i < eCount; ++i) {
-            VtrIndexArray const eFaces = this->accessEdgeFaces(vEdges[i]);
+            VtrIndexArray const eFaces = this->getEdgeFaces(vEdges[i]);
             if (eFaces.size() == 1) {
                 eStart = vEdges[i];
                 fStart = eFaces[0];
-                fvStart = findInArray(this->accessFaceVerts(fStart), vIndex);
+                fvStart = findInArray(this->getFaceVertices(fStart), vIndex);
 
                 //  Singular edge -- look for forward edge to this vertex:
-                if (eStart == (this->accessFaceEdges(fStart)[fvStart])) {
+                if (eStart == (this->getFaceEdges(fStart)[fvStart])) {
                     break;
                 }
             }
@@ -835,8 +835,8 @@ VtrLevel::orderVertFacesAndEdges(VtrIndex vIndex)
         //
         //  Find the next edge, i.e. the one counter-clockwise to the last:
         //
-        VtrIndexArray const fVerts = this->accessFaceVerts(fStart);
-        VtrIndexArray const fEdges = this->accessFaceEdges(fStart);
+        VtrIndexArray const fVerts = this->getFaceVertices(fStart);
+        VtrIndexArray const fEdges = this->getFaceEdges(fStart);
 
         int      feStart = fvStart;
         int      feNext  = feStart ? (feStart - 1) : (fVerts.size() - 1);
@@ -854,13 +854,13 @@ VtrLevel::orderVertFacesAndEdges(VtrIndex vIndex)
         vEdgesOrdered[orderedEdgesCount++] = eNext;
 
         if (orderedFacesCount < fCount) {
-            VtrIndexArray const eFaces = this->accessEdgeFaces(eNext);
+            VtrIndexArray const eFaces = this->getEdgeFaces(eNext);
             
             if (eFaces.size() == 0) return false;
             if ((eFaces.size() == 1) && (eFaces[0] == fStart)) return false;
 
             fStart  = eFaces[eFaces[0] == fStart];
-            fvStart = findInArray(this->accessFaceEdges(fStart), eNext);
+            fvStart = findInArray(this->getFaceEdges(fStart), eNext);
 
             vFacesOrdered[orderedFacesCount++] = fStart;
         }

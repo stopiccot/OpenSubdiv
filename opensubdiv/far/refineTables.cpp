@@ -77,7 +77,7 @@ FarRefineTables::GetNumVerticesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
-        sum += _levels[i].vertCount();
+        sum += _levels[i].getNumVertices();
     }
     return sum;
 }
@@ -86,7 +86,7 @@ FarRefineTables::GetNumEdgesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
-        sum += _levels[i].edgeCount();
+        sum += _levels[i].getNumEdges();
     }
     return sum;
 }
@@ -95,7 +95,7 @@ FarRefineTables::GetNumFacesTotal() const
 {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
-        sum += _levels[i].faceCount();
+        sum += _levels[i].getNumFaces();
     }
     return sum;
 }
@@ -106,7 +106,7 @@ FarRefineTables::GetNumFacesTotal() const
 void
 FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
 {
-    assert(_levels[0].vertCount() > 0);  //  Make sure the base level has been initialized
+    assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
 
     //
@@ -137,7 +137,7 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
 void
 FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
 {
-    assert(_levels[0].vertCount() > 0);  //  Make sure the base level has been initialized
+    assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
 
     //
@@ -281,21 +281,21 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //  and so might as well detect here.  Whether the corner is sharp or not is irrelevant
     //  as both the extraordinary smooth, or the regular sharp cases need isolation.
     //
-    if (level.depth() == 0) {
-        for (VtrIndex face = 0; face < level.faceCount(); ++face) {
-            VtrIndexArray const faceVerts = level.accessFaceVerts(face);
+    if (level.getDepth() == 0) {
+        for (VtrIndex face = 0; face < level.getNumFaces(); ++face) {
+            VtrIndexArray const faceVerts = level.getFaceVertices(face);
 
             if (faceVerts.size() != 4) {
                 selector.selectFace(face);
             } else {
-                VtrIndexArray const faceEdges = level.accessFaceEdges(face);
+                VtrIndexArray const faceEdges = level.getFaceEdges(face);
 
-                int boundaryEdgeSum = (level.accessEdgeFaces(faceEdges[0]).size() == 1) +
-                                      (level.accessEdgeFaces(faceEdges[1]).size() == 1) +
-                                      (level.accessEdgeFaces(faceEdges[2]).size() == 1) +
-                                      (level.accessEdgeFaces(faceEdges[3]).size() == 1);
+                int boundaryEdgeSum = (level.getEdgeFaces(faceEdges[0]).size() == 1) +
+                                      (level.getEdgeFaces(faceEdges[1]).size() == 1) +
+                                      (level.getEdgeFaces(faceEdges[2]).size() == 1) +
+                                      (level.getEdgeFaces(faceEdges[3]).size() == 1);
                 if ((boundaryEdgeSum > 2) || ((boundaryEdgeSum == 2) &&
-                    (level.accessEdgeFaces(faceEdges[0]).size() == level.accessEdgeFaces(faceEdges[2]).size()))) {
+                    (level.getEdgeFaces(faceEdges[0]).size() == level.getEdgeFaces(faceEdges[2]).size()))) {
                     selector.selectFace(face);
                 }
             }
@@ -331,19 +331,19 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //      - regular (wrt both subdiv scheme and topology)
     //      - manifold
     //
-    for (VtrIndex vert = 0; vert < level.vertCount(); ++vert) {
+    for (VtrIndex vert = 0; vert < level.getNumVertices(); ++vert) {
         if (selector.isVertexIncomplete(vert)) continue;
 
         bool selectVertex = false;
 
-        float vertSharpness = level.vertSharpness(vert);
+        float vertSharpness = level.getVertexSharpness(vert);
         if (vertSharpness > 0.0) {
-            selectVertex = (level.accessVertFaces(vert).size() != 1) || (vertSharpness < SdcCrease::INFINITE);
-        } else if (level.vertRule(vert) == SdcCrease::RULE_DART) {
+            selectVertex = (level.getVertexFaces(vert).size() != 1) || (vertSharpness < SdcCrease::INFINITE);
+        } else if (level.getVertexRule(vert) == SdcCrease::RULE_DART) {
             selectVertex = true;
         } else {
-            VtrIndexArray const vertFaces = level.accessVertFaces(vert);
-            VtrIndexArray const vertEdges = level.accessVertEdges(vert);
+            VtrIndexArray const vertFaces = level.getVertexFaces(vert);
+            VtrIndexArray const vertEdges = level.getVertexEdges(vert);
 
             //  Should be non-manifold test -- remaining cases assume manifold...
             if (vertFaces.size() == vertEdges.size()) {
@@ -374,9 +374,9 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
     //
     //  And as for vertices, skip incomplete neighboring vertices from the previous level.
     //
-    for (VtrIndex edge = 0; edge < level.edgeCount(); ++edge) {
-        float               edgeSharpness = level.edgeSharpness(edge);
-        VtrIndexArray const edgeFaces     = level.accessEdgeFaces(edge);
+    for (VtrIndex edge = 0; edge < level.getNumEdges(); ++edge) {
+        float               edgeSharpness = level.getEdgeSharpness(edge);
+        VtrIndexArray const edgeFaces     = level.getEdgeFaces(edge);
 
         if ((edgeSharpness <= 0.0) || (edgeFaces.size() < 2)) continue;
 
@@ -385,7 +385,7 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
             //  Semi-sharp -- definitely mark both end vertices (will have been marked above
             //  in future when semi-sharp vertex tag in place):
             //
-            VtrIndexArray const edgeVerts = level.accessEdgeVerts(edge);
+            VtrIndexArray const edgeVerts = level.getEdgeVertices(edge);
             if (!selector.isVertexIncomplete(edgeVerts[0])) {
                 selector.selectVertexFaces(edgeVerts[0]);
             }
@@ -400,14 +400,14 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
             bool edgeFacesAreRegular = true;
 
             for (int i = 0; i < edgeFaces.size(); ++i) {
-                VtrIndexArray const faceEdges = level.accessFaceEdges(edgeFaces[i]);
+                VtrIndexArray const faceEdges = level.getFaceEdges(edgeFaces[i]);
 
                 bool edgeFaceIsRegular = false;
                 if (faceEdges.size() == 4) {
-                    int singularEdgeSum = (level.edgeSharpness(faceEdges[0]) >= SdcCrease::INFINITE) +
-                                          (level.edgeSharpness(faceEdges[1]) >= SdcCrease::INFINITE) +
-                                          (level.edgeSharpness(faceEdges[2]) >= SdcCrease::INFINITE) +
-                                          (level.edgeSharpness(faceEdges[3]) >= SdcCrease::INFINITE);
+                    int singularEdgeSum = (level.getEdgeSharpness(faceEdges[0]) >= SdcCrease::INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[1]) >= SdcCrease::INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[2]) >= SdcCrease::INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[3]) >= SdcCrease::INFINITE);
                     edgeFaceIsRegular = (singularEdgeSum == 1);
                 } else {
                     edgeFaceIsRegular = false;
@@ -421,10 +421,10 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
                 //  We need to select this edge, but only select the end vertices that are not
                 //  creases -- a crease vertex that needs isolation will be identified by other
                 //  means (e.g. a semi-sharp edge on the other side)
-                VtrIndexArray const edgeVerts = level.accessEdgeVerts(edge);
+                VtrIndexArray const edgeVerts = level.getEdgeVertices(edge);
                 for (int i = 0; i < 2; ++i) {
                     if (!selector.isVertexIncomplete(edgeVerts[i]) &&
-                        (level.vertRule(edgeVerts[i]) != SdcCrease::RULE_CREASE)) {
+                        (level.getVertexRule(edgeVerts[i]) != SdcCrease::RULE_CREASE)) {
                         selector.selectVertexFaces(edgeVerts[i]);
                     }
                 }
@@ -438,8 +438,8 @@ FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selecto
 {
     VtrLevel const& level = selector.getRefinement().parent();
 
-    for (VtrIndex face = 0; face < level.faceCount(); ++face) {
-        VtrIndexArray const faceVerts = level.accessFaceVerts(face);
+    for (VtrIndex face = 0; face < level.getNumFaces(); ++face) {
+        VtrIndexArray const faceVerts = level.getFaceVertices(face);
 
         bool selectFace = false;
         if (faceVerts.size() != 4) {

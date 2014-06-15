@@ -77,7 +77,7 @@ void
 VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
 {
     //  Make sure we are getting a fresh child...
-    assert((child.depth() == 0) && (child.vertCount() == 0));
+    assert((child.getDepth() == 0) && (child.getNumVertices() == 0));
 
     //
     //  Do we want anything more here for "initialization", e.g. the subd scheme,
@@ -86,7 +86,7 @@ VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
     _parent = &parent;
     _child  = &child;
 
-    child._depth = 1 + parent.depth();
+    child._depth = 1 + parent.getDepth();
 }
 
 void
@@ -119,23 +119,23 @@ VtrRefinement::allocateParentToChildMapping()
     int vertChildVertCount;
 
     if (_quadSplit) {
-        faceChildFaceCount = _parent->mFaceVertIndices.size();
-        faceChildEdgeCount = _parent->mFaceEdgeIndices.size();
-        edgeChildEdgeCount = _parent->mEdgeVertIndices.size();
+        faceChildFaceCount = _parent->_faceVertIndices.size();
+        faceChildEdgeCount = _parent->_faceEdgeIndices.size();
+        edgeChildEdgeCount = _parent->_edgeVertIndices.size();
 
-        faceChildVertCount = _parent->faceCount();
-        edgeChildVertCount = _parent->edgeCount();
-        vertChildVertCount = _parent->vertCount();
+        faceChildVertCount = _parent->getNumFaces();
+        edgeChildVertCount = _parent->getNumEdges();
+        vertChildVertCount = _parent->getNumVertices();
     } else {
         assert("Non-quad splitting not yet supported\n" == 0);
 
-        faceChildFaceCount = _parent->faceCount() * 4;
-        faceChildEdgeCount = _parent->mFaceEdgeIndices.size();
-        edgeChildEdgeCount = _parent->mEdgeVertIndices.size();
+        faceChildFaceCount = _parent->getNumFaces() * 4;
+        faceChildEdgeCount = _parent->_faceEdgeIndices.size();
+        edgeChildEdgeCount = _parent->_edgeVertIndices.size();
 
         faceChildVertCount = 0;
-        edgeChildVertCount = _parent->edgeCount();
-        vertChildVertCount = _parent->vertCount();
+        edgeChildVertCount = _parent->getNumEdges();
+        vertChildVertCount = _parent->getNumVertices();
     }
 
     //
@@ -157,32 +157,32 @@ void
 VtrRefinement::printParentToChildMapping() const
 {
     printf("Parent-to-child component mapping:\n");
-    for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
+    for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
         printf("  Face %d:\n", pFace);
         printf("    Child vert:  %d\n", _faceChildVertIndex[pFace]);
 
         printf("    Child faces: ");
-        VtrIndexArray const childFaces = faceChildFaces(pFace);
+        VtrIndexArray const childFaces = getFaceChildFaces(pFace);
         for (int i = 0; i < childFaces.size(); ++i) {
             printf(" %d", childFaces[i]);
         }
         printf("\n");
 
         printf("    Child edges: ");
-        VtrIndexArray const childEdges = faceChildEdges(pFace);
+        VtrIndexArray const childEdges = getFaceChildEdges(pFace);
         for (int i = 0; i < childEdges.size(); ++i) {
             printf(" %d", childEdges[i]);
         }
         printf("\n");
     }
-    for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
+    for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
         printf("  Edge %d:\n", pEdge);
         printf("    Child vert:  %d\n", _edgeChildVertIndex[pEdge]);
 
-        VtrIndexArray const childEdges = edgeChildEdges(pEdge);
+        VtrIndexArray const childEdges = getEdgeChildEdges(pEdge);
         printf("    Child edges: %d %d\n", childEdges[0], childEdges[1]);
     }
-    for (VtrIndex pVert = 0; pVert < _parent->vertCount(); ++pVert) {
+    for (VtrIndex pVert = 0; pVert < _parent->getNumVertices(); ++pVert) {
         printf("  Vert %d:\n", pVert);
         printf("    Child vert:  %d\n", _vertChildVertIndex[pVert]);
     }
@@ -217,9 +217,9 @@ namespace {
 void
 VtrRefinement::initializeSparseSelectionTags()
 {
-    _parentFaceTag.resize(_parent->faceCount());
-    _parentEdgeTag.resize(_parent->edgeCount());
-    _parentVertexTag.resize(_parent->vertCount());
+    _parentFaceTag.resize(_parent->getNumFaces());
+    _parentEdgeTag.resize(_parent->getNumEdges());
+    _parentVertexTag.resize(_parent->getNumVertices());
 }
 
 void
@@ -318,10 +318,10 @@ VtrRefinement::initializeFaceVertexCountsAndOffsets()
     //  of 4 for quads for Catmark -- must adjust for Loop, Bilinear and
     //  account for possibility of both quads and tris...
     //
-    child.mFaceVertCountsAndOffsets.resize(child.faceCount() * 2);
-    for (int i = 0; i < child.faceCount(); ++i) {
-        child.mFaceVertCountsAndOffsets[i*2 + 0] = 4;
-        child.mFaceVertCountsAndOffsets[i*2 + 1] = i << 2;
+    child._faceVertCountsAndOffsets.resize(child.getNumFaces() * 2);
+    for (int i = 0; i < child.getNumFaces(); ++i) {
+        child._faceVertCountsAndOffsets[i*2 + 0] = 4;
+        child._faceVertCountsAndOffsets[i*2 + 1] = i << 2;
     }
 }
 void
@@ -400,11 +400,11 @@ VtrRefinement::populateFaceVerticesFromParentFaces()
     //    - use parent components incident the parent face:
     //        - use the interior face-vert, corner vert-vert and two edge-verts
     //
-    for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-        VtrIndexArray const pFaceVerts = _parent->accessFaceVerts(pFace);
-        VtrIndexArray const pFaceEdges = _parent->accessFaceEdges(pFace);
+    for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+        VtrIndexArray const pFaceVerts = _parent->getFaceVertices(pFace);
+        VtrIndexArray const pFaceEdges = _parent->getFaceEdges(pFace);
 
-        VtrIndexArray const pFaceChildren = faceChildFaces(pFace);
+        VtrIndexArray const pFaceChildren = getFaceChildFaces(pFace);
 
         int pFaceVertCount = pFaceVerts.size();
         for (int j = 0; j < pFaceVertCount; ++j) {
@@ -417,7 +417,7 @@ VtrRefinement::populateFaceVerticesFromParentFaces()
                 VtrIndex cVertOfVert  = _vertChildVertIndex[pFaceVerts[j]];
                 VtrIndex cVertOfENext = _edgeChildVertIndex[pFaceEdges[j]];
 
-                VtrIndexArray cFaceVerts = _child->modifyFaceVerts(cFace);
+                VtrIndexArray cFaceVerts = _child->getFaceVertices(cFace);
 
                 //  Note orientation wrt parent face -- quad vs non-quad...
                 if (pFaceVertCount == 4) {
@@ -448,19 +448,19 @@ VtrRefinement::populateFaceEdgesFromParentFaces()
     //    - use parent components incident the parent face:
     //        - use the two interior face-edges and the two boundary edge-edges
     //
-    for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-        VtrIndexArray const pFaceVerts = _parent->accessFaceVerts(pFace);
-        VtrIndexArray const pFaceEdges = _parent->accessFaceEdges(pFace);
+    for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+        VtrIndexArray const pFaceVerts = _parent->getFaceVertices(pFace);
+        VtrIndexArray const pFaceEdges = _parent->getFaceEdges(pFace);
 
-        VtrIndexArray const pFaceChildFaces = faceChildFaces(pFace);
-        VtrIndexArray const pFaceChildEdges = faceChildEdges(pFace);
+        VtrIndexArray const pFaceChildFaces = getFaceChildFaces(pFace);
+        VtrIndexArray const pFaceChildEdges = getFaceChildEdges(pFace);
 
         int pFaceVertCount = pFaceVerts.size();
 
         for (int j = 0; j < pFaceVertCount; ++j) {
             VtrIndex cFace = pFaceChildFaces[j];
             if (VtrIndexIsValid(cFace)) {
-                VtrIndexArray cFaceEdges = _child->modifyFaceEdges(cFace);
+                VtrIndexArray cFaceEdges = _child->getFaceEdges(cFace);
 
                 int jPrev = j ? (j - 1) : (pFaceVertCount - 1);
 
@@ -476,16 +476,16 @@ VtrRefinement::populateFaceEdgesFromParentFaces()
                 VtrIndex pCornerVert = pFaceVerts[j];
 
                 VtrIndex            pPrevEdge      = pFaceEdges[jPrev];
-                VtrIndexArray const pPrevEdgeVerts = _parent->accessEdgeVerts(pPrevEdge);
+                VtrIndexArray const pPrevEdgeVerts = _parent->getEdgeVertices(pPrevEdge);
 
                 VtrIndex            pNextEdge      = pFaceEdges[j];
-                VtrIndexArray const pNextEdgeVerts = _parent->accessEdgeVerts(pNextEdge);
+                VtrIndexArray const pNextEdgeVerts = _parent->getEdgeVertices(pNextEdge);
 
                 int cornerInPrevEdge = (pPrevEdgeVerts[0] != pCornerVert);
                 int cornerInNextEdge = (pNextEdgeVerts[0] != pCornerVert);
 
-                VtrIndex cEdgeOfEdgePrev = edgeChildEdges(pPrevEdge)[cornerInPrevEdge];
-                VtrIndex cEdgeOfEdgeNext = edgeChildEdges(pNextEdge)[cornerInNextEdge];
+                VtrIndex cEdgeOfEdgePrev = getEdgeChildEdges(pPrevEdge)[cornerInPrevEdge];
+                VtrIndex cEdgeOfEdgeNext = getEdgeChildEdges(pNextEdge)[cornerInNextEdge];
 
                 VtrIndex cEdgePerpEdgePrev = pFaceChildEdges[jPrev];
                 VtrIndex cEdgePerpEdgeNext = pFaceChildEdges[j];
@@ -522,15 +522,15 @@ VtrRefinement::populateEdgeVerticesFromParentFaces()
     //    - identify parent edge perpendicular to face's child edge:
     //        - identify parent edge's vert-child
     //
-    for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-        VtrIndexArray const pFaceEdges = _parent->accessFaceEdges(pFace);
+    for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+        VtrIndexArray const pFaceEdges = _parent->getFaceEdges(pFace);
 
-        VtrIndexArray const pFaceChildren = faceChildEdges(pFace);
+        VtrIndexArray const pFaceChildren = getFaceChildEdges(pFace);
 
         for (int j = 0; j < pFaceEdges.size(); ++j) {
             VtrIndex cEdge = pFaceChildren[j];
             if (VtrIndexIsValid(cEdge)) {
-                VtrIndexArray cEdgeVerts = _child->modifyEdgeVerts(cEdge);
+                VtrIndexArray cEdgeVerts = _child->getEdgeVertices(cEdge);
 
                 cEdgeVerts[0] = _faceChildVertIndex[pFace];
                 cEdgeVerts[1] = _edgeChildVertIndex[pFaceEdges[j]];
@@ -548,16 +548,16 @@ VtrRefinement::populateEdgeVerticesFromParentEdges()
     //    - identify parent vert at end of child edge:
     //        - identify parent vert's vert-child
     //
-    for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
-        VtrIndexArray const pEdgeVerts = _parent->accessEdgeVerts(pEdge);
+    for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
+        VtrIndexArray const pEdgeVerts = _parent->getEdgeVertices(pEdge);
 
-        VtrIndexArray const pEdgeChildren = edgeChildEdges(pEdge);
+        VtrIndexArray const pEdgeChildren = getEdgeChildEdges(pEdge);
 
         //  May want to unroll this trivial loop of 2...
         for (int j = 0; j < 2; ++j) {
             VtrIndex cEdge = pEdgeChildren[j];
             if (VtrIndexIsValid(cEdge)) {
-                VtrIndexArray cEdgeVerts = _child->modifyEdgeVerts(cEdge);
+                VtrIndexArray cEdgeVerts = _child->getEdgeVertices(cEdge);
 
                 cEdgeVerts[0] = _edgeChildVertIndex[pEdge];
                 cEdgeVerts[1] = _vertChildVertIndex[pEdgeVerts[j]];
@@ -577,11 +577,11 @@ VtrRefinement::populateEdgeFacesFromParentFaces()
     //  ahead of time and is populated incrementally, so we cannot
     //  thread this yet...
     //
-    for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-        VtrIndexArray const pFaceChildFaces = faceChildFaces(pFace);
-        VtrIndexArray const pFaceChildEdges = faceChildEdges(pFace);
+    for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+        VtrIndexArray const pFaceChildFaces = getFaceChildFaces(pFace);
+        VtrIndexArray const pFaceChildEdges = getFaceChildEdges(pFace);
 
-        int pFaceValence = _parent->accessFaceVerts(pFace).size();
+        int pFaceValence = _parent->getFaceVertices(pFace).size();
 
         for (int j = 0; j < pFaceValence; ++j) {
             VtrIndex cEdge = pFaceChildEdges[j];
@@ -591,7 +591,7 @@ VtrRefinement::populateEdgeFacesFromParentFaces()
                 //
                 _child->resizeEdgeFaces(cEdge, 2);
 
-                VtrIndexArray cEdgeFaces = _child->modifyEdgeFaces(cEdge);
+                VtrIndexArray cEdgeFaces = _child->getEdgeFaces(cEdge);
 
                 //  One or two child faces may be assigned:
                 int jNext = ((j + 1) < pFaceValence) ? (j + 1) : 0;
@@ -617,11 +617,11 @@ VtrRefinement::populateEdgeFacesFromParentEdges()
     //  ahead of time and is populated incrementally, so we cannot
     //  thread this yet...
     //
-    for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
-        VtrIndexArray const pEdgeVerts = _parent->accessEdgeVerts(pEdge);
-        VtrIndexArray const pEdgeFaces = _parent->accessEdgeFaces(pEdge);
+    for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
+        VtrIndexArray const pEdgeVerts = _parent->getEdgeVertices(pEdge);
+        VtrIndexArray const pEdgeFaces = _parent->getEdgeFaces(pEdge);
 
-        VtrIndexArray const pEdgeChildEdges = edgeChildEdges(pEdge);
+        VtrIndexArray const pEdgeChildEdges = getEdgeChildEdges(pEdge);
 
         for (int j = 0; j < 2; ++j) {
             VtrIndex cEdge = pEdgeChildEdges[j];
@@ -632,7 +632,7 @@ VtrRefinement::populateEdgeFacesFromParentEdges()
             //
             _child->resizeEdgeFaces(cEdge, pEdgeFaces.size());
 
-            VtrIndexArray cEdgeFaces = _child->modifyEdgeFaces(cEdge);
+            VtrIndexArray cEdgeFaces = _child->getEdgeFaces(cEdge);
 
             //
             //  Each parent face may contribute an incident child face:
@@ -663,10 +663,10 @@ VtrRefinement::populateEdgeFacesFromParentEdges()
             for (int i = 0; i < pEdgeFaces.size(); ++i) {
                 VtrIndex pFace = pEdgeFaces[i];
 
-                VtrIndexArray const pFaceEdges = _parent->accessFaceEdges(pFace);
-                VtrIndexArray const pFaceVerts = _parent->accessFaceVerts(pFace);
+                VtrIndexArray const pFaceEdges = _parent->getFaceEdges(pFace);
+                VtrIndexArray const pFaceVerts = _parent->getFaceVertices(pFace);
 
-                VtrIndexArray const pFaceChildren = faceChildFaces(pFace);
+                VtrIndexArray const pFaceChildren = getFaceChildFaces(pFace);
 
                 int pFaceValence = pFaceVerts.size();
 
@@ -700,24 +700,24 @@ VtrRefinement::populateVertexFacesFromParentFaces()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int fIndex = 0; fIndex < parent.faceCount(); ++fIndex) {
+    for (int fIndex = 0; fIndex < parent.getNumFaces(); ++fIndex) {
         int cVertIndex = this->_faceChildVertIndex[fIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  Inspect the parent face first:
         //
-        int pFaceVertCount  = parent.accessFaceVerts(fIndex).size();
+        int pFaceVertCount  = parent.getFaceVertices(fIndex).size();
 
-        VtrIndexArray const pFaceChildren = this->faceChildFaces(fIndex);
+        VtrIndexArray const pFaceChildren = this->getFaceChildFaces(fIndex);
 
         //
         //  Reserve enough vert-faces, populate and trim to the actual size:
         //
-        child.resizeVertFaces(cVertIndex, pFaceVertCount);
+        child.resizeVertexFaces(cVertIndex, pFaceVertCount);
 
-        VtrIndexArray      cVertFaces  = child.modifyVertFaces(cVertIndex);
-        VtrLocalIndexArray cVertInFace = child.modifyVertFaceLocalIndices(cVertIndex);
+        VtrIndexArray      cVertFaces  = child.getVertexFaces(cVertIndex);
+        VtrLocalIndexArray cVertInFace = child.getVertexFaceLocalIndices(cVertIndex);
 
         int cVertFaceCount = 0;
         for (int j = 0; j < pFaceVertCount; ++j) {
@@ -730,7 +730,7 @@ VtrRefinement::populateVertexFacesFromParentFaces()
                 cVertFaceCount++;
             }
         }
-        child.trimVertFaces(cVertIndex, cVertFaceCount);
+        child.trimVertexFaces(cVertIndex, cVertFaceCount);
     }
 }
 void
@@ -739,22 +739,22 @@ VtrRefinement::populateVertexFacesFromParentEdges()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int pEdgeIndex = 0; pEdgeIndex < parent.edgeCount(); ++pEdgeIndex) {
+    for (int pEdgeIndex = 0; pEdgeIndex < parent.getNumEdges(); ++pEdgeIndex) {
         int cVertIndex = this->_edgeChildVertIndex[pEdgeIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  Inspect the parent edge first:
         //
-        VtrIndexArray const pEdgeFaces = parent.accessEdgeFaces(pEdgeIndex);
+        VtrIndexArray const pEdgeFaces = parent.getEdgeFaces(pEdgeIndex);
 
         //
         //  Reserve enough vert-faces, populate and trim to the actual size:
         //
-        child.resizeVertFaces(cVertIndex, 2 * pEdgeFaces.size());
+        child.resizeVertexFaces(cVertIndex, 2 * pEdgeFaces.size());
 
-        VtrIndexArray      cVertFaces  = child.modifyVertFaces(cVertIndex);
-        VtrLocalIndexArray cVertInFace = child.modifyVertFaceLocalIndices(cVertIndex);
+        VtrIndexArray      cVertFaces  = child.getVertexFaces(cVertIndex);
+        VtrLocalIndexArray cVertInFace = child.getVertexFaceLocalIndices(cVertIndex);
 
         int cVertFaceCount = 0;
         for (int i = 0; i < pEdgeFaces.size(); ++i) {
@@ -764,9 +764,9 @@ VtrRefinement::populateVertexFacesFromParentEdges()
             //
             VtrIndex pFaceIndex  = pEdgeFaces[i];
 
-            VtrIndexArray const pFaceEdges = parent.accessFaceEdges(pFaceIndex);
+            VtrIndexArray const pFaceEdges = parent.getFaceEdges(pFaceIndex);
 
-            VtrIndexArray const pFaceChildren = this->faceChildFaces(pFaceIndex);
+            VtrIndexArray const pFaceChildren = this->getFaceChildFaces(pFaceIndex);
 
             //
             //  Identify the corresponding two child faces for this parent face and
@@ -794,7 +794,7 @@ VtrRefinement::populateVertexFacesFromParentEdges()
                 cVertFaceCount++;
             }
         }
-        child.trimVertFaces(cVertIndex, cVertFaceCount);
+        child.trimVertexFaces(cVertIndex, cVertFaceCount);
     }
 }
 void
@@ -803,40 +803,40 @@ VtrRefinement::populateVertexFacesFromParentVertices()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int vIndex = 0; vIndex < parent.vertCount(); ++vIndex) {
+    for (int vIndex = 0; vIndex < parent.getNumVertices(); ++vIndex) {
         int cVertIndex = this->_vertChildVertIndex[vIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  Inspect the parent vert's faces:
         //
-        VtrIndexArray const      pVertFaces  = parent.accessVertFaces(vIndex);
-        VtrLocalIndexArray const pVertInFace = parent.accessVertFaceLocalIndices(vIndex);
+        VtrIndexArray const      pVertFaces  = parent.getVertexFaces(vIndex);
+        VtrLocalIndexArray const pVertInFace = parent.getVertexFaceLocalIndices(vIndex);
 
         //
         //  Reserve enough vert-faces, populate and trim to the actual size:
         //
-        child.resizeVertFaces(cVertIndex, pVertFaces.size());
+        child.resizeVertexFaces(cVertIndex, pVertFaces.size());
 
-        VtrIndexArray      cVertFaces  = child.modifyVertFaces(cVertIndex);
-        VtrLocalIndexArray cVertInFace = child.modifyVertFaceLocalIndices(cVertIndex);
+        VtrIndexArray      cVertFaces  = child.getVertexFaces(cVertIndex);
+        VtrLocalIndexArray cVertInFace = child.getVertexFaceLocalIndices(cVertIndex);
 
         int cVertFaceCount = 0;
         for (int i = 0; i < pVertFaces.size(); ++i) {
             VtrIndex      pFace      = pVertFaces[i];
             VtrLocalIndex pFaceChild = pVertInFace[i];
 
-            VtrIndex cFace = this->faceChildFaces(pFace)[pFaceChild];
+            VtrIndex cFace = this->getFaceChildFaces(pFace)[pFaceChild];
             if (VtrIndexIsValid(cFace)) {
                 //  Note orientation wrt incident parent faces -- quad vs non-quad...
-                int pFaceCount = parent.accessFaceVerts(pFace).size();
+                int pFaceCount = parent.getFaceVertices(pFace).size();
 
                 cVertFaces[cVertFaceCount] = cFace;
                 cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceCount == 4) ? pFaceChild : 0);
                 cVertFaceCount++;
             }
         }
-        child.trimVertFaces(cVertIndex, cVertFaceCount);
+        child.trimVertexFaces(cVertIndex, cVertFaceCount);
     }
 }
 
@@ -849,24 +849,24 @@ VtrRefinement::populateVertexEdgesFromParentFaces()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int fIndex = 0; fIndex < parent.faceCount(); ++fIndex) {
+    for (int fIndex = 0; fIndex < parent.getNumFaces(); ++fIndex) {
         int cVertIndex = this->_faceChildVertIndex[fIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  Inspect the parent face first:
         //
-        VtrIndexArray const pFaceVerts = parent.accessFaceVerts(fIndex);
+        VtrIndexArray const pFaceVerts = parent.getFaceVertices(fIndex);
 
-        VtrIndexArray const pFaceChildren = this->faceChildEdges(fIndex);
+        VtrIndexArray const pFaceChildren = this->getFaceChildEdges(fIndex);
 
         //
         //  Reserve enough vert-edges, populate and trim to the actual size:
         //
-        child.resizeVertEdges(cVertIndex, pFaceVerts.size());
+        child.resizeVertexEdges(cVertIndex, pFaceVerts.size());
 
-        VtrIndexArray      cVertEdges  = child.modifyVertEdges(cVertIndex);
-        VtrLocalIndexArray cVertInEdge = child.modifyVertEdgeLocalIndices(cVertIndex);
+        VtrIndexArray      cVertEdges  = child.getVertexEdges(cVertIndex);
+        VtrLocalIndexArray cVertInEdge = child.getVertexEdgeLocalIndices(cVertIndex);
 
         int cVertEdgeCount = 0;
         for (int j = 0; j < pFaceVerts.size(); ++j) {
@@ -876,7 +876,7 @@ VtrRefinement::populateVertexEdgesFromParentFaces()
                 cVertEdgeCount++;
             }
         }
-        child.trimVertEdges(cVertIndex, cVertEdgeCount);
+        child.trimVertexEdges(cVertIndex, cVertEdgeCount);
     }
 }
 void
@@ -885,24 +885,24 @@ VtrRefinement::populateVertexEdgesFromParentEdges()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int eIndex = 0; eIndex < parent.edgeCount(); ++eIndex) {
+    for (int eIndex = 0; eIndex < parent.getNumEdges(); ++eIndex) {
         int cVertIndex = this->_edgeChildVertIndex[eIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  First inspect the parent edge -- its parent faces then its child edges:
         //
-        VtrIndexArray const pEdgeFaces = parent.accessEdgeFaces(eIndex);
+        VtrIndexArray const pEdgeFaces = parent.getEdgeFaces(eIndex);
 
-        VtrIndexArray const pEdgeChild = this->edgeChildEdges(eIndex);
+        VtrIndexArray const pEdgeChild = this->getEdgeChildEdges(eIndex);
 
         //
         //  Reserve enough vert-edges, populate and trim to the actual size:
         //
-        child.resizeVertEdges(cVertIndex, pEdgeFaces.size() + 2);
+        child.resizeVertexEdges(cVertIndex, pEdgeFaces.size() + 2);
 
-        VtrIndexArray      cVertEdges  = child.modifyVertEdges(cVertIndex);
-        VtrLocalIndexArray cVertInEdge = child.modifyVertEdgeLocalIndices(cVertIndex);
+        VtrIndexArray      cVertEdges  = child.getVertexEdges(cVertIndex);
+        VtrLocalIndexArray cVertInEdge = child.getVertexEdgeLocalIndices(cVertIndex);
 
         //
         //  For each face incident the parent edge -- assign the edge within
@@ -913,9 +913,9 @@ VtrRefinement::populateVertexEdgesFromParentEdges()
         for (int i = 0; i < pEdgeFaces.size(); ++i) {
             VtrIndex pFace = pEdgeFaces[i];
 
-            VtrIndexArray const pFaceEdges = parent.accessFaceEdges(pFace);
+            VtrIndexArray const pFaceEdges = parent.getFaceEdges(pFace);
 
-            VtrIndexArray const pFaceChildEdges = this->faceChildEdges(pFace);
+            VtrIndexArray const pFaceChildEdges = this->getFaceChildEdges(pFace);
 
             //
             //  Identify the parent edge within this parent face -- this is where
@@ -958,7 +958,7 @@ VtrRefinement::populateVertexEdgesFromParentEdges()
         } else if (edgeFromEdgeCount == 2) {
         }
 
-        child.trimVertEdges(cVertIndex, cVertEdgeCount);
+        child.trimVertexEdges(cVertIndex, cVertEdgeCount);
     }
 }
 void
@@ -967,37 +967,37 @@ VtrRefinement::populateVertexEdgesFromParentVertices()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    for (int vIndex = 0; vIndex < parent.vertCount(); ++vIndex) {
+    for (int vIndex = 0; vIndex < parent.getNumVertices(); ++vIndex) {
         int cVertIndex = this->_vertChildVertIndex[vIndex];
         if (!VtrIndexIsValid(cVertIndex)) continue;
 
         //
         //  Inspect the parent vert's edges first:
         //
-        VtrIndexArray const      pVertEdges  = parent.accessVertEdges(vIndex);
-        VtrLocalIndexArray const pVertInEdge = parent.accessVertEdgeLocalIndices(vIndex);
+        VtrIndexArray const      pVertEdges  = parent.getVertexEdges(vIndex);
+        VtrLocalIndexArray const pVertInEdge = parent.getVertexEdgeLocalIndices(vIndex);
 
         //
         //  Reserve enough vert-edges, populate and trim to the actual size:
         //
-        child.resizeVertEdges(cVertIndex, pVertEdges.size());
+        child.resizeVertexEdges(cVertIndex, pVertEdges.size());
 
-        VtrIndexArray      cVertEdges  = child.modifyVertEdges(cVertIndex);
-        VtrLocalIndexArray cVertInEdge = child.modifyVertEdgeLocalIndices(cVertIndex);
+        VtrIndexArray      cVertEdges  = child.getVertexEdges(cVertIndex);
+        VtrLocalIndexArray cVertInEdge = child.getVertexEdgeLocalIndices(cVertIndex);
 
         int cVertEdgeCount = 0;
         for (int i = 0; i < pVertEdges.size(); ++i) {
             VtrIndex      pEdgeIndex  = pVertEdges[i];
             VtrLocalIndex pEdgeVert = pVertInEdge[i];
 
-            VtrIndex pEdgeChildIndex = this->edgeChildEdges(pEdgeIndex)[pEdgeVert];
+            VtrIndex pEdgeChildIndex = this->getEdgeChildEdges(pEdgeIndex)[pEdgeVert];
             if (VtrIndexIsValid(pEdgeChildIndex)) {
                 cVertEdges[cVertEdgeCount] = pEdgeChildIndex;
                 cVertInEdge[cVertEdgeCount] = 1;
                 cVertEdgeCount++;
             }
         }
-        child.trimVertEdges(cVertIndex, cVertEdgeCount);
+        child.trimVertexEdges(cVertIndex, cVertEdgeCount);
     }
 }
 
@@ -1187,12 +1187,12 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
 
         //  Face-verts -- allocate and populate:
         if (applyTo._faceVertices) {
-            child.mFaceVertIndices.resize(child.faceCount() * 4);
+            child._faceVertIndices.resize(child.getNumFaces() * 4);
             populateFaceVerticesFromParentFaces();
         }
         //  Face-edges -- allocate and populate:
         if (applyTo._faceEdges) {
-            child.mFaceEdgeIndices.resize(child.faceCount() * 4);
+            child._faceEdgeIndices.resize(child.getNumFaces() * 4);
             populateFaceEdgesFromParentFaces();
         }
     }
@@ -1202,7 +1202,7 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
     //
     //  Edge-verts -- allocate and populate:
     if (applyTo._edgeVertices) {
-        child.mEdgeVertIndices.resize(child.edgeCount() * 2);
+        child._edgeVertIndices.resize(child.getNumEdges() * 2);
 
         populateEdgeVerticesFromParentFaces();
         populateEdgeVerticesFromParentEdges();
@@ -1219,20 +1219,20 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
         //  Empty stub to eventually replace the incremental assembly that follows:
         initializeEdgeFaceCountsAndOffsets();
 
-        int childEdgeFaceIndexSizeEstimate = (int)parent.mFaceVertIndices.size() * 2 +
-                                             (int)parent.mEdgeFaceIndices.size() * 2;
+        int childEdgeFaceIndexSizeEstimate = (int)parent._faceVertIndices.size() * 2 +
+                                             (int)parent._edgeFaceIndices.size() * 2;
 
-        child.mEdgeFaceCountsAndOffsets.resize(child.edgeCount() * 2);
-        child.mEdgeFaceIndices.resize(         childEdgeFaceIndexSizeEstimate);
+        child._edgeFaceCountsAndOffsets.resize(child.getNumEdges() * 2);
+        child._edgeFaceIndices.resize(         childEdgeFaceIndexSizeEstimate);
 
         populateEdgeFacesFromParentFaces();
         populateEdgeFacesFromParentEdges();
 
         //  Revise the over-allocated estimate based on what is used (as indicated in the
         //  count/offset for the last vertex) and trim the index vector accordingly:
-        childEdgeFaceIndexSizeEstimate = child.edgeFaceCount(child.edgeCount()-1) +
-                                         child.edgeFaceOffset(child.edgeCount()-1);
-        child.mEdgeFaceIndices.resize(childEdgeFaceIndexSizeEstimate);
+        childEdgeFaceIndexSizeEstimate = child.getNumEdgeFaces(child.getNumEdges()-1) +
+                                         child.getOffsetOfEdgeFaces(child.getNumEdges()-1);
+        child._edgeFaceIndices.resize(childEdgeFaceIndexSizeEstimate);
     }
 
     //
@@ -1274,13 +1274,13 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
         //  Empty stub to eventually replace the incremental assembly that follows:
         initializeVertexFaceCountsAndOffsets();
 
-        int childVertFaceIndexSizeEstimate = (int)parent.mFaceVertIndices.size()
-                                            + (int)parent.mEdgeFaceIndices.size() * 2
-                                            + (int)parent.mVertFaceIndices.size();
+        int childVertFaceIndexSizeEstimate = (int)parent._faceVertIndices.size()
+                                            + (int)parent._edgeFaceIndices.size() * 2
+                                            + (int)parent._vertFaceIndices.size();
 
-        child.mVertFaceCountsAndOffsets.resize(child.vertCount() * 2);
-        child.mVertFaceIndices.resize(         childVertFaceIndexSizeEstimate);
-        child.mVertFaceLocalIndices.resize(    childVertFaceIndexSizeEstimate);
+        child._vertFaceCountsAndOffsets.resize(child.getNumVertices() * 2);
+        child._vertFaceIndices.resize(         childVertFaceIndexSizeEstimate);
+        child._vertFaceLocalIndices.resize(    childVertFaceIndexSizeEstimate);
 
         populateVertexFacesFromParentFaces();
         populateVertexFacesFromParentEdges();
@@ -1288,10 +1288,10 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
 
         //  Revise the over-allocated estimate based on what is used (as indicated in the
         //  count/offset for the last vertex) and trim the index vectors accordingly:
-        childVertFaceIndexSizeEstimate = child.vertFaceCount(child.vertCount()-1) +
-                                         child.vertFaceOffset(child.vertCount()-1);
-        child.mVertFaceIndices.resize(     childVertFaceIndexSizeEstimate);
-        child.mVertFaceLocalIndices.resize(childVertFaceIndexSizeEstimate);
+        childVertFaceIndexSizeEstimate = child.getNumVertexFaces(child.getNumVertices()-1) +
+                                         child.getOffsetOfVertexFaces(child.getNumVertices()-1);
+        child._vertFaceIndices.resize(     childVertFaceIndexSizeEstimate);
+        child._vertFaceLocalIndices.resize(childVertFaceIndexSizeEstimate);
     }
 
     //  Vert-edges:
@@ -1319,13 +1319,13 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
         //  Empty stub to eventually replace the incremental assembly that follows:
         initializeVertexEdgeCountsAndOffsets();
 
-        int childVertEdgeIndexSizeEstimate = (int)parent.mFaceVertIndices.size()
-                                           + (int)parent.mEdgeFaceIndices.size() + parent.edgeCount() * 2
-                                           + (int)parent.mVertEdgeIndices.size();
+        int childVertEdgeIndexSizeEstimate = (int)parent._faceVertIndices.size()
+                                           + (int)parent._edgeFaceIndices.size() + parent.getNumEdges() * 2
+                                           + (int)parent._vertEdgeIndices.size();
 
-        child.mVertEdgeCountsAndOffsets.resize(child.vertCount() * 2);
-        child.mVertEdgeIndices.resize(         childVertEdgeIndexSizeEstimate);
-        child.mVertEdgeLocalIndices.resize(    childVertEdgeIndexSizeEstimate);
+        child._vertEdgeCountsAndOffsets.resize(child.getNumVertices() * 2);
+        child._vertEdgeIndices.resize(         childVertEdgeIndexSizeEstimate);
+        child._vertEdgeLocalIndices.resize(    childVertEdgeIndexSizeEstimate);
 
         populateVertexEdgesFromParentFaces();
         populateVertexEdgesFromParentEdges();
@@ -1333,10 +1333,10 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
 
         //  Revise the over-allocated estimate based on what is used (as indicated in the
         //  count/offset for the last vertex) and trim the index vectors accordingly:
-        childVertEdgeIndexSizeEstimate = child.vertEdgeCount(child.vertCount()-1) +
-                                         child.vertEdgeOffset(child.vertCount()-1);
-        child.mVertEdgeIndices.resize(     childVertEdgeIndexSizeEstimate);
-        child.mVertEdgeLocalIndices.resize(childVertEdgeIndexSizeEstimate);
+        childVertEdgeIndexSizeEstimate = child.getNumVertexEdges(child.getNumVertices()-1) +
+                                         child.getOffsetOfVertexEdges(child.getNumVertices()-1);
+        child._vertEdgeIndices.resize(     childVertEdgeIndexSizeEstimate);
+        child._vertEdgeLocalIndices.resize(childVertEdgeIndexSizeEstimate);
     }
 }
 
@@ -1351,8 +1351,8 @@ VtrRefinement::subdivideEdgeSharpness()
 {
     SdcCrease creasing(_schemeOptions);
 
-    _child->mEdgeSharpness.clear();
-    _child->mEdgeSharpness.resize(_child->edgeCount(), SdcCrease::SMOOTH);
+    _child->_edgeSharpness.clear();
+    _child->_edgeSharpness.resize(_child->getNumEdges(), SdcCrease::SMOOTH);
 
     //
     //  Edge sharpness is passed to child-edges using the parent edge and the
@@ -1371,28 +1371,28 @@ VtrRefinement::subdivideEdgeSharpness()
     //
     //  Only deal with the subrange of edges originating from edges:
     int cEdgeBegin = _childEdgeFromFaceCount;
-    int cEdgeEnd   =  _child->edgeCount();
+    int cEdgeEnd   =  _child->getNumEdges();
 
     for (VtrIndex cEdge = cEdgeBegin; cEdge < cEdgeEnd; ++cEdge) {
-        VtrSharpness&   cSharpness = _child->mEdgeSharpness[cEdge];
-        VtrLevel::ETag& cEdgeTag   = _child->mEdgeTags[cEdge];
+        VtrSharpness&   cSharpness = _child->_edgeSharpness[cEdge];
+        VtrLevel::ETag& cEdgeTag   = _child->_edgeTags[cEdge];
 
         if (cEdgeTag._infSharp) {
             cSharpness = SdcCrease::INFINITE;
         } else if (cEdgeTag._semiSharp) {
             VtrIndex       pEdge      = _childEdgeParentIndex[cEdge];
-            VtrSharpness   pSharpness = _parent->mEdgeSharpness[pEdge];
+            VtrSharpness   pSharpness = _parent->_edgeSharpness[pEdge];
 
             if (creasing.IsUniform()) {
                 cSharpness = creasing.SubdivideUniformSharpness(pSharpness);
             } else {
-                VtrIndexArray const pEdgeVerts = _parent->accessEdgeVerts(pEdge);
+                VtrIndexArray const pEdgeVerts = _parent->getEdgeVertices(pEdge);
                 VtrIndex            pVert      = pEdgeVerts[_childEdgeTag[cEdge]._indexInParent];
-                VtrIndexArray const pVertEdges = _parent->accessVertEdges(pVert);
+                VtrIndexArray const pVertEdges = _parent->getVertexEdges(pVert);
 
                 float pVertEdgeSharpness[pVertEdges.size() + 1];
                 for (int i = 0; i < pVertEdges.size(); ++i) {
-                    pVertEdgeSharpness[i] = _parent->mEdgeSharpness[pVertEdges[i]];
+                    pVertEdgeSharpness[i] = _parent->_edgeSharpness[pVertEdges[i]];
                 }
                 cSharpness = creasing.SubdivideEdgeSharpnessAtVertex(pSharpness, pVertEdges.size(),
                                                                          pVertEdgeSharpness);
@@ -1407,8 +1407,8 @@ VtrRefinement::subdivideVertexSharpness()
 {
     SdcCrease creasing(_schemeOptions);
 
-    _child->mVertSharpness.clear();
-    _child->mVertSharpness.resize(_child->vertCount(), SdcCrease::SMOOTH);
+    _child->_vertSharpness.clear();
+    _child->_vertSharpness.resize(_child->getNumVertices(), SdcCrease::SMOOTH);
 
     //
     //  All child-verts originating from faces or edges are initialized as smooth
@@ -1416,17 +1416,17 @@ VtrRefinement::subdivideVertexSharpness()
     //
     //  Only deal with the subrange of vertices originating from vertices:
     int cVertBegin = _childVertFromFaceCount + _childVertFromEdgeCount;
-    int cVertEnd   = _child->vertCount();
+    int cVertEnd   = _child->getNumVertices();
 
     for (VtrIndex cVert = cVertBegin; cVert < cVertEnd; ++cVert) {
-        VtrSharpness&   cSharpness = _child->mVertSharpness[cVert];
-        VtrLevel::VTag& cVertTag   = _child->mVertTags[cVert];
+        VtrSharpness&   cSharpness = _child->_vertSharpness[cVert];
+        VtrLevel::VTag& cVertTag   = _child->_vertTags[cVert];
 
         if (cVertTag._infSharp) {
             cSharpness = SdcCrease::INFINITE;
         } else if (cVertTag._semiSharp) {
             VtrIndex       pVert      = _childVertexParentIndex[cVert];
-            VtrSharpness   pSharpness = _parent->mVertSharpness[pVert];
+            VtrSharpness   pSharpness = _parent->_vertSharpness[pVert];
 
             cSharpness = creasing.SubdivideVertexSharpness(pSharpness);
 
@@ -1453,20 +1453,20 @@ VtrRefinement::reclassifySemisharpVertices()
     int vertFromEdgeMax = vertFromEdgeMin + _childVertFromEdgeCount;
 
     for (VtrIndex cVert = vertFromEdgeMin; cVert < vertFromEdgeMax; ++cVert) {
-        VtrLevel::VTag& cVertTag = _child->mVertTags[cVert];
+        VtrLevel::VTag& cVertTag = _child->_vertTags[cVert];
         if (!cVertTag._semiSharp) continue;
 
         VtrIndex pEdge = _childVertexParentIndex[cVert];
 
-        VtrIndexArray const cEdges = edgeChildEdges(pEdge);
+        VtrIndexArray const cEdges = getEdgeChildEdges(pEdge);
 
         if (_childVertexTag[cVert]._incomplete) {
             //  One child edge likely missing -- assume Crease if remaining edge semi-sharp:
-            cVertTag._semiSharp = (VtrIndexIsValid(cEdges[0]) && _child->mEdgeTags[cEdges[0]]._semiSharp) ||
-                                  (VtrIndexIsValid(cEdges[1]) && _child->mEdgeTags[cEdges[1]]._semiSharp);
+            cVertTag._semiSharp = (VtrIndexIsValid(cEdges[0]) && _child->_edgeTags[cEdges[0]]._semiSharp) ||
+                                  (VtrIndexIsValid(cEdges[1]) && _child->_edgeTags[cEdges[1]]._semiSharp);
             cVertTag._rule      = cVertTag._semiSharp ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
         } else {
-            int sharpEdgeCount = _child->mEdgeTags[cEdges[0]]._semiSharp + _child->mEdgeTags[cEdges[1]]._semiSharp;
+            int sharpEdgeCount = _child->_edgeTags[cEdges[0]]._semiSharp + _child->_edgeTags[cEdges[1]]._semiSharp;
 
             cVertTag._semiSharp = (sharpEdgeCount > 0);
             cVertTag._rule      = creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount);
@@ -1491,11 +1491,11 @@ VtrRefinement::reclassifySemisharpVertices()
     int vertFromVertMax = vertFromVertMin + _childVertFromVertCount;
 
     for (VtrIndex cVert = vertFromVertMin; cVert < vertFromVertMax; ++cVert) {
-        VtrLevel::VTag& cVertTag = _child->mVertTags[cVert];
+        VtrLevel::VTag& cVertTag = _child->_vertTags[cVert];
         if (!cVertTag._semiSharp) continue;
 
         //  If the vertex is still sharp, it remains the semisharp Corner its parent was...
-        if (_child->mVertSharpness[cVert] > 0.0) continue;
+        if (_child->_vertSharpness[cVert] > 0.0) continue;
 
         //
         //  See if we can use the vert-edges of the child vertex:
@@ -1503,12 +1503,12 @@ VtrRefinement::reclassifySemisharpVertices()
         int sharpEdgeCount = 0;
         int semiSharpEdgeCount = 0;
 
-        bool cVertEdgesPresent = (_child->vertEdgeCount() > 0);
+        bool cVertEdgesPresent = (_child->getNumVertexEdgesTotal() > 0);
         if (cVertEdgesPresent) {
-            VtrIndexArray const cEdges = _child->accessVertEdges(cVert);
+            VtrIndexArray const cEdges = _child->getVertexEdges(cVert);
 
             for (int i = 0; i < cEdges.size(); ++i) {
-                VtrLevel::ETag cEdgeTag = _child->mEdgeTags[cEdges[i]];
+                VtrLevel::ETag cEdgeTag = _child->_edgeTags[cEdges[i]];
 
                 sharpEdgeCount     += cEdgeTag._semiSharp || cEdgeTag._infSharp;
                 semiSharpEdgeCount += cEdgeTag._semiSharp;
@@ -1516,14 +1516,14 @@ VtrRefinement::reclassifySemisharpVertices()
         } else {
             VtrIndex pVert  = _childVertexParentIndex[cVert];
 
-            VtrIndexArray const      pEdges      = _parent->accessVertEdges(pVert);
-            VtrLocalIndexArray const pVertInEdge = _parent->accessVertEdgeLocalIndices(pVert);
+            VtrIndexArray const      pEdges      = _parent->getVertexEdges(pVert);
+            VtrLocalIndexArray const pVertInEdge = _parent->getVertexEdgeLocalIndices(pVert);
 
             for (int i = 0; i < pEdges.size(); ++i) {
-                VtrIndexArray const cEdgePair = edgeChildEdges(pEdges[i]);
+                VtrIndexArray const cEdgePair = getEdgeChildEdges(pEdges[i]);
 
                 VtrIndex       cEdge    = cEdgePair[pVertInEdge[i]];
-                VtrLevel::ETag cEdgeTag = _child->mEdgeTags[cEdge];
+                VtrLevel::ETag cEdgeTag = _child->_edgeTags[cEdge];
 
                 sharpEdgeCount     += cEdgeTag._semiSharp || cEdgeTag._infSharp;
                 semiSharpEdgeCount += cEdgeTag._semiSharp;
@@ -1545,18 +1545,18 @@ VtrRefinement::propagateFaceTagsFromParentFaces()
     //
     //  Tags for faces originating from faces are inherited from the parent face:
     //
-    for (VtrIndex cFace = 0; cFace < _child->faceCount(); ++cFace) {
-        _child->mFaceTags[cFace] = _parent->mFaceTags[_childFaceParentIndex[cFace]];
+    for (VtrIndex cFace = 0; cFace < _child->getNumFaces(); ++cFace) {
+        _child->_faceTags[cFace] = _parent->_faceTags[_childFaceParentIndex[cFace]];
     }
     /*
-    for (int pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-        VtrLevel::FTag const& fTag = _parent->mFaceTags[pFace];
+    for (int pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+        VtrLevel::FTag const& fTag = _parent->_faceTags[pFace];
 
-        VtrIndexArray const pFaceChildFaces = faceChildFaces(pFace);
+        VtrIndexArray const pFaceChildFaces = getFaceChildFaces(pFace);
         for (int i = 0; i < pFaceChildFaces.size(); ++i) {
             VtrIndex cFace = pFaceChildFaces[i];
 
-            if (VtrIndexIsValid(cFace)) _child->mFaceTags[cFace] = fTag;
+            if (VtrIndexIsValid(cFace)) _child->_faceTags[cFace] = fTag;
         }
     }
     */
@@ -1574,7 +1574,7 @@ VtrRefinement::propagateEdgeTagsFromParentFaces()
     eTag._semiSharp   = 0;
 
     for (VtrIndex cEdge = 0; cEdge < _childEdgeFromFaceCount; ++cEdge) {
-        _child->mEdgeTags[cEdge] = eTag;
+        _child->_edgeTags[cEdge] = eTag;
     }
 }
 void
@@ -1592,7 +1592,7 @@ VtrRefinement::propagateVertexTagsFromParentFaces()
     vTag._rule        = SdcCrease::RULE_SMOOTH;
 
     for (VtrIndex cVert = 0; cVert < _childVertFromFaceCount; ++cVert) {
-        _child->mVertTags[cVert] = vTag;
+        _child->_vertTags[cVert] = vTag;
     }
 }
 void
@@ -1601,16 +1601,16 @@ VtrRefinement::propagateEdgeTagsFromParentEdges()
     //
     //  Tags for edges originating from edges are inherited from the parent edge:
     //
-    for (VtrIndex cEdge = _childEdgeFromFaceCount; cEdge < _child->edgeCount(); ++cEdge) {
-        _child->mEdgeTags[cEdge] = _parent->mEdgeTags[_childEdgeParentIndex[cEdge]];
+    for (VtrIndex cEdge = _childEdgeFromFaceCount; cEdge < _child->getNumEdges(); ++cEdge) {
+        _child->_edgeTags[cEdge] = _parent->_edgeTags[_childEdgeParentIndex[cEdge]];
     }
     /*
-    for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
-        VtrLevel::ETag const& pEdgeTag = _parent->mEdgeTags[pEdge];
-        VtrIndexArray const   cEdges   = edgeChildEdges(pEdge);
+    for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
+        VtrLevel::ETag const& pEdgeTag = _parent->_edgeTags[pEdge];
+        VtrIndexArray const   cEdges   = getEdgeChildEdges(pEdge);
 
-        if (VtrIndexIsValid(cEdges[0])) _child->mEdgeTags[cEdges[0]] = pEdgeTag;
-        if (VtrIndexIsValid(cEdges[1])) _child->mEdgeTags[cEdges[1]] = pEdgeTag;
+        if (VtrIndexIsValid(cEdges[0])) _child->_edgeTags[cEdges[0]] = pEdgeTag;
+        if (VtrIndexIsValid(cEdges[1])) _child->_edgeTags[cEdges[1]] = pEdgeTag;
     }
     */
 }
@@ -1621,12 +1621,12 @@ VtrRefinement::propagateVertexTagsFromParentEdges()
     //  Tags for vertices originating from edges are initialized according to the tags
     //  of the parent edge:
     //
-    for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
+    for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
         VtrIndex cVert = _edgeChildVertIndex[pEdge];
         if (!VtrIndexIsValid(cVert)) continue;
 
-        VtrLevel::ETag const& pEdgeTag = _parent->mEdgeTags[pEdge];
-        VtrLevel::VTag&       cVertTag = _child->mVertTags[cVert];
+        VtrLevel::ETag const& pEdgeTag = _parent->_edgeTags[pEdge];
+        VtrLevel::VTag&       cVertTag = _child->_vertTags[cVert];
 
         cVertTag._nonManifold = pEdgeTag._nonManifold;
         cVertTag._xordinary   = false;
@@ -1645,14 +1645,14 @@ VtrRefinement::propagateVertexTagsFromParentVertices()
     //  Tags for vertices originating from vertices are inherited from the parent vertex:
     //
     for (VtrIndex cVert = _childVertFromFaceCount + _childVertFromEdgeCount;
-                  cVert < _child->vertCount(); ++cVert) {
-        _child->mVertTags[cVert] = _parent->mVertTags[_childVertexParentIndex[cVert]];
+                  cVert < _child->getNumVertices(); ++cVert) {
+        _child->_vertTags[cVert] = _parent->_vertTags[_childVertexParentIndex[cVert]];
     }
     /*
-    for (VtrIndex pVert = 0; pVert < _parent->vertCount(); ++pVert) {
+    for (VtrIndex pVert = 0; pVert < _parent->getNumVertices(); ++pVert) {
         VtrIndex cVert = _vertChildVertIndex[pVert];
 
-        if (VtrIndexIsValid(cVert)) _child->mVertTags[cVert] = _parent->mVertTags[pVert];
+        if (VtrIndexIsValid(cVert)) _child->_vertTags[cVert] = _parent->_vertTags[pVert];
     }
     */
 }
@@ -1660,9 +1660,9 @@ VtrRefinement::propagateVertexTagsFromParentVertices()
 void
 VtrRefinement::propagateComponentTags()
 {
-    _child->mFaceTags.resize(_child->faceCount());
-    _child->mEdgeTags.resize(_child->edgeCount());
-    _child->mVertTags.resize(_child->vertCount());
+    _child->_faceTags.resize(_child->getNumFaces());
+    _child->_edgeTags.resize(_child->getNumEdges());
+    _child->_vertTags.resize(_child->getNumVertices());
 
     propagateFaceTagsFromParentFaces();
 
@@ -1689,8 +1689,8 @@ VtrRefinement::populateChildToParentTags()
 
     if (_uniform) {
         VtrIndex cFace = 0;
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-            VtrIndexArray pVerts = _parent->accessFaceVerts(pFace);
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+            VtrIndexArray pVerts = _parent->getFaceVertices(pFace);
             if (pVerts.size() == 4) {
                 _childFaceTag[cFace + 0] = childTags[0][0];
                 _childFaceTag[cFace + 1] = childTags[0][1];
@@ -1712,8 +1712,8 @@ VtrRefinement::populateChildToParentTags()
         }
 
         VtrIndex cEdge = 0;
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
-            VtrIndexArray pVerts = _parent->accessFaceVerts(pFace);
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
+            VtrIndexArray pVerts = _parent->getFaceVertices(pFace);
             if (pVerts.size() == 4) {
                 _childEdgeTag[cEdge + 0] = childTags[0][0];
                 _childEdgeTag[cEdge + 1] = childTags[0][1];
@@ -1733,7 +1733,7 @@ VtrRefinement::populateChildToParentTags()
                 }
             }
         }
-        for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge, cEdge += 2) {
+        for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge, cEdge += 2) {
             _childEdgeTag[cEdge + 0] = childTags[0][0];
             _childEdgeTag[cEdge + 1] = childTags[0][1];
 
@@ -1742,24 +1742,24 @@ VtrRefinement::populateChildToParentTags()
         }
 
         VtrIndex cVert = 0;
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace, ++cVert) {
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace, ++cVert) {
             _childVertexTag[cVert] = childTags[0][0];
             _childVertexParentIndex[cVert] = pFace;
         }
-        for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge, ++cVert) {
+        for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge, ++cVert) {
             _childVertexTag[cVert] = childTags[0][0];
             _childVertexParentIndex[cVert] = pEdge;
         }
-        for (VtrIndex pVert = 0; pVert < _parent->vertCount(); ++pVert, ++cVert) {
+        for (VtrIndex pVert = 0; pVert < _parent->getNumVertices(); ++pVert, ++cVert) {
             _childVertexTag[cVert] = childTags[0][0];
             _childVertexParentIndex[cVert] = pVert;
         }
     } else {
         //  Child faces of faces:
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
             bool incomplete = !_parentFaceTag[pFace]._selected;
 
-            VtrIndexArray cFaces = faceChildFaces(pFace);
+            VtrIndexArray cFaces = getFaceChildFaces(pFace);
             if (!incomplete && (cFaces.size() == 4)) {
                 _childFaceTag[cFaces[0]] = childTags[0][0];
                 _childFaceTag[cFaces[1]] = childTags[0][1];
@@ -1781,10 +1781,10 @@ VtrRefinement::populateChildToParentTags()
         }
 
         //  Child edges of faces and edges:
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
             bool incomplete = !_parentFaceTag[pFace]._selected;
 
-            VtrIndexArray cEdges = faceChildEdges(pFace);
+            VtrIndexArray cEdges = getFaceChildEdges(pFace);
             if (!incomplete && (cEdges.size() == 4)) {
                 _childEdgeTag[cEdges[0]] = childTags[0][0];
                 _childEdgeTag[cEdges[1]] = childTags[0][1];
@@ -1804,10 +1804,10 @@ VtrRefinement::populateChildToParentTags()
                 }
             }
         }
-        for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
+        for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
             bool incomplete = !_parentEdgeTag[pEdge]._selected;
 
-            VtrIndexArray cEdges = edgeChildEdges(pEdge);
+            VtrIndexArray cEdges = getEdgeChildEdges(pEdge);
             if (!incomplete) {
                 _childEdgeTag[cEdges[0]] = childTags[0][0];
                 _childEdgeTag[cEdges[1]] = childTags[0][1];
@@ -1825,7 +1825,7 @@ VtrRefinement::populateChildToParentTags()
         }
 
         //  Child vertices of faces, edges and vertices:
-        for (VtrIndex pFace = 0; pFace < _parent->faceCount(); ++pFace) {
+        for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
             VtrIndex cVert = _faceChildVertIndex[pFace];
             if (VtrIndexIsValid(cVert)) {
                 bool incomplete = !_parentFaceTag[pFace]._selected;
@@ -1834,7 +1834,7 @@ VtrRefinement::populateChildToParentTags()
                 _childVertexParentIndex[cVert] = pFace;
             }
         }
-        for (VtrIndex pEdge = 0; pEdge < _parent->edgeCount(); ++pEdge) {
+        for (VtrIndex pEdge = 0; pEdge < _parent->getNumEdges(); ++pEdge) {
             VtrIndex cVert = _edgeChildVertIndex[pEdge];
             if (VtrIndexIsValid(cVert)) {
                 bool incomplete = !_parentEdgeTag[pEdge]._selected;
@@ -1843,7 +1843,7 @@ VtrRefinement::populateChildToParentTags()
                 _childVertexParentIndex[cVert] = pEdge;
             }
         }
-        for (VtrIndex pVert = 0; pVert < _parent->vertCount(); ++pVert) {
+        for (VtrIndex pVert = 0; pVert < _parent->getNumVertices(); ++pVert) {
             VtrIndex cVert = _vertChildVertIndex[pVert];
             if (VtrIndexIsValid(cVert)) {
                 _childVertexTag[cVert] = childTags[0][0];
@@ -1863,13 +1863,13 @@ VtrRefinement::populateChildToParentMapping()
 {
     assert(_quadSplit);
 
-    _childVertexParentIndex.resize(_child->vertCount());
-    _childEdgeParentIndex.resize(_child->edgeCount());
-    _childFaceParentIndex.resize(_child->faceCount());
+    _childVertexParentIndex.resize(_child->getNumVertices());
+    _childEdgeParentIndex.resize(_child->getNumEdges());
+    _childFaceParentIndex.resize(_child->getNumFaces());
 
-    _childVertexTag.resize(_child->vertCount());
-    _childEdgeTag.resize(_child->edgeCount());
-    _childFaceTag.resize(_child->faceCount());
+    _childVertexTag.resize(_child->getNumVertices());
+    _childEdgeTag.resize(_child->getNumEdges());
+    _childFaceTag.resize(_child->getNumFaces());
 
     populateChildToParentIndices();
 
@@ -1883,12 +1883,12 @@ VtrRefinement::computeMaskWeights()
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
-    assert(child.vertCount() != 0);
+    assert(child.getNumVertices() != 0);
 
     _faceVertWeights.resize(parent.faceVertCount());
     _edgeVertWeights.resize(parent.edgeVertCount());
     _edgeFaceWeights.resize(parent.edgeFaceCount());
-    _vertVertWeights.resize(parent.vertCount());
+    _vertVertWeights.resize(parent.getNumVertices());
     _vertEdgeWeights.resize(parent.vertEdgeCount());
     _vertFaceWeights.resize(parent.vertEdgeCount());
 
@@ -1900,7 +1900,7 @@ VtrRefinement::computeMaskWeights()
     SdcScheme<TYPE_CATMARK> scheme(_schemeOptions);
 
     if (_childVertFromFaceCount) {
-        for (int pFace = 0; pFace < parent.faceCount(); ++pFace) {
+        for (int pFace = 0; pFace < parent.getNumFaces(); ++pFace) {
             VtrIndex cVert = _faceChildVertIndex[pFace];
             if (!VtrIndexIsValid(cVert)) continue;
 
@@ -1917,7 +1917,7 @@ VtrRefinement::computeMaskWeights()
     if (_childVertFromEdgeCount) {
         VtrEdgeInterface eHood(parent);
 
-        for (int pEdge = 0; pEdge < parent.edgeCount(); ++pEdge) {
+        for (int pEdge = 0; pEdge < parent.getNumEdges(); ++pEdge) {
             VtrIndex cVert = _edgeChildVertIndex[pEdge];
             if (!VtrIndexIsValid(cVert)) continue;
 
@@ -1937,8 +1937,8 @@ VtrRefinement::computeMaskWeights()
             //
             eHood.SetIndex(pEdge);
 
-            SdcRule pRule = (parent.edgeSharpness(pEdge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-            SdcRule cRule = child.vertRule(cVert);
+            SdcRule pRule = (parent._edgeSharpness[pEdge] > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+            SdcRule cRule = child.getVertexRule(cVert);
 
             scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
 
@@ -1950,7 +1950,7 @@ VtrRefinement::computeMaskWeights()
     if (_childVertFromVertCount) {
         VtrVertexInterface vHood(parent, child);
 
-        for (int pVert = 0; pVert < parent.vertCount(); ++pVert) {
+        for (int pVert = 0; pVert < parent.getNumVertices(); ++pVert) {
             VtrIndex cVert = _vertChildVertIndex[pVert];
             if (!VtrIndexIsValid(cVert)) continue;
 
@@ -2060,7 +2060,7 @@ VtrRefinement::markSparseChildComponents()
     //  For each parent vertex:
     //      - mark the descending child vertex for each selected vertex
     //
-    for (VtrIndex pVert = 0; pVert < parent().vertCount(); ++pVert) {
+    for (VtrIndex pVert = 0; pVert < parent().getNumVertices(); ++pVert) {
         if (_parentVertexTag[pVert]._selected) {
             markSparseIndexSelected(_vertChildVertIndex[pVert]);
         }
@@ -2077,9 +2077,9 @@ VtrRefinement::markSparseChildComponents()
     //  been marked and marking of their child edges deferred to visiting each edge only
     //  once here.
     //
-    for (VtrIndex pEdge = 0; pEdge < parent().edgeCount(); ++pEdge) {
-        VtrIndexArray       eChildEdges = edgeChildEdges(pEdge);
-        VtrIndexArray const eVerts      = parent().accessEdgeVerts(pEdge);
+    for (VtrIndex pEdge = 0; pEdge < parent().getNumEdges(); ++pEdge) {
+        VtrIndexArray       eChildEdges = getEdgeChildEdges(pEdge);
+        VtrIndexArray const eVerts      = parent().getEdgeVertices(pEdge);
 
         SparseTag& pEdgeTag = _parentEdgeTag[pEdge];
 
@@ -2108,7 +2108,7 @@ VtrRefinement::markSparseChildComponents()
         //  parent faces as selected, we can't easily tell from the child-faces of the
         //  edge's incident faces which were generated by selection or neighboring...
         //
-        VtrIndexArray const eFaces = parent().accessEdgeFaces(pEdge);
+        VtrIndexArray const eFaces = parent().getEdgeFaces(pEdge);
         if (eFaces.size() == 2) {
             pEdgeTag._transitional = (_parentFaceTag[eFaces[0]]._selected !=
                                       _parentFaceTag[eFaces[1]]._selected);
@@ -2138,7 +2138,7 @@ VtrRefinement::markSparseChildComponents()
     //
     assert(_quadSplit);
 
-    for (VtrIndex pFace = 0; pFace < parent().faceCount(); ++pFace) {
+    for (VtrIndex pFace = 0; pFace < parent().getNumFaces(); ++pFace) {
         //
         //  Mark all descending child components of a selected face.  Otherwise inspect
         //  its incident vertices to see if anything neighboring has been selected --
@@ -2147,10 +2147,10 @@ VtrRefinement::markSparseChildComponents()
         //  Remember that a selected face cannot be transitional, and that only a
         //  transitional face will be partially refined.
         //
-        VtrIndexArray fChildFaces = faceChildFaces(pFace);
-        VtrIndexArray fChildEdges = faceChildEdges(pFace);
+        VtrIndexArray fChildFaces = getFaceChildFaces(pFace);
+        VtrIndexArray fChildEdges = getFaceChildEdges(pFace);
 
-        VtrIndexArray const fVerts = parent().accessFaceVerts(pFace);
+        VtrIndexArray const fVerts = parent().getFaceVertices(pFace);
 
         SparseTag& pFaceTag = _parentFaceTag[pFace];
 
@@ -2189,7 +2189,7 @@ VtrRefinement::markSparseChildComponents()
                 //  now (and may need to later) retain the transitional state of each in a
                 //  4-bit mask that reflects the full transitional topology for later.
                 //
-                VtrIndexArray const fEdges = parent().accessFaceEdges(pFace);
+                VtrIndexArray const fEdges = parent().getFaceEdges(pFace);
                 if (fEdges.size() == 4) {
                     pFaceTag._transitional =
                             (_parentEdgeTag[fEdges[0]]._transitional << 0) |

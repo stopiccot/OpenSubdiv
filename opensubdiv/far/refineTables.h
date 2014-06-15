@@ -103,22 +103,22 @@ public:
     //  Inspection of components per level:
     //
     //  Component inventories:
-    int GetNumVertices(int level) const { return _levels[level].vertCount(); }
-    int GetNumEdges(   int level) const { return _levels[level].edgeCount(); }
-    int GetNumFaces(   int level) const { return _levels[level].faceCount(); }
+    int GetNumVertices(int level) const { return _levels[level].getNumVertices(); }
+    int GetNumEdges(   int level) const { return _levels[level].getNumEdges(); }
+    int GetNumFaces(   int level) const { return _levels[level].getNumFaces(); }
 
     //  Component properties:
-    float   GetEdgeSharpness(  int level, Index edge) const { return _levels[level].edgeSharpness(edge); }
-    float   GetVertexSharpness(int level, Index vert) const { return _levels[level].vertSharpness(vert); }
-    SdcRule GetVertexRule(     int level, Index vert) const { return _levels[level].vertRule(vert); }
+    float   GetEdgeSharpness(  int level, Index edge) const { return _levels[level].getEdgeSharpness(edge); }
+    float   GetVertexSharpness(int level, Index vert) const { return _levels[level].getVertexSharpness(vert); }
+    SdcRule GetVertexRule(     int level, Index vert) const { return _levels[level].getVertexRule(vert); }
 
     //  Topological relations -- incident/adjacent components:
-    IndexArray const GetFaceVertices(int level, Index face) const { return _levels[level].accessFaceVerts(face); }
-    IndexArray const GetFaceEdges(   int level, Index face) const { return _levels[level].accessFaceEdges(face); }
-    IndexArray const GetEdgeVertices(int level, Index edge) const { return _levels[level].accessEdgeVerts(edge); }
-    IndexArray const GetEdgeFaces(   int level, Index edge) const { return _levels[level].accessEdgeFaces(edge); }
-    IndexArray const GetVertexFaces( int level, Index vert) const { return _levels[level].accessVertFaces(vert); }
-    IndexArray const GetVertexEdges( int level, Index vert) const { return _levels[level].accessVertEdges(vert); }
+    IndexArray const GetFaceVertices(int level, Index face) const { return _levels[level].getFaceVertices(face); }
+    IndexArray const GetFaceEdges(   int level, Index face) const { return _levels[level].getFaceEdges(face); }
+    IndexArray const GetEdgeVertices(int level, Index edge) const { return _levels[level].getEdgeVertices(edge); }
+    IndexArray const GetEdgeFaces(   int level, Index edge) const { return _levels[level].getEdgeFaces(edge); }
+    IndexArray const GetVertexFaces( int level, Index vert) const { return _levels[level].getVertexFaces(vert); }
+    IndexArray const GetVertexEdges( int level, Index vert) const { return _levels[level].getVertexEdges(vert); }
 
     //      ... and do we want to include these with the above?
     //  LocalIndexArray const VertexFaceLocalIndices(int level, Index vert) const;
@@ -129,13 +129,13 @@ public:
 
     //  Parent-to-child relationships, i.e. relationships between components in one level
     //  and the next (entries may be invalid if sparse):
-    IndexArray const GetFaceChildFaces(int level, Index face) const { return _refinements[level].faceChildFaces(face); }
-    IndexArray const GetFaceChildEdges(int level, Index face) const { return _refinements[level].faceChildEdges(face); }
-    IndexArray const GetEdgeChildEdges(int level, Index edge) const { return _refinements[level].edgeChildEdges(edge); }
+    IndexArray const GetFaceChildFaces(int level, Index f) const { return _refinements[level].getFaceChildFaces(f); }
+    IndexArray const GetFaceChildEdges(int level, Index f) const { return _refinements[level].getFaceChildEdges(f); }
+    IndexArray const GetEdgeChildEdges(int level, Index e) const { return _refinements[level].getEdgeChildEdges(e); }
 
-    Index GetFaceChildVertex(  int level, Index face) const { return _refinements[level].faceChildVertexIndex(face); }
-    Index GetEdgeChildVertex(  int level, Index edge) const { return _refinements[level].edgeChildVertexIndex(edge); }
-    Index GetVertexChildVertex(int level, Index vert) const { return _refinements[level].vertexChildVertexIndex(vert); }
+    Index GetFaceChildVertex(  int level, Index f) const { return _refinements[level].getFaceChildVertex(f); }
+    Index GetEdgeChildVertex(  int level, Index e) const { return _refinements[level].getEdgeChildVertex(e); }
+    Index GetVertexChildVertex(int level, Index v) const { return _refinements[level].getVertexChildVertex(v); }
 
     //  Debugging aides:
     bool ValidateTopology(int level) const { return _levels[level].validateTopology(); }
@@ -167,28 +167,28 @@ protected:
     //  Sizing specifications required before allocation:
     void setNumBaseFaces(   int count) { _levels[0].resizeFaces(count); }
     void setNumBaseEdges(   int count) { _levels[0].resizeEdges(count); }
-    void setNumBaseVertices(int count) { _levels[0].resizeVerts(count); }
+    void setNumBaseVertices(int count) { _levels[0].resizeVertices(count); }
 
-    void setNumBaseFaceVertices(Index f, int count) { _levels[0].resizeFaceVerts(f, count); }
+    void setNumBaseFaceVertices(Index f, int count) { _levels[0].resizeFaceVertices(f, count); }
     void setNumBaseEdgeFaces(   Index e, int count) { _levels[0].resizeEdgeFaces(e, count); }
-    void setNumBaseVertexFaces( Index v, int count) { _levels[0].resizeVertFaces(v, count); }
-    void setNumBaseVertexEdges( Index v, int count) { _levels[0].resizeVertEdges(v, count); }
+    void setNumBaseVertexFaces( Index v, int count) { _levels[0].resizeVertexFaces(v, count); }
+    void setNumBaseVertexEdges( Index v, int count) { _levels[0].resizeVertexEdges(v, count); }
 
     //  Access to populate the base level topology after allocation:
-    IndexArray setBaseFaceVertices(Index f) { return _levels[0].modifyFaceVerts(f); }
-    IndexArray setBaseFaceEdges(   Index f) { return _levels[0].modifyFaceEdges(f); }
-    IndexArray setBaseEdgeVertices(Index e) { return _levels[0].modifyEdgeVerts(e); }
-    IndexArray setBaseEdgeFaces(   Index e) { return _levels[0].modifyEdgeFaces(e); }
-    IndexArray setBaseVertexFaces( Index v) { return _levels[0].modifyVertFaces(v); }
-    IndexArray setBaseVertexEdges( Index v) { return _levels[0].modifyVertEdges(v); }
+    IndexArray setBaseFaceVertices(Index f) { return _levels[0].getFaceVertices(f); }
+    IndexArray setBaseFaceEdges(   Index f) { return _levels[0].getFaceEdges(f); }
+    IndexArray setBaseEdgeVertices(Index e) { return _levels[0].getEdgeVertices(e); }
+    IndexArray setBaseEdgeFaces(   Index e) { return _levels[0].getEdgeFaces(e); }
+    IndexArray setBaseVertexFaces( Index v) { return _levels[0].getVertexFaces(v); }
+    IndexArray setBaseVertexEdges( Index v) { return _levels[0].getVertexEdges(v); }
 
     //  Not sure yet if we will determine these internally...
-    LocalIndexArray setBaseVertexFaceLocalIndices(Index v) { return _levels[0].modifyVertFaceLocalIndices(v); }
-    LocalIndexArray setBaseVertexEdgeLocalIndices(Index v) { return _levels[0].modifyVertEdgeLocalIndices(v); }
+    LocalIndexArray setBaseVertexFaceLocalIndices(Index v) { return _levels[0].getVertexFaceLocalIndices(v); }
+    LocalIndexArray setBaseVertexEdgeLocalIndices(Index v) { return _levels[0].getVertexEdgeLocalIndices(v); }
 
     //  Optionally available to get/set sharpness values:
-    float& baseEdgeSharpness(Index e)   { return _levels[0].edgeSharpness(e); }
-    float& baseVertexSharpness(Index v) { return _levels[0].vertSharpness(v); }
+    float& baseEdgeSharpness(Index e)   { return _levels[0].getEdgeSharpness(e); }
+    float& baseVertexSharpness(Index v) { return _levels[0].getVertexSharpness(v); }
 
 private:
     //  Prototype -- mainly for illustrative purposes right now...
@@ -249,14 +249,14 @@ FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement
 
     const VtrLevel& parent = refinement.parent();
 
-    for (int face = 0; face < parent.faceCount(); ++face) {
+    for (int face = 0; face < parent.getNumFaces(); ++face) {
 
-        VtrIndex cVert = refinement.faceChildVertexIndex(face);
+        VtrIndex cVert = refinement.getFaceChildVertex(face);
         if (!VtrIndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent face:
-        VtrIndexArray const fVerts = parent.accessFaceVerts(face);
+        VtrIndexArray const fVerts = parent.getFaceVertices(face);
 
         float fVertWeights[fVerts.size()];
 
@@ -289,15 +289,15 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
 
     VtrEdgeInterface eHood(parent);
 
-    for (int edge = 0; edge < parent.edgeCount(); ++edge) {
+    for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 
-        VtrIndex cVert = refinement.edgeChildVertexIndex(edge);
+        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
         if (!VtrIndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent edge:
-        VtrIndexArray const eVerts = parent.accessEdgeVerts(edge);
-        VtrIndexArray const eFaces = parent.accessEdgeFaces(edge);
+        VtrIndexArray const eVerts = parent.getEdgeVertices(edge);
+        VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
 
         float eVertWeights[2];
         float eFaceWeights[eFaces.size()];
@@ -306,8 +306,8 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
 
         eHood.SetIndex(edge);
 
-        SdcRule pRule = (parent.edgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-        SdcRule cRule = child.vertRule(cVert);
+        SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+        SdcRule cRule = child.getVertexRule(cVert);
 
         scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
 
@@ -323,7 +323,7 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
 
             for (int i = 0; i < eFaces.size(); ++i) {
 
-                VtrIndex cVertOfFace = refinement.faceChildVertexIndex(eFaces[i]);
+                VtrIndex cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
                 assert(VtrIndexIsValid(cVertOfFace));
                 vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
             }
@@ -343,15 +343,15 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
 
     VtrVertexInterface vHood(parent, child);
 
-    for (int vert = 0; vert < parent.vertCount(); ++vert) {
+    for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
 
-        VtrIndex cVert = refinement.vertexChildVertexIndex(vert);
+        VtrIndex cVert = refinement.getVertexChildVertex(vert);
         if (!VtrIndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent edge:
-        VtrIndexArray const vEdges = parent.accessVertEdges(vert);
-        VtrIndexArray const vFaces = parent.accessVertFaces(vert);
+        VtrIndexArray const vEdges = parent.getVertexEdges(vert);
+        VtrIndexArray const vFaces = parent.getVertexFaces(vert);
 
         float  vVertWeight;
         float  vEdgeWeights[2 * vEdges.size()];
@@ -361,8 +361,8 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
 
         vHood.SetIndex(vert, cVert);
 
-        SdcRule pRule = parent.vertRule(vert);
-        SdcRule cRule = child.vertRule(cVert);
+        SdcRule pRule = parent.getVertexRule(vert);
+        SdcRule cRule = child.getVertexRule(cVert);
 
         scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
 
@@ -377,7 +377,7 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
 
             for (int i = 0; i < vEdges.size(); ++i) {
 
-                VtrIndexArray const eVerts = parent.accessEdgeVerts(vEdges[i]);
+                VtrIndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
                 VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
 
                 vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
@@ -387,7 +387,7 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
 
             for (int i = 0; i < vFaces.size(); ++i) {
 
-                VtrIndex cVertOfFace = refinement.faceChildVertexIndex(vFaces[i]);
+                VtrIndex cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
                 assert(VtrIndexIsValid(cVertOfFace));
                 vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
             }

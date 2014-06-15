@@ -156,8 +156,8 @@ class FarRefineTablesFactory : public FarRefineTablesFactoryBase {
 public:
     FarRefineTablesFactory() : FarRefineTablesFactoryBase() { }
 
-    FarRefineTablesFactory(SdcType type, SdcOptions options = SdcOptions())
-            : FarRefineTablesFactoryBase(type, options) { }
+//    FarRefineTablesFactory(SdcType type, SdcOptions options = SdcOptions())
+//            : FarRefineTablesFactoryBase(type, options) { }
 
     ~FarRefineTablesFactory() { }
 
