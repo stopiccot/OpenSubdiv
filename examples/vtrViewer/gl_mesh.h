@@ -52,7 +52,7 @@ public:
     enum EdgeColorMode {
         EDGECOLOR_SOLID=0,
         EDGECOLOR_BY_LEVEL,
-        EDGECOLOR_BY_SHARPNESS=0
+        EDGECOLOR_BY_SHARPNESS
     };
 
     enum FaceColorMode {
@@ -150,12 +150,12 @@ public:
                     memcpy(v1data, v1->GetData().GetPos(), sizeof(float)*3);
 
                     // set color
-                    if (options.vertColorMode==VERTCOLOR_BY_LEVEL) {
+                    if (options.vertColorMode==EDGECOLOR_BY_LEVEL) {
 
                         int depth = f->GetDepth();
                         setColorByLevel(depth, v0data+3);
                         setColorByLevel(depth, v1data+3);
-                    } else if (options.vertColorMode==VERTCOLOR_BY_SHARPNESS) {
+                    } else if (options.vertColorMode==EDGECOLOR_BY_SHARPNESS) {
 
                         setColorBySharpness(e->GetSharpness(), v0data+3);
                         setColorBySharpness(e->GetSharpness(), v1data+3);
