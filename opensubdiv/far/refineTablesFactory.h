@@ -57,79 +57,45 @@ class FarRefineTablesFactoryBase {
 
 public:
 
+    /// \brief Simple descriptor for raw topology data
+    ///
+    struct TopologyDescriptor {
+
+        SdcType       type;
+        SdcOptions    options;
+
+        int           numVertices,
+                      numFaces;
+
+        int const   * vertsPerFace,
+                    * vertIndices;
+
+        int           numCreases;
+        int const   * creaseVertexIndexPairs;
+        float const * creaseWeights;
+
+        int           numCorners;
+        int const   * cornerVertexIndices;
+        float const * cornerWeights;
+        
+        TopologyDescriptor();
+    };
+
     /// \brief Instantiates FarRefineTables from indexing arrays.
     ///
     /// Note: because only face-vertices topological relationships are specified
     ///       with this factory, edge relationships have to be inferred, which
-    ///       requires additional processing. If the client application can 
+    ///       requires additional processing. If the client application can
     ///       provide these relationships, then FarRefineTablesFactory::Create()
     ///       should be used instead.
     ///
-    /// @param type          Subdivision scheme (catmark, loop ,..).
+    /// @param topology    A populated TopologyBase structure.
     ///
-    /// @param options       Subdivision options (boundary interpolation rules, ...).
+    /// @return            An instance of FarRefineTables or NULL for failure
     ///
-    /// @param numVertices   The number of vertices in the mesh.
-    ///
-    /// @param numFaces      The number of faces in the mesh.
-    ///
-    /// @param vertsPerFace  Array containing the number of vertices per face.
-    ///
-    /// @param vertIndices   Array containing the indices of the vertices for
-    ///                      each face
-    ///
-    /// @return              An instance of FarRefineTables
-    ///
-    static FarRefineTables * Create( SdcType type,
-                                     SdcOptions options,
-                                     unsigned int numVertices,
-                                     unsigned int numFaces,
-                                     unsigned int const * vertsPerFace,
-                                     unsigned int const * vertIndices   );
+    static FarRefineTables * Create(TopologyDescriptor const & desc);
 
 
-    /// \brief Adds edge crease weights to FarRefineTables
-    ///
-    /// Warning: this function will always fail and reutrn 0 if called after
-    ///          any type of Refinement has been applied.
-    ///
-    /// @param refTables       The topology to add creases to.
-    ///
-    /// @param numEdges        The number of edges to be creased.
-    ///
-    /// @param vertIndexPairs  An array containing pairs of vertex indices.
-    ///                        describing each edge
-    ///
-    /// @param creaseWeights   The creases sharpness.
-    ///
-    /// @return                The number of edges successfully sharpened.
-    ///
-    static unsigned int AddCreases( FarRefineTables & refTables,
-                                    unsigned int numEdges,
-                                    unsigned int const * vertIndexPairs,
-                                    float const * creaseWeights          );
-
-
-
-    /// \brief Adds corner crease weights to FarRefineTables
-    ///
-    /// Warning: this function will always fail and reutrn 0 if called after
-    ///          any type of Refinement has been applied.
-    ///
-    /// @param refTables       The topology to add creases to.
-    ///
-    /// @param numVertices     The number of vertices (corners) to be creased.
-    ///
-    /// @param vertIndices     An array containing the vertex indices.
-    ///
-    /// @param creaseWeights   The creases sharpness.
-    ///
-    /// @return                The number of corners successfully sharpened.
-    ///
-    static unsigned int AddCorners( FarRefineTables & refTables,
-                                    unsigned int numVertices,
-                                    unsigned int const * vertIndices,
-                                    float const * cornerWeights );
 protected:
 
     static void validateComponentTopologySizing(FarRefineTables& refTables);

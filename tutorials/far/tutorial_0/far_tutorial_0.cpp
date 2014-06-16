@@ -88,38 +88,38 @@ static float g_verts[8][3] = {{ -0.5f, -0.5f,  0.5f },
                               { -0.5f, -0.5f, -0.5f },
                               {  0.5f, -0.5f, -0.5f }};
 
-static unsigned int g_nverts = 8,
-                    g_nfaces = 6;
+static int g_nverts = 8,
+           g_nfaces = 6;
 
-static unsigned int g_vertsperface[6] = { 4, 4, 4, 4, 4, 4 };
+static int g_vertsperface[6] = { 4, 4, 4, 4, 4, 4 };
 
-static unsigned int g_vertIndices[24] = { 0, 1, 3, 2,
-                                          2, 3, 5, 4,
-                                          4, 5, 7, 6,
-                                          6, 7, 1, 0,
-                                          1, 7, 5, 3,
-                                          6, 0, 2, 4  };
+static int g_vertIndices[24] = { 0, 1, 3, 2,
+                                 2, 3, 5, 4,
+                                 4, 5, 7, 6,
+                                 6, 7, 1, 0,
+                                 1, 7, 5, 3,
+                                 6, 0, 2, 4  };
 
 using namespace OpenSubdiv;
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-    SdcType type = TYPE_CATMARK;
+    // Populate a topology descriptor with our raw data
+    FarRefineTablesFactoryBase::TopologyDescriptor desc;
 
-    SdcOptions options;
-    options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+    desc.type = OpenSubdiv::TYPE_CATMARK;
 
-    // Instantiate a factory
-    FarRefineTablesFactoryBase factory;
+    desc.options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
 
-    // Instantiate a FarRefineTables from the raw data
-    FarRefineTables * refTables = factory.Create(type,
-                                                 options,
-                                                 g_nverts,
-                                                 g_nfaces,
-                                                 g_vertsperface,
-                                                 g_vertIndices);
+    desc.numVertices = g_nverts;
+    desc.numFaces = g_nfaces;
+    desc.vertsPerFace = g_vertsperface;
+    desc.vertIndices = g_vertIndices;
+
+
+    // Instantiate a FarRefineTables from the descriptor
+    FarRefineTables * refTables = FarRefineTablesFactoryBase::Create(desc);
 
     int maxlevel = 2;
 
