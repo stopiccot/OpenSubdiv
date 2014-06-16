@@ -54,11 +54,11 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) c
 {
     typedef typename MASK::Weight Weight;
 
-    int faceCount = edge.GetFaceCount();
+    int faceCount = edge.GetNumFaces();
 
-    mask.SetVertexWeightCount(2);
-    mask.SetEdgeWeightCount(0);
-    mask.SetFaceWeightCount(faceCount);
+    mask.SetNumVertexWeights(2);
+    mask.SetNumEdgeWeights(0);
+    mask.SetNumFaceWeights(faceCount);
 
     //
     //  Determine if we need to inspect incident faces and apply alternate weighting for
@@ -126,11 +126,11 @@ SdcScheme<TYPE_CATMARK>::assignCreaseMaskForVertex(VERTEX const& vertex, MASK& m
 {
     typedef typename MASK::Weight Weight;
 
-    int valence = vertex.GetEdgeCount();
+    int valence = vertex.GetNumEdges();
 
-    mask.SetVertexWeightCount(1);
-    mask.SetEdgeWeightCount(valence);
-    mask.SetFaceWeightCount(0);
+    mask.SetNumVertexWeights(1);
+    mask.SetNumEdgeWeights(valence);
+    mask.SetNumFaceWeights(0);
 
     Weight vWeight = 0.75f;
     Weight eWeight = 0.125f;
@@ -164,11 +164,24 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& m
 {
     typedef typename MASK::Weight Weight;
 
-    int valence = vertex.GetFaceCount();
+    //
+    //  Remember that when the edge- and face-counts differ, we need to adjust this...
+    //
+    //  Keep what's below for eCount == fCount and for the other cases -- which should
+    //  only occur for non-manifold vertices -- use the following formula that we've
+    //  adapted in MM:
+    //
+    //      v' = (F + 2*E + (n-3)*v) / n
+    //
+    //  where F is the average of the face points (fi) and E is the average of the edge
+    //  midpoints (ei).  The F term gives is the 1/(n*n) of below and we just need to
+    //  factor the E and v terms to account for the edge endpoints rather than midpoints.
+    //
+    int valence = vertex.GetNumFaces();
 
-    mask.SetVertexWeightCount(1);
-    mask.SetEdgeWeightCount(valence);
-    mask.SetFaceWeightCount(valence);
+    mask.SetNumVertexWeights(1);
+    mask.SetNumEdgeWeights(valence);
+    mask.SetNumFaceWeights(valence);
 
     Weight vWeight = (Weight)(valence - 2) / (Weight)valence;
     Weight fWeight = 1.0f / (Weight)(valence * valence);

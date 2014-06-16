@@ -184,13 +184,13 @@ protected:
         //
         //  Methods required for general mask assignments and queries:
         //
-        int GetVertexWeightCount() const { return _vCount; }
-        int GetEdgeWeightCount()   const { return _eCount; }
-        int GetFaceWeightCount()   const { return _fCount; }
+        int GetNumVertexWeights() const { return _vCount; }
+        int GetNumEdgeWeights()   const { return _eCount; }
+        int GetNumFaceWeights()   const { return _fCount; }
 
-        void SetVertexWeightCount(int count) { _vCount = count; }
-        void SetEdgeWeightCount(  int count) { _eCount = count; }
-        void SetFaceWeightCount(  int count) { _fCount = count; }
+        void SetNumVertexWeights(int count) { _vCount = count; }
+        void SetNumEdgeWeights(  int count) { _eCount = count; }
+        void SetNumFaceWeights(  int count) { _fCount = count; }
 
         Weight const& VertexWeight(int index) const { return _vWeights[index]; }
         Weight const& EdgeWeight(  int index) const { return _eWeights[index]; }
@@ -218,10 +218,10 @@ protected:
             //
             dst.VertexWeight(0) = dstCoeff * dst.VertexWeight(0) + thisCoeff * this->VertexWeight(0);
 
-            int edgeWeightCount = this->GetEdgeWeightCount();
+            int edgeWeightCount = this->GetNumEdgeWeights();
             if (edgeWeightCount) {
-                if (dst.GetEdgeWeightCount() == 0) {
-                    dst.SetEdgeWeightCount(edgeWeightCount);
+                if (dst.GetNumEdgeWeights() == 0) {
+                    dst.SetNumEdgeWeights(edgeWeightCount);
                     for (int i = 0; i < edgeWeightCount; ++i) {
                         dst.EdgeWeight(i) = thisCoeff * this->EdgeWeight(i);
                     }
@@ -232,10 +232,10 @@ protected:
                 }
             }
 
-            int faceWeightCount = this->GetFaceWeightCount();
+            int faceWeightCount = this->GetNumFaceWeights();
             if (faceWeightCount) {
-                if (dst.GetFaceWeightCount() == 0) {
-                    dst.SetFaceWeightCount(faceWeightCount);
+                if (dst.GetNumFaceWeights() == 0) {
+                    dst.SetNumFaceWeights(faceWeightCount);
                     for (int i = 0; i < faceWeightCount; ++i) {
                         dst.FaceWeight(i) = thisCoeff * this->FaceWeight(i);
                     }
@@ -270,9 +270,9 @@ template <typename EDGE, typename MASK>
 inline void
 SdcScheme<SCHEME>::assignCreaseMaskForEdge(EDGE const&, MASK& mask) const
 {
-    mask.SetVertexWeightCount(2);
-    mask.SetEdgeWeightCount(0);
-    mask.SetFaceWeightCount(0);
+    mask.SetNumVertexWeights(2);
+    mask.SetNumEdgeWeights(0);
+    mask.SetNumFaceWeights(0);
 
     mask.VertexWeight(0) = 0.5f;
     mask.VertexWeight(1) = 0.5f;
@@ -283,9 +283,9 @@ template <typename VERTEX, typename MASK>
 inline void
 SdcScheme<SCHEME>::assignCornerMaskForVertex(VERTEX const&, MASK& mask) const
 {
-    mask.SetVertexWeightCount(1);
-    mask.SetEdgeWeightCount(0);
-    mask.SetFaceWeightCount(0);
+    mask.SetNumVertexWeights(1);
+    mask.SetNumEdgeWeights(0);
+    mask.SetNumFaceWeights(0);
 
     mask.VertexWeight(0) = 1.0f;
 }
@@ -299,11 +299,11 @@ template <typename FACE, typename MASK>
 void
 SdcScheme<SCHEME>::ComputeFaceVertexMask(FACE const& face, MASK& mask) const
 {
-    int vertCount = face.GetVertexCount();
+    int vertCount = face.GetNumVertices();
 
-    mask.SetVertexWeightCount(vertCount);
-    mask.SetEdgeWeightCount(0);
-    mask.SetFaceWeightCount(0);
+    mask.SetNumVertexWeights(vertCount);
+    mask.SetNumEdgeWeights(0);
+    mask.SetNumFaceWeights(0);
 
     typename MASK::Weight vWeight = 1.0f / (typename MASK::Weight) vertCount;
     for (int i = 0; i < vertCount; ++i) {
@@ -415,7 +415,7 @@ SdcScheme<SCHEME>::ComputeEdgeVertexMask(EDGE const&     edge,
     mask.VertexWeight(0) = pWeight * 0.5f + cWeight * mask.VertexWeight(0);
     mask.VertexWeight(1) = pWeight * 0.5f + cWeight * mask.VertexWeight(1);
 
-    int faceCount = mask.GetFaceWeightCount();
+    int faceCount = mask.GetNumFaceWeights();
     for (int i = 0; i < faceCount; ++i) {
         mask.FaceWeight(i) *= cWeight;
     }
@@ -474,7 +474,7 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
     if ((cRule == SdcCrease::RULE_UNKNOWN) && (pRule != SdcCrease::RULE_UNKNOWN)) {
         cRule = pRule;
     }
-    int valence = vertex.GetEdgeCount();
+    int valence = vertex.GetNumEdges();
 
     //
     //  Determine if we need the parent edge sharpness values -- identify/gather if so

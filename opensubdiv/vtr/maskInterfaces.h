@@ -57,13 +57,13 @@ public:
     ~VtrMaskInterface() { }
 
 public:  //  Generic interface expected of <typename MASK>:
-    int GetVertexWeightCount() const { return _vertCount; }
-    int GetEdgeWeightCount()   const { return _edgeCount; }
-    int GetFaceWeightCount()   const { return _faceCount; }
+    int GetNumVertexWeights() const { return _vertCount; }
+    int GetNumEdgeWeights()   const { return _edgeCount; }
+    int GetNumFaceWeights()   const { return _faceCount; }
 
-    void SetVertexWeightCount(int count) { _vertCount = count; }
-    void SetEdgeWeightCount(  int count) { _edgeCount = count; }
-    void SetFaceWeightCount(  int count) { _faceCount = count; }
+    void SetNumVertexWeights(int count) { _vertCount = count; }
+    void SetNumEdgeWeights(  int count) { _edgeCount = count; }
+    void SetNumFaceWeights(  int count) { _faceCount = count; }
 
     Weight const& VertexWeight(int index) const { return _vertWeights[index]; }
     Weight const& EdgeWeight(  int index) const { return _edgeWeights[index]; }
@@ -94,7 +94,7 @@ public:
     ~VtrFaceInterface() { }
 
 public:  //  Generic interface expected of <typename FACE>:
-    int GetVertexCount() const { return _vertCount; }
+    int GetNumVertices() const { return _vertCount; }
 
 private:
     int _vertCount;
@@ -113,7 +113,7 @@ public:
     void SetIndex(int edgeIndex) { _eIndex = edgeIndex; }
 
 public:  //  Generic interface expected of <typename EDGE>:
-    int   GetFaceCount() const { return _level->getEdgeFaces(_eIndex).size(); }
+    int   GetNumFaces() const { return _level->getEdgeFaces(_eIndex).size(); }
     float GetSharpness() const { return _level->getEdgeSharpness(_eIndex); }
 
     void GetChildSharpnesses(SdcCrease const&, float s[2]) const
@@ -122,7 +122,7 @@ public:  //  Generic interface expected of <typename EDGE>:
         s[0] = s[1] = GetSharpness() - 1.0f;
     }
 
-    void GetVertexCountPerFace(int vertsPerFace[]) const
+    void GetNumVerticesPerFace(int vertsPerFace[]) const
     {
         VtrIndexArray const eFaces = _level->getEdgeFaces(_eIndex);
         for (int i = 0; i < eFaces.size(); ++i) {
@@ -154,8 +154,8 @@ public:
     }
 
 public:  //  Generic interface expected of <typename VERT>:
-    int GetEdgeCount() const { return _eCount; }
-    int GetFaceCount() const { return _fCount; }
+    int GetNumEdges() const { return _eCount; }
+    int GetNumFaces() const { return _fCount; }
 
     float  GetSharpness() const { return _parent->getVertexSharpness(_pIndex); }
     float* GetSharpnessPerEdge(float pSharpness[]) const

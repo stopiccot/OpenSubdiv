@@ -319,7 +319,7 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
         vdst.AddWithWeight(src[eVerts[0]], eVertWeights[0]);
         vdst.AddWithWeight(src[eVerts[1]], eVertWeights[1]);
 
-        if (eMask.GetFaceWeightCount() > 0) {
+        if (eMask.GetNumFaceWeights() > 0) {
 
             for (int i = 0; i < eFaces.size(); ++i) {
 
@@ -373,7 +373,7 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
         vdst.Clear();
         vdst.AddWithWeight(src[vert], vVertWeight);
 
-        if (vMask.GetEdgeWeightCount() > 0) {
+        if (vMask.GetNumEdgeWeights() > 0) {
 
             for (int i = 0; i < vEdges.size(); ++i) {
 
@@ -383,7 +383,7 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
                 vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
             }
         }
-        if (vMask.GetFaceWeightCount() > 0) {
+        if (vMask.GetNumFaceWeights() > 0) {
 
             for (int i = 0; i < vFaces.size(); ++i) {
 
