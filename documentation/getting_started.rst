@@ -160,10 +160,6 @@ The OpenSubdiv code base contains the following main areas:
   rely on the cross-platform GLFW API for interactive window management, while the
   DirectX ones are OS-native.
 
-**./python/**
-
-  Python-SWIG bindings for a minimal uniform refinement wrapper 
-
 **./documentation/**
 
   The reStructuredText source files along with python scripts that generate the HTML

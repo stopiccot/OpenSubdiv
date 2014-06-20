@@ -57,7 +57,6 @@ Optional:
 -DNO_LIB=1        // disable the opensubdiv libs build (caveat emptor)
 -DNO_EXAMPLES=1   // disable examples build
 -DNO_REGRESSION=1 // disable regression tests build
--DNO_PYTHON=1     // disable Python SWIG build
 -DNO_MAYA=1       // disable Maya plugin build
 -DNO_PTEX=1       // disable PTex support
 -DNO_DOC=1        // disable documentation build

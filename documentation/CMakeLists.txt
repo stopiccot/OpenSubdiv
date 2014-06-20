@@ -54,6 +54,7 @@ else()
 
 endif()
 
+find_package(PythonInterp 2.6)
 
 # ReST - HTML documentation
 if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
