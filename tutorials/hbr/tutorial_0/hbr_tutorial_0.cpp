@@ -30,11 +30,10 @@
 // instantiate an Hbr mesh from simple topological data.
 //
 
-#include <stdio.h>
-
 #include <hbr/mesh.h>
 #include <hbr/catmark.h>
 
+#include <cstdio>
 
 //------------------------------------------------------------------------------
 // Vertex container implementation.
@@ -99,7 +98,7 @@ static float verts[5][3] = {{ 0.0f,  0.0f,  2.0f},
                             {-2.0f,  0.0f,  0.0f}};
 
 static int nverts = 5,
-           nfaces = 4;
+           nfaces = 5;
 
 static int facenverts[5] = { 3, 3, 3, 3, 4 };
 

@@ -30,9 +30,9 @@
 // instantiate an Hbr mesh from simple topological data.
 //
 
-#include <stdio.h>
-
 #include <far/refineTablesFactory.h>
+
+#include <cstdio>
 
 //------------------------------------------------------------------------------
 // Vertex container implementation.

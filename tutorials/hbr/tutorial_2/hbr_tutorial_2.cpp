@@ -26,19 +26,32 @@
 //------------------------------------------------------------------------------
 // Tutorial description:
 //
-// This tutorial shows how to safely create Hbr meshes from arbitrary topology.
-// Because Hbr is a half-edge data structure, it cannot represeent non-manifold
-// topology. Ensuring that the geometry used is manifold is a requirement to use
-// Hbr safely. This tutorial presents some simple tests to detect inappropriate
-// topology.
+// This tutorial shows how to subdivide uniformly a simple Hbr mesh. We are
+// building upon previous turtorials and assuming a fully instantiated mesh:
+// we start with an HbrMesh pointer initialized from the same pyramid shape
+// used in hbr_tutorial_0.
 //
+// We then apply the Refine() function sequentially to all the faces in the
+// mesh to generate several levels of uniform subdivision. The resulting data
+// is then dumped to the terminal in Wavefront OBJ format for inspection.
+// 
 
 #include <hbr/mesh.h>
 #include <hbr/catmark.h>
 
+#include <cassert>
 #include <cstdio>
 
+
 //------------------------------------------------------------------------------
+//
+// For this tutorial, we have to flesh the Vertex class further. Note that now
+// the copy constructor, Clear() and AddwithWeight() methods have been
+// implemented to interpolate our float3 position data.
+//
+// This vertex specialization pattern leaves client-code free to implement
+// arbitrary vertex primvar data schemes (or none at all to conserve efficiency)
+//
 struct Vertex {
 
     // Hbr minimal required interface ----------------------
@@ -52,9 +65,15 @@ struct Vertex {
         _position[1] = src._position[1];
     }
 
-    void Clear( void * =0 ) { }
+    void Clear( void * =0 ) {
+        _position[0]=_position[1]=_position[2]=0.0f;
+    }
 
-    void AddWithWeight(Vertex const &, float ) { }
+    void AddWithWeight(Vertex const & src, float weight) {
+        _position[0]+=weight*src._position[0];
+        _position[1]+=weight*src._position[1];
+        _position[2]+=weight*src._position[2];
+    }
 
     void AddVaryingWithWeight(Vertex const &, float) { }
 
@@ -78,52 +97,103 @@ typedef OpenSubdiv::HbrFace<Vertex>      Hface;
 typedef OpenSubdiv::HbrVertex<Vertex>    Hvertex;
 typedef OpenSubdiv::HbrHalfedge<Vertex>  Hhalfedge;
 
-//------------------------------------------------------------------------------
-// Non-manifold geometry from catmark_fan.h
-//
-//                     o
-//                    /|
-//                   / |
-//                  /  |
-//                 /   |
-//                o    |
-//                | f2 |
-//                |    |
-//       o--------+----o------------o
-//      /         |   /            /
-//     /          |  /            /
-//    /    f0     | /     f1     /
-//   /            |/            /
-//  o------------ o------------o
-//
-// The shared edge of a fan is adjacent to 3 faces, and therefore non-manifold.
-//
-static float verts[8][3] = {{-1.0,  0.0, -1.0},
-                            {-1.0,  0.0,  0.0},
-                            { 0.0,  0.0,  0.0},
-                            { 0.0,  0.0, -1.0},
-                            { 1.0,  0.0,  0.0},
-                            { 1.0,  0.0, -1.0},
-                            { 0.0,  1.0,  0.0},
-                            { 0.0,  1.0, -1.0}};
-
-static int nverts = 8,
-           nfaces = 3;
-
-static int facenverts[3] = { 4, 4, 4 };
-
-static int faceverts[12] = { 0, 1, 2, 3,
-                             3, 2, 4, 5,
-                             3, 2, 6, 7 };
+Hmesh * createMesh();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
+
+    Hmesh * hmesh = createMesh();
+
+    int maxlevel=2,    // 2 levels of subdivision
+        firstface=0,   // marker to the first face index of level 2
+        firstvertex=0; // marker to the first vertex index of level 2
+
+    // Refine the mesh to 'maxlevel'
+    for (int level=0; level<maxlevel; ++level) {
+
+        // Total number of faces in the mesh, across all levels
+        //
+        // Mote: this function iterates over the list of faces and can be slow
+        int nfaces = hmesh->GetNumFaces();
+
+        if (level==(maxlevel-1)) {
+            // Save our vertex marker
+            firstvertex = hmesh->GetNumVertices();
+        }
+
+        // Iterate over the faces of the current level of subdivision
+        for (int face=firstface; face<nfaces; ++face) {
+
+            Hface * f = hmesh->GetFace(face);
+
+            // Mote : hole tags would have to be dealt with here.
+            f->Refine();
+        }
+
+        // Save our face index marker for the next level
+        firstface = nfaces;
+    }
+
+    { // Output OBJ of the highest level refined -----------
+
+        // Print vertex positions
+        int nverts = hmesh->GetNumVertices();
+        for (int vert=firstvertex; vert<nverts; ++vert) {
+            float const * pos = hmesh->GetVertex(vert)->GetData().GetPosition();
+            printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
+        }
+
+        // Print faces
+        for (int face=firstface; face<hmesh->GetNumFaces(); ++face) {
+
+            Hface * f = hmesh->GetFace(face);
+
+            assert(f->GetNumVertices()==4 );
+
+            printf("f ");
+            for (int vert=0; vert<4; ++vert) {
+
+                // OBJ uses 1-based arrays
+                printf("%d ", f->GetVertex(vert)->GetID() - firstvertex + 1);
+            }
+            printf("\n");
+        }
+    }
+
+}
+
+//------------------------------------------------------------------------------
+// Creates an Hbr mesh
+//
+// see hbr_tutorial_0 and hbr_tutorial_1 for more details
+//
+Hmesh *
+createMesh() {
+
+    // Pyramid geometry from catmark_pyramid.h
+    static float verts[5][3] = {{ 0.0f,  0.0f,  2.0f},
+                                { 0.0f, -2.0f,  0.0f},
+                                { 2.0f,  0.0f,  0.0f},
+                                { 0.0f,  2.0f,  0.0f},
+                                {-2.0f,  0.0f,  0.0f}};
+
+    static int nverts = 5,
+               nfaces = 5;
+
+    static int facenverts[5] = { 3, 3, 3, 3, 4 };
+
+    static int faceverts[16] = { 0, 1, 2,
+                                 0, 2, 3,
+                                 0, 3, 4,
+                                 0, 4, 1,
+                                 4, 3, 2, 1 };
 
     OpenSubdiv::HbrCatmarkSubdivision<Vertex> * catmark =
         new OpenSubdiv::HbrCatmarkSubdivision<Vertex>();
 
     Hmesh * hmesh = new Hmesh(catmark);
 
+    // Populate the vertices
     Vertex v;
     for (int i=0; i<nverts; ++i) {
         v.SetPosition(verts[i][0], verts[i][1], verts[i][2]);
@@ -187,11 +257,8 @@ int main(int, char **) {
 
     hmesh->Finish();
 
-    printf("Created a fan with %d faces and %d vertices.\n",
-        hmesh->GetNumFaces(), hmesh->GetNumVertices());
-
-    delete hmesh;
-    delete catmark;
+    return hmesh;
 }
+
 
 //------------------------------------------------------------------------------

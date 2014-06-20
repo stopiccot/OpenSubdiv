@@ -22,6 +22,15 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(tutorial_0)
-add_subdirectory(tutorial_1)
-add_subdirectory(tutorial_2)
+include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
+
+set(SOURCE_FILES
+    hbr_tutorial_2.cpp
+)
+
+_add_executable(hbr_tutorial_2
+    ${SOURCE_FILES}
+)
+
+install(TARGETS hbr_tutorial_2 DESTINATION "${CMAKE_BINDIR_BASE}/tutorials")
+
