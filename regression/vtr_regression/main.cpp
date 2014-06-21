@@ -425,8 +425,6 @@ int main(int /* argc */, char ** /* argv */) {
 
     initShapes();
 
-checkMesh(g_shapes[11], levels); return 1;
-
     if (g_debugmode)
         printf("[ ");
     else
