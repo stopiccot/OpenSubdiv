@@ -57,12 +57,9 @@ class FarRefineTablesFactoryBase {
 
 public:
 
-    /// \brief Simple descriptor for raw topology data
+    /// \brief Descriptor for raw topology data
     ///
     struct TopologyDescriptor {
-
-        SdcType       type;
-        SdcOptions    options;
 
         int           numVertices,
                       numFaces;
@@ -80,21 +77,6 @@ public:
         
         TopologyDescriptor();
     };
-
-    /// \brief Instantiates FarRefineTables from indexing arrays.
-    ///
-    /// Note: because only face-vertices topological relationships are specified
-    ///       with this factory, edge relationships have to be inferred, which
-    ///       requires additional processing. If the client application can
-    ///       provide these relationships, then FarRefineTablesFactory::Create()
-    ///       should be used instead.
-    ///
-    /// @param topology    A populated TopologyBase structure.
-    ///
-    /// @return            An instance of FarRefineTables or NULL for failure
-    ///
-    static FarRefineTables * Create(TopologyDescriptor const & desc);
-
 
 protected:
 
@@ -120,14 +102,15 @@ template <class MESH>
 class FarRefineTablesFactory : public FarRefineTablesFactoryBase {
 
 public:
+
+    /// \brief Constructor
     FarRefineTablesFactory() : FarRefineTablesFactoryBase() { }
 
-//    FarRefineTablesFactory(SdcType type, SdcOptions options = SdcOptions())
-//            : FarRefineTablesFactoryBase(type, options) { }
-
+    /// \brief Destructor
     ~FarRefineTablesFactory() { }
 
-    //
+
+    //  XXXX
     //  Need to start bundling these options up more -- adding feature-adaptive to start.
     //  Current testing is making separate calls to Create(mesh) to create just the base
     //  level, then calling FarRefineTables::RefineAdaptive(), e.g.:
@@ -141,6 +124,28 @@ public:
     //  these Factory classes, though we may want the Factory to have an instance member
     //  for repeated application to the meshes it processes.
     //
+
+    /// \brief Instantiates FarRefineTables from client-provided topological
+    ///        representation.
+    ///
+    ///  If only the face-vertices topological relationships are specified
+    ///  with this factory, edge relationships have to be inferred, which
+    ///  requires additional processing. If the client topological rep can
+    ///  provide this information, it is highly recommended to do so.
+    ///
+    /// @param type          The subdivision scheme
+    ///
+    /// @param options       Subdivion options (boundary interpolation rules...)
+    ///
+    /// @param mesh          Client topological representation (or a converter)
+    ///
+    /// @param maxlevel      Number of levels of uniform subdivision applied
+    ///
+    /// @param fullTopology  Generates all the topological relationships at the 
+    ///                      highest level of subdivision if true.
+    ///
+    /// return               An instance of FarRefineTables or NULL for failure
+    ///
     static FarRefineTables* Create(SdcType type, SdcOptions options, MESH const& mesh,
         int maxLevel = 0, bool fullTopology = false);
 
@@ -162,6 +167,7 @@ protected:
     static void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
 
 protected:
+
     //  Other protected details -- not to be specialized:
     static void populateBaseLevel(FarRefineTables& refTables, MESH const& mesh);
 };
@@ -172,8 +178,8 @@ protected:
 //
 template <class MESH>
 FarRefineTables*
-FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh, int maxLevel, bool fullTopology)
-{
+FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh, int maxLevel, bool fullTopology) {
+
     FarRefineTables *refTables = new FarRefineTables(type, options);
 
     populateBaseLevel(*refTables, mesh);
@@ -186,8 +192,8 @@ FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH cons
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH const& mesh)
-{
+FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH const& mesh) {
+
     //
     //  The following three methods may end up virtual:
     //      - resize the component counts and relation counts for individual components:
@@ -216,8 +222,8 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */)
-{
+FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+
     assert("Missing specialization for FarRefineTablesFactory<MESH>::resizeComponentTopology()" == 0);
 
     //
@@ -255,8 +261,8 @@ FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTab
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */)
-{
+FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+
     assert("Missing specialization for FarRefineTablesFactory<MESH>::assignComponentTopology()" == 0);
 
     //
@@ -295,8 +301,8 @@ FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTab
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& /* refTables */, MESH const& /* mesh */)
-{
+FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+
     //
     //  Optional tagging:
     //      This is where any additional feature tags -- sharpness, holes, etc. -- can be

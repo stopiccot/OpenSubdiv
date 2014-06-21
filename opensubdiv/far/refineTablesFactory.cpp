@@ -211,88 +211,72 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
 }
 
 //
-// Instantiates FarRefineTables from indexing arrays.
+// Specialization for raw topology data
 //
-FarRefineTables *
-FarRefineTablesFactoryBase::Create(TopologyDescriptor const & desc) {
+template <>
+void
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::resizeComponentTopology(
+    FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
-    FarRefineTables *refTables =
-        new FarRefineTables(desc.type, desc.options);
+    refTables.setNumBaseVertices(desc.numVertices);
+    refTables.setNumBaseFaces(desc.numFaces);
 
-    { // resize components
+    for (int face=0; face<desc.numFaces; ++face) {
 
-        if ((desc.numVertices<=0) or (desc.numFaces<=0)) {
-            goto Fail;
-        }
-
-        refTables->setNumBaseVertices(desc.numVertices);
-        refTables->setNumBaseFaces(desc.numFaces);
-
-        for (int face=0; face<desc.numFaces; ++face) {
-            refTables->setNumBaseFaceVertices(face, desc.vertsPerFace[face]);
-        }
-
-        validateComponentTopologySizing(*refTables);
+        refTables.setNumBaseFaceVertices(face, desc.vertsPerFace[face]);
     }
+}
 
-    { // assign face vertex indices
+template <>
+void
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTopology(
+    FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
-        if ((not desc.vertsPerFace) or (not desc.vertIndices)) {
-            goto Fail;
+    for (int face=0, idx=0; face<desc.numFaces; ++face) {
+
+        FarIndexArray dstFaceVerts = refTables.setBaseFaceVertices(face);
+
+        for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
+
+            dstFaceVerts[vert] = desc.vertIndices[idx++];
         }
-        
-        for (int face=0, idx=0; face<desc.numFaces; ++face) {
-
-            FarIndexArray dstFaceVerts = refTables->setBaseFaceVertices(face);
-
-            for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
-
-                dstFaceVerts[vert] = desc.vertIndices[idx++];
-            }
-        }
-
-        validateComponentTopologyAssignment(*refTables);
     }
+}
 
-    { // assign creases & corners
+template <>
+void
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTags(
+    FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
-        if ((desc.numCreases>0) and 
-            ((not desc.creaseVertexIndexPairs) or (not desc.creaseWeights))) {
-            goto Fail;
-        }
+
+    if ((desc.numCreases>0) and desc.creaseVertexIndexPairs and desc.creaseWeights) {
 
         int const * vertIndexPairs = desc.creaseVertexIndexPairs;
         for (int edge=0; edge<desc.numCreases; ++edge, vertIndexPairs+=2) {
 
-            FarIndex idx = refTables->FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
+            FarIndex idx = refTables.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
 
             if (idx!=VTR_INDEX_INVALID) {
-               refTables->baseEdgeSharpness(idx) = desc.creaseWeights[edge];
+                refTables.baseEdgeSharpness(idx) = desc.creaseWeights[edge];
+            } else {
+                // XXXX report error !
             }
         }
+    }
 
-        if ((desc.numCreases>0) and 
-            ((not desc.cornerVertexIndices) or (not desc.cornerWeights))) {
-            goto Fail;
-        }
+    if ((desc.numCorners>0) and desc.cornerVertexIndices and desc.cornerWeights) {
 
         for (int vert=0; vert<desc.numCorners; ++vert) {
 
             int idx = desc.cornerVertexIndices[vert];
 
-            if (idx < refTables->GetNumVertices(0)) {
-               refTables->baseVertexSharpness(idx) = desc.cornerWeights[vert];
+            if (idx < refTables.GetNumVertices(0)) {
+                refTables.baseVertexSharpness(idx) = desc.cornerWeights[vert];
+            } else {
+                // XXXX report error !
             }
         }
-        
-        applyComponentTagsAndBoundarySharpness(*refTables);
     }
-    
-    return refTables;
-
-Fail:
-    delete refTables;
-    return 0;
 }
 
 FarRefineTablesFactoryBase::TopologyDescriptor::TopologyDescriptor() :

@@ -106,20 +106,23 @@ using namespace OpenSubdiv;
 int main(int, char **) {
 
     // Populate a topology descriptor with our raw data
-    FarRefineTablesFactoryBase::TopologyDescriptor desc;
 
-    desc.type = OpenSubdiv::TYPE_CATMARK;
+    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
 
-    desc.options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+    SdcType type = OpenSubdiv::TYPE_CATMARK;
 
-    desc.numVertices = g_nverts;
-    desc.numFaces = g_nfaces;
+    SdcOptions options;
+    options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+
+    Descriptor desc;
+    desc.numVertices  = g_nverts;
+    desc.numFaces     = g_nfaces;
     desc.vertsPerFace = g_vertsperface;
-    desc.vertIndices = g_vertIndices;
+    desc.vertIndices  = g_vertIndices;
 
 
     // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactoryBase::Create(desc);
+    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
 
     int maxlevel = 2;
 
