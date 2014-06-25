@@ -96,8 +96,8 @@ public:
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
     void ComputeMaskWeights();
 #endif
-    template <class T> void Interpolate(                T const * src, T * dst) const;
-    template <class T> void InterpolateLevel(int level, T const * src, T * dst) const;
+    template <class T, class U> void Interpolate(                T const * src, U * dst) const;
+    template <class T, class U> void InterpolateLevel(int level, T const * src, U * dst) const;
 
     //
     //  Inspection of components per level:
@@ -195,11 +195,11 @@ private:
     void catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector);
     void catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector);
 
-    template <class T> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, T * dst) const;
+    template <class T, class U> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
 
-    template <class T> void interpolateChildVertsFromEdges(VtrRefinement const &, T const * src, T * dst) const;
+    template <class T, class U> void interpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
 
-    template <class T> void interpolateChildVertsFromVerts(VtrRefinement const &, T const * src, T * dst) const;
+    template <class T, class U> void interpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
 
 //  The following should be private but leaving it open while still early...
 public:
@@ -213,9 +213,9 @@ public:
     std::vector<VtrRefinement> _refinements;
 };
 
-template <class T>
+template <class T, class U>
 inline void
-FarRefineTables::Interpolate(T const * src, T * dst) const {
+FarRefineTables::Interpolate(T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
@@ -228,9 +228,9 @@ FarRefineTables::Interpolate(T const * src, T * dst) const {
     }
 }
 
-template <class T>
+template <class T, class U>
 inline void
-FarRefineTables::InterpolateLevel(int level, T const * src, T * dst) const {
+FarRefineTables::InterpolateLevel(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -241,9 +241,9 @@ FarRefineTables::InterpolateLevel(int level, T const * src, T * dst) const {
     interpolateChildVertsFromVerts(refinement, src, dst);
 }
 
-template <class T>
+template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement, T const * src, T * dst) const {
+FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement, T const * src, U * dst) const {
 
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
 
@@ -266,7 +266,7 @@ FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement
         scheme.ComputeFaceVertexMask(fHood, fMask);
 
         //  Apply the weights to the parent face's vertices:
-        T & vdst = dst[cVert];
+        U & vdst = dst[cVert];
 
         vdst.Clear();
 
@@ -277,9 +277,9 @@ FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement
     }
 }
 
-template <class T>
+template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement, T const * src, T * dst) const {
+FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
@@ -313,7 +313,7 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
 
         //  Apply the weights to the parent edges's vertices and (if applicable) to
         //  the child vertices of its incident faces:
-        T & vdst = dst[cVert];
+        U & vdst = dst[cVert];
 
         vdst.Clear();
         vdst.AddWithWeight(src[eVerts[0]], eVertWeights[0]);
@@ -331,9 +331,9 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
     }
 }
 
-template <class T>
+template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement, T const * src, T * dst) const {
+FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
@@ -368,7 +368,7 @@ FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement
 
         //  Apply the weights to the parent vertex, the vertices opposite its incident
         //  edges, and the child vertices of its incident faces:
-        T & vdst = dst[cVert];
+        U & vdst = dst[cVert];
 
         vdst.Clear();
         vdst.AddWithWeight(src[vert], vVertWeight);

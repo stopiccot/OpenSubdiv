@@ -26,13 +26,14 @@
 //------------------------------------------------------------------------------
 // Tutorial description:
 //
-// This tutorial presents in a very succint way the requisite steps to
-// instantiate a Far mesh from simple topological data.
 //
 
 #include <far/refineTablesFactory.h>
+#include <far/stencilTables.h>
+#include <far/stencilTablesFactory.h>
 
 #include <cstdio>
+#include <cstring>
 
 //------------------------------------------------------------------------------
 // Vertex container implementation.
@@ -69,7 +70,7 @@ struct Vertex {
         _position[2]=z;
     }
 
-    const float * GetPosition() const {
+    float const * GetPosition() const {
         return _position;
     }
 
@@ -78,15 +79,16 @@ private:
 };
 
 //------------------------------------------------------------------------------
-// Cube geometry from catmark_cube.h
-static float g_verts[8][3] = {{ -0.5f, -0.5f,  0.5f },
-                              {  0.5f, -0.5f,  0.5f },
-                              { -0.5f,  0.5f,  0.5f },
-                              {  0.5f,  0.5f,  0.5f },
-                              { -0.5f,  0.5f, -0.5f },
-                              {  0.5f,  0.5f, -0.5f },
-                              { -0.5f, -0.5f, -0.5f },
-                              {  0.5f, -0.5f, -0.5f }};
+// Pyramid geometry from catmark_pyramid.h
+
+static float g_verts[24] = {-0.5f, -0.5f,  0.5f,
+                             0.5f, -0.5f,  0.5f,    
+                            -0.5f,  0.5f,  0.5f,    
+                             0.5f,  0.5f,  0.5f,    
+                            -0.5f,  0.5f, -0.5f,    
+                             0.5f,  0.5f, -0.5f,    
+                            -0.5f, -0.5f, -0.5f,    
+                             0.5f, -0.5f, -0.5f };  
 
 static int g_nverts = 8,
            g_nfaces = 6;
@@ -102,11 +104,48 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
+static FarRefineTables * createRefineTables();
+
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-    // Populate a topology descriptor with our raw data
 
+    FarRefineTables * refTables = createRefineTables();
+
+    int maxlevel = 1;
+
+    // Uniformly refine the topolgy up to 'maxlevel'
+    refTables->RefineUniform( maxlevel );
+
+    // Use the factory to create discrete stencil tables
+    FarStencilTables const * stencilTable =
+        FarStencilTablesFactory::Create(*refTables);
+    
+    int nstencils = stencilTable->GetNumStencils();
+
+    // Allocate vertex primvar buffer
+    std::vector<Vertex> vertexBuffer(nstencils);
+    
+    Vertex * controlValues = reinterpret_cast<Vertex *>(g_verts);
+    
+    // Apply stencils to control vertex data. Our primvar data stride is 3
+    // since our Vertex class only interpolates 3-axis position data.
+    stencilTable->UpdateValues(controlValues, &vertexBuffer[0], 3);
+
+    // Print MEL script with particles at the location of the vertices
+    printf("particle ");
+    for (int i=0; i<(int)vertexBuffer.size(); ++i) {
+        float const * pos = vertexBuffer[i].GetPosition();
+        printf("-p %f %f %f\n", pos[0], pos[1], pos[2]);
+    }
+    printf("-c 1;\n");
+}
+
+//------------------------------------------------------------------------------
+static FarRefineTables * 
+createRefineTables() {
+
+    // Populate a topology descriptor with our raw data
     typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
@@ -122,62 +161,8 @@ int main(int, char **) {
 
 
     // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    return FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
 
-    int maxlevel = 2;
-
-    // Uniformly refine the topolgy up to 'maxlevel'
-    refTables->RefineUniform( maxlevel );
-
-
-    // Allocate a buffer for vertex primvar data. The buffer length is set to
-    // be the sum of all children vertices up to the highest level of refinement.
-    std::vector<Vertex> vbuffer(refTables->GetNumVerticesTotal());
-    Vertex * verts = &vbuffer[0];
-
-
-    // Initialize coarse mesh positions
-    int nCoarseVerts = g_nverts;
-    for (int i=0; i<nCoarseVerts; ++i) {
-        verts[i].SetPosition(g_verts[i][0], g_verts[i][1], g_verts[i][2]);
-    }
-
-
-    // Interpolate vertex primvar data
-    refTables->Interpolate<Vertex, Vertex>(verts, verts + nCoarseVerts);
-
-
-
-    { // Output OBJ of the highest level refined -----------
-
-        // Print vertex positions
-        for (int level=0, firstVert=0; level<=maxlevel; ++level) {
-
-            if (level==maxlevel) {
-                for (int vert=0; vert<refTables->GetNumVertices(maxlevel); ++vert) {
-                    float const * pos = verts[firstVert+vert].GetPosition();
-                    printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
-                }
-            } else {
-                firstVert += refTables->GetNumVertices(level);
-            }
-        }
-
-        // Print faces
-        for (int face=0; face<refTables->GetNumFaces(maxlevel); ++face) {
-
-            FarIndexArray fverts = refTables->GetFaceVertices(maxlevel, face);
-
-            // all refined Catmark faces should be quads
-            assert(fverts.size()==4);
-
-            printf("f ");
-            for (int vert=0; vert<fverts.size(); ++vert) {
-                printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
-            }
-            printf("\n");
-        }
-    }
 }
 
 //------------------------------------------------------------------------------

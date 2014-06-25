@@ -27,6 +27,7 @@
 set(SOURCE_FILES
      refineTables.cpp
      refineTablesFactory.cpp
+     stencilTablesFactory.cpp
 )
 
 set(PUBLIC_HEADER_FILES

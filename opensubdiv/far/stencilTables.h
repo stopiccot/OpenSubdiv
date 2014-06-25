@@ -27,18 +27,36 @@
 
 #include "../version.h"
 
+#include <cassert>
 #include <vector>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 
-/// \brief Stencil descriptor
+/// \brief Vertex stencil descriptor
 ///
 /// Allows access and manipulation of a single stencil in a FarStencilTables.
 ///
 class FarStencil {
+
 public:
+
+    FarStencil() {}
+
+    FarStencil(char * size,
+               int * indices,
+               float * weights)
+        : _size(size),
+          _indices(indices),
+          _weights(weights) {
+    }
+    
+    FarStencil(FarStencil const & other) {
+        _size = other._size;
+        _indices = other._indices;
+        _weights = other._weights;
+    }
 
     /// \brief Returns the size of the stencil (number of control vertices)
     int GetSize() const {
@@ -51,57 +69,24 @@ public:
     }
 
     /// \brief Returns the interpolation weights
-    float const * GetValueWeights() const {
-        return _point;
+    float const * GetWeights() const {
+        return _weights;
     }
 
-    /// \brief Returns U derivative interpolation weights
-    float const * GetUDerivWeights() const {
-        return _uderiv;
-    }
-
-    /// \brief Returns V derivative interpolation weights
-    float const * GetVDerivWeights() const {
-        return _vderiv;
-    }
-
-    /// \brief Increment to the next stencil in the array
-    /// Note : there is no array boundary check !
-    void Increment() {
+    void Next() {
         int stride = *_size;
         ++_size;
         _indices += stride;
-        _point   += stride;
-        _uderiv  += stride;
-        _vderiv  += stride;
+        _weights += stride;
     }
 
-private:
+protected:
+    friend class FarStencilTablesFactory;
 
-     FarStencil( int * size,
-                 int * indices,
-                 float * point,
-                 float * uderiv,
-                 float * vderiv )
-         : _size(size),
-           _indices(indices),
-           _point(point),
-           _uderiv(uderiv),
-           _vderiv(vderiv) {
-     }
-
-    friend class FarStencilTables;
-    template <class T> friend class FarStencilTablesFactory;
-
-    int * _size,
-        * _indices;
-
-    float * _point,
-          * _uderiv,
-          * _vderiv;
-
+    char  * _size;
+    int   * _indices;
+    float * _weights;
 };
-
 
 /// \brief Table of subdivision stencils.
 ///
@@ -119,46 +104,16 @@ class FarStencilTables {
 
 public:
 
-    /// \brief Clears the stencils from the table
-    void Clear() {
-        _sizes.clear();
-        _offsets.clear();
-        _indices.clear();
-        _point.clear();
-        _uderiv.clear();
-        _vderiv.clear();
-    }
-
     /// \brief Returns the number of stencils in the tables
     int GetNumStencils() const {
         return (int)_sizes.size();
-    }
-
-    /// \brief Updates point values based on the control values
-    ///
-    /// \note The values array is assumed to be at least as big as the
-    /// result of \c GetNumStencils().
-    template <class T>
-    void UpdateValues( T const *controlValues, T *values, int stride=0 ) const {
-        _Update( controlValues, &_point.at(0), values, stride );
-    }
-
-    /// \brief Updates derivative values based on the control values
-    ///
-    /// \note The values array is assumed to be at least as big as the
-    /// result of \c GetNumStencils().
-    template <class T>
-    void UpdateDerivs( T const *controlValues, T *uderivs,
-                                               T *vderivs, int stride=0 ) const {
-        _Update( controlValues, &_uderiv.at(0), uderivs, stride );
-        _Update( controlValues, &_vderiv.at(0), vderivs, stride );
     }
 
     /// \brief Returns a FarStencil at index i in the tables
     FarStencil GetStencil(int i) const;
 
     /// \brief Returns the number of control vertices of each stencil in the table
-    std::vector<int> const & GetSizes() const {
+    std::vector<char> const & GetSizes() const {
         return _sizes;
     }
 
@@ -174,22 +129,22 @@ public:
 
     /// \brief Returns the stencils interpolation weights
     std::vector<float> const & GetWeights() const {
-        return _point;
+        return _weights;
     }
 
-    /// \brief Returns the stencils U deriv weights
-    std::vector<float> const & GetDuWeights() const {
-        return _uderiv;
+    /// \brief Updates point values based on the control values
+    ///
+    /// \note The values array is assumed to be at least as big as the
+    /// result of \c GetNumStencils().
+    template <class T>
+    void UpdateValues( T const *controlValues, T *values, int stride=0 ) const {
+        _Update( controlValues, &_weights.at(0), values, stride );
     }
 
-    /// \brief Returns the stencils U deriv weights
-    std::vector<float> const & GetDvWeights() const {
-        return _vderiv;
-    }
-    
+
 private:
 
-    template <class T> friend class FarStencilTablesFactory;
+    friend class FarStencilTablesFactory;
 
     // Update values by appling cached stencil weights to new control values
     template <class T> void _Update( T const *controlValues,
@@ -197,15 +152,50 @@ private:
                                      T *values,
                                      int stride ) const;
 
-    std::vector<int>    _sizes;   // number of coeffiecient for each stencil
-    std::vector<int>    _offsets; // offset to the start of each stencil
-    std::vector<int>    _indices;
-
-    std::vector<float> _point,       // weight coefficients (value & derivatives)
-                       _uderiv,
-                       _vderiv;
-
+    std::vector<char>   _sizes;    // number of coeffiecient for each stencil
+    std::vector<int>    _offsets,  // offset to the start of each stencil
+                        _indices;  // indices of contributing coarse vertices
+    std::vector<float>  _weights;  // stencil weight coefficients
 };
+
+
+/// \brief Limit point stencil descriptor
+///
+class FarLimitStencil : public FarStencil {
+
+public:
+    FarLimitStencil( char * size,
+                     int * indices,
+                     float * weights,
+                     float * duWeights,
+                     float * dvWeights )
+        : FarStencil(size, indices, weights),
+          _duWeights(duWeights),
+          _dvWeights(dvWeights) {
+    }
+
+    float const * GetDuWeights() const {
+        return _duWeights;
+    }
+
+    float const * GetDvWeights() const {
+        return _dvWeights;
+    }
+
+    void Next() {
+       int stride = *_size;
+       ++_size;
+       _indices += stride;
+       _weights += stride;
+       _duWeights += stride;
+       _dvWeights += stride;
+    }
+
+private:
+    float * _duWeights,
+          * _dvWeights;
+};
+
 
 template <class T> void
 FarStencilTables::_Update( T const *controlValues,
@@ -232,12 +222,11 @@ FarStencilTables::GetStencil(int i) const {
 
     int ofs = _offsets[i];
 
-    return FarStencil( const_cast<int *>(&_sizes[i]),
+    return FarStencil( const_cast<char *>(&_sizes[i]),
                        const_cast<int *>(&_indices[ofs]),
-                       const_cast<float *>(&_point[ofs]),
-                       const_cast<float *>(&_uderiv[ofs]),
-                       const_cast<float *>(&_vderiv[ofs]) );
+                       const_cast<float *>(&_weights[ofs]) );
 }
+
 
 
 } // end namespace OPENSUBDIV_VERSION

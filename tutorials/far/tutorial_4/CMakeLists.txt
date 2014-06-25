@@ -22,5 +22,18 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(tutorial_0)
-add_subdirectory(tutorial_4)
+include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
+
+set(SOURCE_FILES
+    far_tutorial_4.cpp
+)
+
+_add_executable(far_tutorial_4
+    ${SOURCE_FILES}
+    $<TARGET_OBJECTS:sdc_obj>
+    $<TARGET_OBJECTS:vtr_obj>
+    $<TARGET_OBJECTS:far_obj>
+)
+
+install(TARGETS far_tutorial_4 DESTINATION "${CMAKE_BINDIR_BASE}/tutorials")
+
