@@ -112,7 +112,7 @@ int main(int, char **) {
 
     FarRefineTables * refTables = createRefineTables();
 
-    int maxlevel = 1;
+    int maxlevel = 3;
 
     // Uniformly refine the topolgy up to 'maxlevel'
     refTables->RefineUniform( maxlevel );

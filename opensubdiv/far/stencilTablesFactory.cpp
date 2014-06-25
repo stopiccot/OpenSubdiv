@@ -360,9 +360,9 @@ public:
 
     void Clear();
 
-    void AddWithWeight(FarStencil const & stencil, float weight);
+    void AddWithWeight(FarStencil const & src, float weight);
 
-    void AddWithWeight(TempStencil const & stencil, float weight);
+    void AddWithWeight(TempStencil const & src, float weight);
 
     int GetSize() const;
 
@@ -501,44 +501,51 @@ TempStencil::Clear() {
     }
 }
 
-void
-TempStencil::AddWithWeight(FarStencil const & stencil, float weight) {
+inline void
+TempStencil::AddWithWeight(FarStencil const & src, float weight) {
 
     assert(weight>0.0f);
 
-    for (int i=0; i<stencil.GetSize(); ++i) {
+    for (int i=0; i<src.GetSize(); ++i) {
 
-        int vertIndex = stencil.GetVertexIndices()[i],
-            n = findVertex(vertIndex);
+        int vertIndex = src.GetVertexIndices()[i];
+        
+        // Attempt to locate the vertex index in the list of supporting vertices
+        // of the destination stencil.
+        int n = findVertex(vertIndex);
 
         if (n<0) {
-            _alloc->PushBackVertex(*this, vertIndex, weight);
+            _alloc->PushBackVertex(*this, vertIndex, weight * src.GetWeights()[i]);
         } else {
-            float * weights = _alloc->getWeights(*this);
-            weights[n] += weight * stencil.GetWeights()[i];
+            assert(src.GetWeights()[i]);
+            float * dst = _alloc->getWeights(*this);
+            dst[n] += weight * src.GetWeights()[i];
         }
     }
 }
 
-void
-TempStencil::AddWithWeight(TempStencil const & stencil, float weight) {
+inline void
+TempStencil::AddWithWeight(TempStencil const & src, float weight) {
 
     assert(weight>0.0f);
 
-    int const * size    = _alloc->getSize(stencil),
-              * indices = _alloc->getIndices(stencil);
-    float const * weights = _alloc->getWeights(stencil);
+    int const * size = _alloc->getSize(src),
+              * srcIndices = _alloc->getIndices(src);
+    float const * srcWeights = _alloc->getWeights(src);
 
     for (int i=0; i<*size; ++i) {
 
-        int vertIndex = indices[i],
-            n = findVertex(vertIndex);
+        int vertIndex = srcIndices[i];
 
+        // Attempt to locate the vertex index in the list of supporting vertices
+        // of the destination stencil.
+        int n = findVertex(vertIndex);
         if (n<0) {
-            _alloc->PushBackVertex(*this, vertIndex, weight);
+            _alloc->PushBackVertex(*this, vertIndex, weight * srcWeights[i]);
         } else {
+            assert(src.GetWeights()[i]);
             float * dst = _alloc->getWeights(*this);
-            dst[n] += weight * weights[i];
+            dst[n] += weight * srcWeights[i];
         }
     }
 }
@@ -560,6 +567,7 @@ TempStencil::GetWeights() const {
 
 inline int
 TempStencil::findVertex(int idx) {
+
     // XXXX serial serial search for now...
     int * size    = _alloc->getSize(*this),
         * indices = _alloc->getIndices(*this);
