@@ -33,9 +33,14 @@
 #include <list>
 #include <vector>
 
+#define MAX_STENCIL_SIZE 40
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+//
+// A pool allocator for stencils of known sizes
+//
 class StencilAllocator {
 
 public:
@@ -44,43 +49,50 @@ public:
 
     ~StencilAllocator();
 
+    // Allocates pool memory for a stencil of size 'size'
     FarStencil Allocate(int size);
 
-    void PopulateTables(std::vector<char> & sizes, std::vector<int> & indices,
-        std::vector<float> & weights) const;
-
-    void PopulateTables(std::vector<FarStencil> const & farStencils,
-        std::vector<char> & sizesVec, std::vector<int> & indicesVec,
-            std::vector<float> & weightsVec) const;
-
+    // Returns the number of stencils allocated
     int GetNumStencils() const {
         return _numStencils;
     }
 
+    // Returns the number stencil elements allocated (indices, weights)
     int GetNumStencilElements() const {
         return _numStencilElements;
     }
 
+    // Gather all the stencil data from the allocator and copy it into vectors
+    void PopulateTables(std::vector<unsigned char> & sizes,
+        std::vector<int> & indices, std::vector<float> & weights) const;
 
+    // Gather the data for a selection of stencils and copy it from the
+    // allocator into vectors
+    void PopulateTables(std::vector<FarStencil> const & farStencils,
+        std::vector<unsigned char> & sizesVec, std::vector<int> & indicesVec,
+            std::vector<float> & weightsVec) const;
+
+    // Prints all stencil data on console
     void PrintStencils() const;
 
+    // Print pool allocation stats
     void PrintStats() const;
-
-    static int GetMaxStencilSize() {
-        return 40;
-    }
 
 private:
 
-    // A fixed-size block of stencils that all share the same size
+    //
+    // A block of stencils that all share the same size
+    //
     struct Block {
 
         // Constructor
         Block(int size, int capacity) :
             size(size), capacity(capacity), used(0) { }
 
+        // Returns a FarStencil pointing to the next unused allocated space
         FarStencil Allocate();
 
+        // Copy all stencil data from the block and advance the pointers
         void CopyData(int ** sizes, int ** indices, float ** weights);
 
         // Returns a pointer to the aggregated stencil indices
@@ -93,14 +105,16 @@ private:
             return reinterpret_cast<float *>(data + capacity*size);
         }
 
+        // True if the block is fully used
         bool IsFull() const {
             return (used==capacity);
         }
 
-        char size;
-        int capacity,
-            used;
-        int data[1];
+        unsigned char size;       // stencil size
+
+        int           capacity,   // block capacity (number of stencils)
+                      used;       // number of stencils in use
+        int           data[1];    // block of stencil data
     };
 
 private:
@@ -118,6 +132,7 @@ private:
         return block;
     }
 
+    // Returns the vector of block-capacity hints
     int getCapacityHint(int size) const {
         assert(size<(int)_capacityHints.size());
         return _capacityHints[size];
@@ -125,20 +140,21 @@ private:
 
 private:
 
-    int _numStencils,         // total number of stencils allocated
-        _numStencilElements;  // total number of stencil elements
+    int _numStencils,         // Total number of stencils allocated
+        _numStencilElements;  // Total number of stencil elements
+
+    std::vector<int> _capacityHints; // Array of hints to initialize block
+                                     // capacities for each stencil size
 
     typedef std::list<Block *> BlockList;
 
-    std::vector<BlockList> _blocks;
-
-    std::vector<int> _capacityHints;
+    std::vector<BlockList> _blocks; // Array of BlockLists for each stencil size
 };
 
 // Destructor
 StencilAllocator::~StencilAllocator() {
 
-    for (int i=0; i<GetMaxStencilSize(); ++i) {
+    for (int i=0; i<FarStencilTablesFactory::GetMaxStencilSize(); ++i) {
         BlockList & block = _blocks[i];
         for (BlockList::iterator it=block.begin(); it!=block.end(); ++it) {
             assert(*it);
@@ -151,22 +167,24 @@ StencilAllocator::~StencilAllocator() {
 StencilAllocator::StencilAllocator(FarRefineTables const & refTables) :
     _numStencils(0), _numStencilElements(0) {
 
-    _blocks.resize(GetMaxStencilSize());
+    int maxSize = FarStencilTablesFactory::GetMaxStencilSize();
+
+    _blocks.resize(maxSize);
 
     { // populate capacity hints
         int nvertstotal = refTables.GetNumVerticesTotal();
 
         int defaultHint = std::max(10, nvertstotal/10);
-        _capacityHints.resize(GetMaxStencilSize(), defaultHint);
+        _capacityHints.resize(maxSize, defaultHint);
 
-        // XXXX manuelk - i need to come up with a real strategy
+        // XXXX manuelk - need to come up with some stats and a real strategy...
         _capacityHints[3]=std::max(10, refTables.GetNumFaces(0));
-        _capacityHints[5]=std::max(10, nvertstotal/5);
-        _capacityHints[6]=std::max(10, nvertstotal/2);
-        _capacityHints[7]=std::max(10, nvertstotal/3);
+        _capacityHints[5]=std::max(10, nvertstotal/500);
+        _capacityHints[6]=std::max(10, nvertstotal/100);
+        _capacityHints[7]=std::max(10, nvertstotal/2);
     }
 
-    { // setup block for coarse vertices (stencils have a single weight=1)
+    { // allocate initial block for coarse vertices (stencils have a single weight=1)
         int nverts = refTables.GetNumVertices(0);
         allocateBlock(1, nverts);
     }
@@ -205,9 +223,10 @@ StencilAllocator::Allocate(int size) {
     return FarStencil(&block->size, indices, weights);
 }
 
+// Gather all the stencil data from the allocator and copy it into vectors
 void
 StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
-    std::vector<char> & sizesVec, std::vector<int> & indicesVec,
+    std::vector<unsigned char> & sizesVec, std::vector<int> & indicesVec,
         std::vector<float> & weightsVec) const {
 
     int nstencils = (int)farStencils.size(),
@@ -221,18 +240,18 @@ StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
     indicesVec.resize(nelements);
     weightsVec.resize(nelements);
 
-    char * sizes = &sizesVec.at(0);
+    unsigned char * sizes = &sizesVec.at(0);
     int * indices = &indicesVec.at(0);
     float * weights = &weightsVec.at(0);
 
-    // copy data
+    // Copy data
     for (int i=0; i<nstencils; ++i) {
 
         FarStencil const & stencil = farStencils[i];
 
         int n = stencil.GetSize();
 
-        *sizes=(char)n;
+        *sizes=(unsigned char)n;
         memcpy(indices, stencil.GetVertexIndices(), n*sizeof(int));
         memcpy(weights, stencil.GetWeights(), n*sizeof(float));
 
@@ -242,19 +261,21 @@ StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
     }
 }
 
+// Gather the data for a selection of stencils and copy it from the
+// allocator into vectors
 void
-StencilAllocator::PopulateTables(std::vector<char> & sizesVec,
+StencilAllocator::PopulateTables(std::vector<unsigned char> & sizesVec,
      std::vector<int> & indicesVec, std::vector<float> & weightsVec) const {
 
     sizesVec.resize(GetNumStencils());
     indicesVec.resize(GetNumStencilElements());
     weightsVec.resize(GetNumStencilElements());
 
-    char * sizes = &sizesVec.at(0);
+    unsigned char * sizes = &sizesVec.at(0);
     int * indices = &indicesVec.at(0);
     float * weights = &weightsVec.at(0);
 
-    for (int size=GetMaxStencilSize()-1; size>0; --size) {
+    for (int size=FarStencilTablesFactory::GetMaxStencilSize()-1; size>0; --size) {
 
         BlockList const & blocklist = _blocks[size];
 
@@ -280,10 +301,11 @@ StencilAllocator::PopulateTables(std::vector<char> & sizesVec,
     }
 }
 
+// Debug dumps
 void
 StencilAllocator::PrintStencils() const {
 
-    for (int size=GetMaxStencilSize()-1; size>=0; --size) {
+    for (int size=FarStencilTablesFactory::GetMaxStencilSize()-1; size>=0; --size) {
 
         BlockList const & blocklist = _blocks[size];
 
@@ -307,39 +329,57 @@ StencilAllocator::PrintStencils() const {
     }
 }
 
+static void
+PrintLine(std::vector<int> const & nblocks) {
+    printf("    +----------------+");
+    for (int i=0; i<(int)nblocks.size(); ++i) {
+        if (nblocks[i])
+            printf("------+");
+    }
+    printf("\n");
+}
+
+static void
+PrintStat(char const * name, std::vector<int> const & nblocks,
+    std::vector<int> const & data) {
+
+    PrintLine(nblocks);
+    printf("    | %-15s", name);
+    for (int i=0; i<(int)nblocks.size(); ++i) {
+        if (nblocks[i])
+            printf("|% 6d", data[i]);
+    }
+    printf("|\n");
+}
+
 void
 StencilAllocator::PrintStats() const {
 
-    std::vector<int> nstencils(GetMaxStencilSize(),0),
-                     nblocks(GetMaxStencilSize(),0),
-                     unused(GetMaxStencilSize(),0);
+    int maxSize = FarStencilTablesFactory::GetMaxStencilSize();
 
-    for (int i=0; i<GetMaxStencilSize(); ++i) {
+    std::vector<int> sizes(maxSize,0),
+                     nstencils(maxSize,0),
+                     nblocks(maxSize,0),
+                     unused(maxSize,0);
+
+    for (int i=0; i<maxSize; ++i) {
         BlockList const & block = _blocks[i];
         for (BlockList::const_iterator it=block.begin(); it!=block.end(); ++it) {
+            sizes[i] = (*it)->size;
             nstencils[i] += (*it)->used;
             unused[i] += (*it)->capacity - (*it)->used;
             ++nblocks[i];
         }
     }
 
-    printf("Stencil Size    : ");
-    for (int i=0; i<(int)nstencils.size(); ++i) {
-        printf("|%-4d", i+1);
-    }
-    printf("|\nN Blocks        : ");
-    for (int i=0; i<(int)nstencils.size(); ++i) {
-        printf("|%-4d", nblocks[i]);
-    }
-    printf("|\nN Stencils      : ");
-    for (int i=0; i<(int)nstencils.size(); ++i) {
-        printf("|%-4d", nstencils[i]);
-    }
-    printf("|\nN Unused        : ");
-    for (int i=0; i<(int)nstencils.size(); ++i) {
-        printf("|%-4d", unused[i]);
-    }
-    printf("|\n");
+    PrintStat("Stencil Size", nblocks, sizes);
+    PrintStat("NumBlocks",    nblocks, nblocks);
+    PrintStat("NumStencils",  nblocks, nstencils);
+    PrintStat("NumUnused",    nblocks, unused);
+    PrintLine(nblocks);
+
+    printf("\n    NumStencilsTotal=%d\n", GetNumStencils());
+    printf("    NumStencilElementsTotal=%d\n\n", GetNumStencilElements());
 }
 
 
@@ -347,27 +387,36 @@ class TempStencilAllocator;
 
 // Temporary data structure to gather the stencils from supporting vertices
 // that aren't fully discovered yet.
-// Strategy: allocate up-front a data pool for supporting stencils of slightly
-// above than average size. For (rare) stencils that require more support
-// vertices, switch to (much slower) dynamic allocation.
+//
+// Strategy: allocate up-front a data pool for supporting stencils of a size
+// slightly above average. For the (rare) stencils that require more support
+// vertices, switch to regular heap allocation (slower).
+//
 class TempStencil {
 
 public:
 
+    // Return stencil unique ID
     int GetID() const {
         return _ID;
     }
 
+    // Set stencil weights to 0.0
     void Clear();
 
+    // Weighted add of a FarStencil
     void AddWithWeight(FarStencil const & src, float weight);
 
+    // Weighted add of a TempStencil
     void AddWithWeight(TempStencil const & src, float weight);
 
+    // Returns the current size of the TempStencil
     int GetSize() const;
 
+    // Returns a pointer to the vertex indices of the stencil
     int const * GetIndices() const;
 
+    // Returns a pointer to the vertex weights of the stencil
     float const * GetWeights() const;
 
     void Print() const;
@@ -376,15 +425,16 @@ private:
 
     friend class TempStencilAllocator;
 
-    // returns local stencil index of vertex or -1 if not found
-    int findVertex(int idx);
+    // Find the location of vertex 'vertex' in the stencil indices.
+    // Returns -1 if not found
+    int findVertex(int vertex);
 
 private:
 
     int _ID;                       // stencil ID in allocator
 
-    TempStencilAllocator * _alloc; // make allocater a singleton and we can
-                                   // get rid of this - but lose concurrency
+    TempStencilAllocator * _alloc; // make allocator a singleton and we can
+                                   // get rid of this - but we lose concurrency
 };
 
 
@@ -399,49 +449,70 @@ public:
         }
     }
 
-    TempStencilAllocator(int nstencils, int maxvalues=40) :
-        _nstencils(nstencils), _maxvalues(maxvalues) {
+    TempStencilAllocator(FarRefineTables const & refTables, int capacity, int maxsize=-1) {
 
-        _tempStencils.resize(nstencils);
-        for (int i=0; i<nstencils; ++i) {
+        // Make an educated guess as to what the max size should be
+        if (maxsize<0) {
+
+            SdcType type = refTables.GetSchemeType();
+
+                   if (type==TYPE_BILINEAR) {
+                _maxsize = 12;
+            } else if (type==TYPE_CATMARK) {
+                _maxsize = 12;
+            } else if (type==TYPE_LOOP) {
+                _maxsize = 12;
+            }
+        }
+
+        // Pre-allocate the TempStencils
+        _tempStencils.resize(capacity);
+        for (int i=0; i<capacity; ++i) {
             _tempStencils[i]._ID = i;
             _tempStencils[i]._alloc = this;
         }
 
-        int nelems = nstencils * maxvalues;
-        _sizes.resize(nstencils,0);
+        int nelems = capacity * _maxsize;
+        _sizes.resize(capacity,0);
         _indices.resize(nelems);
         _weights.resize(nelems);
     }
 
+    // Returns an array of all the TempStencils in the allocator
     std::vector<TempStencil> & GetStencils() {
         return _tempStencils;
     }
 
+    // Append a support vertex of index 'index' and weight 'weight' to the
+    // TempStencil 'stencil' (use findVertex() to make sure it does not exist
+    // yet)
     void PushBackVertex(TempStencil & stencil, int index, float weight) {
 
         int   * size    = getSize(stencil),
               * indices = getIndices(stencil);
         float * weights = getWeights(stencil);
 
-        // try fast alloc path first
-        if (*size<(_maxvalues-1)) {
-            // we have space left for a new vertex
+        if (*size<(_maxsize-1)) {
+
+            // The stencil still fits in pool memory, just copy the data
             indices[*size]=index;
             weights[*size]=weight;
         } else {
-            // this is a big stencil - use slow alloc path
+
+            // The stencil is now too big: fall back to heap memory
             BigStencil * dst=0;
-            if (stencil.GetID()<(int)_bigstencils.size()) {
-                dst = _bigstencils[stencil.GetID()];
+
+            // Is this a new BigStencil or are we using an existing one ?
+            if (*size==(_maxsize-1)) {
+                stencil._ID = (int) _bigstencils.size();
+                dst = new BigStencil(*size, indices, weights);
+                _bigstencils.push_back(dst);
             } else {
-                _bigstencils.push_back( dst=new BigStencil );
-                // copy existing stencil data
-                for (int i=0; i<*size; ++i) {
-                    dst->indices.push_back(indices[i]);
-                    dst->weights.push_back(weights[i]);
-                }
+                dst = _bigstencils[stencil.GetID()];
             }
+            assert(dst);
+
+            // push back the new vertex
             dst->indices.push_back(index);
             dst->weights.push_back(weight);
         }
@@ -452,22 +523,25 @@ private:
 
     friend class TempStencil;
 
+    // returns the size of the stencil
     int * getSize(TempStencil const & stencil) {
         assert(stencil.GetID()<(int)_sizes.size());
         return &_sizes[stencil.GetID()];
     }
 
+    // returns the indices of the stencil
     int * getIndices(TempStencil const & stencil) {
-        if (*getSize(stencil)<_maxvalues) {
-            return &_indices[stencil.GetID()*_maxvalues];
+        if (*getSize(stencil)<_maxsize) {
+            return &_indices[stencil.GetID()*_maxsize];
         } else {
             return &_bigstencils[stencil.GetID()]->indices[0];
         }
     }
 
+    // returns the weights of the stencil
     float * getWeights(TempStencil const & stencil) {
-        if (*getSize(stencil)<_maxvalues) {
-            return &_weights[stencil.GetID()*_maxvalues];
+        if (*getSize(stencil)<_maxsize) {
+            return &_weights[stencil.GetID()*_maxsize];
         } else {
             return &_bigstencils[stencil.GetID()]->weights[0];
         }
@@ -475,17 +549,24 @@ private:
 
 private:
 
-    int _nstencils,
-        _maxvalues,
-        _current;
+    int _maxsize; // maximum size of a pre-allocated stencil
 
     std::vector<TempStencil> _tempStencils;
 
-    std::vector<int>   _sizes;
+    std::vector<int>   _sizes;    // temp stencils data (as SOA)
     std::vector<int>   _indices;
     std::vector<float> _weights;
 
+    // When stencils exceed _maxsize, fall back to heap allocated "BigStencils"
     struct BigStencil {
+
+        BigStencil(int size, int const * iindices, float const * iweights) {
+            indices.resize(size+1);
+            weights.resize(size+1);
+            memcpy(&indices.at(0), iindices, size*sizeof(int) );
+            memcpy(&weights.at(0), iweights, size*sizeof(int) );
+        }
+
         std::vector<int>   indices;
         std::vector<float> weights;
     };
@@ -493,6 +574,7 @@ private:
     std::vector<BigStencil *> _bigstencils;
 };
 
+// Set stencil weights to 0.0
 void
 TempStencil::Clear() {
     for (int i=0; i<*_alloc->getSize(*this); ++i) {
@@ -501,6 +583,7 @@ TempStencil::Clear() {
     }
 }
 
+// Weighted add of a FarStencil
 inline void
 TempStencil::AddWithWeight(FarStencil const & src, float weight) {
 
@@ -509,7 +592,7 @@ TempStencil::AddWithWeight(FarStencil const & src, float weight) {
     for (int i=0; i<src.GetSize(); ++i) {
 
         int vertIndex = src.GetVertexIndices()[i];
-        
+
         // Attempt to locate the vertex index in the list of supporting vertices
         // of the destination stencil.
         int n = findVertex(vertIndex);
@@ -524,6 +607,7 @@ TempStencil::AddWithWeight(FarStencil const & src, float weight) {
     }
 }
 
+// Weighted add of a TempStencil
 inline void
 TempStencil::AddWithWeight(TempStencil const & src, float weight) {
 
@@ -550,34 +634,39 @@ TempStencil::AddWithWeight(TempStencil const & src, float weight) {
     }
 }
 
+// Returns the current size of the TempStencil
 int
 TempStencil::GetSize() const {
     return *_alloc->getSize(*this);
 }
 
+// Returns a pointer to the vertex indices of the stencil
 int const *
 TempStencil::GetIndices() const {
     return _alloc->getIndices(*this);
 }
 
+// Returns a pointer to the vertex weights of the stencil
 float const *
 TempStencil::GetWeights() const {
     return _alloc->getWeights(*this);
 }
 
+// Find the location of vertex 'vertex' in the stencil indices.
 inline int
-TempStencil::findVertex(int idx) {
+TempStencil::findVertex(int vertex) {
 
     // XXXX serial serial search for now...
     int * size    = _alloc->getSize(*this),
         * indices = _alloc->getIndices(*this);
     for (int i=0; i<*size; ++i) {
-        if (indices[i]==idx)
+        if (indices[i]==vertex)
             return i;
     }
     return -1;
 }
 
+// Debug dump
 void
 TempStencil::Print() const {
 
@@ -593,9 +682,21 @@ TempStencil::Print() const {
 }
 
 
+//
+// Returns the largest stencil size that can be accomodated by the allocators
+//
+int
+FarStencilTablesFactory::GetMaxStencilSize() {
+    // Stencil size is a uchar - so max stencil size is limited to 255!
+    return MAX_STENCIL_SIZE;
+}
 
+//
+// FarStencilTables factory
+//
 FarStencilTables const *
-FarStencilTablesFactory::Create(FarRefineTables const & refTables) {
+FarStencilTablesFactory::Create(FarRefineTables const & refTables,
+    bool allLevels) {
 
     StencilAllocator alloc(refTables);
 
@@ -614,7 +715,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables) {
 
         int nverts = refTables.GetNumVertices(level);
 
-        TempStencilAllocator tempalloc(nverts);
+        TempStencilAllocator tempalloc(refTables, nverts);
 
         std::vector<TempStencil> & tempstencils = tempalloc.GetStencils();
 
@@ -630,7 +731,6 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables) {
                 TempStencil const & tempst = tempstencils[vert];
 
                 int size = tempst.GetSize();
-
                 stencils[vert] = alloc.Allocate(size);
                 memcpy(stencils[vert]._indices, tempst.GetIndices(), size*sizeof(int));
                 memcpy(stencils[vert]._weights, tempst.GetWeights(), size*sizeof(float));
@@ -640,11 +740,15 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables) {
 
     FarStencilTables * result = new FarStencilTables;
 
-    //alloc.PopulateTables(result->_sizes, result->_indices, result->_weights);
-    alloc.PopulateTables(stencils, result->_sizes, result->_indices, result->_weights);
+    if (allLevels) {
+        // these stencils are sorted by size
+        alloc.PopulateTables(result->_sizes, result->_indices, result->_weights);
+    } else {
+        // these stencils are *NOT* sorted by size
+        alloc.PopulateTables(stencils, result->_sizes, result->_indices, result->_weights);
+    }
 
-//alloc.PrintStencils();
-//alloc.PrintStats();
+    //alloc.PrintStats();
 
     return result;
 }

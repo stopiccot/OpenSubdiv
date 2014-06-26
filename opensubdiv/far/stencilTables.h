@@ -42,16 +42,26 @@ class FarStencil {
 
 public:
 
+    /// \brief Default constructor
     FarStencil() {}
 
-    FarStencil(char * size,
+    /// \brief Constructor
+    ///
+    /// @param size     Table pointer to the size of the stencil
+    ///
+    /// @param indices  Table pointer to the vertex indices of the stencil
+    ///
+    /// @param weights  Table pointer to the vertex weights of the stencil
+    ///
+    FarStencil(unsigned char * size,
                int * indices,
                float * weights)
         : _size(size),
           _indices(indices),
           _weights(weights) {
     }
-    
+
+    /// \brief Copy constructor
     FarStencil(FarStencil const & other) {
         _size = other._size;
         _indices = other._indices;
@@ -73,6 +83,7 @@ public:
         return _weights;
     }
 
+    /// \brief Advance to the next stencil in the table
     void Next() {
         int stride = *_size;
         ++_size;
@@ -83,9 +94,9 @@ public:
 protected:
     friend class FarStencilTablesFactory;
 
-    char  * _size;
-    int   * _indices;
-    float * _weights;
+    unsigned char * _size;
+    int           * _indices;
+    float         * _weights;
 };
 
 /// \brief Table of subdivision stencils.
@@ -104,7 +115,7 @@ class FarStencilTables {
 
 public:
 
-    /// \brief Returns the number of stencils in the tables
+    /// \brief Returns the number of stencils in the table
     int GetNumStencils() const {
         return (int)_sizes.size();
     }
@@ -113,7 +124,7 @@ public:
     FarStencil GetStencil(int i) const;
 
     /// \brief Returns the number of control vertices of each stencil in the table
-    std::vector<char> const & GetSizes() const {
+    std::vector<unsigned char> const & GetSizes() const {
         return _sizes;
     }
 
@@ -127,18 +138,24 @@ public:
         return _indices;
     }
 
-    /// \brief Returns the stencils interpolation weights
+    /// \brief Returns the stencil interpolation weights
     std::vector<float> const & GetWeights() const {
         return _weights;
     }
 
     /// \brief Updates point values based on the control values
     ///
-    /// \note The values array is assumed to be at least as big as the
-    /// result of \c GetNumStencils().
+    /// \note The destination buffers ('uderivs' & 'vderivs') are assumed to
+    ///       have allocated at least \c GetNumStencils() elements.
+    ///
+    /// @param controlValues  Buffer with primvar data for the control vertices
+    ///
+    /// @param values         Destination buffer for the interpolated primvar
+    ///                       data
+    ///
     template <class T>
-    void UpdateValues( T const *controlValues, T *values, int stride=0 ) const {
-        _Update( controlValues, &_weights.at(0), values, stride );
+    void UpdateValues( T const *controlValues, T *values ) const {
+        _Update( controlValues, &_weights.at(0), values );
     }
 
 
@@ -149,13 +166,12 @@ private:
     // Update values by appling cached stencil weights to new control values
     template <class T> void _Update( T const *controlValues,
                                      float const * weights,
-                                     T *values,
-                                     int stride ) const;
+                                     T *values ) const;
 
-    std::vector<char>   _sizes;    // number of coeffiecient for each stencil
-    std::vector<int>    _offsets,  // offset to the start of each stencil
-                        _indices;  // indices of contributing coarse vertices
-    std::vector<float>  _weights;  // stencil weight coefficients
+    std::vector<unsigned char> _sizes;    // number of coeffiecient for each stencil
+    std::vector<int>           _offsets,  // offset to the start of each stencil
+                               _indices;  // indices of contributing coarse vertices
+    std::vector<float>         _weights;  // stencil weight coefficients
 };
 
 
@@ -164,7 +180,20 @@ private:
 class FarLimitStencil : public FarStencil {
 
 public:
-    FarLimitStencil( char * size,
+
+    /// \brief Constructor
+    ///
+    /// @param size       Table pointer to the size of the stencil
+    ///
+    /// @param indices    Table pointer to the vertex indices of the stencil
+    ///
+    /// @param weights    Table pointer to the vertex weights of the stencil
+    ///
+    /// @param duWeights  Table pointer to the 'u' derivative weights
+    ///
+    /// @param dvWeights Table pointer to the 'v' derivative weights
+    ///
+    FarLimitStencil( unsigned char * size,
                      int * indices,
                      float * weights,
                      float * duWeights,
@@ -174,14 +203,17 @@ public:
           _dvWeights(dvWeights) {
     }
 
+    /// \brief
     float const * GetDuWeights() const {
         return _duWeights;
     }
 
+    /// \brief
     float const * GetDvWeights() const {
         return _dvWeights;
     }
 
+    /// \brief Advance to the next stencil in the table
     void Next() {
        int stride = *_size;
        ++_size;
@@ -192,16 +224,59 @@ public:
     }
 
 private:
-    float * _duWeights,
-          * _dvWeights;
+    float * _duWeights,  // pointer to stencil u derivative limit weights
+          * _dvWeights;  // pointer to stencil v derivative limit weights
+};
+
+/// \brief Table of limit subdivision stencils.
+///
+///
+class FarLimitStencilTables : public FarStencilTables {
+
+public:
+
+    /// \brief Returns the 'u' derivative stencil interpolation weights
+    std::vector<float> const & GetDuWeights() const {
+        return _duWeights;
+    }
+
+    /// \brief Returns the 'v' derivative stencil interpolation weights
+    std::vector<float> const & GetDvWeights() const {
+        return _dvWeights;
+    }
+
+    /// \brief Updates derivative values based on the control values
+    ///
+    /// \note The destination buffers ('uderivs' & 'vderivs') are assumed to
+    ///       have allocated at least \c GetNumStencils() elements.
+    ///
+    /// @param controlValues  Buffer with primvar data for the control vertices
+    ///
+    /// @param uderivs        Destination buffer for the interpolated 'u'
+    ///                       derivative primvar data
+    ///
+    /// @param vderivs        Destination buffer for the interpolated 'v'
+    ///                       derivative primvar data
+    ///
+    template <class T>
+    void UpdateDerivs( T const *controlValues, T *uderivs,
+                                               T *vderivs ) const {
+        _Update( controlValues, &_duWeights.at(0), uderivs );
+        _Update( controlValues, &_dvWeights.at(0), vderivs );
+    }
+
+
+private:
+    std::vector<float>  _duWeights,  // u derivative limit stencil weights
+                        _dvWeights;  // v derivative limit stencil weights
 };
 
 
+// Update values by appling cached stencil weights to new control values
 template <class T> void
 FarStencilTables::_Update( T const *controlValues,
                            float const * weights,
-                           T *values,
-                           int /* stride */ ) const {
+                           T *values ) const {
 
     int const * index = &_indices.at(0);
 
@@ -217,12 +292,13 @@ FarStencilTables::_Update( T const *controlValues,
     }
 }
 
+// Returns a FarStencil at index i in the table
 inline FarStencil
 FarStencilTables::GetStencil(int i) const {
 
     int ofs = _offsets[i];
 
-    return FarStencil( const_cast<char *>(&_sizes[i]),
+    return FarStencil( const_cast<unsigned char *>(&_sizes[i]),
                        const_cast<int *>(&_indices[ofs]),
                        const_cast<float *>(&_weights[ofs]) );
 }

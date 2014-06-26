@@ -79,16 +79,16 @@ private:
 };
 
 //------------------------------------------------------------------------------
-// Pyramid geometry from catmark_pyramid.h
+// Cube geometry from catmark_cube.h
 
 static float g_verts[24] = {-0.5f, -0.5f,  0.5f,
-                             0.5f, -0.5f,  0.5f,    
-                            -0.5f,  0.5f,  0.5f,    
-                             0.5f,  0.5f,  0.5f,    
-                            -0.5f,  0.5f, -0.5f,    
-                             0.5f,  0.5f, -0.5f,    
-                            -0.5f, -0.5f, -0.5f,    
-                             0.5f, -0.5f, -0.5f };  
+                             0.5f, -0.5f,  0.5f,
+                            -0.5f,  0.5f,  0.5f,
+                             0.5f,  0.5f,  0.5f,
+                            -0.5f,  0.5f, -0.5f,
+                             0.5f,  0.5f, -0.5f,
+                            -0.5f, -0.5f, -0.5f,
+                             0.5f, -0.5f, -0.5f };
 
 static int g_nverts = 8,
            g_nfaces = 6;
@@ -109,40 +109,54 @@ static FarRefineTables * createRefineTables();
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-
+    // Generate some FarRefineTables (see far_tutorial_0 for details)
     FarRefineTables * refTables = createRefineTables();
 
-    int maxlevel = 3;
 
     // Uniformly refine the topolgy up to 'maxlevel'
+    int maxlevel = 6;
     refTables->RefineUniform( maxlevel );
 
+
     // Use the factory to create discrete stencil tables
-    FarStencilTables const * stencilTable =
-        FarStencilTablesFactory::Create(*refTables);
-    
-    int nstencils = stencilTable->GetNumStencils();
+    // note: we only want stencils for the highest refinement level
+    FarStencilTables const * stencilTables =
+        FarStencilTablesFactory::Create(*refTables, /*allLevels*/false);
 
-    // Allocate vertex primvar buffer
+
+    // Allocate vertex primvar buffer (1 stencil for each vertex)
+    int nstencils = stencilTables->GetNumStencils();
     std::vector<Vertex> vertexBuffer(nstencils);
-    
-    Vertex * controlValues = reinterpret_cast<Vertex *>(g_verts);
-    
-    // Apply stencils to control vertex data. Our primvar data stride is 3
-    // since our Vertex class only interpolates 3-axis position data.
-    stencilTable->UpdateValues(controlValues, &vertexBuffer[0], 3);
 
-    // Print MEL script with particles at the location of the vertices
-    printf("particle ");
-    for (int i=0; i<(int)vertexBuffer.size(); ++i) {
-        float const * pos = vertexBuffer[i].GetPosition();
-        printf("-p %f %f %f\n", pos[0], pos[1], pos[2]);
+
+    // Quick & dirty re-cast of the primvar data from our cube
+    // (this is where you would drive shape deformations every frame)
+    Vertex * controlValues = reinterpret_cast<Vertex *>(g_verts);
+
+
+    // Apply stencils on the control vertex data to update the primvar data of
+    // the refined vertices (done every frame after control vertices have been
+    // moved)
+    stencilTables->UpdateValues(controlValues, &vertexBuffer[0]);
+
+
+    { // Visualization with Maya : print a MEL script that generates particles
+      // at the location of the refined vertices
+
+        printf("particle ");
+        for (int i=0; i<(int)vertexBuffer.size(); ++i) {
+            float const * pos = vertexBuffer[i].GetPosition();
+            printf("-p %f %f %f\n", pos[0], pos[1], pos[2]);
+        }
+        printf("-c 1;\n");
     }
-    printf("-c 1;\n");
+
+    delete refTables;
+    delete stencilTables;
 }
 
 //------------------------------------------------------------------------------
-static FarRefineTables * 
+static FarRefineTables *
 createRefineTables() {
 
     // Populate a topology descriptor with our raw data

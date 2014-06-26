@@ -33,11 +33,32 @@ namespace OPENSUBDIV_VERSION {
 class FarStencilTables;
 class FarRefineTables;
 
+/// \brief A specialized factory for FarStencilTables
+///
 class FarStencilTablesFactory {
 
 public:
 
-    static FarStencilTables const * Create(FarRefineTables const & refTables);
+    /// \brief Instantiates FarStencilTables from FarRefineTables that have been
+    ///        refined uniformly or adaptively.
+    ///
+    /// \note The factory only creates stencils for vertices that have already
+    ///       been refined in the FarRefineTables. Use RefineUniform() or
+    ///       RefineAdaptive() before constructing the stencils.
+    ///
+    /// @param refTables  The FarRefineTables containing the refined topology
+    ///
+    /// @param allLevels  Set to false to generate stencils for the vertices at
+    ///                   the highest level of refinement only
+    ///
+    static FarStencilTables const * Create(FarRefineTables const & refTables,
+        bool allLevels = true);
+
+
+    /// \brief Returns the largest stencil size that can be accomodated by the
+    ///        factory. This number should be adjusted to process topologies
+    ///        with very high valence vertices;
+    static int GetMaxStencilSize();
 
 private:
 };
