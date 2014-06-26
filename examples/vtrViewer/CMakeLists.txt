@@ -38,7 +38,6 @@ include_directories(
 )
 
 list(APPEND PLATFORM_LIBRARIES
-    "${OSD_LINK_TARGET}"
     "${OPENGL_LIBRARY}"
     "${GLFW_LIBRARIES}"
 )
@@ -62,6 +61,9 @@ _add_glfw_executable(vtrViewer
     gl_mesh.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
+    $<TARGET_OBJECTS:sdc_obj>
+    $<TARGET_OBJECTS:vtr_obj>
+    $<TARGET_OBJECTS:far_obj>
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
