@@ -78,7 +78,7 @@ GLMesh::setColorBySharpness(float sharpness, float * color) {
 }
 
 //------------------------------------------------------------------------------
-GLMesh::GLMesh() {
+GLMesh::GLMesh() : _TBOfaceColors(0) {
 
     for (int i=0; i<COMP_NUM_COMPONENTS; ++i) {
         _VAO[i]=0;
@@ -117,7 +117,7 @@ GLMesh::Initialize(Options options, RefineTables & refTables, float * vertexData
     _numComps[COMP_EDGE] = _eao[COMP_EDGE].size();
     _numComps[COMP_VERT] = _eao[COMP_VERT].size();
 
-    initializeDeviceBuffers();
+    InitializeDeviceBuffers();
 }
 
 //------------------------------------------------------------------------------
@@ -259,12 +259,40 @@ GLMesh::initializeBuffers(Options options, RefineTables & refTables, float * ver
                 eao[ofs++] = fverts[vert];
             }
         }
+        
+        _faceColors.resize(refTables.GetNumFaces(maxlevel)*4, 1.0f);
     }
 }
 
 //------------------------------------------------------------------------------
+template <typename T> static GLuint 
+createTextureBuffer(T const &data, GLint format, int offset=0) {
+
+    GLuint buffer = 0, texture = 0;
+
+    glGenTextures(1, &texture);
+    glGenBuffers(1, &buffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        (data.size()-offset)*sizeof(typename T::value_type),
+            &data[offset], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindTexture(GL_TEXTURE_BUFFER, texture);
+    glTexBuffer(GL_TEXTURE_BUFFER, format, buffer);
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+    glDeleteBuffers(1, &buffer);
+
+    checkGLErrors("createTextureBuffer");
+    return texture;
+}
+
+
+//------------------------------------------------------------------------------
 void
-GLMesh::initializeDeviceBuffers() {
+GLMesh::InitializeDeviceBuffers() {
 
     // copy buffers to device
     for (int i=0; i<COMP_NUM_COMPONENTS; ++i) {
@@ -306,6 +334,9 @@ GLMesh::initializeDeviceBuffers() {
         
         checkGLErrors("init");
     }
+    
+    assert(not _faceColors.empty());
+    _TBOfaceColors = createTextureBuffer(_faceColors, GL_RGBA32F);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -439,9 +470,17 @@ GLMesh::Draw(Component comp, GLuint transformUB, GLuint lightingUB) {
         bindProgram(g_faceShaderSrc, &g_faceProgram, transformUB, lightingUB, true);
 
 
-        GLuint diffuseColor = glGetUniformLocation(g_faceProgram, "diffuseColor");
-        glProgramUniform4f(g_faceProgram, diffuseColor, _diffuseColor[0], _diffuseColor[1], _diffuseColor[2], _diffuseColor[3]);
-        
+        { // set shader parameters 
+            GLuint diffuseColor = glGetUniformLocation(g_faceProgram, "diffuseColor");
+            glProgramUniform4f(g_faceProgram, diffuseColor, _diffuseColor[0],
+                _diffuseColor[1], _diffuseColor[2], _diffuseColor[3]);
+
+            GLuint faceColors = glGetUniformLocation(g_faceProgram, "faceColors");
+            glUniform1i(faceColors, 0); // GL_TEXTURE0
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_BUFFER, _TBOfaceColors);
+        }
 
         glBindVertexArray(_VAO[COMP_FACE]);
 
@@ -459,6 +498,19 @@ GLMesh::SetDiffuseColor(float r, float g, float b, float a) {
     _diffuseColor[1] = g;
     _diffuseColor[2] = b;
     _diffuseColor[3] = a;
+}
+
+//------------------------------------------------------------------------------
+void
+GLMesh::SetFaceColor(int face, float r, float g, float b, float a) {
+
+    assert( (face*4) < (int)_faceColors.size() );
+
+    float * color = &_faceColors[face*4];
+    color[0] = r;
+    color[1] = g;
+    color[2] = b;
+    color[3] = a;
 }
 
 //------------------------------------------------------------------------------

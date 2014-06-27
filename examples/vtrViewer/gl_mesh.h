@@ -173,7 +173,7 @@ public:
         _numComps[COMP_EDGE] = _eao[COMP_EDGE].size();
         _numComps[COMP_VERT] = _eao[COMP_VERT].size();
 
-        initializeDeviceBuffers();
+        _faceColors.resize(nfaces*4, 1.0f);
     }
 
     // -----------------------------------------------------
@@ -181,6 +181,8 @@ public:
     typedef OpenSubdiv::FarRefineTables RefineTables;
 
     void Initialize(Options options, RefineTables & refTables, float * vertexData);
+
+    void InitializeDeviceBuffers();
 
     // -----------------------------------------------------
 
@@ -192,6 +194,8 @@ public:
 
     void SetDiffuseColor(float r, float g, float b, float a);
 
+    void SetFaceColor(int face, float r, float g, float b, float a);
+
 private:
 
            void setSolidColor(float * color);
@@ -202,8 +206,6 @@ private:
 
     void initializeBuffers(Options options, RefineTables & refTables, float * vertexData);
 
-    void initializeDeviceBuffers();
-
     void clearBuffers();
 
 
@@ -211,10 +213,13 @@ private:
 
     GLuint _VAO[COMP_NUM_COMPONENTS],
            _VBO[COMP_NUM_COMPONENTS],
-           _EAO[COMP_NUM_COMPONENTS];
+           _EAO[COMP_NUM_COMPONENTS],
+           _TBOfaceColors;
 
     std::vector<float> _vbo[COMP_NUM_COMPONENTS];
     std::vector<int>   _eao[COMP_NUM_COMPONENTS];
+    
+    std::vector<float > _faceColors;
     
     float _ambientColor[4],
           _diffuseColor[4];

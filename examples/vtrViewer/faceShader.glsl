@@ -138,6 +138,8 @@ layout(std140) uniform Lighting {
 uniform vec4 diffuseColor = vec4(1);
 uniform vec4 ambientColor = vec4(1);
 
+uniform samplerBuffer faceColors;
+
 vec4
 lighting(vec4 diffuse, vec3 Peye, vec3 Neye)
 {
@@ -170,9 +172,9 @@ main()
 {
     vec3 N = (gl_FrontFacing ? inpt.v.normal : -inpt.v.normal);
 
-    vec4 color = diffuseColor;
+    vec4 faceColor = texelFetch(faceColors, gl_PrimitiveID);
 
-    vec4 Cf = lighting(color, inpt.v.position.xyz, N);
+    vec4 Cf = lighting(diffuseColor * faceColor, inpt.v.position.xyz, N);
 
     outColor = Cf;
     outNormal = N;

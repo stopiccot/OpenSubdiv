@@ -397,6 +397,8 @@ createHbrMesh(Shape * shape, int maxlevel) {
         g_hbr_glmesh.SetDiffuseColor(1.0f,0.75f,0.9f, 1.0f);
     }
 
+    g_hbr_glmesh.InitializeDeviceBuffers();
+
     delete hmesh;
 }
 
@@ -497,6 +499,25 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
 }
 
 //------------------------------------------------------------------------------
+/*
+static void
+setFaceColors(OpenSubdiv::FarRefineTables const & refTables) {
+
+    int maxlevel = refTables.GetMaxLevel();
+
+    srand( static_cast<int>(2147483647) ); // use a large Pell prime number
+
+    for (int i=0; i<refTables.GetNumFaces(maxlevel); ++i) {
+
+        float color[4] = { (float)rand()/(float)RAND_MAX,
+                           (float)rand()/(float)RAND_MAX, 
+                           (float)rand()/(float)RAND_MAX, 1.0f  };
+
+        g_vtr_glmesh.SetFaceColor(i, color[0], color[1], color[2], color[3] );
+    }
+}
+*/
+//------------------------------------------------------------------------------
 static void
 createVtrMesh(Shape * shape, int maxlevel) {
 
@@ -551,6 +572,10 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
     g_vtr_glmesh.Initialize(options, *refTables, (float *)&verts[0]);
     g_vtr_glmesh.SetDiffuseColor(0.75f, 0.9f, 1.0f, 1.0f);
+
+    //setFaceColors(*refTables);
+
+    g_vtr_glmesh.InitializeDeviceBuffers();
 
     delete refTables;
 }
