@@ -138,17 +138,24 @@ uniform sampler2D font;
 out vec4 outColor;
 out vec3 outNormal;
 
-const vec4 colors[4] = vec4[4](vec4(0.9,0.9,0.9,1.0),
+const vec4 colors[9] = vec4[9](vec4(0.9,0.9,0.9,1.0),
+
                                vec4(1.0,0.3,0.3,1.0),
                                vec4(0.3,1.0,0.3,1.0),
-                               vec4(0.3,0.3,1.0,1.0));
+                               vec4(0.3,0.3,1.0,1.0),
+                               
+                               vec4(0.0,1.0,0.0,1.0),     // green --- yellow --- red
+                               vec4(0.5,1.0,0.0,1.0),
+                               vec4(1.0,1.0,0.0,1.0),
+                               vec4(1.0,0.5,0.0,1.0),
+                               vec4(1.0,0.0,0.0,1.0));
 
 void main()
 {
-    vec4 color = texture2D(font, inpt.uv);
-    if (color.a == 0.0) discard;
+    vec4 bitmap = texture2D(font, inpt.uv);
+    if (bitmap.a == 0.0) discard;
 
-    outColor = color * colors[inpt.colorId];
+    outColor = bitmap * colors[inpt.colorId];
     outNormal = vec3(0.0,0.0,1.0);
     //outColor = vec4(inpt.v.uv,0.0,1.0);
 }
