@@ -25,7 +25,6 @@
 # *** vtrViewer ***
 
 set(SHADER_FILES
-    shader.glsl
     faceShader.glsl
     simpleShader.glsl
     fontShader.glsl

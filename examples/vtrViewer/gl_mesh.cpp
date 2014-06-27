@@ -31,8 +31,8 @@
 
 //------------------------------------------------------------------------------
 // color palettes
-static float         g_solidColor[3] = {1.0f,  1.0f,  1.0f},
-                   g_ambientColor[3] = {0.1f,  0.1f,  0.1f};
+static float         g_solidColor[4] = {1.0f,  1.0f,  1.0f, 1.0f},
+                   g_ambientColor[4] = {0.1f,  0.1f,  0.1f, 1.0f};
 
 static float    g_levelColors[10][4] = {{1.0f,  1.0f,  1.0f},
                                         {1.0f,  1.0f,  0.0f},
@@ -88,8 +88,8 @@ GLMesh::GLMesh() {
         _numComps[i] = 0;
     }
 
-    memcpy(_ambientColor, g_ambientColor, sizeof(float)*3);
-    memcpy(_diffuseColor, g_solidColor, sizeof(float)*3);
+    memcpy(_ambientColor, g_ambientColor, sizeof(float)*4);
+    memcpy(_diffuseColor, g_solidColor, sizeof(float)*4);
 }
 
 GLMesh::~GLMesh() {

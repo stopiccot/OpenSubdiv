@@ -216,7 +216,7 @@ private:
     std::vector<float> _vbo[COMP_NUM_COMPONENTS];
     std::vector<int>   _eao[COMP_NUM_COMPONENTS];
     
-    float _ambientColor[3],
-          _diffuseColor[3];
+    float _ambientColor[4],
+          _diffuseColor[4];
 };
 

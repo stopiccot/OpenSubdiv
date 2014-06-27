@@ -256,7 +256,7 @@ createEdgeNumbers(std::vector<Hface const *> faces) {
             }
         }
         edgeVec.resize(edgeMap.size());
-        for (typename EdgeMap::const_iterator it=edgeMap.begin(); it!=edgeMap.end(); ++it) {
+        for (EdgeMap::const_iterator it=edgeMap.begin(); it!=edgeMap.end(); ++it) {
             edgeVec[it->second] = it->first;
         }
     }
