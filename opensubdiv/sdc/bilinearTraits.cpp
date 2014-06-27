@@ -64,7 +64,7 @@ SdcTypeTraits<TYPE_BILINEAR>::Label()
 {
     //  Might need to declare static here to keep all compilers happy...
     return "bilinear";
-};
+}
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

@@ -56,13 +56,13 @@ Shape::~Shape() {
 }
 
 //------------------------------------------------------------------------------
-Shape * Shape::parseObj(char const * Shapestr, Scheme scheme, int axis ) {
+Shape * Shape::parseObj(char const * shapestr, Scheme shapescheme, int axis ) {
 
     Shape * s = new Shape;
 
-    s->scheme = scheme;
+    s->scheme = shapescheme;
 
-    char * str=const_cast<char *>(Shapestr), line[256];
+    char * str=const_cast<char *>(shapestr), line[256];
     bool done = false;
     while( not done )
     {   done = sgets(line, sizeof(line), &str)==0;

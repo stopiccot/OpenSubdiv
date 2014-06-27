@@ -64,7 +64,7 @@ SdcTypeTraits<TYPE_LOOP>::Label()
 {
     //  Might need to declare static here to keep all compilers happy...
     return "loop";
-};
+}
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

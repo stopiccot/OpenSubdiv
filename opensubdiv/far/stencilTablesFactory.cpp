@@ -86,8 +86,8 @@ private:
     struct Block {
 
         // Constructor
-        Block(int size, int capacity) :
-            size(size), capacity(capacity), used(0) { }
+        Block(int isize, int icapacity) :
+            size((unsigned char)isize), capacity(icapacity), used(0) { }
 
         // Returns a FarStencil pointing to the next unused allocated space
         FarStencil Allocate();
@@ -574,6 +574,20 @@ private:
     std::vector<BigStencil *> _bigstencils;
 };
 
+// Find the location of vertex 'vertex' in the stencil indices.
+inline int
+TempStencil::findVertex(int vertex) {
+
+    // XXXX serial serial search for now...
+    int * size    = _alloc->getSize(*this),
+        * indices = _alloc->getIndices(*this);
+    for (int i=0; i<*size; ++i) {
+        if (indices[i]==vertex)
+            return i;
+    }
+    return -1;
+}
+
 // Set stencil weights to 0.0
 void
 TempStencil::Clear() {
@@ -650,20 +664,6 @@ TempStencil::GetIndices() const {
 float const *
 TempStencil::GetWeights() const {
     return _alloc->getWeights(*this);
-}
-
-// Find the location of vertex 'vertex' in the stencil indices.
-inline int
-TempStencil::findVertex(int vertex) {
-
-    // XXXX serial serial search for now...
-    int * size    = _alloc->getSize(*this),
-        * indices = _alloc->getIndices(*this);
-    for (int i=0; i<*size; ++i) {
-        if (indices[i]==vertex)
-            return i;
-    }
-    return -1;
 }
 
 // Debug dump

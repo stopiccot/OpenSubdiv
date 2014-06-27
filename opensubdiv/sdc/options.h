@@ -62,7 +62,7 @@ public:
     enum VVarBoundaryInterpolation {
         VVAR_BOUNDARY_NONE = 0,
         VVAR_BOUNDARY_EDGE_ONLY,
-        VVAR_BOUNDARY_EDGE_AND_CORNER,
+        VVAR_BOUNDARY_EDGE_AND_CORNER
     };
     enum FVarBoundaryInterpolation {
         FVAR_BOUNDARY_BILINEAR = 0,

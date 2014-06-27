@@ -142,11 +142,11 @@ GLFont::Print3D(float const pos[3], const char * str, int color) {
         GLFont::Char c;
         memcpy(&c.pos[0], pos, sizeof(float)*3);
 
-        c.ofs[0]=2*i;
+        c.ofs[0]=2.0f*i;
         c.ofs[1]=0.0f;
 
         c.alpha = (float)str[i];
-        c.color = color;
+        c.color = (float)color;
 
         _chars.push_back(c);
     }

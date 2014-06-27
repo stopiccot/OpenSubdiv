@@ -425,7 +425,7 @@ Hud::drawString(std::vector<float> &vboSource,
                 int x, int y, float r, float g, float b, const char *c)
 {
     while (*c) {
-        char ch = (*c) & 0x7f;
+        char ch = (char)((*c) & 0x7f);
         x = drawChar(vboSource, x, y, r, g, b, ch);
         c++;
     }

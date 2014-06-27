@@ -126,7 +126,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC OR CMAKE_COMPILER_IS_ICC
 
     # Turn on all warnings
     if(CMAKE_COMPILER_IS_ICC)
-        list(APPEND OSD_COMPILER_FLAGS -w3 -wd1418 -wd981 -wd383 -wd193)
+        list(APPEND OSD_COMPILER_FLAGS -w3 -wd1572 -wd1418 -wd981 -wd383 -wd193 -wd444)
     else()
         list(APPEND OSD_COMPILER_FLAGS -Wall -Wextra)
     endif()

@@ -64,7 +64,7 @@ SdcTypeTraits<TYPE_CATMARK>::Label()
 {
     //  Might need to declare static here to keep all compilers happy...
     return "catmark";
-};
+}
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
