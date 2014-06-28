@@ -283,7 +283,7 @@ private:
     //  faces, child edges can originate from faces and edges, while child vertices can
     //  originate from all three component types.
     //
-    //  While the Refinement populates the Level containing the children, knowing the 
+    //  While the Refinement populates the Level containing the children, knowing the
     //  counts for the originating type, and generating them in blocks according to these
     //  types, allows us to process them more specifically.
     //
@@ -329,7 +329,7 @@ private:
     //
     //  So the reverse child-to-parent mapping definitely useful, but it is relatively
     //  costly (both space and time) to initialize and propagate though the hierarchy, so
-    //  I would prefer to only enable it when needed, i.e. make it optional.  
+    //  I would prefer to only enable it when needed, i.e. make it optional.
     //
     //  The mapping itself is simply an integer index for each child component, along with
     //  a corresponding tag for each with information about its parent:  is the child

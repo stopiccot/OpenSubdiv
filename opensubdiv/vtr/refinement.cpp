@@ -723,7 +723,8 @@ VtrRefinement::populateVertexFacesFromParentFaces()
         for (int j = 0; j < pFaceVertCount; ++j) {
             if (VtrIndexIsValid(pFaceChildren[j])) {
                 //  Note orientation wrt parent face -- quad vs non-quad...
-                VtrLocalIndex vertInFace = (pFaceVertCount == 4) ? ((j+2) & 3) : 2;
+                VtrLocalIndex vertInFace =
+                    (VtrLocalIndex)((pFaceVertCount == 4) ? ((j+2) & 3) : 2);
 
                 cVertFaces[cVertFaceCount]  = pFaceChildren[j];
                 cVertInFace[cVertFaceCount] = vertInFace;
@@ -785,12 +786,12 @@ VtrRefinement::populateVertexFacesFromParentEdges()
             //  Note orientation wrt incident parent faces -- quad vs non-quad...
             if (VtrIndexIsValid(pFaceChildren[faceChild1])) {
                 cVertFaces[cVertFaceCount] = pFaceChildren[faceChild1];
-                cVertInFace[cVertFaceCount] = (pFaceEdgeCount == 4) ? faceChild0 : 3;
+                cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceEdgeCount == 4) ? faceChild0 : 3);
                 cVertFaceCount++;
             }
             if (VtrIndexIsValid(pFaceChildren[faceChild0])) {
                 cVertFaces[cVertFaceCount] = pFaceChildren[faceChild0];
-                cVertInFace[cVertFaceCount] = (pFaceEdgeCount == 4) ? faceChild1 : 1;
+                cVertInFace[cVertFaceCount] = (VtrLocalIndex)((pFaceEdgeCount == 4) ? faceChild1 : 1);
                 cVertFaceCount++;
             }
         }
@@ -1442,6 +1443,8 @@ VtrRefinement::subdivideVertexSharpness()
 void
 VtrRefinement::reclassifySemisharpVertices()
 {
+    typedef VtrLevel::VTag::VTagSize VTagSize;
+
     SdcCrease creasing(_schemeOptions);
 
     //
@@ -1464,12 +1467,12 @@ VtrRefinement::reclassifySemisharpVertices()
             //  One child edge likely missing -- assume Crease if remaining edge semi-sharp:
             cVertTag._semiSharp = (VtrIndexIsValid(cEdges[0]) && _child->_edgeTags[cEdges[0]]._semiSharp) ||
                                   (VtrIndexIsValid(cEdges[1]) && _child->_edgeTags[cEdges[1]]._semiSharp);
-            cVertTag._rule      = cVertTag._semiSharp ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+            cVertTag._rule      = (VTagSize)(cVertTag._semiSharp ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH);
         } else {
             int sharpEdgeCount = _child->_edgeTags[cEdges[0]]._semiSharp + _child->_edgeTags[cEdges[1]]._semiSharp;
 
             cVertTag._semiSharp = (sharpEdgeCount > 0);
-            cVertTag._rule      = creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount);
+            cVertTag._rule      = (VTagSize)(creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount));
         }
     }
 
@@ -1531,7 +1534,7 @@ VtrRefinement::reclassifySemisharpVertices()
         }
 
         cVertTag._semiSharp = (semiSharpEdgeCount > 0);
-        cVertTag._rule      = creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount);
+        cVertTag._rule      = (VTagSize)(creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount));
     }
 }
 
@@ -1634,8 +1637,8 @@ VtrRefinement::propagateVertexTagsFromParentEdges()
         cVertTag._infSharp    = false;
 
         cVertTag._semiSharp = pEdgeTag._semiSharp;
-        cVertTag._rule = (pEdgeTag._semiSharp || pEdgeTag._infSharp)
-                       ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+        cVertTag._rule = (VtrLevel::VTag::VTagSize)((pEdgeTag._semiSharp || pEdgeTag._infSharp)
+                       ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH);
     }
 }
 void
@@ -1681,9 +1684,9 @@ VtrRefinement::populateChildToParentTags()
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 4; ++j) {
             ChildTag& tag = childTags[i][j];
-            tag._incomplete    = i;
+            tag._incomplete    = (unsigned char)i;
             tag._parentType    = 0;
-            tag._indexInParent = j;
+            tag._indexInParent = (unsigned char)j;
         }
     }
 
@@ -2191,16 +2194,16 @@ VtrRefinement::markSparseChildComponents()
                 //
                 VtrIndexArray const fEdges = parent().getFaceEdges(pFace);
                 if (fEdges.size() == 4) {
-                    pFaceTag._transitional =
-                            (_parentEdgeTag[fEdges[0]]._transitional << 0) |
+                    pFaceTag._transitional = (unsigned char)
+                           ((_parentEdgeTag[fEdges[0]]._transitional << 0) |
                             (_parentEdgeTag[fEdges[1]]._transitional << 1) |
                             (_parentEdgeTag[fEdges[2]]._transitional << 2) |
-                            (_parentEdgeTag[fEdges[3]]._transitional << 3);
+                            (_parentEdgeTag[fEdges[3]]._transitional << 3));
                 } else if (fEdges.size() == 3) {
-                    pFaceTag._transitional =
-                            (_parentEdgeTag[fEdges[0]]._transitional << 0) |
+                    pFaceTag._transitional = (unsigned char)
+                           ((_parentEdgeTag[fEdges[0]]._transitional << 0) |
                             (_parentEdgeTag[fEdges[1]]._transitional << 1) |
-                            (_parentEdgeTag[fEdges[2]]._transitional << 2);
+                            (_parentEdgeTag[fEdges[2]]._transitional << 2));
                 } else {
                     pFaceTag._transitional = 0;
                     for (int i = 0; i < fEdges.size(); ++i) {

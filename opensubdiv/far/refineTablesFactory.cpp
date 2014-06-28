@@ -185,7 +185,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
 
         vTag._semiSharp = SdcCrease::IsSemiSharp(vSharpness) || (semiSharpEdgeCount > 0);
 
-        vTag._rule = creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
+        vTag._rule = (VtrLevel::VTag::VTagSize)creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
 
         //
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
