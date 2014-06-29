@@ -39,6 +39,15 @@ class FarStencilTablesFactory {
 
 public:
 
+    struct Options {
+    
+        Options() : generateOffsets(false),
+                    generateAllLevels(true) { }
+    
+        unsigned int generateOffsets : 1,
+                     generateAllLevels : 1;
+    };
+
     /// \brief Instantiates FarStencilTables from FarRefineTables that have been
     ///        refined uniformly or adaptively.
     ///
@@ -52,7 +61,7 @@ public:
     ///                   the highest level of refinement only
     ///
     static FarStencilTables const * Create(FarRefineTables const & refTables,
-        bool allLevels = true);
+        Options options = Options());
 
 
     /// \brief Returns the largest stencil size that can be accomodated by the

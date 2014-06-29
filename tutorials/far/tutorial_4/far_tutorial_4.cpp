@@ -118,11 +118,13 @@ int main(int, char **) {
     refTables->RefineUniform( maxlevel );
 
 
-    // Use the factory to create discrete stencil tables
+    // Use the FarStencilTables factory to create discrete stencil tables
     // note: we only want stencils for the highest refinement level
+    FarStencilTablesFactory::Options options;
+    options.generateAllLevels=false;
+    
     FarStencilTables const * stencilTables =
-        FarStencilTablesFactory::Create(*refTables, /*allLevels*/false);
-
+        FarStencilTablesFactory::Create(*refTables, options);
 
     // Allocate vertex primvar buffer (1 stencil for each vertex)
     int nstencils = stencilTables->GetNumStencils();

@@ -120,6 +120,10 @@ public:
         return (int)_sizes.size();
     }
 
+    int GetNumControlVertices() const {
+        return _numControlVertices;
+    }
+
     /// \brief Returns a FarStencil at index i in the tables
     FarStencil GetStencil(int i) const;
 
@@ -153,20 +157,27 @@ public:
     /// @param values         Destination buffer for the interpolated primvar
     ///                       data
     ///
+    /// @param start          (skip to )index of first value to update
+    ///
+    /// @param end            Index of last value to update
+    ///    
     template <class T>
-    void UpdateValues( T const *controlValues, T *values ) const {
-        _Update( controlValues, &_weights.at(0), values );
+    void UpdateValues(T const *controlValues, T *values, int start=-1, int end=-1) const {
+
+        _Update(controlValues, values, _weights, start, end);
     }
 
+private:
+
+    // Update values by appling cached stencil weights to new control values
+    template <class T> void _Update( T const *controlValues, T *values,
+        std::vector<float> const & valueWeights, int start, int end) const;
 
 private:
 
     friend class FarStencilTablesFactory;
 
-    // Update values by appling cached stencil weights to new control values
-    template <class T> void _Update( T const *controlValues,
-                                     float const * weights,
-                                     T *values ) const;
+    int _numControlVertices;              // number of control vertices
 
     std::vector<unsigned char> _sizes;    // number of coeffiecient for each stencil
     std::vector<int>           _offsets,  // offset to the start of each stencil
@@ -258,11 +269,16 @@ public:
     /// @param vderivs        Destination buffer for the interpolated 'v'
     ///                       derivative primvar data
     ///
+    /// @param start          (skip to )index of first value to update
+    ///
+    /// @param end            Index of last value to update
+    ///
     template <class T>
-    void UpdateDerivs( T const *controlValues, T *uderivs,
-                                               T *vderivs ) const {
-        _Update( controlValues, &_duWeights.at(0), uderivs );
-        _Update( controlValues, &_dvWeights.at(0), vderivs );
+    void UpdateDerivs(T const *controlValues, T *uderivs, T *vderivs,
+        int start=-1, int end=-1) const {
+
+        _Update(controlValues, uderivs, _duWeights, start, end);
+        _Update(controlValues, vderivs, _dvWeights, start, end);
     }
 
 
@@ -274,20 +290,32 @@ private:
 
 // Update values by appling cached stencil weights to new control values
 template <class T> void
-FarStencilTables::_Update( T const *controlValues,
-                           float const * weights,
-                           T *values ) const {
+FarStencilTables::_Update(T const *controlValues, T *values,
+    std::vector<float> const &valueWeights, int start, int end) const {
 
-    int const * index = &_indices.at(0);
+    int const * indices = &_indices.at(0);
+    float const * weights = &valueWeights.at(0);
 
-    for (int i=0; i<GetNumStencils(); ++i) {
+    if (start>0) {
+        assert(start<(int)_offsets.size());
+        indices += _offsets[start];
+        weights += _offsets[start];
+        values += start;
+    }
+
+    if (end<start or end<0) {
+        end = GetNumStencils();
+    }
+
+    int nstencils = end - std::max(0, start);
+    for (int i=0; i<nstencils; ++i) {
 
         // Zero out the result accumulators
         values[i].Clear();
 
         // For each element in the array, add the coefs contribution
-        for (int j=0; j<_sizes[i]; ++j, ++index, ++weights) {
-            values[i].AddWithWeight( controlValues[*index], *weights );
+        for (int j=0; j<_sizes[i]; ++j, ++indices, ++weights) {
+            values[i].AddWithWeight( controlValues[*indices], *weights );
         }
     }
 }

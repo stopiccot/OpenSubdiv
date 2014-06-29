@@ -63,14 +63,18 @@ public:
     }
 
     // Gather all the stencil data from the allocator and copy it into vectors
-    void PopulateTables(std::vector<unsigned char> & sizes,
-        std::vector<int> & indices, std::vector<float> & weights) const;
+    void PopulateTables(std::vector<unsigned char> & sizesVec,
+                        std::vector<int> & indicesVec,
+                        std::vector<float> & weightsVec,
+                        std::vector<int> * offsetsVec) const;
 
     // Gather the data for a selection of stencils and copy it from the
     // allocator into vectors
     void PopulateTables(std::vector<FarStencil> const & farStencils,
-        std::vector<unsigned char> & sizesVec, std::vector<int> & indicesVec,
-            std::vector<float> & weightsVec) const;
+                        std::vector<unsigned char> & sizesVec,
+                        std::vector<int> & indicesVec,
+                        std::vector<float> & weightsVec,
+                        std::vector<int> * offsetsVec) const;
 
     // Prints all stencil data on console
     void PrintStencils() const;
@@ -226,8 +230,10 @@ StencilAllocator::Allocate(int size) {
 // Gather all the stencil data from the allocator and copy it into vectors
 void
 StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
-    std::vector<unsigned char> & sizesVec, std::vector<int> & indicesVec,
-        std::vector<float> & weightsVec) const {
+                                 std::vector<unsigned char> & sizesVec,
+                                 std::vector<int> & indicesVec,
+                                 std::vector<float> & weightsVec,
+                                 std::vector<int> * offsetsVec) const {
 
     int nstencils = (int)farStencils.size(),
         nelements = 0;
@@ -244,6 +250,12 @@ StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
     int * indices = &indicesVec.at(0);
     float * weights = &weightsVec.at(0);
 
+    int * offsets = 0, offset = 0;
+    if (offsetsVec) {
+        offsetsVec->resize(GetNumStencils());
+        offsets = &offsetsVec->at(0);
+    }
+
     // Copy data
     for (int i=0; i<nstencils; ++i) {
 
@@ -251,11 +263,14 @@ StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
 
         int n = stencil.GetSize();
 
-        *sizes=(unsigned char)n;
+        *sizes++=(unsigned char)n;
+        if (offsets) {
+            *offsets++=offset;
+            offset+=n;
+        }
+        
         memcpy(indices, stencil.GetVertexIndices(), n*sizeof(int));
         memcpy(weights, stencil.GetWeights(), n*sizeof(float));
-
-        ++sizes;
         indices+=n;
         weights+=n;
     }
@@ -265,7 +280,9 @@ StencilAllocator::PopulateTables(std::vector<FarStencil> const & farStencils,
 // allocator into vectors
 void
 StencilAllocator::PopulateTables(std::vector<unsigned char> & sizesVec,
-     std::vector<int> & indicesVec, std::vector<float> & weightsVec) const {
+                                 std::vector<int> & indicesVec,
+                                 std::vector<float> & weightsVec,
+                                 std::vector<int> * offsetsVec) const {
 
     sizesVec.resize(GetNumStencils());
     indicesVec.resize(GetNumStencilElements());
@@ -274,6 +291,13 @@ StencilAllocator::PopulateTables(std::vector<unsigned char> & sizesVec,
     unsigned char * sizes = &sizesVec.at(0);
     int * indices = &indicesVec.at(0);
     float * weights = &weightsVec.at(0);
+
+
+    int * offsets = 0, offset = 0;
+    if (offsetsVec) {
+        offsetsVec->resize(GetNumStencils());
+        offsets = &offsetsVec->at(0);
+    }
 
     for (int size=FarStencilTablesFactory::GetMaxStencilSize()-1; size>0; --size) {
 
@@ -284,17 +308,16 @@ StencilAllocator::PopulateTables(std::vector<unsigned char> & sizesVec,
 
             Block * block = *it;
 
-            // copy data
-            for (int i=0; i<block->used; ++i) {
-                sizes[i]=block->size;
+            for (int i=0; i<block->used; ++i, offset+=block->size) {
+                *sizes++ = block->size;
+                if (offsets) {
+                    *offsets++ = offset;
+                }
             }
 
             int n = block->size * block->used;
             memcpy(indices, block->GetIndices(), n*sizeof(int));
             memcpy(weights, block->GetWeights(), n*sizeof(float));
-
-            // advance pointers
-            sizes+=block->used;
             indices+=n;
             weights+=n;
         }
@@ -696,7 +719,7 @@ FarStencilTablesFactory::GetMaxStencilSize() {
 //
 FarStencilTables const *
 FarStencilTablesFactory::Create(FarRefineTables const & refTables,
-    bool allLevels) {
+    Options options) {
 
     StencilAllocator alloc(refTables);
 
@@ -740,12 +763,18 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
     FarStencilTables * result = new FarStencilTables;
 
-    if (allLevels) {
+    result->_numControlVertices = ncoarseverts;
+
+    std::vector<int> * offsets = options.generateOffsets ? &result->_offsets : 0;
+
+    if (options.generateAllLevels) {
         // these stencils are sorted by size
-        alloc.PopulateTables(result->_sizes, result->_indices, result->_weights);
+        alloc.PopulateTables(
+            result->_sizes, result->_indices, result->_weights, offsets);
     } else {
         // these stencils are *NOT* sorted by size
-        alloc.PopulateTables(stencils, result->_sizes, result->_indices, result->_weights);
+        alloc.PopulateTables(stencils,
+            result->_sizes, result->_indices, result->_weights, offsets);
     }
 
     //alloc.PrintStats();

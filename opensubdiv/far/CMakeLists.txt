@@ -31,24 +31,14 @@ set(SOURCE_FILES
 )
 
 set(PUBLIC_HEADER_FILES
-    bilinearSubdivisionTablesFactory.h
-    catmarkSubdivisionTablesFactory.h
-    dispatcher.h
     kernelBatch.h
-    kernelBatchFactory.h
-    loopSubdivisionTablesFactory.h
-    meshFactory.h
-    mesh.h
+    kernelBatchDispatcher.h
     patchParam.h
     patchMap.h
     patchTables.h
     patchTablesFactory.h
     stencilTablesFactory.h
     stencilTables.h
-    subdivisionTables.h
-    subdivisionTablesFactory.h
-    vertexEditTables.h
-    vertexEditTablesFactory.h
 )    
 
 set(PRIVATE_HEADER_FILES )

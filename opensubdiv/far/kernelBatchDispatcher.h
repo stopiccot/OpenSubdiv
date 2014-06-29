@@ -1,0 +1,155 @@
+//
+//   Copyright 2013 Pixar
+//
+//   Licensed under the Apache License, Version 2.0 (the "Apache License")
+//   with the following modification; you may not use this file except in
+//   compliance with the Apache License and the following modification to it:
+//   Section 6. Trademarks. is deleted and replaced with:
+//
+//   6. Trademarks. This License does not grant permission to use the trade
+//      names, trademarks, service marks, or product names of the Licensor
+//      and its affiliates, except as required to comply with Section 4(c) of
+//      the License and to reproduce the content of the NOTICE file.
+//
+//   You may obtain a copy of the Apache License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the Apache License with the above modification is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+//   KIND, either express or implied. See the Apache License for the specific
+//   language governing permissions and limitations under the Apache License.
+//
+
+#ifndef FAR_DISPATCHER_H
+#define FAR_DISPATCHER_H
+
+#include "../version.h"
+
+#include "../far/kernelBatch.h"
+
+namespace OpenSubdiv {
+namespace OPENSUBDIV_VERSION {
+
+/// \brief Subdivision refinement encapsulation layer.
+///
+/// The kernel dispatcher allows client code to customize parts or the entire
+/// computation process. This pattern aims at hiding the logic specific to
+/// the subdivision algorithms and expose a simplified access to minimalistic
+/// compute kernels. By default, meshes revert to a default dispatcher that
+/// implements single-threaded CPU kernels.
+///
+/// - derive a dispatcher class from this one
+/// - override the virtual functions
+/// - pass the derived dispatcher to the factory (one instance can be shared by many meshes)
+/// - call the FarMesh::Subdivide() to trigger computations
+///
+/// Note : the caller is responsible for deleting a custom dispatcher
+///
+class FarDispatcher {
+public:
+
+    /// \brief Launches the processing of a vector of kernel batches
+    /// this is a convenient API for controllers which don't have any user defined kernels.
+    ///
+    /// @param controller  refinement controller implementation (vertex array)
+    ///
+    /// @param context     refinement context implementation (subdivision tables)
+    ///                    passed to the controller.
+    ///
+    /// @param batches     batches of kernels that need to be processed
+    ///
+    /// @param maxlevel    process vertex batches up to this level
+    ///
+    template <class CONTROLLER, class CONTEXT> static void Dispatch(
+        CONTROLLER *controller, CONTEXT *context, FarKernelBatchVector const & batches, int maxlevel);
+
+protected:
+
+    /// \brief Launches the processing of a kernel batch
+    /// returns true if the batch is handled, otherwise returns false (i.e. user defined kernel)
+    ///
+    /// @param controller  refinement controller implementation
+    ///
+    /// @param context     refinement context implementation
+    ///
+    /// @param batch       a batch of kernel that need to be processed
+    ///
+    template <class CONTROLLER, class CONTEXT> static bool ApplyKernel(
+        CONTROLLER *controller, CONTEXT *context, FarKernelBatch const &batch);
+
+};
+
+///
+/// \brief Far default controller implementation
+///
+/// This is Far's default implementation of a kernal batch controller.
+///
+class FarDefaultController {
+
+public:
+
+    template <class CONTEXT> void ApplyStencilTableKernel(
+        FarKernelBatch const &batch, CONTEXT *context) const;
+
+};
+
+
+// Launches the processing of a kernel batch
+template <class CONTROLLER, class CONTEXT> bool
+FarDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
+    FarKernelBatch const &batch) {
+
+    switch(batch.GetKernelType()) {
+
+        case FarKernelBatch::KERNEL_UNKNOWN:
+            assert(0);
+
+        case FarKernelBatch::KERNEL_STENCIL_TABLE:
+            controller->ApplyStencilTableKernel(batch, context);
+            break;
+
+        default: // user defined kernel type
+            return false;
+    }
+
+    return true;
+}
+
+// Launches the processing of a vector of kernel batches
+template <class CONTROLLER, class CONTEXT> void
+FarDispatcher::Dispatch(CONTROLLER *controller, CONTEXT *context,
+    FarKernelBatchVector const & batches, int maxlevel) {
+
+    for (int i = 0; i < (int)batches.size(); ++i) {
+
+        const FarKernelBatch &batch = batches[i];
+
+        if (maxlevel>=0 and batch.GetLevel()>=maxlevel) {
+            continue;
+        }
+
+        ApplyKernel(controller, context, batch);
+    }
+}
+
+template <class CONTEXT> void
+FarDefaultController::ApplyStencilTableKernel(
+    FarKernelBatch const &batch, CONTEXT *context) const {
+
+    FarStencilTables const * stencilTables = context->GetStencilTables();
+    assert(stencilTables);
+
+    typename CONTEXT::VertexType *vsrc = &context->GetVertices().at(0),
+                                 *vdst = vsrc + batch.start + stencilTables->GetNumControlVertices;
+
+    stencilTables->UpdateValues(vsrc, vdst, start, batch.end);
+}
+
+} // end namespace OPENSUBDIV_VERSION
+using namespace OPENSUBDIV_VERSION;
+
+} // end namespace OpenSubdiv
+
+#endif /* FAR_DISPATCHER_H */
