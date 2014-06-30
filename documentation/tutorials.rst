@@ -1,0 +1,87 @@
+..
+     Copyright 2013 Pixar
+
+     Licensed under the Apache License, Version 2.0 (the "Apache License")
+     with the following modification; you may not use this file except in
+     compliance with the Apache License and the following modification to it:
+     Section 6. Trademarks. is deleted and replaced with:
+
+     6. Trademarks. This License does not grant permission to use the trade
+        names, trademarks, service marks, or product names of the Licensor
+        and its affiliates, except as required to comply with Section 4(c) of
+        the License and to reproduce the content of the NOTICE file.
+
+     You may obtain a copy of the Apache License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the Apache License with the above modification is
+     distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied. See the Apache License for the specific
+     language governing permissions and limitations under the Apache License.
+
+
+Tutorials
+---------
+
+.. contents::
+   :local:
+   :backlinks: none
+
+----
+
+The tutorial source code can be found in
+
+
+----
+
+.. list-table:: **Hbr Tutorials**
+   :class: quickref
+   :widths: 50 50
+
+   * - | **Tutorial 0**
+       | This tutorial presents, in a very succint way, the requisite steps to
+         instantiate an Hbr mesh from simple topological data.
+       |
+       | **Tutorial 1**
+       | This tutorial shows how to safely create Hbr meshes from arbitrary topology.
+         Because Hbr is a half-edge data structure, it cannot represeent non-manifold
+         topology. Ensuring that the geometry used is manifold is a requirement to use
+         Hbr safely. This tutorial presents some simple tests to detect inappropriate
+         topology.
+       |
+     - | **Tutorial 2**
+       | This tutorial shows how to subdivide uniformly a simple Hbr mesh. We are
+         building upon previous turtorials and assuming a fully instantiated mesh:
+         we start with an HbrMesh pointer initialized from the same pyramid shape
+         used in hbr_tutorial_0. We then apply the Refine() function sequentially
+         to all the faces in the mesh to generate several levels of uniform
+         subdivision. The resulting data is then dumped to the terminal in Wavefront
+         OBJ format for inspection.
+       |
+
+----
+
+.. list-table:: **Far Tutorials**
+   :class: quickref
+   :widths: 50 50
+
+   * - | **Tutorial 0**
+       | This tutorial presents in a very succint way the requisite steps to
+         instantiate a Far mesh from simple topological data.
+       |
+     - |
+
+----
+
+.. list-table:: **Osd Tutorials**
+   :class: quickref
+   :widths: 50 50
+
+   * - | **Tutorial 0**
+       | This tutorial demonstrates the manipulation of Osd 'Compute' 'Contexts' and
+         'Controllers'.
+       |
+     - |
+

@@ -46,9 +46,10 @@ process using platform independent configuration files in order to generate
 makefiles and workspaces that are native to the platform of choice.
 
 The process involves the following steps:
-    1. Locate & build the requisite dependencies
-    2. Configure & run CMake to generate Makefiles / MSVC solution / XCode project
-    3. Run the build from make / MSVC / XCode
+
+    #. Locate & build the requisite dependencies
+    #. Configure & run CMake to generate Makefiles / MSVC solution / XCode project
+    #. Run the build from make / MSVC / XCode
 
 ----
 
@@ -116,6 +117,7 @@ The following configuration arguments can be passed to the cmake command line.
    
    -DNO_LIB=1        // disable the opensubdiv libs build (caveat emptor)
    -DNO_EXAMPLES=1   // disable examples build
+   -DNO_TUTORIALS=1  // disable tutorials build
    -DNO_REGRESSION=1 // disable regression tests build
    -DNO_MAYA=1       // disable Maya plugin build
    -DNO_PTEX=1       // disable PTex support
@@ -130,15 +132,12 @@ The following configuration arguments can be passed to the cmake command line.
 Environment Variables
 _____________________
 
-The paths to Maya, Ptex, GLFW, and GLEW can also be specified through the 
-following environment variables: 
+The paths to Maya, Ptex, GLFW, GLEW and other dependencies can also be specified
+through the following environment variables: 
 
 .. code:: c++
 
-   MAYA_LOCATION
-   PTEX_LOCATION
-   GLFW_LOCATION
-   GLEW_LOCATION
+   MAYA_LOCATION, PTEX_LOCATION, GLFW_LOCATION, GLEW_LOCATION
    
 Automated Script
 ________________

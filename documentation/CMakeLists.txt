@@ -83,12 +83,30 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         ptexviewer.rst
         release_notes.rst 
         subdivision_surfaces.rst 
+        tutorials.rst 
         using_osd.rst
         using_osd_compile.rst
         using_osd_hbr.rst
         using_osd_textures.rst
         uvviewer.rst
     )
+
+    
+
+    # Configure release number in RST template file
+
+    # Replace '_' with '.'
+    string(REGEX REPLACE "(_)" "." RELEASE_STRING ${OpenSubdiv_VERSION})
+
+    # Remove starting 'v' character
+    string(REGEX REPLACE "^v" "" RELEASE_STRING ${RELEASE_STRING})
+    
+    # Format API version string
+    set(RELEASE_STRING "Release ${RELEASE_STRING}")
+
+    # Replace string in navigation bar
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/rst_template.txt"
+                   "${CMAKE_CURRENT_BINARY_DIR}/rst_template.txt" )
 
     # process rst markup files
     foreach(src ${RST_FILES})
@@ -108,7 +126,7 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
                 --no-xml-declaration 
                 --initial-header-level=3
                 --strip-comments
-                --template="${CMAKE_CURRENT_SOURCE_DIR}/rst_template.txt"
+                --template="${CMAKE_CURRENT_BINARY_DIR}/rst_template.txt"
                 --stylesheet=css/rst.css
                 --link-stylesheet
                 "${infile}" "${outfile}"

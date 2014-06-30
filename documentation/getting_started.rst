@@ -80,6 +80,11 @@ Our active development branch is named *dev* : all new features and buf fixes sh
 be submitted to this branch. The changes submitted to the dev branch are periodically
 patched to the 'master' branch as new versions are released.
 
+.. image:: images/gitflow.jpg 
+   :align: center
+   :target: images/gitflow.jpg 
+
+
 Checking out branches
 _____________________
 
@@ -159,6 +164,10 @@ The OpenSubdiv code base contains the following main areas:
   various features and optimizations of the OpenSubdiv APIs. The GL-based examples
   rely on the cross-platform GLFW API for interactive window management, while the
   DirectX ones are OS-native.
+
+**./tutorials/**
+
+   Tutorials showing how to manipulate the APIs of OpenSubdiv.
 
 **./documentation/**
 

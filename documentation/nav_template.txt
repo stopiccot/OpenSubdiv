@@ -50,18 +50,23 @@
             <li><a href="api_overview.html">APIs Overview</a>
                 <ul>
                     <li><a href="hbr_overview.html">Hbr</a></li>
-                    <li><a href="far_overview.html">Far</a></li>
+                    <li><a href="far_overview.html">Far Layer</a></li>
                     <ul>
-                        <li><a href="far_overview.html#subdivision-tables">Subdivision Tables</a></li>
-                        <li><a href="far_overview.html#patch-tables">Patch Tables</a></li>
                         <li><a href="far_overview.html#stencil-tables">Stencil Tables</a></li>
+                        <li><a href="far_overview.html#patch-tables">Patch Tables</a></li>
                     </ul>
-                    <li><a href="osd_overview.html">Osd</a></li>
+                    <li><a href="osd_overview.html">Osd Layer</a></li>
                 </ul>
             </li>
             <li><a href="using_osd.html">Using OpenSubdiv</a>
                 <ul>
                     <li><a href="using_osd_compile.html#compiling-linking">Compiling & Linking</a></li>
+                    <li><a href="tutorials.html">Tutorials</a>
+                    <ul>
+                        <li><a href="tutorials.html#Hbr">Hbr</a>
+                        <li><a href="tutorials.html#Far">Far</a>
+                        <li><a href="tutorials.html#Osd">Osd</a>
+                    </ul>
                     <li><a href="using_osd_hbr.html">Manipulating Topology</a></li>
                     <li><a href="using_osd.html">Writing Shaders</a></li>
                     <li><a href="using_osd_textures.html">Textures</a></li>
@@ -72,7 +77,6 @@
                 <ul>
                     <li><a href="http://graphics.pixar.com/opensubdiv/forum.html">Forum</a>
                     <li><a href="additional_resources.html#links">Links</a>
-                    <li><a href="additional_resources.html#tutorials">Tutorials</a>
                     <li><a href="additional_resources.html#videos">Videos</a>
                 </ul>
             <li><a href="release_notes.html">Release Notes</a>

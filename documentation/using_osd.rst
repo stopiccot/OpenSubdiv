@@ -29,22 +29,17 @@ Using OpenSubdiv
    :local:
    :backlinks: none
 
-.. image:: images/barb_1.jpg 
-   :width: 400px
-   :align: center
-
 Using OpenSubdiv
 ================
 
-.. list-table:: **OpenGL examples**
+
+.. list-table:: **General Topics**
    :class: quickref
    :widths: 50 50
    
    * - | `Compiling & Linking <using_osd_compile.html>`_
        | `Textures <using_osd_textures.html>`_
      - | `Manipulating Topology <using_osd_hbr.html>`_
-
-|
-
+       |
 
 
