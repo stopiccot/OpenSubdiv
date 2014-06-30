@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstring>
 
 
 namespace OpenSubdiv {
@@ -212,7 +213,20 @@ public:
 
     void print(const VtrRefinement* parentRefinement = 0) const;
 
+public:
+    //  High-level topology queries -- these are likely to be moved elsewhere, but here
+    //  is the best place for them for now...
+
+    //  Irritating that the PatchTables use "unsigned int" for indices instead of "int":
+    int gatherQuadRegularInteriorPatchVertices(VtrIndex fIndex, unsigned int patchVerts[]) const;
+    int gatherQuadRegularBoundaryPatchVertices(VtrIndex fIndex, unsigned int patchVerts[], int boundaryEdgeInFace) const;
+    int gatherQuadRegularCornerPatchVertices(  VtrIndex fIndex, unsigned int patchVerts[], int cornerVertInFace) const;
+
+    int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVerts[]) const;
+
 protected:
+    template <class T>
+    friend class FarPatchTablesFactory;
     template <class MESH>
     friend class FarRefineTablesFactory;
     friend class FarRefineTablesFactoryBase;
@@ -582,6 +596,7 @@ VtrLevel::resizeFaces(int faceCount)
     _faceVertCountsAndOffsets.resize(2 * faceCount);
 
     _faceTags.resize(faceCount);
+    std::memset(&_faceTags[0], 0, _faceCount * sizeof(FTag));
 }
 inline void
 VtrLevel::resizeFaceVertices(int totalFaceVertCount)
@@ -602,6 +617,7 @@ VtrLevel::resizeEdges(int edgeCount)
 
     _edgeSharpness.resize(edgeCount);
     _edgeTags.resize(edgeCount);
+    std::memset(&_edgeTags[0], 0, _edgeCount * sizeof(ETag));
 }
 inline void
 VtrLevel::resizeEdgeVertices()
@@ -623,6 +639,7 @@ VtrLevel::resizeVertices(int vertCount)
 
     _vertSharpness.resize(vertCount);
     _vertTags.resize(vertCount);
+    std::memset(&_vertTags[0], 0, _vertCount * sizeof(VTag));
 }
 inline void
 VtrLevel::resizeVertexFaces(int totalVertFaceCount)

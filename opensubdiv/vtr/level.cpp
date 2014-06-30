@@ -68,6 +68,28 @@ VtrLevel::~VtrLevel()
 //  Debugging method to validate topology, i.e. verify appropriate symmetry
 //  between the relations, etc.
 //
+//  Additions that need to be made in the near term:
+//      * verifying user-applied tags relating to topology:
+//          - non-manifold in particular (ordering above can be part of this)
+//          - face holes don't require anything
+//      - verifying orientation of components, particularly vert-edges and faces:
+//          - both need to be ordered correctly (when manifold)
+//          - both need to be in sync for an interior vertex
+//              ? is a rotation allowed for the interior case?
+//              - I don't see why not...
+//      ? verifying sharpness:
+//          - values < Smooth or > Infinite
+//          - sharpening of boundary edges (is this necessary, since we do it?)
+//              - it does ensure our work was not corrupted by client assignments
+//
+//  Possibilities:
+//      - single validate() method, which will call all of:
+//          - validateTopology()
+//          - validateSharpness()
+//          - validateTagging()
+//      - consider using a mask/struct to choose what to validate, i.e.:
+//          - bool validate(ValidateOptions const& options) const;
+//
 bool
 VtrLevel::validateTopology() const
 {
@@ -185,6 +207,31 @@ VtrLevel::validateTopology() const
                     printf("Error in eIndex = %d:  correlation of vert %d failed\n", eIndex, i);
                     return isValid;
                 }
+            }
+        }
+    }
+
+    //  Verify non-manifold tags are appropriately assigned to edges and vertices:
+    //      - note we have to validate orientation of vertex neighbors to do this rigorously
+    for (int eIndex = 0; eIndex < getNumEdges(); ++eIndex) {
+        VtrLevel::ETag const& eTag = _edgeTags[eIndex];
+        if (eTag._nonManifold) continue;
+
+        VtrIndexArray const eVerts = getEdgeVertices(eIndex);
+        if (eVerts[0] == eVerts[1]) {
+            isValid = false;
+            if (returnOnFirstError) {
+                printf("Error in eIndex = %d:  degenerate edge not tagged marked non-manifold\n", eIndex);
+                return isValid;
+            }
+        }
+
+        VtrIndexArray const eFaces = getEdgeFaces(eIndex);
+        if ((eFaces.size() < 1) || (eFaces.size() > 2)) {
+            isValid = false;
+            if (returnOnFirstError) {
+                printf("Error in eIndex = %d:  edge with %d faces not tagged non-manifold\n", eIndex, eFaces.size());
+                return isValid;
             }
         }
     }
@@ -385,6 +432,327 @@ VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
     }
     return compTag;
 }
+
+
+//
+//  High-level topology gathering functions -- used mainly in patch construction.  These
+//  may eventually be moved elsewhere, possibly to classes specialized for quad- and tri-
+//  patch identification and construction, but for now somewhere more accessible than the
+//  patch tables factory is preferable.
+//
+//  Note a couple of nuisances...
+//      - these are currently specialized methods for quad-meshes 
+//      - debatable whether we should include the four face-verts in the face functions
+//          - we refer to the result as a "patch" when we do
+//          - otherwise a "ring" of vertices is more appropriate
+//      - some OSD containers for the results want unsigned int and others int
+//
+namespace {
+    template <typename INT_TYPE>
+    inline INT_TYPE fastMod4(INT_TYPE value) { return (value & 0x3); }
+
+    inline int
+    fastFindIn4(VtrIndex value, VtrIndexArray const& array)
+    {
+        if (value == array[0]) return 0;
+        if (value == array[1]) return 1;
+        if (value == array[2]) return 2;
+        if (value == array[3]) return 3;
+        assert("fastFindIn4() did not find expected value!" == 0);
+        return -1;
+    }
+}
+
+//
+//  Gathering the one-ring of vertices from quads surrounding a manifold vertex:
+//      - the neighborhood of the vertex is assumed to be quad-regular
+//
+//  Ordering of resulting vertices:
+//      The surrounding one-ring follows the ordering of the incident faces.  For each
+//  incident quad, the two vertices in CCW order within that quad are added.  If the
+//  vertex is on a boundary, a third vertex on the boundary edge will be contributed from
+//  the last face.
+//
+int
+VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVerts[]) const
+{
+    VtrLevel const& level = *this;
+
+    VtrIndexArray vEdges = level.getVertexEdges(vIndex);
+
+    VtrIndexArray      vFaces   = level.getVertexFaces(vIndex);
+    VtrLocalIndexArray vInFaces = level.getVertexFaceLocalIndices(vIndex);
+
+    bool isBoundary = (vEdges.size() > vFaces.size());
+
+    int ringIndex = 0;
+    for (int i = 0; i < vFaces.size(); ++i) {
+        //
+        //  For every incident quad, we want the two vertices clockwise in each face, i.e.
+        //  the vertex at the end of the leading edge and the vertex opposite this one:
+        //
+        VtrIndexArray fVerts = level.getFaceVertices(vFaces[i]);
+
+        int vInThisFace = vInFaces[i];
+
+        ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 1)];
+        ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 2)];
+
+        if (isBoundary && (i == (vFaces.size() - 1))) {
+            ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 3)];
+        }
+    }
+    return ringIndex;
+}
+
+//
+//  Gathering the 16 vertices of a quad-regular boundary patch:
+//      - the neighborhood of the face is assumed to be quad-regular
+//
+//  Ordering of resulting vertices:
+//      It was debatable whether to include the vertices of the original face for a complete
+//  "patch" or just the surrounding ring -- clearly we ended up with a function for the entire
+//  patch, but that may change.
+//      The latter ring of vertices around the face (potentially returned on its own) was
+//  oriented with respect to the face.  The ring of 12 vertices is gathered as 4 groups of 3
+//  vertices -- one for each corner vertex, and each group forming the quad opposite each
+//  corner vertex when combined with that corner vertex.  The four vertices of the face begin
+//  the patch.
+//
+//         |     |     |     |
+//      ---5-----4-----15----14---
+//         |     |     |     |
+//         |     |     |     |
+//      ---6-----0-----3-----13---
+//         |     |x   x|     |
+//         |     |x   x|     |
+//      ---7-----1-----2-----12---
+//         |     |     |     |
+//         |     |     |     |
+//      ---8-----9-----10----11---
+//         |     |     |     |
+//
+int
+VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int ringVerts[]) const
+{
+    VtrLevel const& level = *this;
+
+    //
+    //  For each of the four corner vertices, there is a face diagonally opposite
+    //  the given/central face, within which are three vertices of the ring:
+    //
+    VtrIndexArray thisFaceVerts = level.getFaceVertices(thisFace);
+    ringVerts[0] = thisFaceVerts[0];
+    ringVerts[1] = thisFaceVerts[1];
+    ringVerts[2] = thisFaceVerts[2];
+    ringVerts[3] = thisFaceVerts[3];
+
+    int ringIndex = 4;
+    for (int i = 0; i < 4; ++i) {
+        VtrIndex v = thisFaceVerts[i];
+
+        VtrIndexArray      vFaces   = level.getVertexFaces(v);
+        VtrLocalIndexArray vInFaces = level.getVertexFaceLocalIndices(v);
+
+        int thisFaceInVFaces = fastFindIn4(thisFace, vFaces);
+        int intFaceInVFaces  = fastMod4(thisFaceInVFaces + 2);
+
+        VtrIndex intFace    = vFaces[intFaceInVFaces];
+        int      vInIntFace = vInFaces[intFaceInVFaces];
+
+        VtrIndexArray intFaceVerts = level.getFaceVertices(intFace);
+
+        ringVerts[ringIndex++] = intFaceVerts[fastMod4(vInIntFace + 1)];
+        ringVerts[ringIndex++] = intFaceVerts[fastMod4(vInIntFace + 2)];
+        ringVerts[ringIndex++] = intFaceVerts[fastMod4(vInIntFace + 3)];
+    }
+    assert(ringIndex == 16);
+    return 16;
+}
+
+//
+//  Gathering the 12 vertices of a quad-regular boundary patch:
+//      - the neighborhood of the face is assumed to be quad-regular
+//      - the single edge of the face that lies on the boundary is specified
+//      - only one edge of the face is a boundary edge
+//
+//  Ordering of resulting vertices:
+//      It was debatable whether to include the vertices of the original face for a complete
+//  "patch" or just the surrounding ring -- clearly we ended up with a function for the entire
+//  patch, but that may change.
+//      The latter ring of vertices around the face (potentially returned on its own) was
+//  oriented beginning from the leading CCW boundary edge and ending at the trailing edge.
+//  The four vertices of the face begin the patch and are oriented similarly to this outer
+//  ring -- forming an inner ring that begins and ends in the same manner.
+//
+//      ---4-----0-----3-----11---
+//         |     |x   x|     |
+//         |     |x   x|     |
+//      ---5-----1-----2-----10---
+//         |     |     |     |
+//         |     |     |     |
+//      ---6-----7-----8-----9----
+//         |     |     |     |
+//
+int
+VtrLevel::gatherQuadRegularBoundaryPatchVertices(VtrIndex face, int unsigned ringVerts[], int boundaryEdgeInFace) const
+{
+    VtrLevel const& level = *this;
+
+    int interiorEdgeInFace = fastMod4(boundaryEdgeInFace + 2);
+
+    //
+    //  V0 and V1 are the two interior vertices (opposite the boundary edge) around
+    //  which we will gather most of the ring:
+    //
+    int intV0InFace = interiorEdgeInFace;
+    int intV1InFace = fastMod4(interiorEdgeInFace + 1);
+
+    VtrIndexArray faceVerts = level.getFaceVertices(face);
+
+    VtrIndex v0 = faceVerts[intV0InFace];
+    VtrIndex v1 = faceVerts[intV1InFace];
+
+    VtrIndexArray v0Faces = level.getVertexFaces(v0);
+    VtrIndexArray v1Faces = level.getVertexFaces(v1);
+
+    VtrLocalIndexArray v0InFaces = level.getVertexFaceLocalIndices(v0);
+    VtrLocalIndexArray v1InFaces = level.getVertexFaceLocalIndices(v1);
+
+    int boundaryFaceInV0Faces = -1;
+    int boundaryFaceInV1Faces = -1;
+    for (int i = 0; i < 4; ++i) {
+        if (face == v0Faces[i]) boundaryFaceInV0Faces = i;
+        if (face == v1Faces[i]) boundaryFaceInV1Faces = i;
+    }
+    assert((boundaryFaceInV0Faces >= 0) && (boundaryFaceInV1Faces >= 0));
+
+    //  Identify the four faces of interest -- previous to and opposite V0 and
+    //  opposite and next from V1 -- relative to V0 and V1:
+    int prevFaceInV0Faces = fastMod4(boundaryFaceInV0Faces + 1);
+    int intFaceInV0Faces  = fastMod4(boundaryFaceInV0Faces + 2);
+    int intFaceInV1Faces  = fastMod4(boundaryFaceInV1Faces + 2);
+    int nextFaceInV1Faces = fastMod4(boundaryFaceInV1Faces + 3);
+
+    //  Identify the indices of the four faces:
+    VtrIndex prevFace  = v0Faces[prevFaceInV0Faces];
+    VtrIndex intV0Face = v0Faces[intFaceInV0Faces];
+    VtrIndex intV1Face = v1Faces[intFaceInV1Faces];
+    VtrIndex nextFace  = v1Faces[nextFaceInV1Faces];
+
+    //  Identify V0 and V1 relative to these four faces:
+    VtrLocalIndex v0InPrevFace = v0InFaces[prevFaceInV0Faces];
+    VtrLocalIndex v0InIntFace  = v0InFaces[intFaceInV0Faces];
+    VtrLocalIndex v1InIntFace  = v1InFaces[intFaceInV1Faces];
+    VtrLocalIndex v1InNextFace = v1InFaces[nextFaceInV1Faces];
+
+    //  Access the vertices of these four faces and assign to the ring:
+    VtrIndexArray prevFaceVerts  = level.getFaceVertices(prevFace);
+    VtrIndexArray intV0FaceVerts = level.getFaceVertices(intV0Face);
+    VtrIndexArray intV1FaceVerts = level.getFaceVertices(intV1Face);
+    VtrIndexArray nextFaceVerts  = level.getFaceVertices(nextFace);
+
+    ringVerts[0] = faceVerts[fastMod4(boundaryEdgeInFace + 1)];
+    ringVerts[1] = faceVerts[fastMod4(boundaryEdgeInFace + 2)];
+    ringVerts[2] = faceVerts[fastMod4(boundaryEdgeInFace + 3)];
+    ringVerts[3] = faceVerts[         boundaryEdgeInFace];
+
+    ringVerts[4] = prevFaceVerts[fastMod4(v0InPrevFace + 2)];
+
+    ringVerts[5] = intV0FaceVerts[fastMod4(v0InIntFace + 1)];
+    ringVerts[6] = intV0FaceVerts[fastMod4(v0InIntFace + 2)];
+    ringVerts[7] = intV0FaceVerts[fastMod4(v0InIntFace + 3)];
+
+    ringVerts[8]  = intV1FaceVerts[fastMod4(v1InIntFace + 1)];
+    ringVerts[9]  = intV1FaceVerts[fastMod4(v1InIntFace + 2)];
+    ringVerts[10] = intV1FaceVerts[fastMod4(v1InIntFace + 3)];
+
+    ringVerts[11] = nextFaceVerts[fastMod4(v1InNextFace + 2)];
+
+    return 12;
+}
+
+//
+//  Gathering the 9 vertices of a quad-regular corner patch:
+//      - the neighborhood of the face is assumed to be quad-regular
+//      - the single corner vertex is specified
+//      - only one vertex of the face is a corner
+//
+//  Ordering of resulting vertices:
+//      It was debatable whether to include the vertices of the original face for a complete
+//  "patch" or just the surrounding ring -- clearly we ended up with a function for the entire
+//  patch, but that may change.
+//      Like the boundary case, the latter ring of vertices around the face was oriented
+//  beginning from the leading CCW boundary edge and ending at the trailing edge.  The four
+//  face vertices begin the patch, and begin with the corner vertex.
+//
+//      0-----3-----8---
+//      |x   x|     |
+//      |x   x|     |
+//      1-----2-----7---
+//      |     |     |
+//      |     |     |
+//      4-----5-----6---
+//      |     |     |
+//
+int
+VtrLevel::gatherQuadRegularCornerPatchVertices(VtrIndex face, unsigned int ringVerts[], int cornerVertInFace) const
+{
+    VtrLevel const& level = *this;
+
+    int interiorFaceVert = fastMod4(cornerVertInFace + 2);
+
+    VtrIndexArray faceVerts = level.getFaceVertices(face);
+    VtrIndex      intVert   = faceVerts[interiorFaceVert];
+
+    VtrIndexArray      intVertFaces   = level.getVertexFaces(intVert);
+    VtrLocalIndexArray intVertInFaces = level.getVertexFaceLocalIndices(intVert);
+
+    int cornerFaceInIntVertFaces = -1;
+    for (int i = 0; i < intVertFaces.size(); ++i) {
+        if (face == intVertFaces[i]) {
+            cornerFaceInIntVertFaces = i;
+            break;
+        }
+    }
+    assert(cornerFaceInIntVertFaces >= 0);
+
+    //  Identify the three faces relative to the interior vertex:
+    int prevFaceInIntVertFaces = fastMod4(cornerFaceInIntVertFaces + 1);
+    int intFaceInIntVertFaces  = fastMod4(cornerFaceInIntVertFaces + 2);
+    int nextFaceInIntVertFaces = fastMod4(cornerFaceInIntVertFaces + 3);
+
+    //  Identify the indices of the three other faces:
+    VtrIndex prevFace = intVertFaces[prevFaceInIntVertFaces];
+    VtrIndex intFace  = intVertFaces[intFaceInIntVertFaces];
+    VtrIndex nextFace = intVertFaces[nextFaceInIntVertFaces];
+
+    //  Identify the interior vertex relative to these three faces:
+    VtrLocalIndex intVertInPrevFace = intVertInFaces[prevFaceInIntVertFaces];
+    VtrLocalIndex intVertInIntFace  = intVertInFaces[intFaceInIntVertFaces];
+    VtrLocalIndex intVertInNextFace = intVertInFaces[nextFaceInIntVertFaces];
+
+    //  Access the vertices of these three faces and assign to the ring:
+    VtrIndexArray prevFaceVerts = level.getFaceVertices(prevFace);
+    VtrIndexArray intFaceVerts  = level.getFaceVertices(intFace);
+    VtrIndexArray nextFaceVerts = level.getFaceVertices(nextFace);
+
+    ringVerts[0] = faceVerts[         cornerVertInFace];
+    ringVerts[1] = faceVerts[fastMod4(cornerVertInFace + 1)];
+    ringVerts[2] = faceVerts[fastMod4(cornerVertInFace + 2)];
+    ringVerts[3] = faceVerts[fastMod4(cornerVertInFace + 3)];
+
+    ringVerts[4] = prevFaceVerts[fastMod4(intVertInPrevFace + 2)];
+
+    ringVerts[5] = intFaceVerts[fastMod4(intVertInIntFace + 1)];
+    ringVerts[6] = intFaceVerts[fastMod4(intVertInIntFace + 2)];
+    ringVerts[7] = intFaceVerts[fastMod4(intVertInIntFace + 3)];
+
+    ringVerts[8] = nextFaceVerts[fastMod4(intVertInNextFace + 2)];
+
+    return 9;
+}
+
 
 
 //
@@ -679,10 +1047,6 @@ VtrLevel::completeTopologyFromFaceVertices()
     //  Resize edges with the Level to ensure anything else related to edges is created:
     eCount = this->getNumEdges();
     this->resizeEdges(eCount);
-
-    memset(&this->_faceTags[0], 0, fCount * sizeof(VtrLevel::FTag));
-    memset(&this->_edgeTags[0], 0, eCount * sizeof(VtrLevel::ETag));
-    memset(&this->_vertTags[0], 0, vCount * sizeof(VtrLevel::VTag));
 
     for (VtrIndex eIndex = 0; eIndex < eCount; ++eIndex) {
         VtrLevel::ETag& eTag = this->_edgeTags[eIndex];

@@ -126,6 +126,11 @@ public:
     VtrIndexArray const getFaceChildEdges(VtrIndex parentFace) const;
     VtrIndexArray const getEdgeChildEdges(VtrIndex parentEdge) const;
 
+    //  Child-to-parent relationships (not yet complete -- unclear how we will define the
+    //  "type" of the parent component, e.g. vertex, edge or face):
+    VtrIndex getChildFaceParentFace(VtrIndex f) const     { return _childFaceParentIndex[f]; }
+    int      getChildFaceInParentFace(VtrIndex f) const   { return _childFaceTag[f]._indexInParent; }
+
 //
 //  Non-public methods:
 //

@@ -25,6 +25,7 @@
 #-------------------------------------------------------------------------------
 # source & headers
 set(SOURCE_FILES
+     patchTablesFactory.cpp
      refineTables.cpp
      refineTablesFactory.cpp
      stencilTablesFactory.cpp

@@ -27,10 +27,17 @@
 
 #include "../version.h"
 
+#include "../hbr/mesh.h"
 #include "../far/patchTables.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
+
+//  Forward declarations:
+class FarRefineTables;
+
+template <class T> class FarMesh;
+template <class X, class Y> class FarMeshFactory;
 
 /// \brief A specialized factory for feature adaptive FarPatchTables
 ///
@@ -52,7 +59,7 @@ public:
     static FarPatchTables *Splice(FarMeshVector const &meshes,
                                   MultiPatchArrayVector *multiPatchArrays);
 
-protected:
+public:
     template <class X, class Y> friend class FarMeshFactory;
 
     /// \brief Factory constructor for feature-adaptive meshes
@@ -109,6 +116,14 @@ protected:
                                     FarPatchTables::Type patchType=FarPatchTables::QUADS,
                                     int numPtexFaces=0,
                                     int fvarWidth=0 );
+
+    //
+    //  In development...
+    //      At some point we want to create FarPatchTables from FarRefineTables.  Its unclear
+    //  if the separate Factory construction and Create() call is warranted here.  For now we
+    //  use a static method as was done above for uniform patches.
+    //
+    static FarPatchTables * Create( FarRefineTables const * refineTables, int fvarwidth=0 );
 
 private:
 
@@ -184,9 +199,9 @@ private:
 
     // Creates a PatchArray and appends it to a vector and keeps track of both
     // vertex and patch offsets
-    void pushPatchArray( FarPatchTables::Descriptor desc,
-                         FarPatchTables::PatchArrayVector & parray,
-                         int npatches, int * voffset, int * poffset, int * qoffset );
+    static void pushPatchArray( FarPatchTables::Descriptor desc,
+                                FarPatchTables::PatchArrayVector & parray,
+                                int npatches, int * voffset, int * poffset, int * qoffset );
 
     Counter _patchCtr;  // counters for full and transition patches
 
@@ -1209,7 +1224,9 @@ FarPatchTablesFactory<T>::computePatchParam(HbrFace<T> const * f, FarPatchParam 
         p = f->GetParent();
     }
 
-    coord->Set( f->GetPtexIndex(), u, v, rots, depth, nonquad );
+    unsigned int findex = (f->GetPtexIndex() >= 0) ? f->GetPtexIndex() : f->GetID();
+
+    coord->Set( findex, u, v, rots, depth, nonquad );
 
     return ++coord;
 }
@@ -1528,6 +1545,24 @@ FarPatchTablesFactory<T>::Splice(FarMeshVector const &meshes,
 }
 
 
+//
+//  In development -- creation from FarRefineTables rather than HbrMesh...
+//
+//  Construction of FarPatchTables from FarRefineTables is in no way dependent on the
+//  <class T> of FarPatchTablesFactory<T>.  In order to avoid putting all of the code
+//  in a header file and the constant recompilation it triggers elsewhere, specialize
+//  this for <int> in a source file and direct all others <T> to use it:
+//
+template <>
+FarPatchTables *
+FarPatchTablesFactory<int>::Create( FarRefineTables const *, int );
+
+template <class T>
+FarPatchTables *
+FarPatchTablesFactory<T>::Create( FarRefineTables const * refineTables, int fvarwidth )
+{
+    return FarPatchTablesFactory<int>::Create(refineTables, fvarwidth);
+}
 
 
 } // end namespace OPENSUBDIV_VERSION
