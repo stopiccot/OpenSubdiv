@@ -22,8 +22,8 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#ifndef FAR_DISPATCHER_H
-#define FAR_DISPATCHER_H
+#ifndef FAR_KERNELBATCH_DISPATCHER_H
+#define FAR_KERNELBATCH_DISPATCHER_H
 
 #include "../version.h"
 
@@ -47,7 +47,7 @@ namespace OPENSUBDIV_VERSION {
 ///
 /// Note : the caller is responsible for deleting a custom dispatcher
 ///
-class FarDispatcher {
+class FarKernelBatchDispatcher {
 public:
 
     /// \brief Launches the processing of a vector of kernel batches
@@ -62,7 +62,7 @@ public:
     ///
     /// @param maxlevel    process vertex batches up to this level
     ///
-    template <class CONTROLLER, class CONTEXT> static void Dispatch(
+    template <class CONTROLLER, class CONTEXT> static void Apply(
         CONTROLLER *controller, CONTEXT *context, FarKernelBatchVector const & batches, int maxlevel);
 
 protected:
@@ -87,7 +87,6 @@ protected:
 /// This is Far's default implementation of a kernal batch controller.
 ///
 class FarDefaultController {
-
 public:
 
     template <class CONTEXT> void ApplyStencilTableKernel(
@@ -98,10 +97,10 @@ public:
 
 // Launches the processing of a kernel batch
 template <class CONTROLLER, class CONTEXT> bool
-FarDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
+FarKernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
     FarKernelBatch const &batch) {
 
-    switch(batch.GetKernelType()) {
+    switch(batch.kernelType) {
 
         case FarKernelBatch::KERNEL_UNKNOWN:
             assert(0);
@@ -119,14 +118,14 @@ FarDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
 
 // Launches the processing of a vector of kernel batches
 template <class CONTROLLER, class CONTEXT> void
-FarDispatcher::Dispatch(CONTROLLER *controller, CONTEXT *context,
+FarKernelBatchDispatcher::Apply(CONTROLLER *controller, CONTEXT *context,
     FarKernelBatchVector const & batches, int maxlevel) {
 
     for (int i = 0; i < (int)batches.size(); ++i) {
 
         const FarKernelBatch &batch = batches[i];
 
-        if (maxlevel>=0 and batch.GetLevel()>=maxlevel) {
+        if (maxlevel>=0 and batch.level>=maxlevel) {
             continue;
         }
 
@@ -144,7 +143,7 @@ FarDefaultController::ApplyStencilTableKernel(
     typename CONTEXT::VertexType *vsrc = &context->GetVertices().at(0),
                                  *vdst = vsrc + batch.start + stencilTables->GetNumControlVertices;
 
-    stencilTables->UpdateValues(vsrc, vdst, start, batch.end);
+    stencilTables->UpdateValues(vsrc, vdst, batch.start, batch.end);
 }
 
 } // end namespace OPENSUBDIV_VERSION
@@ -152,4 +151,4 @@ using namespace OPENSUBDIV_VERSION;
 
 } // end namespace OpenSubdiv
 
-#endif /* FAR_DISPATCHER_H */
+#endif /* FAR_KERNELBATCH_DISPATCHER_H */

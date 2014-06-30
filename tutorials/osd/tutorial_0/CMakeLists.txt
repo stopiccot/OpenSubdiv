@@ -22,8 +22,20 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(hbr)
+include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
 
-add_subdirectory(far)
+set(SOURCE_FILES
+    osd_tutorial_0.cpp
+)
 
-add_subdirectory(osd)
+add_executable(osd_tutorial_0
+    ${SOURCE_FILES}
+)
+
+
+target_link_libraries(osd_tutorial_0
+    osd_static_cpu
+)
+
+install(TARGETS osd_tutorial_0 DESTINATION "${CMAKE_BINDIR_BASE}/tutorials")
+

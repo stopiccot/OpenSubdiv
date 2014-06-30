@@ -22,8 +22,4 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(hbr)
-
-add_subdirectory(far)
-
-add_subdirectory(osd)
+add_subdirectory(tutorial_0)

@@ -782,5 +782,13 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
     return result;
 }
 
+FarKernelBatch 
+FarStencilTablesFactory::Create(FarStencilTables const &stencilTables) {
+
+    return FarKernelBatch( FarKernelBatch::KERNEL_STENCIL_TABLE,
+        -1, 0, stencilTables.GetNumStencils());
+}
+
+
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

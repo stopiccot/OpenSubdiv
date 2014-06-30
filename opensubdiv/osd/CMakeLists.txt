@@ -33,8 +33,6 @@ set(CPU_SOURCE_FILES
     cpuEvalLimitContext.cpp
     cpuEvalLimitController.cpp
     cpuEvalLimitKernel.cpp
-    cpuEvalStencilsContext.cpp
-    cpuEvalStencilsController.cpp
     cpuSmoothNormalContext.cpp
     cpuSmoothNormalController.cpp
     cpuVertexBuffer.cpp
@@ -60,8 +58,6 @@ set(PUBLIC_HEADER_FILES
     cpuComputeController.h
     cpuEvalLimitContext.h
     cpuEvalLimitController.h
-    cpuEvalStencilsContext.h
-    cpuEvalStencilsController.h
     cpuSmoothNormalContext.h
     cpuSmoothNormalController.h
     cpuVertexBuffer.h
@@ -83,10 +79,6 @@ set(GL_PTEX_PUBLIC_HEADERS
     glPtexTexture.h
     glPtexMipmapTexture.h
 )
-set(DX_PTEX_PUBLIC_HEADERS
-    d3d11PtexTexture.h
-    d3d11PtexMipmapTexture.h
-)
 
 if( PTEX_FOUND )
     list(APPEND PUBLIC_HEADER_FILES
@@ -106,71 +98,9 @@ if( PTEX_FOUND )
             ${GL_PTEX_PUBLIC_HEADERS}
         )
     endif()
-    if( DXSDK_FOUND )
-        list(APPEND GPU_SOURCE_FILES
-            d3d11PtexTexture.cpp
-            d3d11PtexMipmapTexture.cpp
-        )
-        list(APPEND PUBLIC_HEADER_FILES
-            ${DX_PTEX_PUBLIC_HEADERS}
-        )
-    endif()
 endif()
 
 list(APPEND DOXY_HEADER_FILES ${GL_PTEX_PUBLIC_HEADERS} ${DX_PTEX_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-set(OPENMP_PUBLIC_HEADERS
-    ompKernel.h
-    ompComputeController.h
-    ompEvalStencilsController.h
-    ompSmoothNormalController.h
-)
-
-if( OPENMP_FOUND )
-    list(APPEND CPU_SOURCE_FILES
-        ompKernel.cpp
-        ompComputeController.cpp
-        ompEvalStencilsController.cpp
-        ompSmoothNormalController.cpp
-    )
-
-    list(APPEND PUBLIC_HEADER_FILES ${OPENMP_PUBLIC_HEADERS})
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${OPENMP_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-if( TBB_FOUND )
-    list(APPEND CPU_SOURCE_FILES
-        tbbKernel.cpp
-        tbbComputeController.cpp
-        tbbEvalStencilsController.cpp
-        tbbSmoothNormalController.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES
-        tbbKernel.h
-        tbbComputeController.h
-        tbbEvalStencilsController.h
-        tbbSmoothNormalController.h
-    )
-endif()
-
-#-------------------------------------------------------------------------------
-set(GCD_PUBLIC_HEADERS
-    gcdKernel.h
-    gcdComputeController.h
-)
-
-if( GCD_FOUND )
-    list(APPEND CPU_SOURCE_FILES
-        gcdKernel.cpp
-        gcdComputeController.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${GCD_PUBLIC_HEADERS})
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${GCD_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
 # GL code & dependencies
@@ -202,164 +132,6 @@ if( OPENGL_FOUND OR OPENGLES_FOUND )
 endif()
 
 list(APPEND DOXY_HEADER_FILES ${GL_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-# OpenGL 4.2 dependencies
-# note : (GLSL transform feedback kernels require GL 4.2)
-set(GL_4_2_PUBLIC_HEADERS
-    glslTransformFeedbackComputeContext.h
-    glslTransformFeedbackComputeController.h
-    glslTransformFeedbackKernelBundle.h
-)
-
-if( OPENGL_4_2_FOUND )
-    list(APPEND GPU_SOURCE_FILES
-        glslTransformFeedbackComputeController.cpp
-        glslTransformFeedbackComputeContext.cpp
-        glslTransformFeedbackKernelBundle.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${GL_4_2_PUBLIC_HEADERS})
-    list(APPEND KERNEL_FILES
-        glslTransformFeedbackKernel.glsl
-    )
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${GL_4_2_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-# OpenGL 4.3 dependencies
-# note : (GLSL compute shader kernels require GL 4.3)
-set(GL_4_3_PUBLIC_HEADERS
-        glslComputeContext.h
-        glslComputeController.h
-        glslKernelBundle.h
-)
-
-if( OPENGL_4_3_FOUND )
-    list(APPEND GPU_SOURCE_FILES
-        glslComputeController.cpp
-        glslComputeContext.cpp
-        glslKernelBundle.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
-    list(APPEND KERNEL_FILES
-        glslComputeKernel.glsl
-    )
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-# DX11 code & dependencies
-set(DXSDK_PUBLIC_HEADERS
-    cpuD3D11VertexBuffer.h
-    d3d11ComputeContext.h
-    d3d11ComputeController.h
-    d3d11DrawContext.h
-    d3d11DrawRegistry.h
-    d3d11KernelBundle.h
-    d3d11VertexBuffer.h
-    d3d11Mesh.h
-)
-if( DXSDK_FOUND )
-    list(APPEND GPU_SOURCE_FILES
-        cpuD3D11VertexBuffer.cpp
-        d3d11ComputeContext.cpp
-        d3d11ComputeController.cpp
-        d3d11DrawContext.cpp
-        d3d11DrawRegistry.cpp
-        d3d11KernelBundle.cpp
-        d3d11VertexBuffer.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${DXSDK_PUBLIC_HEADERS})
-    list(APPEND KERNEL_FILES
-        hlslComputeKernel.hlsl
-        hlslPatchCommon.hlsl
-        hlslPatchBSpline.hlsl
-        hlslPatchGregory.hlsl
-        hlslPatchTransition.hlsl
-        hlslPtexCommon.hlsl
-    )
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${DXSDK_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-# OpenCL code & dependencies
-set(OPENCL_PUBLIC_HEADERS
-    clComputeContext.h
-    clComputeController.h
-    clVertexBuffer.h
-    opencl.h
-)
-if ( OPENCL_FOUND )
-    list(APPEND GPU_SOURCE_FILES
-        clComputeController.cpp
-        clComputeContext.cpp
-        clKernelBundle.cpp
-        clVertexBuffer.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${OPENCL_PUBLIC_HEADERS})
-    list(APPEND KERNEL_FILES
-        clKernel.cl
-    )
-    if ( OPENGL_FOUND )
-        list(APPEND GPU_SOURCE_FILES clGLVertexBuffer.cpp)
-        list(APPEND PUBLIC_HEADER_FILES clGLVertexBuffer.h)
-    endif()
-
-    # OpenCL D3D11 interop needs work...
-    #if ( DXSDK_FOUND )
-    #    list(APPEND GPU_SOURCE_FILES clD3D11VertexBuffer.cpp)
-    #    list(APPEND PUBLIC_HEADER_FILES clD3D11VertexBuffer.h)
-    #endif()
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${OPENCL_PUBLIC_HEADERS})
-
-#-------------------------------------------------------------------------------
-# CUDA code & dependencies
-set(CUDA_PUBLIC_HEADERS
-    cudaComputeContext.h
-    cudaComputeController.h
-    cudaVertexBuffer.h
-)
-if( CUDA_FOUND )
-    list(APPEND GPU_SOURCE_FILES
-        cudaComputeController.cpp
-        cudaComputeContext.cpp
-        cudaVertexBuffer.cpp
-    )
-    list(APPEND PUBLIC_HEADER_FILES ${CUDA_PUBLIC_HEADERS})
-    list(APPEND CUDA_KERNEL_FILES
-        osd/cudaKernel.cu
-    )
-    
-    # we have to pass the .cu files to the cuda_add_library function:
-    # ideally we would like to compile this here and pass the resulting
-    # obj file back to the linker
-    set(CUDA_KERNEL_FILES ${CUDA_KERNEL_FILES} PARENT_SCOPE)
-
-    if ( OPENGL_FOUND )
-        list(APPEND GPU_SOURCE_FILES
-            cudaGLVertexBuffer.cpp
-        )
-        list(APPEND PUBLIC_HEADER_FILES
-            cudaGLVertexBuffer.h
-        )
-    endif()
-
-    if( DXSDK_FOUND )
-        list(APPEND GPU_SOURCE_FILES
-            cudaD3D11VertexBuffer.cpp
-        )
-        list(APPEND PUBLIC_HEADER_FILES
-            cudaD3D11VertexBuffer.h
-        )
-    endif()
-endif()
-
-list(APPEND DOXY_HEADER_FILES ${CUDA_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
 

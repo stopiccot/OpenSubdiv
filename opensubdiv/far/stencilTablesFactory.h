@@ -27,6 +27,8 @@
 
 #include "../version.h"
 
+#include "../far/kernelBatch.h"
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
@@ -62,6 +64,13 @@ public:
     ///
     static FarStencilTables const * Create(FarRefineTables const & refTables,
         Options options = Options());
+
+    /// \brief Returns a FarKernelBatch applying all the stencil in the tables
+    ///        to primvar data.
+    ///
+    /// @param stencilTables The stencil tables to batch
+    ///
+    static FarKernelBatch Create(FarStencilTables const &stencilTables);
 
 
     /// \brief Returns the largest stencil size that can be accomodated by the

@@ -63,12 +63,12 @@ public:
     /// @param end           index of the last vertex in the batch
     ///
     FarKernelBatch( int kernelType, int level, int start, int end ) :
-        _kernelType(kernelType), _level(level), _start(start), _end(end) { }
+        kernelType(kernelType), level(level), start(start), end(end) { }
 
     int kernelType,   // the type of compute kernel kernel
         level,        // the level of subdivision of the vertices in the batch
         start,        // index of the first vertex in the batch
-        end,          // index of the last vertex in the batch
+        end;          // index of the last vertex in the batch
 };
 
 typedef std::vector<FarKernelBatch> FarKernelBatchVector;
