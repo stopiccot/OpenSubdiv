@@ -29,6 +29,13 @@
 #include <cmath>
 #include <cstdlib>
 
+#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
+    #define __ALIGN_DATA __declspec(align(32))
+#else
+    #define __ALIGN_DATA
+#endif
+
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 

@@ -25,12 +25,6 @@
 #ifndef OSD_CPU_KERNEL_H
 #define OSD_CPU_KERNEL_H
 
-#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
-    #define __ALIGN_DATA __declspec(align(32))
-#else
-    #define __ALIGN_DATA
-#endif
-
 #include "../version.h"
 
 #include "../osd/vertexDescriptor.h"

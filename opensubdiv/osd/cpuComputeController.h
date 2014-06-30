@@ -77,6 +77,8 @@ public:
                      VERTEX_BUFFER *vertexBuffer,
                      OsdVertexBufferDescriptor const *vertexDesc=NULL) {
 
+        if (batches.empty()) return;
+
         bind(vertexDesc, vertexBuffer);
 
         FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1); 

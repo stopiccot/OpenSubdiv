@@ -79,6 +79,10 @@ set(GL_PTEX_PUBLIC_HEADERS
     glPtexTexture.h
     glPtexMipmapTexture.h
 )
+set(DX_PTEX_PUBLIC_HEADERS
+    d3d11PtexTexture.h
+    d3d11PtexMipmapTexture.h
+)
 
 if( PTEX_FOUND )
     list(APPEND PUBLIC_HEADER_FILES
@@ -98,9 +102,48 @@ if( PTEX_FOUND )
             ${GL_PTEX_PUBLIC_HEADERS}
         )
     endif()
+    if( DXSDK_FOUND )
+        list(APPEND GPU_SOURCE_FILES
+            d3d11PtexTexture.cpp
+            d3d11PtexMipmapTexture.cpp
+        )
+        list(APPEND PUBLIC_HEADER_FILES
+            ${DX_PTEX_PUBLIC_HEADERS}
+        )
+    endif()
+    include_directories( "${PTEX_INCLUDE_DIR}" )
+    list(APPEND PLATFORM_CPU_LIBRARIES
+        ${PTEX_LIBRARY}
+    )
 endif()
 
 list(APPEND DOXY_HEADER_FILES ${GL_PTEX_PUBLIC_HEADERS} ${DX_PTEX_PUBLIC_HEADERS})
+
+#-------------------------------------------------------------------------------
+set(OPENMP_PUBLIC_HEADERS
+    ompKernel.h
+    ompComputeController.h
+#    ompEvalStencilsController.h
+    ompSmoothNormalController.h
+)
+
+if(OPENMP_FOUND )
+    list(APPEND CPU_SOURCE_FILES
+        ompKernel.cpp
+        ompComputeController.cpp
+#        ompEvalStencilsController.cpp
+        ompSmoothNormalController.cpp
+    )
+
+    list(APPEND PUBLIC_HEADER_FILES ${OPENMP_PUBLIC_HEADERS})
+
+    if (CMAKE_COMPILER_IS_GNUCXX)
+        list(APPEND PLATFORM_CPU_LIBRARIES gomp)
+    endif()
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${OPENMP_PUBLIC_HEADERS})
+
 
 #-------------------------------------------------------------------------------
 # GL code & dependencies
