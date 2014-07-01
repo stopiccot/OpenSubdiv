@@ -34,6 +34,8 @@ namespace OPENSUBDIV_VERSION {
 
 struct OsdVertexDescriptor;
 
+
+
 void
 OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
                       float const * vertexSrc,
@@ -43,6 +45,71 @@ OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
                       int const * indices,
                       float const * weights,
                       int start, int end);
+
+//
+// SIMD ICC optimization of the stencil kernel
+// 
+
+#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
+    #define __ALIGN_DATA __declspec(align(32))
+#else
+    #define __ALIGN_DATA
+#endif
+
+// Note : this function is re-used in the TBB Compute kernel
+template <int numElems> void
+ComputeStencilKernel(float const * vertexSrc,
+                     float * vertexDst,
+                     unsigned char const * sizes,
+                     int const * indices,
+                     float const * weights,
+                     int start,
+                     int end) {
+
+    __ALIGN_DATA float result[numElems],
+                       result1[numElems];
+
+    float const * src;
+    float * dst, weight;
+    int nstencils = end-start;
+
+    for (int i=0; i<nstencils; ++i) {
+
+        // Clear
+#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
+    #pragma simd
+    #pragma vector aligned
+#endif
+        for (int k = 0; k<numElems; ++k)
+            result[k] = 0.0f;
+
+        for (int j=0; j<sizes[i]; ++j, ++indices, ++weights) {
+
+            src = vertexSrc + (*indices)*numElems;
+            weight = *weights;
+
+            // AddWithWeight
+#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
+    #pragma simd
+    #pragma vector aligned
+#endif
+            for (int k=0; k<numElems; ++k) {
+                result[k] += src[k] * weight;
+            }
+        }
+
+#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
+    #pragma simd
+    #pragma vector aligned
+#endif
+        for (int k=0; k<numElems; ++k) {
+            result1[k] = result[k];
+        }
+
+        dst = vertexDst + i*numElems;
+        memcpy(dst, result1, numElems*sizeof(float));
+    }
+}
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

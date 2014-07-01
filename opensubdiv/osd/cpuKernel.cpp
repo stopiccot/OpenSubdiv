@@ -29,16 +29,8 @@
 #include <cmath>
 #include <cstdlib>
 
-#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
-    #define __ALIGN_DATA __declspec(align(32))
-#else
-    #define __ALIGN_DATA
-#endif
-
-
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
-
 
 template <class T> T *
 elementAtIndex(T * src, int index, OsdVertexBufferDescriptor const &desc) {
@@ -74,60 +66,6 @@ copy(float *dst, int dstIndex, const float *src,
     memcpy(dst, src, desc.length*sizeof(float));
 }
 
-template <int numElems> void
-ComputeStencilKernel(float const * vertexSrc,
-                     float * vertexDst,
-                     unsigned char const * sizes,
-                     int const * indices,
-                     float const * weights,
-                     int start,
-                     int end) {
-
-    __ALIGN_DATA float result[numElems],
-                       result1[numElems];
-
-    float const * src;
-    float * dst, weight;
-    int nstencils = end-start;
-
-    for (int i=0; i<nstencils; ++i) {
-
-        // Clear
-#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
-    #pragma simd
-    #pragma vector aligned
-#endif
-        for (int k = 0; k<numElems; ++k)
-            result[k] = 0.0f;
-
-        for (int j=0; j<sizes[i]; ++j, ++indices, ++weights) {
-
-            src = vertexSrc + (*indices)*numElems;
-            weight = *weights;
-
-            // AddWithWeight
-#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
-    #pragma simd
-    #pragma vector aligned
-#endif
-            for (int k=0; k<numElems; ++k) {
-                result[k] += src[k] * weight;
-            }
-        }
-
-#if defined ( __INTEL_COMPILER ) or defined ( __ICC )
-    #pragma simd
-    #pragma vector aligned
-#endif
-        for (int k=0; k<numElems; ++k) {
-            result1[k] = result[k];
-        }
-
-        dst = vertexDst + i*numElems;
-        memcpy(dst, result1, numElems*sizeof(float));
-    }
-}
-
 void
 OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
                       float const * vertexSrc,
@@ -148,13 +86,13 @@ OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
 
     if (vertexDesc==OsdVertexBufferDescriptor(0, 4, 4)) {
 
-        // Fast path for aligned primvar data (4 floats)
+        // SIMD fast path for aligned primvar data (8 floats)
         ComputeStencilKernel<4>(vertexSrc, vertexDst,
             sizes, indices, weights, start,  end);
 
     } else if(vertexDesc==OsdVertexBufferDescriptor(0, 8, 8)) {
 
-        // Fast path for aligned primvar data (8 floats)
+        // SIMD fast path for aligned primvar data (8 floats)
         ComputeStencilKernel<8>(vertexSrc, vertexDst,
             sizes, indices, weights, start,  end);
     }

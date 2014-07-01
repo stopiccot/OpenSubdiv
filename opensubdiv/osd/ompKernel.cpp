@@ -81,8 +81,6 @@ OsdOmpComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
 
     assert(start>=0 and start<end);
 
-    // move pointers to start of batch using stencil offsets
-
     int numThreads = omp_get_max_threads(),
         nstencils = end-start;
 
