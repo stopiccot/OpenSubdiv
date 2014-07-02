@@ -32,10 +32,17 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+class FarStencil;
 class FarStencilTables;
 class FarRefineTables;
 
 /// \brief A specialized factory for FarStencilTables
+///
+/// Note: when using 'sortBySize', vertex indices from FarPatchTables or
+///       FarRefineTables need to be remapped to their new location in the
+///       vertex buffer.
+///
+///       XXXX manuelk remap table creation not implemented yet !
 ///
 class FarStencilTablesFactory {
 
@@ -43,11 +50,13 @@ public:
 
     struct Options {
     
-        Options() : generateOffsets(false),
-                    generateAllLevels(true) { }
+        Options() : generateOffsets(false),    
+                    generateAllLevels(true),   
+                    sortBySize(false) { }
     
-        unsigned int generateOffsets : 1,
-                     generateAllLevels : 1;
+        int generateOffsets   : 1, ///< populate optional "_offsets" field          
+            generateAllLevels : 1, ///< vertices at all levels or highest only
+            sortBySize        : 1; ///< sort stencils by size (within a level)
     };
 
     /// \brief Instantiates FarStencilTables from FarRefineTables that have been
@@ -72,13 +81,16 @@ public:
     ///
     static FarKernelBatch Create(FarStencilTables const &stencilTables);
 
-
-    /// \brief Returns the largest stencil size that can be accomodated by the
-    ///        factory. This number should be adjusted to process topologies
-    ///        with very high valence vertices;
-    static int GetMaxStencilSize();
-
 private:
+
+    // Copy a stencil into FarStencilTables
+    template <class T> static void copyStencil(T const & src, FarStencil & dst);
+
+    // (Sort &) Copy a vector of stencils into FarStencilTables
+    template <class T> static void copyStencils(std::vector<T> & src,
+        FarStencil & dst, bool sortBySize);
+        
+    std::vector<int> _remap;
 };
 
 

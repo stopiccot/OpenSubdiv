@@ -114,7 +114,7 @@ int main(int, char **) {
 
 
     // Uniformly refine the topolgy up to 'maxlevel'
-    int maxlevel = 6;
+    int maxlevel = 3;
     refTables->RefineUniform( maxlevel );
 
 
@@ -122,6 +122,7 @@ int main(int, char **) {
     // note: we only want stencils for the highest refinement level
     FarStencilTablesFactory::Options options;
     options.generateAllLevels=false;
+    options.generateOffsets=true;
     
     FarStencilTables const * stencilTables =
         FarStencilTablesFactory::Create(*refTables, options);

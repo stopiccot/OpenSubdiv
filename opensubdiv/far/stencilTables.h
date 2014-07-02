@@ -68,7 +68,6 @@ public:
         _weights = other._weights;
     }
 
-    /// \brief Returns the size of the stencil (number of control vertices)
     int GetSize() const {
         return *_size;
     }
@@ -132,7 +131,7 @@ public:
         return _sizes;
     }
 
-    /// \brief Returns the offset to a given stencil
+    /// \brief Returns the offset to a given stencil (factory may leave empty)
     std::vector<int> const & GetOffsets() const {
         return _offsets;
     }

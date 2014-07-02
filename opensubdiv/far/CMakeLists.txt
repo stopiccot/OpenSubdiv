@@ -40,7 +40,7 @@ set(PUBLIC_HEADER_FILES
     patchTablesFactory.h
     stencilTablesFactory.h
     stencilTables.h
-)    
+)
 
 set(PRIVATE_HEADER_FILES )
 
@@ -62,7 +62,7 @@ endif()
 #-------------------------------------------------------------------------------
 _add_doxy_headers( "${DOXY_HEADER_FILES}" )
 
-install( 
+install(
     FILES
         ${PUBLIC_HEADER_FILES}
     DESTINATION
