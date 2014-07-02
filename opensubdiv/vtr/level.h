@@ -206,6 +206,9 @@ public:
     SdcRule      getVertexRule(     VtrIndex vertIndex) const;
 
     VtrIndex findEdge(VtrIndex v0Index, VtrIndex v1Index) const;
+    
+    //  Should compute and cache this internally...
+    int findMaxValence() const;
 
 public:
     //  Debugging aides -- unclear what will persist...
@@ -225,12 +228,11 @@ public:
     int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVerts[]) const;
 
 protected:
-    template <class T>
-    friend class FarPatchTablesFactory;
     template <class MESH>
     friend class FarRefineTablesFactory;
     friend class FarRefineTablesFactoryBase;
     friend class FarRefineTables;
+    friend class FarPatchTablesFactory;
     friend class VtrRefinement;
 
     //  Sizing methods used to construct a level to populate:
@@ -652,6 +654,27 @@ VtrLevel::resizeVertexEdges(int totalVertEdgeCount)
 {
     _vertEdgeIndices.resize(totalVertEdgeCount);
     _vertEdgeLocalIndices.resize(totalVertEdgeCount);
+}
+
+//
+//  We should really be computing this either on construction (via the factory) or
+//  refinement.  The base level should always provide an upper bound on the max as
+//  long as the face-vertex counts are considered, so there is little point doing
+//  anything for any higher level.
+//
+inline int
+VtrLevel::findMaxValence() const
+{
+    int maxValence = 0;
+    for (int i = 0; i < _vertCount; ++i) {
+        maxValence = std::max(maxValence, _vertEdgeCountsAndOffsets[2*i]);
+    }
+    if (_depth == 0) {
+        for (int i = 0; i < _faceCount; ++i) {
+            maxValence = std::max(maxValence, _faceVertCountsAndOffsets[2*i]);
+        }
+    }
+    return maxValence;
 }
 
 } // end namespace OPENSUBDIV_VERSION

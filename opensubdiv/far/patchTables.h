@@ -191,7 +191,7 @@ public:
         static iterator end();
 
     private:
-        template <class T> friend class FarPatchTablesFactory;
+        friend class FarPatchTablesFactory;
         friend class iterator;
 
         unsigned int  _type:4;
@@ -283,7 +283,7 @@ public:
         }
 
     private:
-        template <class T> friend class FarPatchTablesFactory;
+        friend class FarPatchTablesFactory;
 
         Descriptor _desc;   // type of patches in the array
 
@@ -441,7 +441,7 @@ public:
 
     private:
 
-        template <class T> friend class FarPatchTablesFactory;
+        friend class FarPatchTablesFactory;
         friend class FarPatchTables;
 
         FVarData() : _fvarWidth(0) { }
@@ -459,7 +459,7 @@ public:
 
 private:
 
-    template <class T> friend class FarPatchTablesFactory;
+    friend class FarPatchTablesFactory;
 
     // Returns the array of patches of type "desc", or NULL if there aren't any in the primitive
     inline PatchArray * findPatchArray( Descriptor desc );

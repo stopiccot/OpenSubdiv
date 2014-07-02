@@ -119,9 +119,9 @@ VtrRefinement::allocateParentToChildMapping()
     int vertChildVertCount;
 
     if (_quadSplit) {
-        faceChildFaceCount = _parent->_faceVertIndices.size();
-        faceChildEdgeCount = _parent->_faceEdgeIndices.size();
-        edgeChildEdgeCount = _parent->_edgeVertIndices.size();
+        faceChildFaceCount = (int) _parent->_faceVertIndices.size();
+        faceChildEdgeCount = (int) _parent->_faceEdgeIndices.size();
+        edgeChildEdgeCount = (int) _parent->_edgeVertIndices.size();
 
         faceChildVertCount = _parent->getNumFaces();
         edgeChildVertCount = _parent->getNumEdges();
@@ -130,8 +130,8 @@ VtrRefinement::allocateParentToChildMapping()
         assert("Non-quad splitting not yet supported\n" == 0);
 
         faceChildFaceCount = _parent->getNumFaces() * 4;
-        faceChildEdgeCount = _parent->_faceEdgeIndices.size();
-        edgeChildEdgeCount = _parent->_edgeVertIndices.size();
+        faceChildEdgeCount = (int) _parent->_faceEdgeIndices.size();
+        edgeChildEdgeCount = (int) _parent->_edgeVertIndices.size();
 
         faceChildVertCount = 0;
         edgeChildVertCount = _parent->getNumEdges();

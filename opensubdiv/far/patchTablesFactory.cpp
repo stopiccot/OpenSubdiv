@@ -34,217 +34,277 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 //
-//  In development -- creation from FarRefineTables rather than HbrMesh.
-//      As with uniform patches, the method is static because it requires no cached state.
+//  A convenience container for the different types of feature adaptive patches
 //
-namespace {
-    //
-    //  Reimplementing the tagging outside Hbr now -- some of these enums should probably
-    //  be defined more as part of FarPatchTables...
-    //
-    //  Like the HbrFace<T>::AdaptiveFlags, this struct aggregates all of the face tags
-    //  supporting feature adaptive refinement.  For now it is not used elsewhere and can
-    //  remain local to this implementation, but we may want to move it into a header of
-    //  its own if it has greater use later.
-    //
-    //  Note that several properties being assigned here attempt to do so given a 4-bit
-    //  mask of properties at the edges or vertices of the quad.  Still not sure exactly
-    //  what will be done this way, but the goal is to create lookup tables (of size 16
-    //  for the 4 bits) to quickly determine was is needed, rather than iteration and
-    //  branching on the edges or vertices.
-    //
-    struct PatchFaceTag {
-    public:
-        //  The HBR_ADAPTIVE TransitionType from <hbr/face.h> -- now named to more clearly
-        //  reflect the number and orientation of transitional edges.  Note that the values
-        //  assigned here need to match the intended purpose to remain consistent with Hbr:
-        enum TransitionType {
-            NONE          = 0,
-            TRANS_ONE     = 1,
-            TRANS_TWO_ADJ = 2,
-            TRANS_THREE   = 3,
-            TRANS_ALL     = 4,
-            TRANS_TWO_OPP = 5
-        };
+template<class TYPE>
+struct PatchTypes {
 
-    public:
-        unsigned int   _hasPatch        : 1;
-        unsigned int   _isRegular       : 1;
-        unsigned int   _isTransitional  : 1;
-        unsigned int   _transitionType  : 3;
-        unsigned int   _transitionRot   : 2;
-        unsigned int   _boundaryIndex   : 2;
-        unsigned int   _boundaryCount   : 3;
-        unsigned int   _hasBoundaryEdge : 3;
+    static const int NUM_TRANSITIONS=6,
+                     NUM_ROTATIONS=4;
 
-        void clear() { std::memset(this, 0, sizeof(*this)); }
+    TYPE R[NUM_TRANSITIONS],                   // regular patch
+         B[NUM_TRANSITIONS][NUM_ROTATIONS],    // boundary patch (4 rotations)
+         C[NUM_TRANSITIONS][NUM_ROTATIONS],    // corner patch (4 rotations)
+         G,                                    // gregory patch
+         GB;                                   // gregory boundary patch
 
-        void assignBoundaryPropertiesFromEdgeMask(int boundaryEdgeMask) {
-            //
-            //  The number of rotations to apply for boundary or corner patches varies on both
-            //  where the boundary/corner occurs and whether boundary or corner -- so using a
-            //  4-bit mask should be sufficient to quickly determine all cases:
-            //
-            //  Note that we currently expect patches with multiple boundaries to have already
-            //  been isolated, so asserts are applied for such unexpected cases.
-            //
-            //  Is the compiler going to build the 16-entry lookup table here, or should we do
-            //  it ourselves?
-            //
-            _hasBoundaryEdge = true;
+    PatchTypes() { std::memset(this, 0, sizeof(PatchTypes<TYPE>)); }
 
-            switch (boundaryEdgeMask) {
-            case 0x0:  _boundaryCount = 0, _boundaryIndex = 0, _hasBoundaryEdge = false;  break;  // no boundaries
+    // Returns the number of patches based on the patch type in the descriptor
+    TYPE & getValue( FarPatchTables::Descriptor desc ) {
+        switch (desc.GetType()) {
+            case FarPatchTables::REGULAR          : return R[desc.GetPattern()];
+            case FarPatchTables::BOUNDARY         : return B[desc.GetPattern()][desc.GetRotation()];
+            case FarPatchTables::CORNER           : return C[desc.GetPattern()][desc.GetRotation()];
+            case FarPatchTables::GREGORY          : return G;
+            case FarPatchTables::GREGORY_BOUNDARY : return GB;
+            default : assert(0);
+        }
+        // can't be reached (suppress compiler warning)
+        return R[0];
+    }
 
-            case 0x1:  _boundaryCount = 1, _boundaryIndex = 0;  break;  // boundary edge 0
-            case 0x2:  _boundaryCount = 1, _boundaryIndex = 1;  break;  // boundary edge 1
-            case 0x3:  _boundaryCount = 2, _boundaryIndex = 1;  break;  // corner/crease vertex 1
-            case 0x4:  _boundaryCount = 1, _boundaryIndex = 2;  break;  // boundary edge 2
-            case 0x5:  assert(false);                           break;  // N/A - opposite boundary edges
-            case 0x6:  _boundaryCount = 2, _boundaryIndex = 2;  break;  // corner/crease vertex 2
-            case 0x7:  assert(false);                           break;  // N/A - three boundary edges
-            case 0x8:  _boundaryCount = 1, _boundaryIndex = 3;  break;  // boundary edge 3
-            case 0x9:  _boundaryCount = 2, _boundaryIndex = 0;  break;  // corner/crease vertex 0
-            case 0xa:  assert(false);                           break;  // N/A - opposite boundary edges
-            case 0xb:  assert(false);                           break;  // N/A - three boundary edges
-            case 0xc:  _boundaryCount = 2, _boundaryIndex = 3;  break;  // corner/crease vertex 3
-            case 0xd:  assert(false);                           break;  // N/A - three boundary edges
-            case 0xe:  assert(false);                           break;  // N/A - three boundary edges
-            case 0xf:  assert(false);                           break;  // N/A - all boundaries
-            default:   assert(false);                           break;
+    // Counts the number of arrays required to store each type of patch used
+    // in the primitive
+    int getNumPatchArrays() const {
+        int result=0;
+        for (int i=0; i<6; ++i) {
+    
+            if (R[i]) ++result;
+    
+            for (int j=0; j<4; ++j) {
+                if (B[i][j]) ++result;
+                if (C[i][j]) ++result;
+    
             }
         }
+        if (G) ++result;
+        if (GB) ++result;
+        return result;
+    }
+};
 
-        void assignBoundaryPropertiesFromVertexMask(int boundaryVertexMask) {
-            //
-            //  This is strictly needed for the irregular case when a vertex is a boundary in
-            //  the presence of no boundary edges -- an extra-ordinary face with only one corner
-            //  on the boundary.
-            //
-            //  Its unclear at this point if patches with more than one such vertex are supported
-            //  (if so, how do we deal with rotations) so for now we only allow one such vertex
-            //  and assert for all other cases.
-            //
-            assert(_hasBoundaryEdge == false);
+typedef PatchTypes<unsigned int*>   PatchCVPointers;
+typedef PatchTypes<FarPatchParam *> PatchParamPointers;
+typedef PatchTypes<float *>         PatchFVarPointers;
+typedef PatchTypes<int>             PatchCounters;
 
-            switch (boundaryVertexMask) {
-            case 0x0:  _boundaryCount = 0;                      break;  // no boundaries
-            case 0x1:  _boundaryCount = 1, _boundaryIndex = 0;  break;  // boundary vertex 0
-            case 0x2:  _boundaryCount = 1, _boundaryIndex = 1;  break;  // boundary vertex 1
-            case 0x3:  assert(false);                           break;
-            case 0x4:  _boundaryCount = 1, _boundaryIndex = 2;  break;  // boundary vertex 2
-            case 0x5:  assert(false);                           break;
-            case 0x6:  assert(false);                           break;
-            case 0x7:  assert(false);                           break;
-            case 0x8:  _boundaryCount = 1, _boundaryIndex = 3;  break;  // boundary vertex 3
-            case 0x9:  assert(false);                           break;
-            case 0xa:  assert(false);                           break;
-            case 0xb:  assert(false);                           break;
-            case 0xc:  assert(false);                           break;
-            case 0xd:  assert(false);                           break;
-            case 0xe:  assert(false);                           break;
-            case 0xf:  assert(false);                           break;
-            default:   assert(false);                           break;
-            }
-        }
 
-        void assignTransitionRotationForCorner(int transitionEdgeMask) {
-            //
-            //  Corner transition patches have only two interior edges that may be transitional.
-            //
-            //  Either both are transitional (TRANS_TWO_ADJ) with only a single possible orientation,
-            //  or only one is transitional (TRANS_ONE) with two possibilities.  The former case is
-            //  trivial.  For the latter, use the known corner index to identify one of the two
-            //  possible transition masks and test to determine between the two cases.
-            //
-            if (_transitionType == TRANS_ONE) {
-                int const edgeMaskPerCorner[] = { 4, 8, 1, 2 };
-
-                _transitionRot = 1 + (edgeMaskPerCorner[_boundaryIndex] != transitionEdgeMask);
-            } else {
-                _transitionRot = 1;
-            }
-        }
-
-        void assignTransitionRotationForBoundary(int transitionEdgeMask) {
-            //
-            //  Boundary transition patches have three interior edges that may be transitional.
-            //
-            //  The case of all three transitional (TRANS_THREE) has only one orientation, while the
-            //  case of two opposite transitional edges (TRANS_TWO_OPP) also has only one orientation.
-            //  So both of these are trivially handled.
-            //
-            //  The case of a single transitional edge (TRANS_ONE) or one transitional edge (TRANS_TWO_ADJ)
-            //  both have multiple orientations -- three for TRANS_ONE and two for TRANS_TWO_ADJ.  Each is
-            //  handled separately:
-            //
-            if (_transitionType == TRANS_ONE) {
-                if (transitionEdgeMask == (1 << ((_boundaryIndex + 2) % 4))) {
-                    _transitionRot = 2;
-                } else if (transitionEdgeMask == (1 << ((_boundaryIndex + 1) % 4))) {
-                    _transitionRot = 1;
-                } else {
-                    _transitionRot = 3;
-                }
-            } else if (_transitionType == TRANS_TWO_ADJ) {
-                int const edgeMaskPerBoundary[] = { 6, 12, 9, 3 };
-
-                _transitionRot = 1 + (edgeMaskPerBoundary[_boundaryIndex] == transitionEdgeMask);
-            } else {
-                _transitionRot = 1;
-            }
-        }
-
-        void assignTransitionPropertiesFromEdgeMask(int transitionEdgeMask) {
-            //
-            //  Note the transition rotations will be a function of the boundary rotations, and
-            //  so boundary rotations/index should have been previously assigned:
-            //
-            //  As with the boundary rotation case, consider retrieving values from static 16-
-            //  entry lookup tables if possible (depending on the function involving boundary
-            //  rotations)...
-            //
-            _isTransitional = (transitionEdgeMask != 0);
-
-            switch (transitionEdgeMask) {
-            case 0x0:  _transitionType = NONE;           break;  // no transitions
-            case 0x1:  _transitionType = TRANS_ONE;      break;  // single edge 0
-            case 0x2:  _transitionType = TRANS_ONE;      break;  // single edge 1
-            case 0x3:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 0 and 1
-            case 0x4:  _transitionType = TRANS_ONE;      break;  // single edge 2
-            case 0x5:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 0 and 2
-            case 0x6:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 1 and 2
-            case 0x7:  _transitionType = TRANS_THREE;    break;  // three edges, all but 3
-            case 0x8:  _transitionType = TRANS_ONE;      break;  // single edge 3
-            case 0x9:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 3 and 0
-            case 0xa:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 1 and 3
-            case 0xb:  _transitionType = TRANS_THREE;    break;  // three edges, all but 2
-            case 0xc:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 2 and 3
-            case 0xd:  _transitionType = TRANS_THREE;    break;  // three edges, all but 1
-            case 0xe:  _transitionType = TRANS_THREE;    break;  // three edges, all but 0
-            case 0xf:  _transitionType = TRANS_ALL;      break;  // all edges
-            default:   assert(false);                    break;
-            }
-
-            //  May need another switch/lookup table here or combine it with the above -- the
-            //  results below are a function of both transition and boundary properties...
-            if (transitionEdgeMask == 0) {
-                _transitionRot = 0;
-            } else if (_boundaryCount == 0) {
-                _transitionRot = _boundaryIndex;
-            } else if (_boundaryCount == 1) {
-                assignTransitionRotationForBoundary(transitionEdgeMask);
-            } else if (_boundaryCount == 2) {
-                assignTransitionRotationForCorner(transitionEdgeMask);
-            }
-        }
+//
+//  A simple struct containing all information gathered about a face that is relevant
+//  to constructing a patch for it (some of these enums should probably be defined more
+//  as part of FarPatchTables)
+//
+//  Like the HbrFace<T>::AdaptiveFlags, this struct aggregates all of the face tags
+//  supporting feature adaptive refinement.  For now it is not used elsewhere and can
+//  remain local to this implementation, but we may want to move it into a header of
+//  its own if it has greater use later.
+//
+//  Note that several properties being assigned here attempt to do so given a 4-bit
+//  mask of properties at the edges or vertices of the quad.  Still not sure exactly
+//  what will be done this way, but the goal is to create lookup tables (of size 16
+//  for the 4 bits) to quickly determine was is needed, rather than iteration and
+//  branching on the edges or vertices.
+//
+struct PatchFaceTag {
+public:
+    //  The HBR_ADAPTIVE TransitionType from <hbr/face.h> -- now named to more clearly
+    //  reflect the number and orientation of transitional edges.  Note that the values
+    //  assigned here need to match the intended purpose to remain consistent with Hbr:
+    enum TransitionType {
+        NONE          = 0,
+        TRANS_ONE     = 1,
+        TRANS_TWO_ADJ = 2,
+        TRANS_THREE   = 3,
+        TRANS_ALL     = 4,
+        TRANS_TWO_OPP = 5
     };
 
+public:
+    unsigned int   _hasPatch        : 1;
+    unsigned int   _isRegular       : 1;
+    unsigned int   _isTransitional  : 1;
+    unsigned int   _transitionType  : 3;
+    unsigned int   _transitionRot   : 2;
+    unsigned int   _boundaryIndex   : 2;
+    unsigned int   _boundaryCount   : 3;
+    unsigned int   _hasBoundaryEdge : 3;
+
+    void clear() { std::memset(this, 0, sizeof(*this)); }
+
+    void assignBoundaryPropertiesFromEdgeMask(int boundaryEdgeMask) {
+        //
+        //  The number of rotations to apply for boundary or corner patches varies on both
+        //  where the boundary/corner occurs and whether boundary or corner -- so using a
+        //  4-bit mask should be sufficient to quickly determine all cases:
+        //
+        //  Note that we currently expect patches with multiple boundaries to have already
+        //  been isolated, so asserts are applied for such unexpected cases.
+        //
+        //  Is the compiler going to build the 16-entry lookup table here, or should we do
+        //  it ourselves?
+        //
+        _hasBoundaryEdge = true;
+
+        switch (boundaryEdgeMask) {
+        case 0x0:  _boundaryCount = 0, _boundaryIndex = 0, _hasBoundaryEdge = false;  break;  // no boundaries
+
+        case 0x1:  _boundaryCount = 1, _boundaryIndex = 0;  break;  // boundary edge 0
+        case 0x2:  _boundaryCount = 1, _boundaryIndex = 1;  break;  // boundary edge 1
+        case 0x3:  _boundaryCount = 2, _boundaryIndex = 1;  break;  // corner/crease vertex 1
+        case 0x4:  _boundaryCount = 1, _boundaryIndex = 2;  break;  // boundary edge 2
+        case 0x5:  assert(false);                           break;  // N/A - opposite boundary edges
+        case 0x6:  _boundaryCount = 2, _boundaryIndex = 2;  break;  // corner/crease vertex 2
+        case 0x7:  assert(false);                           break;  // N/A - three boundary edges
+        case 0x8:  _boundaryCount = 1, _boundaryIndex = 3;  break;  // boundary edge 3
+        case 0x9:  _boundaryCount = 2, _boundaryIndex = 0;  break;  // corner/crease vertex 0
+        case 0xa:  assert(false);                           break;  // N/A - opposite boundary edges
+        case 0xb:  assert(false);                           break;  // N/A - three boundary edges
+        case 0xc:  _boundaryCount = 2, _boundaryIndex = 3;  break;  // corner/crease vertex 3
+        case 0xd:  assert(false);                           break;  // N/A - three boundary edges
+        case 0xe:  assert(false);                           break;  // N/A - three boundary edges
+        case 0xf:  assert(false);                           break;  // N/A - all boundaries
+        default:   assert(false);                           break;
+        }
+    }
+
+    void assignBoundaryPropertiesFromVertexMask(int boundaryVertexMask) {
+        //
+        //  This is strictly needed for the irregular case when a vertex is a boundary in
+        //  the presence of no boundary edges -- an extra-ordinary face with only one corner
+        //  on the boundary.
+        //
+        //  Its unclear at this point if patches with more than one such vertex are supported
+        //  (if so, how do we deal with rotations) so for now we only allow one such vertex
+        //  and assert for all other cases.
+        //
+        assert(_hasBoundaryEdge == false);
+
+        switch (boundaryVertexMask) {
+        case 0x0:  _boundaryCount = 0;                      break;  // no boundaries
+        case 0x1:  _boundaryCount = 1, _boundaryIndex = 0;  break;  // boundary vertex 0
+        case 0x2:  _boundaryCount = 1, _boundaryIndex = 1;  break;  // boundary vertex 1
+        case 0x3:  assert(false);                           break;
+        case 0x4:  _boundaryCount = 1, _boundaryIndex = 2;  break;  // boundary vertex 2
+        case 0x5:  assert(false);                           break;
+        case 0x6:  assert(false);                           break;
+        case 0x7:  assert(false);                           break;
+        case 0x8:  _boundaryCount = 1, _boundaryIndex = 3;  break;  // boundary vertex 3
+        case 0x9:  assert(false);                           break;
+        case 0xa:  assert(false);                           break;
+        case 0xb:  assert(false);                           break;
+        case 0xc:  assert(false);                           break;
+        case 0xd:  assert(false);                           break;
+        case 0xe:  assert(false);                           break;
+        case 0xf:  assert(false);                           break;
+        default:   assert(false);                           break;
+        }
+    }
+
+    void assignTransitionRotationForCorner(int transitionEdgeMask) {
+        //
+        //  Corner transition patches have only two interior edges that may be transitional.
+        //
+        //  Either both are transitional (TRANS_TWO_ADJ) with only a single possible orientation,
+        //  or only one is transitional (TRANS_ONE) with two possibilities.  The former case is
+        //  trivial.  For the latter, use the known corner index to identify one of the two
+        //  possible transition masks and test to determine between the two cases.
+        //
+        if (_transitionType == TRANS_ONE) {
+            int const edgeMaskPerCorner[] = { 4, 8, 1, 2 };
+
+            _transitionRot = 1 + (edgeMaskPerCorner[_boundaryIndex] != transitionEdgeMask);
+        } else {
+            _transitionRot = 1;
+        }
+    }
+
+    void assignTransitionRotationForBoundary(int transitionEdgeMask) {
+        //
+        //  Boundary transition patches have three interior edges that may be transitional.
+        //
+        //  The case of all three transitional (TRANS_THREE) has only one orientation, while the
+        //  case of two opposite transitional edges (TRANS_TWO_OPP) also has only one orientation.
+        //  So both of these are trivially handled.
+        //
+        //  The case of a single transitional edge (TRANS_ONE) or one transitional edge (TRANS_TWO_ADJ)
+        //  both have multiple orientations -- three for TRANS_ONE and two for TRANS_TWO_ADJ.  Each is
+        //  handled separately:
+        //
+        if (_transitionType == TRANS_ONE) {
+            if (transitionEdgeMask == (1 << ((_boundaryIndex + 2) % 4))) {
+                _transitionRot = 2;
+            } else if (transitionEdgeMask == (1 << ((_boundaryIndex + 1) % 4))) {
+                _transitionRot = 1;
+            } else {
+                _transitionRot = 3;
+            }
+        } else if (_transitionType == TRANS_TWO_ADJ) {
+            int const edgeMaskPerBoundary[] = { 6, 12, 9, 3 };
+
+            _transitionRot = 1 + (edgeMaskPerBoundary[_boundaryIndex] == transitionEdgeMask);
+        } else {
+            _transitionRot = 1;
+        }
+    }
+
+    void assignTransitionPropertiesFromEdgeMask(int transitionEdgeMask) {
+        //
+        //  Note the transition rotations will be a function of the boundary rotations, and
+        //  so boundary rotations/index should have been previously assigned:
+        //
+        //  As with the boundary rotation case, consider retrieving values from static 16-
+        //  entry lookup tables if possible (depending on the function involving boundary
+        //  rotations)...
+        //
+        _isTransitional = (transitionEdgeMask != 0);
+
+        switch (transitionEdgeMask) {
+        case 0x0:  _transitionType = NONE;           break;  // no transitions
+        case 0x1:  _transitionType = TRANS_ONE;      break;  // single edge 0
+        case 0x2:  _transitionType = TRANS_ONE;      break;  // single edge 1
+        case 0x3:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 0 and 1
+        case 0x4:  _transitionType = TRANS_ONE;      break;  // single edge 2
+        case 0x5:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 0 and 2
+        case 0x6:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 1 and 2
+        case 0x7:  _transitionType = TRANS_THREE;    break;  // three edges, all but 3
+        case 0x8:  _transitionType = TRANS_ONE;      break;  // single edge 3
+        case 0x9:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 3 and 0
+        case 0xa:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 1 and 3
+        case 0xb:  _transitionType = TRANS_THREE;    break;  // three edges, all but 2
+        case 0xc:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 2 and 3
+        case 0xd:  _transitionType = TRANS_THREE;    break;  // three edges, all but 1
+        case 0xe:  _transitionType = TRANS_THREE;    break;  // three edges, all but 0
+        case 0xf:  _transitionType = TRANS_ALL;      break;  // all edges
+        default:   assert(false);                    break;
+        }
+
+        //  May need another switch/lookup table here or combine it with the above -- the
+        //  results below are a function of both transition and boundary properties...
+        if (transitionEdgeMask == 0) {
+            _transitionRot = 0;
+        } else if (_boundaryCount == 0) {
+            _transitionRot = _boundaryIndex;
+        } else if (_boundaryCount == 1) {
+            assignTransitionRotationForBoundary(transitionEdgeMask);
+        } else if (_boundaryCount == 2) {
+            assignTransitionRotationForCorner(transitionEdgeMask);
+        }
+    }
+};
+
+typedef std::vector<PatchFaceTag>   PatchTagVector;
+
+
+//
+//  Trivial anonymous helper functions:
+//
+namespace {
     inline void
     offsetAndPermuteIndices(unsigned int const indices[], unsigned int count,
                             unsigned int offset, unsigned int const permutation[],
-                            unsigned int result[])
-    {
+                            unsigned int result[]) {
+
         if (permutation) {
             for (unsigned int i = 0; i < count; ++i) {
                 result[i] = offset + indices[permutation[i]];
@@ -257,97 +317,240 @@ namespace {
             std::memcpy(result, indices, count * sizeof(unsigned int));
         }
     }
-
-    //
-    //  Move the following Vtr related searches into static methods later -- once we are
-    //  free of the current <T> parameter to the factory, which forces the implementations
-    //  into the header file...
-    //
-    void
-    vtrGetQuadOffsets(VtrLevel const& level, VtrIndex fIndex, unsigned int offsets[])
-    {
-        VtrIndexArray fVerts = level.getFaceVertices(fIndex);
-
-        for (int i = 0; i < 4; ++i) {
-            VtrIndex      vIndex = fVerts[i];
-            VtrIndexArray vFaces = level.getVertexFaces(vIndex);
-
-            int thisFaceInVFaces = -1;
-            for (int j = 0; j < vFaces.size(); ++j) {
-                if (fIndex == vFaces[j]) {
-                    thisFaceInVFaces = j;
-                    break;
-                }
-            }
-            assert(thisFaceInVFaces != -1);
-
-            unsigned int vOffsets[2];
-            vOffsets[0] = thisFaceInVFaces;
-            vOffsets[1] = thisFaceInVFaces + 1;
-            if (vOffsets[1] == vFaces.size()) {
-                vOffsets[0] = 0;
-                vOffsets[1] = vFaces.size() - 1;
-            }
-            offsets[i] = vOffsets[0] | (vOffsets[1] << 8);
-        }
-    }
-
-    FarPatchParam *
-    vtrComputePatchParam(FarRefineTables const & refTables,
-                         int levelIndex, VtrIndex faceIndex, int rotation,
-                         FarPatchParam *coord)
-    {
-        if (coord == NULL) return NULL;
-
-        //  Parameters to be assigned:
-        unsigned short u = 0;
-        unsigned short v = 0;
-        unsigned char  rots = rotation;
-        unsigned char  depth = levelIndex;
-        bool           nonquad = (refTables.GetFaceVertices(levelIndex, faceIndex).size() != 4);
-
-        // Move up the hierarchy accumulating u,v indices to the coarse level:
-        unsigned short ofs = 1;
-
-        for (int i = levelIndex; i > 0; --i) {
-            VtrRefinement const& refinement  = refTables._refinements[i-1];
-            VtrLevel const&      parentLevel = refTables._levels[i-1];
-
-            VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
-            int      childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
-
-            if (parentLevel.getFaceVertices(parentFaceIndex).size() == 4) {
-                switch ( childIndexInParent ) {
-                    case 0 :                     break;
-                    case 1 : { u+=ofs;         } break;
-                    case 2 : { u+=ofs; v+=ofs; } break;
-                    case 3 : {         v+=ofs; } break;
-                }
-                ofs = (unsigned short)(ofs << 1);
-            } else {
-                nonquad = true;
-            }
-            faceIndex = parentFaceIndex;
-        }
-
-        //if (refTables.HasPtex()) {
-        //    faceIndex = refTables.GetPtexIndex(faceIndex);
-        //}
-        coord->Set(faceIndex, u, v, rots, depth, nonquad);
-
-        return ++coord;
-    }
-
 } // namespace anon
 
 
-template <>
+
+//
+//  Reserves tables based on the contents of the PatchArrayVector in the FarPatchTables:
+//
+void
+FarPatchTablesFactory::allocateTables( FarPatchTables * tables, int nlevels, int fvarwidth ) {
+
+    FarPatchTables::PatchArrayVector const & parrays = tables->GetPatchArrayVector();
+
+    int nverts = tables->GetNumControlVertices();
+
+    int npatches = 0;
+    for (int i=0; i<(int)parrays.size(); ++i) {
+        npatches += parrays[i].GetNumPatches();
+    }
+
+    if (nverts==0 or npatches==0)
+        return;
+
+    tables->_patches.resize( nverts );
+
+    tables->_paramTable.resize( npatches );
+
+    if (fvarwidth>0) {
+        int nfvarverts = 0;
+        for (int i=0; i<(int)parrays.size(); ++i) {
+            nfvarverts += parrays[i].GetNumPatches() *
+                          (parrays[i].GetDescriptor().GetType() == FarPatchTables::TRIANGLES ? 3 : 4);
+        }
+
+        tables->_fvarData._data.resize( nfvarverts * fvarwidth );
+
+        if (nlevels >1) {
+            tables->_fvarData._offsets.resize( nlevels );
+        }
+    }
+}
+
+//
+//  Creates a PatchArray and appends it to a vector and keeps track of both
+//  vertex and patch offsets
+//
+void
+FarPatchTablesFactory::pushPatchArray( FarPatchTables::Descriptor desc,
+                                          FarPatchTables::PatchArrayVector & parray,
+                                          int npatches, int * voffset, int * poffset, int * qoffset ) {
+
+    if (npatches>0) {
+        parray.push_back( FarPatchTables::PatchArray(desc, *voffset, *poffset, npatches, *qoffset) );
+
+        *voffset += npatches * desc.GetNumControlVertices();
+        *poffset += npatches;
+        *qoffset += (desc.GetType() == FarPatchTables::GREGORY) ? npatches * desc.GetNumControlVertices() : 0;
+    }
+}
+
+//
+//  Populates the face-varying data buffer 'coord' for the given face, returning
+//  a pointer to the next descriptor
+//
+FarPatchParam *
+FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
+                                         int depth, VtrIndex faceIndex, int rotation,
+                                         FarPatchParam *coord) {
+
+    if (coord == NULL) return NULL;
+
+    // Move up the hierarchy accumulating u,v indices to the coarse level:
+    int u = 0;
+    int v = 0;
+    int ofs = 1;
+
+    bool nonquad = (refTables.GetFaceVertices(depth, faceIndex).size() != 4);
+
+    for (int i = depth; i > 0; --i) {
+        VtrRefinement const& refinement  = refTables._refinements[i-1];
+        VtrLevel const&      parentLevel = refTables._levels[i-1];
+
+        VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
+        int      childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
+
+        if (parentLevel.getFaceVertices(parentFaceIndex).size() == 4) {
+            switch ( childIndexInParent ) {
+                case 0 :                     break;
+                case 1 : { u+=ofs;         } break;
+                case 2 : { u+=ofs; v+=ofs; } break;
+                case 3 : {         v+=ofs; } break;
+            }
+            ofs = (unsigned short)(ofs << 1);
+        } else {
+            nonquad = true;
+        }
+        faceIndex = parentFaceIndex;
+    }
+
+    //if (refTables.HasPtex()) {
+    //    faceIndex = refTables.GetPtexIndex(faceIndex);
+    //}
+    coord->Set(faceIndex, (short)u, (short)v, (unsigned char) rotation, (unsigned char) depth, nonquad);
+
+    return ++coord;
+}
+
+//
+//  Computes per-face or per-patch local ptex texture coordinates, returning a pointer
+//  to the next entry in the table
+//
+float *
+FarPatchTablesFactory::computeFVarData(int /*face*/, const int width, float *coord, bool /*isAdaptive*/) {
+
+    assert(false);
+    return coord + width;
+}
+
+//
+//  Populate the quad-offsets table used by Gregory patches
+//
+void
+FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, unsigned int offsets[]) {
+
+    VtrIndexArray fVerts = level.getFaceVertices(fIndex);
+
+    for (int i = 0; i < 4; ++i) {
+        VtrIndex      vIndex = fVerts[i];
+        VtrIndexArray vFaces = level.getVertexFaces(vIndex);
+
+        int thisFaceInVFaces = -1;
+        for (int j = 0; j < vFaces.size(); ++j) {
+            if (fIndex == vFaces[j]) {
+                thisFaceInVFaces = j;
+                break;
+            }
+        }
+        assert(thisFaceInVFaces != -1);
+
+        unsigned int vOffsets[2];
+        vOffsets[0] = thisFaceInVFaces;
+        vOffsets[1] = thisFaceInVFaces + 1;
+        if ((int)vOffsets[1] == vFaces.size()) {
+            vOffsets[0] = 0;
+            vOffsets[1] = vFaces.size() - 1;
+        }
+        offsets[i] = vOffsets[0] | (vOffsets[1] << 8);
+    }
+}
+
+//
+//  We should be able to use a single Create() method for both the adaptive and uniform
+//  cases.  In the past, more additional arguments were passed to the uniform version,
+//  but that may no longer be necessary (see notes in the uniform version below)...
+//
 FarPatchTables *
-FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fvarwidth )
-{
-    //  This function should probably handle both uniform and sparsely refined tables at some
-    //  point, but for now we are focusing on feature adaptive (i.e. sparse) needs.
-    assert(!refineTables->IsUniform());
+FarPatchTablesFactory::Create( FarRefineTables const * refineTables, int fvarwidth ) {
+
+    if (refineTables->IsUniform()) {
+        return createUniform(refineTables, fvarwidth);
+    } else {
+        return createAdaptive(refineTables, fvarwidth);
+    }
+}
+
+FarPatchTables *
+FarPatchTablesFactory::createUniform( FarRefineTables const * /*refineTables*/, int /*fvarwidth*/ ) {
+
+    //
+    //  We shouldn't need all the arguments that were previously necessary as the RefineTables
+    //  should include most of what we need, i.e. the scheme, whether we need Tris or Quads,
+    //  the depth of the refinement, number of Ptex faces, etc...
+    //
+    assert(false);
+}
+
+FarPatchTables *
+FarPatchTablesFactory::createAdaptive( FarRefineTables const * refineTables, int fvarwidth ) {
+
+    //
+    //  First identify the patches -- accumulating the inventory patches for all of the
+    //  different types and information about the patch for each face:
+    //
+    PatchCounters             patchInventory;
+    std::vector<PatchFaceTag> patchTags;
+
+    identifyAdaptivePatches(refineTables, patchInventory, patchTags);
+
+    //
+    //  Create the instance of the tables and allocate and initialize its members based on
+    //  the inventory of patches determined above:
+    //
+    int maxValence = refineTables->_levels[0].findMaxValence();
+
+    FarPatchTables * tables = new FarPatchTables(maxValence);
+
+    // Populate the patch array descriptors
+    FarPatchTables::PatchArrayVector & parray = tables->_patchArrays;
+    parray.reserve( patchInventory.getNumPatchArrays() );
+
+    int voffset=0, poffset=0, qoffset=0;
+
+    for (Descriptor::iterator it=Descriptor::begin(Descriptor::FEATURE_ADAPTIVE_CATMARK);
+            it!=Descriptor::end(); ++it) {
+        pushPatchArray( *it, parray, patchInventory.getValue(*it), &voffset, &poffset, &qoffset );
+    }
+
+    tables->_fvarData._fvarWidth = fvarwidth;
+    tables->_numPtexFaces = refineTables->_levels[0].getNumFaces();
+
+    // Allocate various tables
+    allocateTables( tables, 0, fvarwidth );
+
+    // Specifics for Gregory patches
+    if ((patchInventory.G > 0) || (patchInventory.GB > 0)) {
+        tables->_quadOffsetTable.resize( patchInventory.G*4 + patchInventory.GB*4 );
+    }
+
+    //
+    //  Now populate the patches:
+    //
+    populateAdaptivePatches(refineTables, patchInventory, patchTags, tables);
+
+    return tables;
+}
+
+//
+//  Identify all patches required for faces at all levels -- accumulating the number of patches
+//  for each type, and retaining enough information for the patch for each face to populate it
+//  later with no additional analysis.
+//
+void
+FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const * refineTables,
+                                                PatchCounters &         patchInventory,
+                                                PatchTagVector &        patchTags ) {
 
     //
     //  Iterate through the levels of refinement to inspect and tag components with information
@@ -359,11 +562,9 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
     //  has no Refinement, so a single level is effectively the last, but with less information
     //  available in some cases, as it was not generated by refinement.
     //
-    Counter patchInventory;
+    patchTags.resize(refineTables->GetNumFacesTotal());
 
-    std::vector<PatchFaceTag> allPatchTags(refineTables->GetNumFacesTotal());
-
-    PatchFaceTag * levelPatchTags = &allPatchTags[0];
+    PatchFaceTag * levelPatchTags = &patchTags[0];
 
     for (int i = 0; i < (int)refineTables->_levels.size(); ++i) {
         VtrLevel const * level = &refineTables->_levels[i];
@@ -381,7 +582,7 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
         //    - what Faces are "complete" (done for child vertices in Refinement)
         //
         bool isLevelFirst = (i == 0);
-        bool isLevelLast  = (i == (refineTables->_levels.size() - 1));
+        bool isLevelLast  = (i == ((int)refineTables->_levels.size() - 1));
 
         VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refineTables->_refinements[i-1];
         VtrRefinement const * refineNext = isLevelLast  ? 0 : &refineTables->_refinements[i];
@@ -503,61 +704,29 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
         }
         levelPatchTags += level->getNumFaces();
     }
+}
+
+
+//
+//  Populate all adaptive patches now that the tables to hold data for them have been allocated.
+//  We need the inventory (counts per patch type) and the patch tags per face that were previously
+//  idenified.
+//
+void
+FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTables,
+                                                PatchCounters const &   patchInventory,
+                                                PatchTagVector const &  patchTags,
+                                                FarPatchTables *        tables ) {
+
+    int fvarwidth  = tables->_fvarData._fvarWidth;
 
     //
-    //  Now create the instance of the tables, allocate and initialize its members based on the
-    //  patch inventory determined, and traverse the face list to construct the patches for each:
+    //  Setup convenience pointers at the beginning of each patch array for each table (patches,
+    //  ptex, fvar)
     //
-
-    //  We should have been accumulating these above...
-    int maxValence   = 32;
-    int numPtexFaces = refineTables->_levels[0].getNumFaces();
-
-    FarPatchTables * tables = new FarPatchTables(maxValence);
-
-    // Populate the patch array descriptors
-    FarPatchTables::PatchArrayVector & parray = tables->_patchArrays;
-    parray.reserve( patchInventory.getNumPatchArrays() );
-
-    int voffset=0, poffset=0, qoffset=0;
-
-    for (Descriptor::iterator it=Descriptor::begin(Descriptor::FEATURE_ADAPTIVE_CATMARK);
-            it!=Descriptor::end(); ++it) {
-        pushPatchArray( *it, parray, patchInventory.getValue(*it), &voffset, &poffset, &qoffset );
-    }
-
-    tables->_fvarData._fvarWidth = fvarwidth;
-    tables->_numPtexFaces = numPtexFaces;
-
-    // Allocate various tables
-    allocateTables( tables, 0, fvarwidth );
-
-    // Specifics for Gregory patches -- the vertex valence table is initialized for many vertices
-    // not incident gregory patches, so we'll use a local vector of flags to mark only those that
-    // are needed and avoid initializing all others:
-    std::vector<unsigned char> gregoryVertexFlags;
-
-    bool hasGregoryPatches = (patchInventory.G > 0) || (patchInventory.GB > 0);
-    if (hasGregoryPatches) {
-        tables->_quadOffsetTable.resize( patchInventory.G*4 + patchInventory.GB*4 );
-
-        gregoryVertexFlags.resize(refineTables->GetNumVerticesTotal(), false);
-    }
-
-
-    //  Everything from the construction of the FarPatchTables instance to here could be bundled
-    //  into a single static initializeTables() method -- provided we set other simple members
-    //  first (maxValence, numPtexFaces, fvarwidth, etc.) it should only need the patch counters.
-
-
-    //  Initialize some local variables to simplify access to the patch data that needs to be
-    //  populated as we iterate through the faces.
-
-    // Setup convenience pointers at the beginning of each patch array for each
-    // table (patches, ptex, fvar)
-    CVPointers    iptrs;
-    ParamPointers pptrs;
-    FVarPointers  fptrs;
+    PatchCVPointers    iptrs;
+    PatchParamPointers pptrs;
+    PatchFVarPointers  fptrs;
 
     for (Descriptor::iterator it=Descriptor::begin(Descriptor::FEATURE_ADAPTIVE_CATMARK); it!=Descriptor::end(); ++it) {
         FarPatchTables::PatchArray * pa = tables->findPatchArray(*it);
@@ -574,13 +743,19 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
     FarPatchTables::QuadOffsetTable::value_type *quad_G_C0_P = patchInventory.G>0 ? &tables->_quadOffsetTable[0] : 0;
     FarPatchTables::QuadOffsetTable::value_type *quad_G_C1_P = patchInventory.GB>0 ? &tables->_quadOffsetTable[patchInventory.G*4] : 0;
 
+    std::vector<unsigned char> gregoryVertexFlags;
+
+    //
+    //  To avoid gathering vertex neighborhoods for all vertices, identify vertices involved in
+    //  gregory patches as the faces are traversed, to be gathered later:
+    //
+    bool hasGregoryPatches = (patchInventory.G > 0) || (patchInventory.GB > 0);
+    if (hasGregoryPatches) {
+        gregoryVertexFlags.resize(refineTables->GetNumVerticesTotal(), false);
+    }
+
     //
     //  Now iterate through the faces for all levels and populate the patches:
-    //
-    //  Regarding globally "remapping" the indices -- I prefer to defer remapping them all until
-    //  one pass at the end, so that we can more easily make it optional.  We do still need to
-    //  offset components within levels for patch table entries -- so we need a "level offset"
-    //  for the vertices that we gather.
     //
     int levelFaceOffset = 0;
     int levelVertOffset = 0;
@@ -588,10 +763,10 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
     for (int i = 0; i < (int)refineTables->_levels.size(); ++i) {
         VtrLevel const * level = &refineTables->_levels[i];
 
-        levelPatchTags = &allPatchTags[levelFaceOffset];
+        const PatchFaceTag * levelPatchTags = &patchTags[levelFaceOffset];
 
         for (int faceIndex = 0; faceIndex < level->getNumFaces(); ++faceIndex) {
-            PatchFaceTag& patchTag = levelPatchTags[faceIndex];
+            const PatchFaceTag& patchTag = levelPatchTags[faceIndex];
 
             if (!patchTag._hasPatch) continue;
 
@@ -609,7 +784,7 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
 
                     iptrs.R[tIndex] += 16;
-                    pptrs.R[tIndex] = vtrComputePatchParam(*refineTables, i, faceIndex, bIndex, pptrs.R[tIndex]);
+                    pptrs.R[tIndex] = computePatchParam(*refineTables, i, faceIndex, bIndex, pptrs.R[tIndex]);
                     // fptrs.R[tIndex] += fvarwidth * 4;
                 } else {
                     //  For the boundary and corner cases, the Hbr code makes some adjustments to the
@@ -638,7 +813,7 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
                         offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][rIndex]);
 
                         iptrs.B[tIndex][rIndex] += 12;
-                        pptrs.B[tIndex][rIndex] = vtrComputePatchParam(*refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
+                        pptrs.B[tIndex][rIndex] = computePatchParam(*refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
                         // fptrs.B[tIndex][rIndex] = computeFVarData(...,   fptrs.B[tIndex][rIndex], true);
                     } else {
                         unsigned int const * permuteCorner = 0;
@@ -649,7 +824,7 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
                         offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
 
                         iptrs.C[tIndex][rIndex] += 9;
-                        pptrs.C[tIndex][rIndex] = vtrComputePatchParam(*refineTables, i, faceIndex, paramRots, pptrs.C[tIndex][rIndex]);
+                        pptrs.C[tIndex][rIndex] = computePatchParam(*refineTables, i, faceIndex, paramRots, pptrs.C[tIndex][rIndex]);
                         // fptrs.C[tIndex][rIndex] = computeFVarData(...,   fptrs.C[tIndex][rIndex], true);
                     }
                 }
@@ -663,10 +838,10 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
                     }
                     iptrs.G += 4;
 
-                    vtrGetQuadOffsets(*level, faceIndex, quad_G_C0_P);
+                    getQuadOffsets(*level, faceIndex, quad_G_C0_P);
                     quad_G_C0_P += 4;
 
-                    pptrs.G = vtrComputePatchParam(*refineTables, i, faceIndex, 0, pptrs.G);
+                    pptrs.G = computePatchParam(*refineTables, i, faceIndex, 0, pptrs.G);
                     // fptrs.G = computeFVarData(f, fvarwidth, fptrs.G, true);
                 } else {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
@@ -677,10 +852,10 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
                     }
                     iptrs.GB += 4;
 
-                    vtrGetQuadOffsets(*level, faceIndex, quad_G_C1_P);
+                    getQuadOffsets(*level, faceIndex, quad_G_C1_P);
                     quad_G_C1_P += 4;
 
-                    pptrs.GB = vtrComputePatchParam(*refineTables, i, faceIndex, patchTag._boundaryIndex, pptrs.GB);
+                    pptrs.GB = computePatchParam(*refineTables, i, faceIndex, patchTag._boundaryIndex, pptrs.GB);
                     // fptrs.GB = computeFVarData(f, fvarwidth, fptrs.GB, true);
                 }
             }
@@ -694,17 +869,18 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
     //  of vertices around each vertex.  Currently it is extremely wasteful for the following reasons:
     //      - it allocates 2*maxvalence+1 for ALL vertices
     //      - it initializes the one-ring for ALL vertices
-    //  We use the full size expected, but we avoiding initializing the vast majority of vertices that
-    //  are not associated with gregory patches by having previously marked those that are above.
+    //  We use the full size expected (not sure what else relies on that) but we avoiding initializing
+    //  the vast majority of vertices that are not associated with gregory patches -- by having previously
+    //  marked those that are associated above and skipping all others.
     //
     if (hasGregoryPatches) {
-        const int SizePerVertex = 2*maxValence + 1;
+        const int SizePerVertex = 2*tables->_maxValence + 1;
 
         FarPatchTables::VertexValenceTable & vTable = tables->_vertexValenceTable;
         vTable.resize(refineTables->GetNumVerticesTotal() * SizePerVertex);
 
         int vOffset = 0;
-        int levelLast = refineTables->_levels.size() - 1;
+        int levelLast = (int)refineTables->_levels.size() - 1;
         for (int i = 0; i <= levelLast; ++i) {
             VtrLevel const * level = &refineTables->_levels[i];
 
@@ -744,8 +920,6 @@ FarPatchTablesFactory<int>::Create( FarRefineTables const * refineTables, int fv
             vOffset += level->getNumVertices();
         }
     }
-
-    return tables;
 }
 
 } // end namespace OPENSUBDIV_VERSION

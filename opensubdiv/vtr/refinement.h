@@ -40,7 +40,7 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 class VtrSparseSelector;
-template <typename T> class FarPatchTablesFactory;
+class FarPatchTablesFactory;
 
 //
 //  VtrRefinement:
@@ -136,7 +136,7 @@ public:
 //
 protected:
     friend class VtrSparseSelector;
-    template <class T> friend class FarPatchTablesFactory;
+    friend class FarPatchTablesFactory;
 
     VtrIndexArray getFaceChildFaces(VtrIndex parentFace);
     VtrIndexArray getFaceChildEdges(VtrIndex parentFace);
