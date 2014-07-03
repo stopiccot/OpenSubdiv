@@ -22,4 +22,16 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(tutorial_0)
+set(TUTORIALS
+    tutorial_0
+)
+
+foreach(tutorial ${TUTORIALS})
+
+    add_subdirectory("${tutorial}")
+
+    list(APPEND TUTORIAL_TARGETS "osd_${tutorial}")
+
+endforeach()
+
+add_custom_target(osd_tutorials DEPENDS ${TUTORIAL_TARGETS})

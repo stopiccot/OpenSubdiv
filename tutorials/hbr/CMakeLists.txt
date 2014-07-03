@@ -22,6 +22,18 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-add_subdirectory(tutorial_0)
-add_subdirectory(tutorial_1)
-add_subdirectory(tutorial_2)
+set(TUTORIALS
+    tutorial_0
+    tutorial_1
+    tutorial_2
+)
+
+foreach(tutorial ${TUTORIALS})
+
+    add_subdirectory("${tutorial}")
+
+    list(APPEND TUTORIAL_TARGETS "hbr_${tutorial}")
+
+endforeach()
+
+add_custom_target(hbr_tutorials DEPENDS ${TUTORIAL_TARGETS})
