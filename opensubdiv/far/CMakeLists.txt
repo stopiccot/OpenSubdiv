@@ -38,6 +38,8 @@ set(PUBLIC_HEADER_FILES
     patchMap.h
     patchTables.h
     patchTablesFactory.h
+    refineTables.h
+    refineTablesFactory.h
     stencilTablesFactory.h
     stencilTables.h
 )

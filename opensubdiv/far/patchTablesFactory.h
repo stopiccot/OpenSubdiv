@@ -48,13 +48,14 @@ template <typename T> struct PatchTypes;
 class FarPatchTablesFactory {
 
 public:
+
     /// \brief Factory constructor for adaptive meshes
     ///
-    /// @param mesh        FarRefineTables from which to generate patches
+    /// @param refineTables  FarRefineTables from which to generate patches
     ///
-    /// @param fvarWidth   The width of the interleaved face-varying data
+    /// @param fvarwidth     The width of the interleaved face-varying data
     ///
-    /// @return            A new instance of FarPatchTables
+    /// @return              A new instance of FarPatchTables
     ///
     static FarPatchTables * Create( FarRefineTables const * refineTables, int fvarwidth=0 );
 

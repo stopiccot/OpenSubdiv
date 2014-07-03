@@ -447,7 +447,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
            Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-           refTables.InterpolateLevel(level, srcStencils, dstStencils);
+           refTables.InterpolateVertex(level, srcStencils, dstStencils);
 
            delete [] srcStencils;
         } else {
@@ -455,7 +455,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
             Stencil * srcStencils = &(srcAlloc->GetStencils()).at(0),
                     * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-            refTables.InterpolateLevel(level, srcStencils, dstStencils);
+            refTables.InterpolateVertex(level, srcStencils, dstStencils);
         }
 
         if (options.generateAllLevels) {

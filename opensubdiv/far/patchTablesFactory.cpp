@@ -395,8 +395,8 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
     bool nonquad = (refTables.GetFaceVertices(depth, faceIndex).size() != 4);
 
     for (int i = depth; i > 0; --i) {
-        VtrRefinement const& refinement  = refTables._refinements[i-1];
-        VtrLevel const&      parentLevel = refTables._levels[i-1];
+        VtrRefinement const& refinement  = refTables.getRefinement(i-1);
+        VtrLevel const&      parentLevel = refTables.getLevel(i-1);
 
         VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
         int      childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
@@ -508,7 +508,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const * refineTables, int
     //  Create the instance of the tables and allocate and initialize its members based on
     //  the inventory of patches determined above:
     //
-    int maxValence = refineTables->_levels[0].findMaxValence();
+    int maxValence = refineTables->getLevel(0).findMaxValence();
 
     FarPatchTables * tables = new FarPatchTables(maxValence);
 
@@ -524,7 +524,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const * refineTables, int
     }
 
     tables->_fvarData._fvarWidth = fvarwidth;
-    tables->_numPtexFaces = refineTables->_levels[0].getNumFaces();
+    tables->_numPtexFaces = refineTables->getLevel(0).getNumFaces();
 
     // Allocate various tables
     allocateTables( tables, 0, fvarwidth );
@@ -566,8 +566,8 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const * refineTa
 
     PatchFaceTag * levelPatchTags = &patchTags[0];
 
-    for (int i = 0; i < (int)refineTables->_levels.size(); ++i) {
-        VtrLevel const * level = &refineTables->_levels[i];
+    for (int i = 0; i < (int)refineTables->getNumLevels(); ++i) {
+        VtrLevel const * level = &refineTables->getLevel(i);
 
         //
         //  Given components at Level[i], we need to be looking at Refinement[i] -- and not
@@ -582,10 +582,10 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const * refineTa
         //    - what Faces are "complete" (done for child vertices in Refinement)
         //
         bool isLevelFirst = (i == 0);
-        bool isLevelLast  = (i == ((int)refineTables->_levels.size() - 1));
+        bool isLevelLast  = (i == ((int)refineTables->getNumLevels() - 1));
 
-        VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refineTables->_refinements[i-1];
-        VtrRefinement const * refineNext = isLevelLast  ? 0 : &refineTables->_refinements[i];
+        VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refineTables->getRefinement(i-1);
+        VtrRefinement const * refineNext = isLevelLast  ? 0 : &refineTables->getRefinement(i);
 
         VtrRefinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0; 
 
@@ -760,8 +760,8 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTa
     int levelFaceOffset = 0;
     int levelVertOffset = 0;
 
-    for (int i = 0; i < (int)refineTables->_levels.size(); ++i) {
-        VtrLevel const * level = &refineTables->_levels[i];
+    for (int i = 0; i < (int)refineTables->getNumLevels(); ++i) {
+        VtrLevel const * level = &refineTables->getLevel(i);
 
         const PatchFaceTag * levelPatchTags = &patchTags[levelFaceOffset];
 
@@ -880,9 +880,9 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTa
         vTable.resize(refineTables->GetNumVerticesTotal() * SizePerVertex);
 
         int vOffset = 0;
-        int levelLast = (int)refineTables->_levels.size() - 1;
+        int levelLast = (int)refineTables->getNumLevels() - 1;
         for (int i = 0; i <= levelLast; ++i) {
-            VtrLevel const * level = &refineTables->_levels[i];
+            VtrLevel const * level = &refineTables->getLevel(i);
 
             int vTableOffset = vOffset * SizePerVertex;
 

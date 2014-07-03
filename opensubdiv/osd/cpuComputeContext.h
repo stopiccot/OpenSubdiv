@@ -62,10 +62,7 @@ public:
     /// Destructor
     virtual ~OsdCpuComputeContext();
 
-    /// Returns one of the vertex refinement tables.
-    ///
-    /// @param tableIndex the type of table
-    ///
+    /// Returns the stencils data applied by this context
     FarStencilTables const & GetStencilTables() const {
         return _stencilTables;
     }

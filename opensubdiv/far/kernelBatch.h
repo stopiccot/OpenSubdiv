@@ -56,8 +56,6 @@ public:
     ///
     /// @param level         the level of subdivision of the vertices in the batch
     ///
-    /// @param tableIndex    edit index (for the hierarchical edit kernels only)
-    ///
     /// @param start         index of the first vertex in the batch
     ///
     /// @param end           index of the last vertex in the batch

@@ -53,9 +53,9 @@ typedef VtrLocalIndex  FarLocalIndex;
 typedef VtrIndexArray      FarIndexArray;
 typedef VtrLocalIndexArray FarLocalIndexArray;
 
-//
-//  Class to store topology data for a specified set of refinement options.
-//
+///
+///  \brief Class to store topology data for a specified set of refinement options.
+///
 class FarRefineTables
 {
 public:
@@ -67,21 +67,34 @@ public:
     typedef FarLocalIndexArray LocalIndexArray;
 
 public:
+
+    /// \brief Constructor
     FarRefineTables(SdcType type, SdcOptions options = SdcOptions());
+
+    /// \brief Destructor
     ~FarRefineTables();
 
-    //
-    //  Queries for the instance as a whole:
-    //
+    /// \brief Returns the subdivision scheme
     SdcType    GetSchemeType() const    { return _subdivType; }
+
+    /// \brief Returns the subdivision options
     SdcOptions GetSchemeOptions() const { return _subdivOptions; }
 
+    /// \brief Returns true if uniform subdivision has been applied
     bool IsUniform() const   { return _isUniform; }
+
+    /// \brief Returns the highest level of refinement
     int  GetMaxLevel() const { return _maxLevel; }
 
-    //  (Note to self -- should cache these internally for trivial return)
+    // XXXX barfowl -- should cache these internally for trivial return)
+
+    /// \brief Returns the total number of vertices in all levels
     int GetNumVerticesTotal() const;
+
+    /// \brief Returns the total number of edges in all levels
     int GetNumEdgesTotal() const;
+
+    /// \brief Returns the total number of edges in all levels
     int GetNumFacesTotal() const;
 
     //
@@ -89,76 +102,191 @@ public:
     //      - need some variants here for different refinement options, i.e.
     //        single refine method plus struct RefineOptions
     //
-    void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = true);
-    void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = true);
+
+    /// \brief Refine the topology uniformly
+    ///
+    /// @param maxLevel                 Highest level of subdivision refinement
+    ///
+    /// @param fullTopologyInLastLevel  Skip secondary topological relationships
+    ///                                 at the highest level of refinement.
+    ///
+    void RefineUniform(int maxLevel, bool fullTopologyInLastLevel = false);
+
+    /// \brief Feature Adaptive topology refinement
+    ///
+    /// @param maxLevel                 Highest level of subdivision refinement
+    ///
+    /// @param fullTopologyInLastLevel  Skip secondary topological relationships
+    ///                                 at the highest level of refinement.
+    ///
+    void RefineAdaptive(int maxLevel, bool fullTopologyInLastLevel = false);
+
+    /// \brief Unrefine the topology (keep control cage)
     void Unrefine();
+
+    /// \brief Clear the topology entirely
     void Clear();
+
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
     void ComputeMaskWeights();
 #endif
-    template <class T, class U> void Interpolate(                T const * src, U * dst) const;
-    template <class T, class U> void InterpolateLevel(int level, T const * src, U * dst) const;
+
+    /// \brief Apply vertex interpolation to a primvar buffer
+    ///
+    /// The destination buffer must allocate an array of data for all the
+    /// refined vertices (at least GetNumVerticesTotal()-GetNumVertices(0))
+    ///
+    /// @param src  Source primvar buffer (control vertex data)
+    ///
+    /// @param dst  Destination primvar buffer (refined vertex data)
+    ///
+    template <class T, class U> void InterpolateVertex(T const * src, U * dst) const;
+
+    /// \brief Apply vertex interpolation to a primvar buffer for a single level
+    /// level of refinement.
+    ///
+    /// The destination buffer must allocate an array of data for all the
+    /// refined vertices (at least GetNumVertices(level))
+    ///
+    /// @param level  The refinement level
+    ///
+    /// @param src    Source primvar buffer (control vertex data)
+    ///
+    /// @param dst    Destination primvar buffer (refined vertex data)
+    ///
+    template <class T, class U> void InterpolateVertex(int level, T const * src, U * dst) const;
 
     //
     //  Inspection of components per level:
     //
-    //  Component inventories:
-    int GetNumVertices(int level) const { return _levels[level].getNumVertices(); }
-    int GetNumEdges(   int level) const { return _levels[level].getNumEdges(); }
-    int GetNumFaces(   int level) const { return _levels[level].getNumFaces(); }
 
-    //  Component properties:
-    float   GetEdgeSharpness(  int level, Index edge) const { return _levels[level].getEdgeSharpness(edge); }
-    float   GetVertexSharpness(int level, Index vert) const { return _levels[level].getVertexSharpness(vert); }
-    SdcRule GetVertexRule(     int level, Index vert) const { return _levels[level].getVertexRule(vert); }
+    /// \brief Returns the number of vertices at a given level of refinement
+    int GetNumVertices(int level) const {
+        return _levels[level].getNumVertices();
+    }
 
+    /// \brief Returns the number of edges at a given level of refinement
+    int GetNumEdges(   int level) const {
+        return _levels[level].getNumEdges();
+    }
+
+    /// \brief Returns the number of faces at a given level of refinement
+    int GetNumFaces(   int level) const {
+        return _levels[level].getNumFaces();
+    }
+
+    /// \brief Returns the sharpness of a given edge (at 'level' of refinement)
+    float   GetEdgeSharpness(  int level, Index edge) const {
+        return _levels[level].getEdgeSharpness(edge);
+    }
+
+    /// \brief Returns the sharpness of a given vertex (at 'level' of refinement)
+    float   GetVertexSharpness(int level, Index vert) const {
+        return _levels[level].getVertexSharpness(vert);
+    }
+
+    /// \brief Returns the subdivision rule of a given vertex (at 'level' of refinement)
+    SdcRule GetVertexRule(int level, Index vert) const {
+        return _levels[level].getVertexRule(vert);
+    }
+
+    //
     //  Topological relations -- incident/adjacent components:
+    //
+
+    /// \brief Returns the vertices of a 'face' at 'level'
     IndexArray const GetFaceVertices(int level, Index face) const { return _levels[level].getFaceVertices(face); }
+
+    /// \brief Returns the edges of a 'face' at 'level'
     IndexArray const GetFaceEdges(   int level, Index face) const { return _levels[level].getFaceEdges(face); }
+
+    /// \brief Returns the vertices of an 'edge' at 'level' (2 of them)
     IndexArray const GetEdgeVertices(int level, Index edge) const { return _levels[level].getEdgeVertices(edge); }
+
+    /// \brief Returns the faces incident to 'edge' at 'level'
     IndexArray const GetEdgeFaces(   int level, Index edge) const { return _levels[level].getEdgeFaces(edge); }
+
+    /// \brief Returns the faces incident to 'vertex' at 'level'
     IndexArray const GetVertexFaces( int level, Index vert) const { return _levels[level].getVertexFaces(vert); }
+
+    /// \brief Returns the edges incident to 'vertex' at 'level'
     IndexArray const GetVertexEdges( int level, Index vert) const { return _levels[level].getVertexEdges(vert); }
 
-    //      ... and do we want to include these with the above?
+    /// \brief Returns the edge with vertices'v0' and 'v1' (or -1 if they are
+    ///  not connected)
+    Index FindEdge(int level, Index v0, Index v1) const {
+        return _levels[level].findEdge(v0, v1);
+    }
+
+    // XXXX barfowl -- do we want to include these with the above?
     //  LocalIndexArray const VertexFaceLocalIndices(int level, Index vert) const;
     //  LocalIndexArray const VertexEdgeLocalIndices(int level, Index vert) const;
 
-    //  Other topological queries:
-    Index FindEdge(int level, Index v0, Index v1) const { return _levels[level].findEdge(v0, v1); }
-
+    //
     //  Parent-to-child relationships, i.e. relationships between components in one level
     //  and the next (entries may be invalid if sparse):
-    IndexArray const GetFaceChildFaces(int level, Index f) const { return _refinements[level].getFaceChildFaces(f); }
-    IndexArray const GetFaceChildEdges(int level, Index f) const { return _refinements[level].getFaceChildEdges(f); }
-    IndexArray const GetEdgeChildEdges(int level, Index e) const { return _refinements[level].getEdgeChildEdges(e); }
+    //
 
-    Index GetFaceChildVertex(  int level, Index f) const { return _refinements[level].getFaceChildVertex(f); }
-    Index GetEdgeChildVertex(  int level, Index e) const { return _refinements[level].getEdgeChildVertex(e); }
-    Index GetVertexChildVertex(int level, Index v) const { return _refinements[level].getVertexChildVertex(v); }
+    /// \brief Returns the child faces of face 'f' at 'level'
+    IndexArray const GetFaceChildFaces(int level, Index f) const {
+        return _refinements[level].getFaceChildFaces(f);
+    }
 
+    /// \brief Returns the child edges of face 'f' at 'level'
+    IndexArray const GetFaceChildEdges(int level, Index f) const {
+        return _refinements[level].getFaceChildEdges(f);
+    }
+
+    /// \brief Returns the child edges of edge 'e' at 'level'
+    IndexArray const GetEdgeChildEdges(int level, Index e) const {
+        return _refinements[level].getEdgeChildEdges(e);
+    }
+
+    /// \brief Returns the child vertex of face 'f' at 'level'
+    Index GetFaceChildVertex(  int level, Index f) const {
+        return _refinements[level].getFaceChildVertex(f);
+    }
+
+    /// \brief Returns the child vertex of edge 'e' at 'level'
+    Index GetEdgeChildVertex(  int level, Index e) const {
+        return _refinements[level].getEdgeChildVertex(e);
+    }
+
+    /// \brief Returns the child vertex of vertex 'v' at 'level'
+    Index GetVertexChildVertex(int level, Index v) const {
+        return _refinements[level].getVertexChildVertex(v);
+    }
+
+    //
     //  Debugging aides:
-    bool ValidateTopology(int level) const { return _levels[level].validateTopology(); }
-    void PrintTopology(int level, bool children = true) const { _levels[level].print(children ? &_refinements[level] : 0); }
+    //
 
+    /// \brief Returns true if the topology of 'level' is valid
+    bool ValidateTopology(int level) const {
+        return _levels[level].validateTopology();
+    }
 
-public:
-    //  Want to be protect or remove these entirely:
-    VtrLevel&       GetLevel(int l)       { return _levels[l]; }
-    VtrLevel const& GetLevel(int l) const { return _levels[l]; }
+    /// \brief Prints topology information to console
+    void PrintTopology(int level, bool children = true) const {
+        _levels[level].print(children ? &_refinements[level] : 0);
+    }
 
-    VtrRefinement& GetRefinement(int l) { return _refinements[l]; }
 
 protected:
+
     //
     //  For use by the Factory base and subclasses to construct the base level:
     //
     template <class MESH>
     friend class FarRefineTablesFactory;
     friend class FarRefineTablesFactoryBase;
+    friend class FarPatchTablesFactory;
 
-    //  This really should not be needed by the Factory ultimately...
-    VtrLevel& getBaseLevel() { return _levels.front(); }
+    int                   getNumLevels() const { return (int)_levels.size(); }
+    VtrLevel            & getBaseLevel() { return _levels.front(); }
+    VtrLevel            & getLevel(int l) { return _levels[l]; }
+    VtrLevel const      & getLevel(int l) const { return _levels[l]; }
+    VtrRefinement const & getRefinement(int l) const { return _refinements[l]; }
 
     int getNumBaseFaces() const    { return GetNumFaces(0); }
     int getNumBaseEdges() const    { return GetNumEdges(0); }
@@ -196,13 +324,11 @@ private:
     void catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector);
 
     template <class T, class U> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
-
     template <class T, class U> void interpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
-
     template <class T, class U> void interpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
 
-//  The following should be private but leaving it open while still early...
-public:
+private:
+    //  The following should be private but leaving it open while still early...
     SdcType    _subdivType;
     SdcOptions _subdivOptions;
 
@@ -215,14 +341,14 @@ public:
 
 template <class T, class U>
 inline void
-FarRefineTables::Interpolate(T const * src, U * dst) const {
+FarRefineTables::InterpolateVertex(T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
-        InterpolateLevel(level, src, dst);
-        
+        InterpolateVertex(level, src, dst);
+
         src = dst;
         dst += GetNumVertices(level);
     }
@@ -230,7 +356,7 @@ FarRefineTables::Interpolate(T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateLevel(int level, T const * src, U * dst) const {
+FarRefineTables::InterpolateVertex(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -243,7 +369,8 @@ FarRefineTables::InterpolateLevel(int level, T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement, T const * src, U * dst) const {
+FarRefineTables::interpolateChildVertsFromFaces(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
 
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
 
@@ -279,7 +406,8 @@ FarRefineTables::interpolateChildVertsFromFaces(VtrRefinement const & refinement
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement, T const * src, U * dst) const {
+FarRefineTables::interpolateChildVertsFromEdges(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
@@ -333,7 +461,8 @@ FarRefineTables::interpolateChildVertsFromEdges(VtrRefinement const & refinement
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromVerts(VtrRefinement const & refinement, T const * src, U * dst) const {
+FarRefineTables::interpolateChildVertsFromVerts(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);

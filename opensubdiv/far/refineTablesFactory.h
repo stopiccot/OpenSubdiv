@@ -139,7 +139,7 @@ public:
     ///
     /// @param mesh          Client topological representation (or a converter)
     ///
-    /// @param maxlevel      Number of levels of uniform subdivision applied
+    /// @param maxLevel      Number of levels of uniform subdivision applied
     ///
     /// @param fullTopology  Generates all the topological relationships at the 
     ///                      highest level of subdivision if true.

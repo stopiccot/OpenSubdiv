@@ -168,7 +168,7 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
     }
 
     xyzVV * verts = &data[0];
-    refTables->Interpolate<xyzVV>(verts, verts+refTables->GetNumVertices(0));
+    refTables->InterpolateVertex(verts, verts+refTables->GetNumVertices(0));
 
     delete shape;
     return refTables;

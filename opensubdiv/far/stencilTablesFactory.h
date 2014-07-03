@@ -42,8 +42,8 @@ class FarRefineTables;
 ///       FarRefineTables need to be remapped to their new location in the
 ///       vertex buffer.
 ///
-///       XXXX manuelk remap table creation not implemented yet !
-///
+//        XXXX manuelk remap table creation not implemented yet !
+//
 class FarStencilTablesFactory {
 
 public:
@@ -68,8 +68,7 @@ public:
     ///
     /// @param refTables  The FarRefineTables containing the refined topology
     ///
-    /// @param allLevels  Set to false to generate stencils for the vertices at
-    ///                   the highest level of refinement only
+    /// @param options    Options controlling the creation of the tables
     ///
     static FarStencilTables const * Create(FarRefineTables const & refTables,
         Options options = Options());
