@@ -341,6 +341,7 @@ createHbrMesh(Shape * shape, int maxlevel) {
         coarseOptions.faceColorMode=GLMesh::FACECOLOR_SOLID;
 
         g_base_glmesh.Initialize(coarseOptions, coarseFaces);
+        g_base_glmesh.InitializeDeviceBuffers();
     }
 
     { // create maxlevel refined GL mesh
