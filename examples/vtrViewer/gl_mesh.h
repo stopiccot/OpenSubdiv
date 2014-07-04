@@ -89,8 +89,9 @@ public:
 
                 int nv = f->GetNumVertices();
                 for (int j=0; j<nv; ++j) {
-                    _eao[COMP_VERT].push_back(f->GetVertex(j)->GetID());
-                    _eao[COMP_FACE].push_back(f->GetVertex(j)->GetID());
+                    int vid = f->GetVertex(j)->GetID();
+                    _eao[COMP_VERT].push_back(vid);
+                    _eao[COMP_FACE].push_back(vid);
                 }
             }
             std::sort(_eao[COMP_VERT].begin(), _eao[COMP_VERT].end());

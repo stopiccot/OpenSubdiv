@@ -82,10 +82,11 @@ out block {
     OutputVertex v;
 } outpt;
 
-void emit(int index, vec3 normal)
+void emit(int index, vec3 normal, vec2 uv)
 {
     outpt.v.position = inpt[index].v.position;
     outpt.v.normal = normal;
+    outpt.v.tessCoord = uv;
 
     gl_Position = ProjectionMatrix * inpt[index].v.position;
     EmitVertex();
@@ -100,10 +101,10 @@ void main()
     vec3 C = (inpt[2].v.position - inpt[1].v.position).xyz;
     vec3 n0 = normalize(cross(B, A));
 
-    emit(0, n0);
-    emit(1, n0);
-    emit(3, n0);
-    emit(2, n0);
+    emit(0, n0, vec2(0.0,0.0));
+    emit(1, n0, vec2(0.0,1.0));
+    emit(3, n0, vec2(1.0,0.0));
+    emit(2, n0, vec2(1.0,1.0));
 
     EndPrimitive();
 }
@@ -139,6 +140,7 @@ uniform vec4 diffuseColor = vec4(1);
 uniform vec4 ambientColor = vec4(1);
 
 uniform samplerBuffer faceColors;
+uniform sampler2D faceTexture;
 
 vec4
 lighting(vec4 diffuse, vec3 Peye, vec3 Neye)
@@ -173,8 +175,10 @@ main()
     vec3 N = (gl_FrontFacing ? inpt.v.normal : -inpt.v.normal);
 
     vec4 faceColor = texelFetch(faceColors, gl_PrimitiveID);
+    
+    vec4 tex = texture2D(faceTexture, inpt.v.tessCoord);
 
-    vec4 Cf = lighting(diffuseColor * faceColor, inpt.v.position.xyz, N);
+    vec4 Cf = lighting(diffuseColor * faceColor * tex, inpt.v.position.xyz, N);
 
     outColor = Cf;
     outNormal = N;

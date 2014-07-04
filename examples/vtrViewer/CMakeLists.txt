@@ -58,6 +58,7 @@ _add_glfw_executable(vtrViewer
     vtrViewer.cpp
     gl_fontutils.cpp
     gl_mesh.cpp
+    face_texture.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:sdc_obj>

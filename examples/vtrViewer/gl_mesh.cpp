@@ -78,6 +78,31 @@ GLMesh::setColorBySharpness(float sharpness, float * color) {
 }
 
 //------------------------------------------------------------------------------
+static GLuint g_faceTexture=0;
+
+static GLuint
+getFaceTexture() {
+
+#include "face_texture.h"
+
+    if (not g_faceTexture) {
+        glGenTextures(1, &g_faceTexture);
+        glBindTexture(GL_TEXTURE_2D, g_faceTexture);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, FACE_TEXTURE_WIDTH,
+            FACE_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, face_texture);
+    }
+    
+    return g_faceTexture;
+}
+
+
+//------------------------------------------------------------------------------
 GLMesh::GLMesh() : _TBOfaceColors(0) {
 
     for (int i=0; i<COMP_NUM_COMPONENTS; ++i) {
@@ -281,8 +306,8 @@ createTextureBuffer(T const &data, GLint format, int offset=0) {
 
     glBindTexture(GL_TEXTURE_BUFFER, texture);
     glTexBuffer(GL_TEXTURE_BUFFER, format, buffer);
-    glBindTexture(GL_TEXTURE_BUFFER, 0);
 
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
     glDeleteBuffers(1, &buffer);
 
     checkGLErrors("createTextureBuffer");
@@ -478,8 +503,14 @@ GLMesh::Draw(Component comp, GLuint transformUB, GLuint lightingUB) {
             GLuint faceColors = glGetUniformLocation(g_faceProgram, "faceColors");
             glUniform1i(faceColors, 0); // GL_TEXTURE0
 
+            GLuint faceTexture = glGetUniformLocation(g_faceProgram, "faceTexture");
+            glUniform1i(faceTexture, 1); // GL_TEXTURE1
+
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_BUFFER, _TBOfaceColors);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, getFaceTexture());
         }
 
         glBindVertexArray(_VAO[COMP_FACE]);
