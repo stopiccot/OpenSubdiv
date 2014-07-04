@@ -549,7 +549,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
     }
 
     // populate buffer with Vtr interpolated vertex data
-    refTables->InterpolateVertex(verts, verts + ncoarseverts);
+    refTables->Interpolate(verts, verts + ncoarseverts);
 
     s.Stop();
     printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);

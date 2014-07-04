@@ -62,6 +62,12 @@ public:
     // Weighted add of a Stencil
     void AddWithWeight(Stencil const & src, float weight);
 
+    // Weighted add for coarse vertices (size=1, weight=1.0f)
+    void AddVaryingWithWeight(int, float) {}
+
+    // Weighted add of a Stencil
+    void AddVaryingWithWeight(Stencil const &, float) {}
+
     // Returns the current size of the Stencil
     int GetSize() const;
 
@@ -447,7 +453,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
            Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-           refTables.InterpolateVertex(level, srcStencils, dstStencils);
+           refTables.Interpolate(level, srcStencils, dstStencils);
 
            delete [] srcStencils;
         } else {
@@ -455,7 +461,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
             Stencil * srcStencils = &(srcAlloc->GetStencils()).at(0),
                     * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-            refTables.InterpolateVertex(level, srcStencils, dstStencils);
+            refTables.Interpolate(level, srcStencils, dstStencils);
         }
 
         if (options.generateAllLevels) {

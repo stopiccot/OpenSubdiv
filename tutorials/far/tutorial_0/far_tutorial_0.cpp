@@ -144,7 +144,7 @@ int main(int, char **) {
 
 
     // Interpolate vertex primvar data
-    refTables->InterpolateVertex(verts, verts + nCoarseVerts);
+    refTables->Interpolate(verts, verts + nCoarseVerts);
 
 
 

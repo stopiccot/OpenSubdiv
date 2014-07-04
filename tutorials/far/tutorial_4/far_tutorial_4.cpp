@@ -26,6 +26,8 @@
 //------------------------------------------------------------------------------
 // Tutorial description:
 //
+// This tutorial shows how to create and manipulate FarStencilTables. We use the
+// factorized stencils to interpolate vertex primvar data buffers.
 //
 
 #include <far/refineTablesFactory.h>
@@ -109,17 +111,17 @@ static FarRefineTables * createRefineTables();
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-    // Generate some FarRefineTables (see far_tutorial_0 for details)
+    // Generate some FarRefineTables (see far_tutorial_0 for details).
     FarRefineTables * refTables = createRefineTables();
 
 
-    // Uniformly refine the topolgy up to 'maxlevel'
+    // Uniformly refine the topolgy up to 'maxlevel'.
     int maxlevel = 3;
     refTables->RefineUniform( maxlevel );
 
 
     // Use the FarStencilTables factory to create discrete stencil tables
-    // note: we only want stencils for the highest refinement level
+    // note: we only want stencils for the highest refinement level.
     FarStencilTablesFactory::Options options;
     options.generateAllLevels=false;
     options.generateOffsets=true;
@@ -136,12 +138,13 @@ int main(int, char **) {
     // (this is where you would drive shape deformations every frame)
     Vertex * controlValues = reinterpret_cast<Vertex *>(g_verts);
 
+    { // This section would be applied every frame after control vertices have
+      // been moved.
 
-    // Apply stencils on the control vertex data to update the primvar data of
-    // the refined vertices (done every frame after control vertices have been
-    // moved)
-    stencilTables->UpdateValues(controlValues, &vertexBuffer[0]);
-
+        // Apply stencils on the control vertex data to update the primvar data
+        // of the refined vertices.
+        stencilTables->UpdateValues(controlValues, &vertexBuffer[0]);
+    }
 
     { // Visualization with Maya : print a MEL script that generates particles
       // at the location of the refined vertices
@@ -162,7 +165,7 @@ int main(int, char **) {
 static FarRefineTables *
 createRefineTables() {
 
-    // Populate a topology descriptor with our raw data
+    // Populate a topology descriptor with our raw data.
     typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
@@ -176,8 +179,7 @@ createRefineTables() {
     desc.vertsPerFace = g_vertsperface;
     desc.vertIndices  = g_vertIndices;
 
-
-    // Instantiate a FarRefineTables from the descriptor
+    // Instantiate a FarRefineTables from the descriptor.
     return FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
 
 }

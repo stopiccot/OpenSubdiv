@@ -54,11 +54,12 @@ typedef VtrIndexArray      FarIndexArray;
 typedef VtrLocalIndexArray FarLocalIndexArray;
 
 ///
-///  \brief Class to store topology data for a specified set of refinement options.
+///  \brief Stores topology data for a specified set of refinement options.
 ///
 class FarRefineTables
 {
 public:
+
     //  Local typedef's for local notational convenience:
     typedef FarIndex       Index;
     typedef FarLocalIndex  LocalIndex;
@@ -97,11 +98,15 @@ public:
     /// \brief Returns the total number of edges in all levels
     int GetNumFacesTotal() const;
 
+
     //
     //  High level refinement and related methods:
-    //      - need some variants here for different refinement options, i.e.
-    //        single refine method plus struct RefineOptions
     //
+    //  XXXX barfowl --  need some variants here for different refinement
+    //                   options, i.e. single refine method plus struct
+    //                   RefineOptions
+    //
+
 
     /// \brief Refine the topology uniformly
     ///
@@ -131,7 +136,13 @@ public:
     void ComputeMaskWeights();
 #endif
 
-    /// \brief Apply vertex interpolation to a primvar buffer
+
+    //
+    //  Primvar data interpolation:
+    //
+
+
+    /// \brief Apply interpolation weights to a primvar buffer
     ///
     /// The destination buffer must allocate an array of data for all the
     /// refined vertices (at least GetNumVerticesTotal()-GetNumVertices(0))
@@ -140,9 +151,9 @@ public:
     ///
     /// @param dst  Destination primvar buffer (refined vertex data)
     ///
-    template <class T, class U> void InterpolateVertex(T const * src, U * dst) const;
+    template <class T, class U> void Interpolate(T const * src, U * dst) const;
 
-    /// \brief Apply vertex interpolation to a primvar buffer for a single level
+    /// \brief Apply interpolation weights to a primvar buffer for a single level
     /// level of refinement.
     ///
     /// The destination buffer must allocate an array of data for all the
@@ -154,11 +165,13 @@ public:
     ///
     /// @param dst    Destination primvar buffer (refined vertex data)
     ///
-    template <class T, class U> void InterpolateVertex(int level, T const * src, U * dst) const;
+    template <class T, class U> void Interpolate(int level, T const * src, U * dst) const;
+
 
     //
     //  Inspection of components per level:
     //
+
 
     /// \brief Returns the number of vertices at a given level of refinement
     int GetNumVertices(int level) const {
@@ -190,27 +203,51 @@ public:
         return _levels[level].getVertexRule(vert);
     }
 
+
     //
     //  Topological relations -- incident/adjacent components:
     //
 
+
     /// \brief Returns the vertices of a 'face' at 'level'
-    IndexArray const GetFaceVertices(int level, Index face) const { return _levels[level].getFaceVertices(face); }
+    IndexArray const GetFaceVertices(int level, Index face) const {
+        return _levels[level].getFaceVertices(face);
+    }
 
     /// \brief Returns the edges of a 'face' at 'level'
-    IndexArray const GetFaceEdges(   int level, Index face) const { return _levels[level].getFaceEdges(face); }
+    IndexArray const GetFaceEdges(   int level, Index face) const {
+        return _levels[level].getFaceEdges(face);
+    }
 
     /// \brief Returns the vertices of an 'edge' at 'level' (2 of them)
-    IndexArray const GetEdgeVertices(int level, Index edge) const { return _levels[level].getEdgeVertices(edge); }
+    IndexArray const GetEdgeVertices(int level, Index edge) const {
+        return _levels[level].getEdgeVertices(edge);
+    }
 
     /// \brief Returns the faces incident to 'edge' at 'level'
-    IndexArray const GetEdgeFaces(   int level, Index edge) const { return _levels[level].getEdgeFaces(edge); }
+    IndexArray const GetEdgeFaces(   int level, Index edge) const {
+        return _levels[level].getEdgeFaces(edge);
+    }
 
     /// \brief Returns the faces incident to 'vertex' at 'level'
-    IndexArray const GetVertexFaces( int level, Index vert) const { return _levels[level].getVertexFaces(vert); }
+    IndexArray const GetVertexFaces( int level, Index vert) const {
+        return _levels[level].getVertexFaces(vert);
+    }
 
     /// \brief Returns the edges incident to 'vertex' at 'level'
-    IndexArray const GetVertexEdges( int level, Index vert) const { return _levels[level].getVertexEdges(vert); }
+    IndexArray const GetVertexEdges( int level, Index vert) const {
+        return _levels[level].getVertexEdges(vert);
+    }
+
+    /// \brief Returns the local face indices of vertex 'vert' at 'level'
+    LocalIndexArray const VertexFaceLocalIndices(int level, Index vert) const {
+        return _levels[level].getVertexFaceLocalIndices(vert);
+    }
+
+    /// \brief Returns the local edge indices of vertex 'vert' at 'level'
+    LocalIndexArray const VertexEdgeLocalIndices(int level, Index vert) const {
+        return _levels[level].getVertexEdgeLocalIndices(vert);
+    }
 
     /// \brief Returns the edge with vertices'v0' and 'v1' (or -1 if they are
     ///  not connected)
@@ -218,14 +255,12 @@ public:
         return _levels[level].findEdge(v0, v1);
     }
 
-    // XXXX barfowl -- do we want to include these with the above?
-    //  LocalIndexArray const VertexFaceLocalIndices(int level, Index vert) const;
-    //  LocalIndexArray const VertexEdgeLocalIndices(int level, Index vert) const;
 
     //
     //  Parent-to-child relationships, i.e. relationships between components in one level
     //  and the next (entries may be invalid if sparse):
     //
+
 
     /// \brief Returns the child faces of face 'f' at 'level'
     IndexArray const GetFaceChildFaces(int level, Index f) const {
@@ -257,9 +292,11 @@ public:
         return _refinements[level].getVertexChildVertex(v);
     }
 
+
     //
     //  Debugging aides:
     //
+
 
     /// \brief Returns true if the topology of 'level' is valid
     bool ValidateTopology(int level) const {
@@ -341,13 +378,13 @@ private:
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateVertex(T const * src, U * dst) const {
+FarRefineTables::Interpolate(T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
-        InterpolateVertex(level, src, dst);
+        Interpolate(level, src, dst);
 
         src = dst;
         dst += GetNumVertices(level);
@@ -356,7 +393,7 @@ FarRefineTables::InterpolateVertex(T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateVertex(int level, T const * src, U * dst) const {
+FarRefineTables::Interpolate(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -385,7 +422,8 @@ FarRefineTables::interpolateChildVertsFromFaces(
         //  Declare and compute mask weights for this vertex relative to its parent face:
         VtrIndexArray const fVerts = parent.getFaceVertices(face);
 
-        float fVertWeights[fVerts.size()];
+        float fVertWeights[fVerts.size()],
+              fVaryingWeight = 1.0f / (float) fVerts.size();
 
         VtrMaskInterface fMask(fVertWeights, 0, 0);
         VtrFaceInterface fHood(fVerts.size());
@@ -398,8 +436,10 @@ FarRefineTables::interpolateChildVertsFromFaces(
         vdst.Clear();
 
         for (int i = 0; i < fVerts.size(); ++i) {
+
             vdst.AddWithWeight(src[fVerts[i]], fVertWeights[i]);
-            //vdst.AddVaryingWithWeight(src[fVerts[i]], fVertWeights[i]);
+
+            vdst.AddVaryingWithWeight(src[fVerts[i]], fVaryingWeight);
         }
     }
 }
@@ -446,6 +486,9 @@ FarRefineTables::interpolateChildVertsFromEdges(
         vdst.Clear();
         vdst.AddWithWeight(src[eVerts[0]], eVertWeights[0]);
         vdst.AddWithWeight(src[eVerts[1]], eVertWeights[1]);
+
+        vdst.AddVaryingWithWeight(src[eVerts[0]], 0.5f);
+        vdst.AddVaryingWithWeight(src[eVerts[1]], 0.5f);
 
         if (eMask.GetNumFaceWeights() > 0) {
 
@@ -501,6 +544,7 @@ FarRefineTables::interpolateChildVertsFromVerts(
 
         vdst.Clear();
         vdst.AddWithWeight(src[vert], vVertWeight);
+        vdst.AddVaryingWithWeight(src[vert], 1.0f);
 
         if (vMask.GetNumEdgeWeights() > 0) {
 

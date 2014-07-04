@@ -63,6 +63,10 @@ The tutorial source code can be found in
 
 ----
 
+.. |far_tut_1| image:: images/far_tutorial_1.0.png
+   :width: 100px
+   :target: images/far_tutorial_1.0.png
+
 .. list-table:: **Far Tutorials**
    :class: quickref
    :widths: 50 50
@@ -71,7 +75,16 @@ The tutorial source code can be found in
        | This tutorial presents in a very succint way the requisite steps to
          instantiate a Far mesh from simple topological data.
        |
-     - |
+       | **Tutorial 1**
+       | Building on tutorial 0, this example shows how to instantiate a simple mesh,
+         refine it uniformly and then interpolate both 'vertex' and 'varying' primvar
+         data.
+       | |far_tut_1|
+       |
+     - | **Tutorial 4**
+       | This tutorial shows how to create and manipulate FarStencilTables. We use the
+         factorized stencils to interpolate vertex primvar data buffers.
+       |
 
 ----
 
