@@ -31,11 +31,16 @@ Tutorials
 
 ----
 
-The tutorial source code can be found in
-
+The tutorial source code can be found in the `github.com repository
+<https://github.com/PixarAnimationStudios/OpenSubdiv/tree/master/tutorials>`__
+or in your local ``<repository root>/turorials``.
 
 ----
 
+.. raw:: html
+
+  <style> .line {text-align:justify;} </style>
+  
 .. list-table:: **Hbr Tutorials**
    :class: quickref
    :widths: 50 50
@@ -76,12 +81,18 @@ The tutorial source code can be found in
          instantiate a Far mesh from simple topological data.
        |
        | **Tutorial 1**
+       | This tutorial shows how to interface a high-level topology representation
+         with Far for better efficiency. In tutorial 0, we showed how to instantiate
+         topology from a simple face-vertex list. Here we will show how to take
+         advantage of more complex data structures.
+       |
+     - | **Tutorial 2**
        | Building on tutorial 0, this example shows how to instantiate a simple mesh,
          refine it uniformly and then interpolate both 'vertex' and 'varying' primvar
          data.
        | |far_tut_1|
        |
-     - | **Tutorial 4**
+       | **Tutorial 4**
        | This tutorial shows how to create and manipulate FarStencilTables. We use the
          factorized stencils to interpolate vertex primvar data buffers.
        |

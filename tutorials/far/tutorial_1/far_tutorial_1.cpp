@@ -26,23 +26,315 @@
 //------------------------------------------------------------------------------
 // Tutorial description:
 //
-// Building on tutorial 0, this example shows how to instantiate a simple mesh,
-// refine it uniformly and then interpolate both 'vertex' and 'varying' primvar
-// data.
+// This tutorial shows how to interface a high-level topology representation
+// with Far for better efficiency. In tutorial 0, we showed how to instantiate
+// topology from a simple face-vertex list. Here we will show how to take
+// advantage of more complex data structures.
+//
+// Many client applications that manipulate geometry use advanced data structures
+// such as half-edge, quad-edge or winged-edge in order to represent complex
+// topological relationships beyond the usual face-vertex lists. We can take
+// advantage of this information.
+//
+// Far provides an advanced interface that allows such a client application to
+// communicate advanced component relationships directly and avoid having Far
+// rebuilding them redundantly.
 //
 
+
+#include <sdc/type.h>
 #include <far/refineTablesFactory.h>
 
-#include <cstdio>
+//------------------------------------------------------------------------------
+
+using namespace OpenSubdiv;
 
 //------------------------------------------------------------------------------
-// Vertex container implementation.
 //
-// We are adding a per-vertex color attribute to our Vertex interface. Unlike
-// the position attribute however, the new color attribute is interpolated using
-// the 'varying' mode of evaluation ('vertex' is bi-cubic, 'varying' is
-// bi-linear). We also implemented the 'AddVaryingWithWeight()' method, which
-// be performing the interpolation on the primvar data.
+// For this tutorial, we provide the complete topological representation of a
+// simple pyramid. In our case, we store it as a simple sequence of integers,
+// with the understanding that client-code would provide a fully implemented
+// data-structure such as quad-edges or winged-edges.
+//
+// Pyramid geometry from catmark_pyramid.h - extended for this tutorial
+//
+static int g_nverts = 5,
+           g_nedges = 8,
+           g_nfaces = 5;
+
+// vertex positions
+static float g_verts[5][3] = {{ 0.0f,  0.0f,  2.0f},
+                              { 0.0f, -2.0f,  0.0f},
+                              { 2.0f,  0.0f,  0.0f},
+                              { 0.0f,  2.0f,  0.0f},
+                              {-2.0f,  0.0f,  0.0f}};
+
+// number of vertices in each face
+static int g_facenverts[5] = { 3, 3, 3, 3, 4 };
+
+// index of face vertices
+static int g_faceverts[16] = { 0, 1, 2,
+                               0, 2, 3,
+                               0, 3, 4,
+                               0, 4, 1,
+                               4, 3, 2, 1 };
+
+// index of edge vertices (2 per edge)
+static int g_edgeverts[16] = { 0, 1,
+                               0, 2,
+                               0, 3,
+                               0, 4,
+                               1, 2,
+                               2, 3,
+                               3, 4,
+                               4, 1 };
+
+
+// index of face edges
+static int g_faceedges[16] = { 0, 4, 1,
+                               1, 5, 2,
+                               2, 6, 3,
+                               3, 7, 0,
+                               6, 5, 4, 7 };
+
+// number of faces adjacent to each edge
+static int g_edgenfaces[8] = { 2, 2, 2, 2, 2, 2, 2, 2 };
+
+// index of faces incident to a given edge
+static int g_edgefaces[16] = { 3, 0,
+                               0, 1,
+                               1, 2,
+                               2, 3,
+                               0, 4,
+                               1, 4,
+                               2, 4,
+                               3, 4 };
+
+// number of faces incident to each vertex
+static int g_vertexnfaces[8] = { 4, 3, 3, 3, 3, 3, 3, 3 };
+
+// index of faces incident to each vertex
+static int g_vertexfaces[25] = { 0, 1, 2, 3,
+                                 0, 3, 4,
+                                 0, 1, 4,
+                                 1, 2, 4,
+                                 2, 3, 4 };
+
+
+// number of edges incident to each vertex
+static int g_vertexnedges[8] = { 4, 3, 3, 3, 3, 3, 3, 3 };
+
+// index of edges incident to each vertex
+static int g_vertexedges[25] = { 0, 1, 2, 3,
+                                 0, 4, 7,
+                                 1, 4, 5,
+                                 2, 5, 6,
+                                 3, 6, 7 };
+
+//------------------------------------------------------------------------------
+//
+// Because existing client-code may not provide an exact match for the
+// topological queries required by Far's interface, we can provide a converter
+// class. This can be particularly useful for instance if the client
+// data-structure requires additional relationships to be mapped. For instance,
+// half-edge representations do not store unique edge indices and it can be
+// difficult to traverse edges or faces adjacent to a given vertex.
+//
+// Using an intermediate wrapper class allows us to leverage existing
+// relationships information from a mesh, and generate the missing components
+// temporarily.
+//
+// For a practical example, you can look at the file 'hbr_to_vtr.h' in the same
+// tutorial directory. This example implements a 'OsdHbrConverter' class as a
+// way of interfacing PRman's half-edge representation to Far.
+//
+struct Converter {
+
+public:
+
+    SdcType GetType() const {
+        return TYPE_CATMARK;
+    }
+
+    SdcOptions GetOptions() const {
+        SdcOptions options;
+        options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+        return options;
+    }
+
+    int GetNumFaces() const { return g_nfaces; }
+
+    int GetNumEdges() const { return g_nedges; }
+
+    int GetNumVertices() const { return g_nverts; }
+
+    //
+    // Face relationships
+    //
+    int GetNumFaceVerts(int face) const { return g_facenverts[face]; }
+
+    int const * GetFaceVerts(int face) const { return g_faceverts+getCompOffset(g_facenverts, face); }
+
+    int const * GetFaceEdges(int face) const { return g_faceedges+getCompOffset(g_facenverts, face); }
+
+
+    //
+    // Edge relationships
+    //
+    int const * GetEdgeVertices(int edge) const { return g_edgeverts+edge*2; }
+
+    int GetNumEdgeFaces(int edge) const { return g_edgenfaces[edge]; }
+
+    int const * GetEdgeFaces(int edge) const { return g_edgefaces+getCompOffset(g_edgenfaces, edge); }
+
+    //
+    // Vertex relationships
+    //
+    int GetNumVertexEdges(int vert) const { return g_vertexnedges[vert]; }
+
+    int const * GetVertexEdges(int vert) const { return g_vertexedges+getCompOffset(g_vertexnedges, vert); }
+
+    int GetNumVertexFaces(int vert) const { return g_vertexnfaces[vert]; }
+
+    int const * GetVertexFaces(int vert) const { return g_vertexfaces+getCompOffset(g_vertexnfaces, vert); }
+
+private:
+
+    int getCompOffset(int const * comps, int comp) const {
+        int ofs=0;
+        for (int i=0; i<comp; ++i) {
+            ofs += comps[i];
+        }
+        return ofs;
+    }
+
+};
+
+//------------------------------------------------------------------------------
+
+namespace OpenSubdiv {
+namespace OPENSUBDIV_VERSION {
+
+template <>
+void
+FarRefineTablesFactory<Converter>::resizeComponentTopology(
+    FarRefineTables & refTables, Converter const & conv) {
+
+    // Faces and face-verts
+    int nfaces = conv.GetNumFaces();
+    refTables.setNumBaseFaces(nfaces);
+    for (int face=0; face<nfaces; ++face) {
+
+        int nv = conv.GetNumFaceVerts(face);
+        refTables.setNumBaseFaceVertices(face, nv);
+    }
+
+    // Edges and edge-faces
+    int nedges = conv.GetNumEdges();
+    refTables.setNumBaseEdges(nedges);
+    for (int edge=0; edge<nedges; ++edge) {
+
+        int nf = conv.GetNumEdgeFaces(edge);
+        refTables.setNumBaseEdgeFaces(edge, nf);
+    }
+
+    // Vertices and vert-faces and vert-edges
+    int nverts = conv.GetNumVertices();
+    refTables.setNumBaseVertices(nverts);
+    for (int vert=0; vert<nverts; ++vert) {
+
+        int ne = conv.GetNumVertexEdges(vert),
+            nf = conv.GetNumVertexFaces(vert);
+        refTables.setNumBaseVertexEdges(vert, ne);
+        refTables.setNumBaseVertexFaces(vert, nf);
+    }
+}
+
+template <>
+void
+FarRefineTablesFactory<Converter>::assignComponentTopology(
+    FarRefineTables & refTables, Converter const & conv) {
+
+    typedef FarRefineTables::IndexArray      IndexArray;
+    typedef FarRefineTables::LocalIndexArray LocalIndexArray;
+
+    { // Face relations:
+        int nfaces = conv.GetNumFaces();
+        for (int face=0; face<nfaces; ++face) {
+
+            IndexArray dstFaceVerts = refTables.setBaseFaceVertices(face);
+            IndexArray dstFaceEdges = refTables.setBaseFaceEdges(face);
+
+            int const * faceverts = conv.GetFaceVerts(face);
+            int const * faceedges = conv.GetFaceEdges(face);
+
+            for (int vert=0; vert<conv.GetNumFaceVerts(face); ++vert) {
+                dstFaceVerts[vert] = faceverts[vert];
+                dstFaceEdges[vert] = faceedges[vert];
+            }
+        }
+    }
+
+    { // Edge relations
+      //       
+      // Note: if your representation is unable to provide edge relationships
+      //       (ex: half-edges), you can comment out this section and Far will
+      //       automatically generate the missing information.
+      //       
+        int nedges = conv.GetNumEdges();
+        for (int edge=0; edge<nedges; ++edge) {
+
+            //  Edge-vertices:
+            IndexArray dstEdgeVerts = refTables.setBaseEdgeVertices(edge);
+            dstEdgeVerts[0] = conv.GetEdgeVertices(edge)[0];
+            dstEdgeVerts[1] = conv.GetEdgeVertices(edge)[1];
+
+            //  Edge-faces
+            IndexArray dstEdgeFaces = refTables.setBaseEdgeFaces(edge);
+            for (int face=0; face<conv.GetNumEdgeFaces(face); ++face) {
+                dstEdgeFaces[face] = conv.GetEdgeFaces(edge)[face];
+            }
+        }
+    }
+
+    { // Vertex relations
+        int nverts = conv.GetNumVertices();
+        for (int vert=0; vert<nverts; ++vert) {
+
+            //  Vert-Faces:
+            IndexArray vertFaces = refTables.setBaseVertexFaces(vert);
+            LocalIndexArray vertInFaceIndices = refTables.setBaseVertexFaceLocalIndices(vert);
+            for (int face=0; face<conv.GetNumVertexFaces(vert); ++face) {
+                vertFaces[face] = conv.GetVertexFaces(vert)[face];
+            }
+
+            //  Vert-Edges:
+            IndexArray vertEdges = refTables.setBaseVertexEdges(vert);
+            LocalIndexArray vertInEdgeIndices = refTables.setBaseVertexEdgeLocalIndices(vert);
+            for (int edge=0; edge<conv.GetNumVertexEdges(edge); ++edge) {
+                vertEdges[edge] = conv.GetVertexEdges(vert)[edge];
+            }
+        }
+    }
+};
+
+template <>
+void
+FarRefineTablesFactory<Converter>::assignComponentTags(
+    FarRefineTables & refTables, Converter const & /* conv */) {
+
+    // arbitrarily sharpen the 4 bottom edges of the pyramid to 2.5f
+    for (int edge=4; edge<7; ++edge) {
+        refTables.baseEdgeSharpness(4) = 2.5f;
+    }
+}
+
+} // namespace OPENSUBDIV_VERSION
+} // namespace OpenSubdiv
+
+//------------------------------------------------------------------------------
+//
+// Vertex container implementation.
 //
 struct Vertex {
 
@@ -55,15 +347,10 @@ struct Vertex {
         _position[0] = src._position[0];
         _position[1] = src._position[1];
         _position[1] = src._position[1];
-
-        _color[0] = src._color[0];
-        _color[1] = src._color[1];
-        _color[1] = src._color[1];
     }
 
     void Clear( void * =0 ) {
         _position[0]=_position[1]=_position[2]=0.0f;
-        _color[0]=_color[1]=_color[2]=0.0f;
     }
 
     void AddWithWeight(Vertex const & src, float weight) {
@@ -72,13 +359,7 @@ struct Vertex {
         _position[2]+=weight*src._position[2];
     }
 
-    // The varying interpolation specialization must now be implemented.
-    // Just like 'vertex' interpolation, it is a simple multiply-add.
-    void AddVaryingWithWeight(Vertex const & src, float weight) {
-        _color[0]+=weight*src._color[0];
-        _color[1]+=weight*src._color[1];
-        _color[2]+=weight*src._color[2];
-    }
+    void AddVaryingWithWeight(Vertex const &, float) { }
 
     // Public interface ------------------------------------
     void SetPosition(float x, float y, float z) {
@@ -91,150 +372,75 @@ struct Vertex {
         return _position;
     }
 
-    void SetColor(float x, float y, float z) {
-        _color[0]=x;
-        _color[1]=y;
-        _color[2]=z;
-    }
-
-    const float * GetColor() const {
-        return _color;
-    }
-
 private:
-    float _position[3],
-          _color[3];
+    float _position[3];
 };
-
-//------------------------------------------------------------------------------
-// Cube geometry from catmark_cube.h
-static float g_verts[8][3] = {{ -0.5f, -0.5f,  0.5f },
-                              {  0.5f, -0.5f,  0.5f },
-                              { -0.5f,  0.5f,  0.5f },
-                              {  0.5f,  0.5f,  0.5f },
-                              { -0.5f,  0.5f, -0.5f },
-                              {  0.5f,  0.5f, -0.5f },
-                              { -0.5f, -0.5f, -0.5f },
-                              {  0.5f, -0.5f, -0.5f }};
-
-// Per-vertex RGB color data
-static float g_colors[8][3] = {{ 1.0f, 0.0f, 0.5f },
-                               { 0.0f, 1.0f, 0.0f },
-                               { 0.0f, 0.0f, 1.0f },
-                               { 1.0f, 1.0f, 1.0f },
-                               { 1.0f, 1.0f, 0.0f },
-                               { 0.0f, 1.0f, 1.0f },
-                               { 1.0f, 0.0f, 1.0f },
-                               { 0.0f, 0.0f, 0.0f }};
-
-static int g_nverts = 8,
-           g_nfaces = 6;
-
-static int g_vertsperface[6] = { 4, 4, 4, 4, 4, 4 };
-
-static int g_vertIndices[24] = { 0, 1, 3, 2,
-                                 2, 3, 5, 4,
-                                 4, 5, 7, 6,
-                                 6, 7, 1, 0,
-                                 1, 7, 5, 3,
-                                 6, 0, 2, 4  };
-
-using namespace OpenSubdiv;
-
-static FarRefineTables * createFarRefineTables();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-    int maxlevel = 5;
+    Converter conv;
 
-    FarRefineTables * refTables = createFarRefineTables();
+    FarRefineTables * refTables = FarRefineTablesFactory<Converter>::Create(
+        conv.GetType(), conv.GetOptions(), conv);
+
+
+    int maxlevel = 2;
 
     // Uniformly refine the topolgy up to 'maxlevel'
     refTables->RefineUniform( maxlevel );
+
 
     // Allocate a buffer for vertex primvar data. The buffer length is set to
     // be the sum of all children vertices up to the highest level of refinement.
     std::vector<Vertex> vbuffer(refTables->GetNumVerticesTotal());
     Vertex * verts = &vbuffer[0];
 
-    // Initialize coarse mesh primvar data
+
+    // Initialize coarse mesh positions
     int nCoarseVerts = g_nverts;
     for (int i=0; i<nCoarseVerts; ++i) {
-
         verts[i].SetPosition(g_verts[i][0], g_verts[i][1], g_verts[i][2]);
-
-        verts[i].SetColor(g_colors[i][0], g_colors[i][1], g_colors[i][2]);
     }
 
-    // Interpolate all primvar data - not that this will perform both 'vertex' and
-    // 'varying' interpolation at once by calling each specialized method in our
-    // Vertex class with the appropriate weights.
+
+    // Interpolate vertex primvar data
     refTables->Interpolate(verts, verts + nCoarseVerts);
 
 
 
-    { // Visualization with Maya : print a MEL script that generates colored
-      // particles at the location of the refined vertices (don't forget to
-      // turn shading on in the viewport to see the colors)
+    { // Output OBJ of the highest level refined -----------
 
-        int nverts = refTables->GetNumVertices(maxlevel);
+        // Print vertex positions
+        for (int level=0, firstVert=0; level<=maxlevel; ++level) {
 
-        // Position the 'verts' pointer to the first vertex of our 'maxlevel' level
-        for (int level=0; level<maxlevel; ++level) {
-            verts += refTables->GetNumVertices(level);
+            if (level==maxlevel) {
+                for (int vert=0; vert<refTables->GetNumVertices(maxlevel); ++vert) {
+                    float const * pos = verts[firstVert+vert].GetPosition();
+                    printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
+                }
+            } else {
+                firstVert += refTables->GetNumVertices(level);
+            }
         }
 
-        // Output particle positions
-        printf("particle ");
-        for (int vert=0; vert<nverts; ++vert) {
-            float const * pos = verts[vert].GetPosition();
-            printf("-p %f %f %f\n", pos[0], pos[1], pos[2]);
+        // Print faces
+        for (int face=0; face<refTables->GetNumFaces(maxlevel); ++face) {
+
+            FarIndexArray fverts = refTables->GetFaceVertices(maxlevel, face);
+
+            // all refined Catmark faces should be quads
+            assert(fverts.size()==4);
+
+            printf("f ");
+            for (int vert=0; vert<fverts.size(); ++vert) {
+                printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
+            }
+            printf("\n");
         }
-        printf(";\n");
-
-        // Set particle point size (20 -- very large)
-        printf("addAttr -is true -ln \"pointSize\" -at long -dv 20 particleShape1;\n");
-
-        // Add per-particle color attribute ('rgbPP')
-        printf("addAttr -ln \"rgbPP\" -dt vectorArray particleShape1;\n");
-
-        // Set per-particle color values from our 'varying' primvar data
-        printf("setAttr \"particleShape1.rgbPP\" -type \"vectorArray\" %d ", nverts);
-        for (int vert=0; vert<nverts; ++vert) {
-            float const * color = verts[vert].GetColor();
-            printf("%f %f %f\n", color[0], color[1], color[2]);
-        }
-        printf(";\n");
     }
+
 }
 
-//------------------------------------------------------------------------------
-// Creates FarRefineTables from raw geometry
-//
-// see far_tutorial_0 for more details
-//
-static FarRefineTables *
-createFarRefineTables() {
 
-    // Populate a topology descriptor with our raw data
-
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
-
-    SdcType type = OpenSubdiv::TYPE_CATMARK;
-
-    SdcOptions options;
-    options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
-
-    Descriptor desc;
-    desc.numVertices  = g_nverts;
-    desc.numFaces     = g_nfaces;
-    desc.vertsPerFace = g_vertsperface;
-    desc.vertIndices  = g_vertIndices;
-
-    // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
-
-    return refTables;
-}
 //------------------------------------------------------------------------------
