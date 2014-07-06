@@ -99,6 +99,15 @@ FarRefineTables::GetNumFacesTotal() const
     }
     return sum;
 }
+int
+FarRefineTables::GetNumFaceVerticesTotal() const
+{
+    int sum = 0;
+    for (int i = 0; i < (int)_levels.size(); ++i) {
+        sum += _levels[i].getNumFaceVerticesTotal();
+    }
+    return sum;
+}
 
 //
 //  Main refinement method -- allocating and initializing levels and refinements:

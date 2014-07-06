@@ -98,6 +98,9 @@ public:
     /// \brief Returns the total number of edges in all levels
     int GetNumFacesTotal() const;
 
+    /// \brief Returns the total number of face vertices in all levels
+    int GetNumFaceVerticesTotal() const;
+
 
     //
     //  High level refinement and related methods:
@@ -179,22 +182,27 @@ public:
     }
 
     /// \brief Returns the number of edges at a given level of refinement
-    int GetNumEdges(   int level) const {
+    int GetNumEdges(int level) const {
         return _levels[level].getNumEdges();
     }
 
-    /// \brief Returns the number of faces at a given level of refinement
-    int GetNumFaces(   int level) const {
+    /// \brief Returns the number of face vertex indices at a given level of refinement
+    int GetNumFaces(int level) const {
         return _levels[level].getNumFaces();
+    }
+    
+    /// \brief Returns the number of faces at a given level of refinement
+    int GetNumFaceVertices(int level) const {
+        return _levels[level].getNumFaceVerticesTotal();
     }
 
     /// \brief Returns the sharpness of a given edge (at 'level' of refinement)
-    float   GetEdgeSharpness(  int level, Index edge) const {
+    float GetEdgeSharpness(int level, Index edge) const {
         return _levels[level].getEdgeSharpness(edge);
     }
 
     /// \brief Returns the sharpness of a given vertex (at 'level' of refinement)
-    float   GetVertexSharpness(int level, Index vert) const {
+    float GetVertexSharpness(int level, Index vert) const {
         return _levels[level].getVertexSharpness(vert);
     }
 
