@@ -495,8 +495,15 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
 
             for (int j=0; j<(int)pa.GetNumPatches(); ++j, ++face, cvs+=ncvs) {
 
-                memcpy(&eao[face*4], cvs, 4*sizeof(int));
-                
+                if (pa.GetDescriptor().GetType()==PatchTables::CORNER) {
+                    eao[face*4  ] = cvs[0]; // corner patches are mapped CW
+                    eao[face*4+1] = cvs[3]; // need adjusted to CCW
+                    eao[face*4+2] = cvs[2];
+                    eao[face*4+3] = cvs[1];
+                } else {
+                    memcpy(&eao[face*4], cvs, 4*sizeof(int));
+                }
+
                 if (options.faceColorMode==FACECOLOR_BY_PATCHTYPE) {
                     float const * color = getAdaptivePatchColor(pa.GetDescriptor());
                     memcpy(&_faceColors[face*4], color, 4*sizeof(float));

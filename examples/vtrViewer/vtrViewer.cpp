@@ -107,8 +107,10 @@ int   g_displayPatchColor    = 1,
       g_VtrDrawFaceIDs       = false,
       g_VtrDrawEdgeSharpness = false,
       g_numPatches           = 0,
-      g_currentPatch         = -1,
+      g_currentPatch         = 0,
       g_Adaptive             = false;
+
+OpenSubdiv::FarPatchTables::Descriptor g_currentPatchDesc;
 
 float g_rotate[2] = {0, 0},
       g_dolly = 5,
@@ -376,7 +378,7 @@ createHbrMesh(Shape * shape, int maxlevel) {
             nfaces = hmesh->GetNumFaces();
         }
         s.Stop();
-        printf("Hbr time: %f ms\n", float(s.GetElapsed())*1000.0f);
+        //printf("Hbr time: %f ms\n", float(s.GetElapsed())*1000.0f);
 
         if (g_HbrDrawVertIDs) {
             createVertNumbers(refinedFaces);
@@ -511,10 +513,10 @@ static void
 createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
     std::vector<Vertex> const & vertexBuffer) {
 
-    if (g_currentPatch<0)
+    if (not g_currentPatch)
         return;
 
-    int patchID = g_currentPatch;
+    int patchID = g_currentPatch-1;
 
     OpenSubdiv::FarPatchTables::PatchArrayVector const & parrays =
          patchTables.GetPatchArrayVector();
@@ -523,7 +525,7 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
     OpenSubdiv::FarPatchTables::PatchArray const * pa=0;
     for (int i=0; i<(int)parrays.size(); ++i) {
         int npatches = parrays[i].GetNumPatches();
-        if (patchID > npatches) {
+        if (patchID >= npatches) {
             patchID -= npatches;
         } else {
             pa = &parrays[i];
@@ -537,7 +539,9 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
     OpenSubdiv::FarPatchTables::PTable const & ptable =
         patchTables.GetPatchTable();
 
-    int ncvs = pa->GetDescriptor().GetNumControlVertices();
+    g_currentPatchDesc = pa->GetDescriptor();
+
+    int ncvs = g_currentPatchDesc.GetNumControlVertices();
 
     unsigned int const * cvs = &ptable[pa->GetVertIndex()] + ncvs*patchID;
 
@@ -599,7 +603,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
     Vertex * verts = &vertexBuffer[0];
 
     s.Stop();
-    printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
+    //printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
 
     // copy coarse vertices positions
     int ncoarseverts = shape->GetNumVertices();
@@ -614,8 +618,8 @@ createVtrMesh(Shape * shape, int maxlevel) {
     refTables->Interpolate(verts, verts + ncoarseverts);
 
     s.Stop();
-    printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
-    printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
+    //printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
+    //printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
 
 
     if (g_VtrDrawVertIDs) {
@@ -821,11 +825,20 @@ display() {
         double fps = 1.0/g_fpsTimer.GetElapsed();
         g_fpsTimer.Start();
 
-        static char const * schemeNames[3] = { "BILINEAR", "CATMARK", "LOOP" };
+        { // display selectde patch info
+            static char const * patchTypes[11] = { "undefined", "points", "lines",
+                "quads", "tris", "loop", "regular", "boundary", "corner",
+                    "gregory", "gregory-boundary" };
 
-        if (g_Adaptive and g_currentPatch>=0) {
-            g_hud.DrawString(10, -180, "Current Patch : %d/%d", g_currentPatch, g_numPatches);
+            if (g_Adaptive and g_currentPatch) {
+                g_hud.DrawString(g_width/2-100, 100, "Current Patch : %d/%d (%s - %d CVs)",
+                    g_currentPatch, g_numPatches,
+                        patchTypes[g_currentPatchDesc.GetType()],  
+                            g_currentPatchDesc.GetNumControlVertices());
+            }
         }
+        
+        static char const * schemeNames[3] = { "BILINEAR", "CATMARK", "LOOP" };
 
         g_hud.DrawString(10, -140, "Primitives : %d", numPrimsGenerated);
         g_hud.DrawString(10, -120, "Scheme     : %s", schemeNames[ g_shapes[g_currentShape].scheme ]);
@@ -951,9 +964,16 @@ keyboard(int key, int event) {
         case 'Q': g_running = 0; break;
         case 'F': fitFrame(); break;
 
-        case '[': --g_currentPatch; rebuildOsdMeshes(); break;
-        case ']': ++g_currentPatch; rebuildOsdMeshes(); break;
-        
+        case '[': if (g_currentPatch > 0) {
+                      --g_currentPatch; 
+                      rebuildOsdMeshes();
+                  } break;
+
+        case ']': if (g_currentPatch < g_numPatches) {
+                      ++g_currentPatch; 
+                      rebuildOsdMeshes();
+                  } break;
+
         case GLFW_KEY_TAB: toggleFullScreen(); break;
         case GLFW_KEY_ESCAPE: g_hud.SetVisible(!g_hud.IsVisible()); break;
     }
