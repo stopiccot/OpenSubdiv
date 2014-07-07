@@ -778,7 +778,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTa
                 int bIndex = patchTag._boundaryIndex;
 
                 if (patchTag._boundaryCount == 0) {
-                    unsigned int const * permuteInterior = 0;
+                    unsigned int const permuteInterior[16] = { 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4 };
 
                     level->gatherQuadRegularInteriorPatchVertices(faceIndex, patchVerts);
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
@@ -807,7 +807,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTa
                     //  else dependent on the boundary orientation.
                     //
                     if (patchTag._boundaryCount == 1) {
-                        unsigned int const * permuteBoundary = 0;
+                        unsigned int const permuteBoundary[12] = { 0, 1, 2, 3, 4, 11, 10, 9, 8, 7, 6, 5 };
 
                         level->gatherQuadRegularBoundaryPatchVertices(faceIndex, patchVerts, bIndex);
                         offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][rIndex]);
@@ -816,7 +816,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const * refineTa
                         pptrs.B[tIndex][rIndex] = computePatchParam(*refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
                         // fptrs.B[tIndex][rIndex] = computeFVarData(...,   fptrs.B[tIndex][rIndex], true);
                     } else {
-                        unsigned int const * permuteCorner = 0;
+                        unsigned int const permuteCorner[9] = { 0, 3, 2, 1, 8, 7, 6, 5, 4 };
 
                         int paramRots = (bIndex + 3) % 4;
 
