@@ -24,6 +24,7 @@
 
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
+#include <far/patchTables.h>
 #include <osd/vertex.h>
 
 #include "../common/gl_common.h"
@@ -52,7 +53,8 @@ public:
     enum EdgeColorMode {
         EDGECOLOR_SOLID=0,
         EDGECOLOR_BY_LEVEL,
-        EDGECOLOR_BY_SHARPNESS
+        EDGECOLOR_BY_SHARPNESS,
+        EDGECOLOR_BY_PATCHTYPE
     };
 
     enum FaceColorMode {
@@ -62,8 +64,8 @@ public:
 
     struct Options {
         unsigned int vertColorMode:3,
-                     edgeColorMode:2,
-                     faceColorMode:2;
+                     edgeColorMode:3,
+                     faceColorMode:3;
     };
 
     // -----------------------------------------------------
@@ -181,7 +183,10 @@ public:
     // Vtr initialization
     typedef OpenSubdiv::FarRefineTables RefineTables;
 
-    void Initialize(Options options, RefineTables & refTables, float * vertexData);
+    typedef OpenSubdiv::FarPatchTables PatchTables;
+
+    void Initialize(Options options, RefineTables const & refTables,
+        PatchTables const * patchTables, float const * vertexData);
 
     void InitializeDeviceBuffers();
 
@@ -205,7 +210,13 @@ private:
 
     static void setColorBySharpness(float sharpness, float * color);
 
-    void initializeBuffers(Options options, RefineTables & refTables, float * vertexData);
+    void initializeVertexComponentBuffer(float const * vertexData, int nverts);
+
+    void initializeBuffers(Options options, RefineTables const & refTables,
+        float const * vertexData);
+
+    void initializeBuffers(Options options, RefineTables const & refTables,
+        PatchTables const & patchTables, float const * vertexData);
 
     void clearBuffers();
 

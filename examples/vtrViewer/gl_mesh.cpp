@@ -25,6 +25,8 @@
 #include "gl_mesh.h"
 #include "gl_fontutils.h"
 
+#include "../common/patchColors.h"
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -97,7 +99,7 @@ getFaceTexture() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, FACE_TEXTURE_WIDTH,
             FACE_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, face_texture);
     }
-    
+
     return g_faceTexture;
 }
 
@@ -134,9 +136,14 @@ GLMesh::~GLMesh() {
 
 //------------------------------------------------------------------------------
 void
-GLMesh::Initialize(Options options, RefineTables & refTables, float * vertexData) {
+GLMesh::Initialize(Options options, RefineTables const & refTables,
+    PatchTables const * patchTables, float const * vertexData) {
 
-    initializeBuffers(options, refTables, vertexData);
+    if (patchTables) {
+        initializeBuffers(options, refTables, *patchTables, vertexData);
+    } else {
+        initializeBuffers(options, refTables, vertexData);
+    }
 
     _numComps[COMP_FACE] = _eao[COMP_FACE].size();
     _numComps[COMP_EDGE] = _eao[COMP_EDGE].size();
@@ -147,7 +154,28 @@ GLMesh::Initialize(Options options, RefineTables & refTables, float * vertexData
 
 //------------------------------------------------------------------------------
 void
-GLMesh::initializeBuffers(Options options, RefineTables & refTables, float * vertexData) {
+GLMesh::initializeVertexComponentBuffer(float const * vertData, int nverts) {
+
+    std::vector<float> & vbo = _vbo[COMP_VERT];
+    vbo.resize(nverts * 6);
+
+    std::vector<int> & eao = _eao[COMP_VERT];
+    eao.resize(nverts);
+
+    for (int vert=0; vert<nverts; ++vert) {
+
+        // copy positions
+        memcpy(&vbo[vert*6], &vertData[vert*3], 3*sizeof(float));
+
+        // populate EAO
+        eao[vert] = vert;
+    }
+}
+
+//------------------------------------------------------------------------------
+void
+GLMesh::initializeBuffers(Options options,
+    RefineTables const & refTables, float const * vertexData) {
 
     typedef OpenSubdiv::FarRefineTables::IndexArray IndexArray;
 
@@ -155,30 +183,19 @@ GLMesh::initializeBuffers(Options options, RefineTables & refTables, float * ver
         nverts = refTables.GetNumVertices(maxlevel),
         nedges = refTables.GetNumEdges(maxlevel),
         firstvert = 0;
-    
+
 
     for (int i=0; i<maxlevel; ++i) {
         firstvert += refTables.GetNumVertices(i);
     }
 
-    float * vertData =  &vertexData[firstvert*3];
+    float const * vertData =  &vertexData[firstvert*3];
 
     { // vertex color component ----------------------------
 
+        initializeVertexComponentBuffer(vertData, nverts);
+
         std::vector<float> & vbo = _vbo[COMP_VERT];
-        vbo.resize(nverts * 6);
-
-        std::vector<int> & eao = _eao[COMP_VERT];
-        eao.resize(nverts);
-
-        for (int vert=0; vert<nverts; ++vert) {
-
-            // copy positions
-            memcpy(&vbo[vert*6], &vertData[vert*3], sizeof(float)*3);
-
-            // populate EAO
-            eao[vert] = vert;
-        }
 
         // set colors
         if (options.vertColorMode==VERTCOLOR_BY_LEVEL) {
@@ -284,13 +301,191 @@ GLMesh::initializeBuffers(Options options, RefineTables & refTables, float * ver
                 eao[ofs++] = fverts[vert];
             }
         }
-        
+
         _faceColors.resize(refTables.GetNumFaces(maxlevel)*4, 1.0f);
     }
 }
 
 //------------------------------------------------------------------------------
-template <typename T> static GLuint 
+// returns the number of edges in a patch with 'numCVs'
+inline int
+getNumEdges(int numCVs) {
+
+    switch (numCVs) {
+        case  4: return  4;
+//        case  9: return 12;
+        case  9: return 4;
+//        case 12: return 17;
+        case 12: return 4;
+//        case 16: return 24;
+        case 16: return  4;
+        default:
+            assert(0);
+    }
+}
+
+//------------------------------------------------------------------------------
+int const *
+getEdgeList(int numCVs) {
+
+    static int edgeList4[] = { 0, 1, 1, 2, 2, 3, 3, 0 };
+
+
+    static int * edgeList9  = edgeList4,
+               * edgeList12 = edgeList4,
+               * edgeList16 = edgeList4;
+/*
+    static int edgeList9[] = { 0, 1, 1, 4,
+                               3, 2, 2, 5,
+                               8, 7, 7, 6,
+                               0, 3, 3, 8,
+                               1, 2, 2, 7,
+                               4, 5, 5, 6 };
+
+    static int edgeList12[] = {  4,  0,  0,  3,  3,  5,
+                                11,  1,  1,  2,  2,  6,
+                                10,  9,  9,  8,  8,  7,
+                                 4, 11, 11, 10,  0,  1,
+                                 1,  9,  3,  2,  2,  8,
+                                 5,  6,  6,  7 };
+
+    static int edgeList16[] = {  4, 15, 15, 14, 14, 13,
+                                 5,  0,  0,  3,  3, 12,
+                                 6,  1,  1,  2,  2, 11,
+                                 7,  8,  8,  9,  9, 10,
+                                 4,  5,  5,  6,  6,  7,
+                                15,  0,  0,  1,  1,  8,
+                                14,  3,  3,  2,  2,  9,
+                                13, 12, 12, 11, 11, 10  };
+*/
+
+
+    switch (numCVs) {
+        case  4: return edgeList4; break;
+        case  9: return edgeList9; break;
+        case 12: return edgeList12; break;
+        case 16: return edgeList16; break;
+        default:
+            assert(0);
+    }
+}
+
+//------------------------------------------------------------------------------
+inline void
+setEdge(std::vector<float> & vbo, int edge, float const * vertData, int v0, int v1, float const * color) {
+
+    float * dst0 = &vbo[edge*2*6],
+          * dst1 = dst0+6;
+
+    memcpy(dst0, vertData + (v0*3), sizeof(float)*3);
+    memcpy(dst1, vertData + (v1*3), sizeof(float)*3);
+
+    memcpy(dst0+3, color, sizeof(float)*3);
+    memcpy(dst1+3, color, sizeof(float)*3);
+
+//printf("edge %d (%f %f %f) (%f %f %f) color=(%f %f %f)\n",
+//    edge, dst0[0], dst0[1], dst0[2], dst1[0], dst1[1], dst1[2], color[0], color[1], color[2]);
+}
+
+//------------------------------------------------------------------------------
+void
+GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
+    PatchTables const & patchTables, float const * vertexData) {
+
+    int nverts = refTables.GetNumVerticesTotal();
+
+    { // vertex color component ----------------------------
+
+        initializeVertexComponentBuffer(vertexData, nverts);
+
+        std::vector<float> & vbo = _vbo[COMP_VERT];
+
+        if (options.vertColorMode==VERTCOLOR_BY_LEVEL) {
+
+            for (int level=0, ofs=3; level<=refTables.GetMaxLevel(); ++level) {
+                for (int vert=0; vert<refTables.GetNumVertices(level); ++vert, ofs+=6) {
+                    assert(ofs<(int)vbo.size());
+                    setColorByLevel(level, &vbo[ofs]);
+                }
+            }
+        } else {
+
+            for (int vert=0, ofs=3; vert<nverts; ++vert) {
+                setSolidColor(&vbo[ofs+=6]);
+            }
+        }
+    }
+
+    typedef OpenSubdiv::FarPatchTables PatchTables;
+
+    PatchTables::PTable const & ptable =
+        patchTables.GetPatchTable();
+
+    PatchTables::PatchArrayVector const & parrays =
+        patchTables.GetPatchArrayVector();
+
+    { // edge color component ------------------------------
+
+        int nedges = 0;
+
+        for (int i=0; i<(int)parrays.size(); ++i) {
+
+            int ncvs = parrays[i].GetDescriptor().GetNumControlVertices();
+
+            nedges += parrays[i].GetNumPatches() * getNumEdges(ncvs);
+        }
+        std::vector<float> & vbo = _vbo[COMP_EDGE];
+        vbo.resize(nedges * 2 * 6);
+
+        std::vector<int> & eao = _eao[COMP_EDGE];
+        eao.resize(nedges*2);
+
+        // default to solid color
+        float solidColor[3];
+        setSolidColor(solidColor);
+
+        float const * color=solidColor;
+
+        for (int i=0, edge=0; i<(int)parrays.size(); ++i) {
+//printf("patcharray %d\n", i);
+
+            PatchTables::PatchArray const & pa = parrays[i];
+
+            if (options.edgeColorMode==EDGECOLOR_BY_PATCHTYPE) {
+                color = getAdaptivePatchColor(pa.GetDescriptor());
+            }
+
+            int ncvs = pa.GetDescriptor().GetNumControlVertices();
+
+            unsigned int const * cvs = &ptable[pa.GetVertIndex()];
+
+            for (int j=0; j<(int)pa.GetNumPatches(); ++j, cvs+=ncvs) {
+
+//printf("    patch %d { ", j); for (int k=0; k<ncvs; ++k) { printf("%d ", cvs[k]); } printf("}\n");
+
+                int const * edgeList=getEdgeList(ncvs);
+
+//printf("    edglist { "); for (int k=0; k<getNumEdges(ncvs); k++) { printf("%d ", edgeList[k]); } printf("}\n");
+
+                for (int k=0; k<getNumEdges(ncvs); ++k, ++edge) {
+
+                    eao[edge*2  ] = edge*2;
+                    eao[edge*2+1] = edge*2+1;
+
+                    int v0 = cvs[edgeList[k*2]],
+                        v1 = cvs[edgeList[k*2+1]];
+//printf("        edge %d - v0=%d v1=%d\n", edge, v0, v1);
+
+                    setEdge(vbo, edge, vertexData, v0, v1, color);
+                }
+//printf("\n");
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+template <typename T> static GLuint
 createTextureBuffer(T const &data, GLint format, int offset=0) {
 
     GLuint buffer = 0, texture = 0;
@@ -333,9 +528,9 @@ GLMesh::InitializeDeviceBuffers() {
             }
             glBindBuffer(GL_ARRAY_BUFFER, _VBO[i]);
             glBufferData(GL_ARRAY_BUFFER, _vbo[i].size()*sizeof(GLfloat), &_vbo[i][0], GL_STATIC_DRAW);
- 
+
             glEnableVertexAttribArray(0);
-            
+
             int numelements = (i==COMP_FACE) ? 3 : 6;
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, numelements*sizeof(GLfloat), 0);
 
@@ -347,7 +542,7 @@ GLMesh::InitializeDeviceBuffers() {
                  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*)12);
              }
         }
- 
+
         if (not _eao[i].empty()) {
 
             if (not _EAO[i]) {
@@ -356,17 +551,17 @@ GLMesh::InitializeDeviceBuffers() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EAO[i]);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, _eao[i].size()*sizeof(int), &_eao[i][0], GL_STATIC_DRAW);
         }
-        
+
         checkGLErrors("init");
     }
-    
+
     assert(not _faceColors.empty());
     _TBOfaceColors = createTextureBuffer(_faceColors, GL_RGBA32F);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    
+
     clearBuffers();
 }
 
@@ -475,7 +670,7 @@ GLMesh::Draw(Component comp, GLuint transformUB, GLuint lightingUB) {
         bindProgram(g_simpleShaderSrc, &g_simpleProgram, transformUB, lightingUB, false);
 
         glBindVertexArray(_VAO[COMP_VERT]);
- 
+
         glPointSize(4.0f);
         glDrawElements(GL_POINTS, _numComps[COMP_VERT], GL_UNSIGNED_INT, (void *)0);
         glPointSize(1.0f);
@@ -495,7 +690,7 @@ GLMesh::Draw(Component comp, GLuint transformUB, GLuint lightingUB) {
         bindProgram(g_faceShaderSrc, &g_faceProgram, transformUB, lightingUB, true);
 
 
-        { // set shader parameters 
+        { // set shader parameters
             GLuint diffuseColor = glGetUniformLocation(g_faceProgram, "diffuseColor");
             glProgramUniform4f(g_faceProgram, diffuseColor, _diffuseColor[0],
                 _diffuseColor[1], _diffuseColor[2], _diffuseColor[3]);

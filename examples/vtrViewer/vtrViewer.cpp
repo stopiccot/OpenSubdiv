@@ -50,6 +50,8 @@
 #include <osd/vertex.h>
 #include <osd/cpuGLVertexBuffer.h>
 
+#include <far/patchTablesFactory.h>
+
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
 
@@ -57,7 +59,6 @@
 #include "../common/simple_math.h"
 #include "../common/gl_common.h"
 #include "../common/gl_hud.h"
-#include "../common/patchColors.h"
 
 #include "init_shapes.h"
 #include "gl_mesh.h"
@@ -104,7 +105,8 @@ int   g_displayPatchColor    = 1,
       g_VtrDrawVertIDs       = false,
       g_VtrDrawEdgeIDs       = false,
       g_VtrDrawFaceIDs       = false,
-      g_VtrDrawEdgeSharpness = false;
+      g_VtrDrawEdgeSharpness = false,
+      g_Adaptive             = false;
 
 float g_rotate[2] = {0, 0},
       g_dolly = 5,
@@ -412,8 +414,10 @@ createVertNumbers(OpenSubdiv::FarRefineTables const & refTables,
     int maxlevel = refTables.GetMaxLevel(),
         firstvert = 0;
 
-    for (int i=0; i<maxlevel; ++i) {
-        firstvert += refTables.GetNumVertices(i);
+    if (not g_Adaptive) {
+        for (int i=0; i<maxlevel; ++i) {
+            firstvert += refTables.GetNumVertices(i);
+        }
     }
 
     static char buf[16];
@@ -529,9 +533,20 @@ createVtrMesh(Shape * shape, int maxlevel) {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTablesFactory<Shape> refFactory;
+    OpenSubdiv::FarRefineTables * refTables =
+        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    
+    OpenSubdiv::FarPatchTables * patchTables = 0;
+    
+    if (g_Adaptive) {
 
-    OpenSubdiv::FarRefineTables * refTables = refFactory.Create(sdctype, sdcoptions, *shape, maxlevel, /*full topology*/ true);
+        refTables->RefineAdaptive(maxlevel, /*fullTopology*/true);
+        
+        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(refTables);
+
+    } else {
+        refTables->RefineUniform(maxlevel, /*fullTopology*/true);
+    }
 
     // create vertex primvar data buffer
     std::vector<Vertex> vertexBuffer(refTables->GetNumVerticesTotal());
@@ -540,13 +555,14 @@ createVtrMesh(Shape * shape, int maxlevel) {
     s.Stop();
     printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
 
-    s.Start();
     // copy coarse vertices positions
     int ncoarseverts = shape->GetNumVertices();
     for (int i=0; i<ncoarseverts; ++i) {
         float * ptr = &shape->verts[i*3];
         verts[i].SetPosition(ptr[0], ptr[1], ptr[2]);
     }
+
+    s.Start();
 
     // populate buffer with Vtr interpolated vertex data
     refTables->Interpolate(verts, verts + ncoarseverts);
@@ -567,11 +583,16 @@ createVtrMesh(Shape * shape, int maxlevel) {
     createEdgeNumbers(*refTables, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
 
     GLMesh::Options options;
-    options.vertColorMode=GLMesh::VERTCOLOR_BY_SHARPNESS;
-    options.edgeColorMode=GLMesh::EDGECOLOR_BY_SHARPNESS;
+    options.vertColorMode=g_Adaptive ? GLMesh::VERTCOLOR_BY_LEVEL : GLMesh::VERTCOLOR_BY_SHARPNESS;
+    options.edgeColorMode=g_Adaptive ? GLMesh::EDGECOLOR_BY_PATCHTYPE : GLMesh::EDGECOLOR_BY_SHARPNESS;
     options.faceColorMode=GLMesh::FACECOLOR_SOLID;
 
-    g_vtr_glmesh.Initialize(options, *refTables, (float *)&verts[0]);
+    if (g_Adaptive) {
+        g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+    } else {
+        g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+    }
+
     g_vtr_glmesh.SetDiffuseColor(0.75f, 0.9f, 1.0f, 1.0f);
 
     //setFaceColors(*refTables);
@@ -899,6 +920,13 @@ callbackModel(int m) {
 }
 
 static void
+callbackAdaptive(bool checked, int /* a */)
+{
+    g_Adaptive = checked;
+    rebuildOsdMeshes();
+}
+
+static void
 callbackCheckBox(bool checked, int button) {
 
     switch (button) {
@@ -984,13 +1012,16 @@ initHUD()
     g_hud.AddCheckBox("Face IDs",   g_VtrDrawFaceIDs, 10, 235, callbackDrawIDs, 5);
     g_hud.AddCheckBox("Edge Sharp", g_VtrDrawEdgeSharpness, 10, 255, callbackDrawIDs, 6);
 
+    g_hud.AddCheckBox("Adaptive (`)", g_Adaptive, 10, 300, callbackAdaptive, 0, '`');
+
+
     g_hud.AddSlider("Font Scale", 0.0f, 0.1f, 0.025f,
                     -900, -50, 100, false, callbackScale, 0);
 
     for (int i = 1; i < 11; ++i) {
         char level[16];
         sprintf(level, "Lv. %d", i);
-        g_hud.AddRadioButton(3, level, i==g_level, 10, 300+i*20, callbackLevel, i, '0'+(i%10));
+        g_hud.AddRadioButton(3, level, i==g_level, 10, 315+i*20, callbackLevel, i, '0'+(i%10));
     }
 
     int shapes_pulldown = g_hud.AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
