@@ -182,6 +182,7 @@ GLMesh::initializeBuffers(Options options,
     int maxlevel = refTables.GetMaxLevel(),
         nverts = refTables.GetNumVertices(maxlevel),
         nedges = refTables.GetNumEdges(maxlevel),
+        nfaces = refTables.GetNumFaces(maxlevel),
         firstvert = 0;
 
 
@@ -285,24 +286,22 @@ GLMesh::initializeBuffers(Options options,
 
         memcpy(&vbo[0], vertData, nverts*sizeof(float)*3);
 
-        int nfaceverts = 0; // XXXX this should be provided by FarefineTables
-        for (int face=0; face<refTables.GetNumFaces(maxlevel); ++face) {
-
-            nfaceverts+=refTables.GetFaceVertices(maxlevel, face).size();
-        }
+        int nfaceverts = refTables.GetNumFaceVertices(maxlevel);
 
         std::vector<int> & eao = _eao[COMP_FACE];
         eao.resize(nfaceverts);
 
-        for (int face=0, ofs=0; face<refTables.GetNumFaces(maxlevel); ++face) {
+        _faceColors.resize(nfaces*4);
+
+        for (int face=0, ofs=0; face<nfaces; ++face) {
 
             IndexArray fverts = refTables.GetFaceVertices(maxlevel, face);
             for (int vert=0; vert<fverts.size(); ++vert) {
                 eao[ofs++] = fverts[vert];
             }
-        }
 
-        _faceColors.resize(refTables.GetNumFaces(maxlevel)*4, 1.0f);
+            setSolidColor(&_faceColors[face*4]);
+        }
     }
 }
 
@@ -382,9 +381,6 @@ setEdge(std::vector<float> & vbo, int edge, float const * vertData, int v0, int 
 
     memcpy(dst0+3, color, sizeof(float)*3);
     memcpy(dst1+3, color, sizeof(float)*3);
-
-//printf("edge %d (%f %f %f) (%f %f %f) color=(%f %f %f)\n",
-//    edge, dst0[0], dst0[1], dst0[2], dst1[0], dst1[1], dst1[2], color[0], color[1], color[2]);
 }
 
 //------------------------------------------------------------------------------
@@ -447,7 +443,6 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
         float const * color=solidColor;
 
         for (int i=0, edge=0; i<(int)parrays.size(); ++i) {
-//printf("patcharray %d\n", i);
 
             PatchTables::PatchArray const & pa = parrays[i];
 
@@ -461,11 +456,7 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
 
             for (int j=0; j<(int)pa.GetNumPatches(); ++j, cvs+=ncvs) {
 
-//printf("    patch %d { ", j); for (int k=0; k<ncvs; ++k) { printf("%d ", cvs[k]); } printf("}\n");
-
                 int const * edgeList=getEdgeList(ncvs);
-
-//printf("    edglist { "); for (int k=0; k<getNumEdges(ncvs); k++) { printf("%d ", edgeList[k]); } printf("}\n");
 
                 for (int k=0; k<getNumEdges(ncvs); ++k, ++edge) {
 
@@ -474,11 +465,44 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
 
                     int v0 = cvs[edgeList[k*2]],
                         v1 = cvs[edgeList[k*2+1]];
-//printf("        edge %d - v0=%d v1=%d\n", edge, v0, v1);
-
                     setEdge(vbo, edge, vertexData, v0, v1, color);
                 }
-//printf("\n");
+            }
+        }
+    }
+
+    { // face color component ------------------------------
+
+        int nfaces = patchTables.GetNumPatches();
+
+        std::vector<float> & vbo = _vbo[COMP_FACE];
+        vbo.resize(nverts*3);
+        memcpy(&vbo[0], vertexData, nverts*sizeof(float)*3);
+
+        std::vector<int> & eao = _eao[COMP_FACE];
+        eao.resize(nfaces*4);
+
+        _faceColors.resize(nfaces*4, 1.0f);
+
+        // default to solid color
+        for (int i=0, face=0; i<(int)parrays.size(); ++i) {
+
+            PatchTables::PatchArray const & pa = parrays[i];
+
+            int ncvs = pa.GetDescriptor().GetNumControlVertices();
+
+            unsigned int const * cvs = &ptable[pa.GetVertIndex()];
+
+            for (int j=0; j<(int)pa.GetNumPatches(); ++j, ++face, cvs+=ncvs) {
+
+                memcpy(&eao[face*4], cvs, 4*sizeof(int));
+                
+                if (options.faceColorMode==FACECOLOR_BY_PATCHTYPE) {
+                    float const * color = getAdaptivePatchColor(pa.GetDescriptor());
+                    memcpy(&_faceColors[face*4], color, 4*sizeof(float));
+                } else {
+                    setSolidColor(&_faceColors[face*4]);
+                }
             }
         }
     }

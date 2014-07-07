@@ -106,6 +106,8 @@ int   g_displayPatchColor    = 1,
       g_VtrDrawEdgeIDs       = false,
       g_VtrDrawFaceIDs       = false,
       g_VtrDrawEdgeSharpness = false,
+      g_numPatches           = 0,
+      g_currentPatch         = -1,
       g_Adaptive             = false;
 
 float g_rotate[2] = {0, 0},
@@ -504,6 +506,49 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
 }
 
 //------------------------------------------------------------------------------
+// generate display IDs for Vtr faces
+static void
+createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
+    std::vector<Vertex> const & vertexBuffer) {
+
+    if (g_currentPatch<0)
+        return;
+
+    int patchID = g_currentPatch;
+
+    OpenSubdiv::FarPatchTables::PatchArrayVector const & parrays =
+         patchTables.GetPatchArrayVector();
+
+    // Find PatchArray containing our patch
+    OpenSubdiv::FarPatchTables::PatchArray const * pa=0;
+    for (int i=0; i<(int)parrays.size(); ++i) {
+        int npatches = parrays[i].GetNumPatches();
+        if (patchID > npatches) {
+            patchID -= npatches;
+        } else {
+            pa = &parrays[i];
+            break;
+        }
+    }
+    if (not pa) {
+        return;
+    }
+
+    OpenSubdiv::FarPatchTables::PTable const & ptable =
+        patchTables.GetPatchTable();
+
+    int ncvs = pa->GetDescriptor().GetNumControlVertices();
+
+    unsigned int const * cvs = &ptable[pa->GetVertIndex()] + ncvs*patchID;
+
+    static char buf[16];
+    for (int i=0; i<ncvs; ++i) {
+        snprintf(buf, 16, "%d", i);
+        g_font->Print3D(vertexBuffer[cvs[i]].GetPos(), buf, 1);
+    }
+}
+
+//------------------------------------------------------------------------------
 /*
 static void
 setFaceColors(OpenSubdiv::FarRefineTables const & refTables) {
@@ -515,7 +560,7 @@ setFaceColors(OpenSubdiv::FarRefineTables const & refTables) {
     for (int i=0; i<refTables.GetNumFaces(maxlevel); ++i) {
 
         float color[4] = { (float)rand()/(float)RAND_MAX,
-                           (float)rand()/(float)RAND_MAX, 
+                           (float)rand()/(float)RAND_MAX,
                            (float)rand()/(float)RAND_MAX, 1.0f  };
 
         g_vtr_glmesh.SetFaceColor(i, color[0], color[1], color[2], color[3] );
@@ -535,15 +580,16 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
     OpenSubdiv::FarRefineTables * refTables =
         OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
-    
+
     OpenSubdiv::FarPatchTables * patchTables = 0;
-    
+
     if (g_Adaptive) {
 
         refTables->RefineAdaptive(maxlevel, /*fullTopology*/true);
-        
-        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(refTables);
 
+        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(refTables);
+        
+        g_numPatches = patchTables->GetNumPatches();
     } else {
         refTables->RefineUniform(maxlevel, /*fullTopology*/true);
     }
@@ -582,24 +628,30 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
     createEdgeNumbers(*refTables, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
 
+    if (g_Adaptive and patchTables) {
+        createPatchNumbers(*patchTables, vertexBuffer);
+    }
+
     GLMesh::Options options;
     options.vertColorMode=g_Adaptive ? GLMesh::VERTCOLOR_BY_LEVEL : GLMesh::VERTCOLOR_BY_SHARPNESS;
     options.edgeColorMode=g_Adaptive ? GLMesh::EDGECOLOR_BY_PATCHTYPE : GLMesh::EDGECOLOR_BY_SHARPNESS;
-    options.faceColorMode=GLMesh::FACECOLOR_SOLID;
+    options.faceColorMode=g_Adaptive ? GLMesh::FACECOLOR_BY_PATCHTYPE :GLMesh::FACECOLOR_SOLID;
 
     if (g_Adaptive) {
         g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+        g_vtr_glmesh.SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
     } else {
         g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+        g_vtr_glmesh.SetDiffuseColor(0.75f, 0.9f, 1.0f, 1.0f);
     }
 
-    g_vtr_glmesh.SetDiffuseColor(0.75f, 0.9f, 1.0f, 1.0f);
 
     //setFaceColors(*refTables);
 
     g_vtr_glmesh.InitializeDeviceBuffers();
 
     delete refTables;
+    delete patchTables;
 }
 
 //------------------------------------------------------------------------------
@@ -771,6 +823,10 @@ display() {
 
         static char const * schemeNames[3] = { "BILINEAR", "CATMARK", "LOOP" };
 
+        if (g_Adaptive and g_currentPatch>=0) {
+            g_hud.DrawString(10, -180, "Current Patch : %d/%d", g_currentPatch, g_numPatches);
+        }
+
         g_hud.DrawString(10, -140, "Primitives : %d", numPrimsGenerated);
         g_hud.DrawString(10, -120, "Scheme     : %s", schemeNames[ g_shapes[g_currentShape].scheme ]);
         g_hud.DrawString(10, -100, "GPU Kernel : %.3f ms", g_gpuTime);
@@ -874,6 +930,13 @@ toggleFullScreen() {
 
 //------------------------------------------------------------------------------
 static void
+rebuildOsdMeshes() {
+
+    createMeshes(g_shapes[ g_currentShape ], g_level);
+}
+
+//------------------------------------------------------------------------------
+static void
 #if GLFW_VERSION_MAJOR>=3
 keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
 #else
@@ -887,16 +950,13 @@ keyboard(int key, int event) {
     switch (key) {
         case 'Q': g_running = 0; break;
         case 'F': fitFrame(); break;
+
+        case '[': --g_currentPatch; rebuildOsdMeshes(); break;
+        case ']': ++g_currentPatch; rebuildOsdMeshes(); break;
+        
         case GLFW_KEY_TAB: toggleFullScreen(); break;
         case GLFW_KEY_ESCAPE: g_hud.SetVisible(!g_hud.IsVisible()); break;
     }
-}
-
-//------------------------------------------------------------------------------
-static void
-rebuildOsdMeshes() {
-
-    createMeshes(g_shapes[ g_currentShape ], g_level);
 }
 
 static void

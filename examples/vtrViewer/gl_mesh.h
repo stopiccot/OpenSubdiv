@@ -59,7 +59,7 @@ public:
 
     enum FaceColorMode {
         FACECOLOR_SOLID=0,
-        EDGECOLOR_BY_PATCH_TYPE
+        FACECOLOR_BY_PATCHTYPE
     };
 
     struct Options {
