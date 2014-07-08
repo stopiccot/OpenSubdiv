@@ -1584,7 +1584,9 @@ void
 VtrRefinement::propagateVertexTagsFromParentFaces()
 {
     //
-    //  Similarly, tags for vertices originating from faces are all constant:
+    //  Similarly, tags for vertices originating from faces are all constant -- with the
+    //  unfortunate exception of refining level 0, where the faces may be N-sided and so
+    //  introduce new vertices that need to be tagged as extra-ordinary:
     //
     VtrLevel::VTag vTag;
     vTag._nonManifold = 0;
@@ -1594,8 +1596,17 @@ VtrRefinement::propagateVertexTagsFromParentFaces()
     vTag._semiSharp   = 0;
     vTag._rule        = SdcCrease::RULE_SMOOTH;
 
-    for (VtrIndex cVert = 0; cVert < _childVertFromFaceCount; ++cVert) {
-        _child->_vertTags[cVert] = vTag;
+    if (_parent->_depth > 0) {
+        for (VtrIndex cVert = 0; cVert < _childVertFromFaceCount; ++cVert) {
+            _child->_vertTags[cVert] = vTag;
+        }
+    } else {
+        for (VtrIndex cVert = 0; cVert < _childVertFromFaceCount; ++cVert) {
+            _child->_vertTags[cVert] = vTag;
+            if (_parent->getNumFaceVertices(_childVertexParentIndex[cVert]) != 4) {
+                _child->_vertTags[cVert]._xordinary = true;
+            }
+        }
     }
 }
 void
