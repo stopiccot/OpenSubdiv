@@ -57,7 +57,7 @@ public:
     ///
     /// @return              A new instance of FarPatchTables
     ///
-    static FarPatchTables * Create( FarRefineTables const * refineTables, int fvarwidth=0 );
+    static FarPatchTables * Create(FarRefineTables const & refineTables, int fvarwidth=0);
 
 private:
     //  (I would really prefer to hide all of these implementation details from the header...)
@@ -68,15 +68,15 @@ private:
     //  Support for uniform tables is not yet implemented, but should be able to use the same Create()
     //  method above as the FarRefineTables contain most (all?) of what we need:
     //
-    static FarPatchTables * createUniform(  FarRefineTables const * refineTables, int fvarwidth=0 );
-    static FarPatchTables * createAdaptive( FarRefineTables const * refineTables, int fvarwidth=0 );
+    static FarPatchTables * createUniform(  FarRefineTables const & refineTables, int fvarwidth=0 );
+    static FarPatchTables * createAdaptive( FarRefineTables const & refineTables, int fvarwidth=0 );
 
     //  High-level methods for identifying and populating patches associated with faces:
-    static void identifyAdaptivePatches( FarRefineTables const *     refTables,
+    static void identifyAdaptivePatches( FarRefineTables const &     refTables,
                                          PatchTypes<int> &           patchInventory,
                                          std::vector<PatchFaceTag> & patchTags);
 
-    static void populateAdaptivePatches( FarRefineTables const *           refTables,
+    static void populateAdaptivePatches( FarRefineTables const &           refTables,
                                          PatchTypes<int> const &           patchInventory,
                                          std::vector<PatchFaceTag> const & patchTags,
                                          FarPatchTables *                  tables);
