@@ -481,29 +481,58 @@ static void
 createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
     std::vector<Vertex> const & vertexBuffer) {
 
-    int maxlevel = refTables.GetMaxLevel(),
-        firstvert = 0;
-
-    for (int i=0; i<maxlevel; ++i) {
-        firstvert += refTables.GetNumVertices(i);
-    }
-
     static char buf[16];
-    for (int i=0; i<refTables.GetNumFaces(maxlevel); ++i) {
 
-        Vertex center(0.0f, 0.0f, 0.0f);
+    if (refTables.IsUniform()) {
+        int maxlevel = refTables.GetMaxLevel(),
+            firstvert = 0;
 
-        OpenSubdiv::FarRefineTables::IndexArray const verts =
-            refTables.GetFaceVertices(maxlevel, i);
-
-        float weight = 1.0f / (float)verts.size();
-
-        for (int j=0; j<verts.size(); ++j) {
-            center.AddWithWeight(vertexBuffer[firstvert+verts[j]], weight);
+        for (int i=0; i<maxlevel; ++i) {
+            firstvert += refTables.GetNumVertices(i);
         }
 
-        snprintf(buf, 16, "%d", i);
-        g_font->Print3D(center.GetPos(), buf, 2);
+        for (int face=0; face<refTables.GetNumFaces(maxlevel); ++face) {
+
+            Vertex center(0.0f, 0.0f, 0.0f);
+
+            OpenSubdiv::FarRefineTables::IndexArray const verts =
+                refTables.GetFaceVertices(maxlevel, face);
+
+            float weight = 1.0f / (float)verts.size();
+
+            for (int vert=0; vert<verts.size(); ++vert) {
+                center.AddWithWeight(vertexBuffer[firstvert+verts[vert]], weight);
+            }
+
+            snprintf(buf, 16, "%d", face);
+            g_font->Print3D(center.GetPos(), buf, 2);
+        }
+    } else {
+        int maxlevel = refTables.GetMaxLevel(),
+            patch = refTables.GetNumFaces(0),
+            firstvert = refTables.GetNumVertices(0);
+            
+        for (int level=1; level<=maxlevel; ++level) {
+            
+            int nfaces = refTables.GetNumFaces(level);
+
+            for (int face=0; face<nfaces; ++face, ++patch) {
+
+                Vertex center(0.0f, 0.0f, 0.0f);
+
+                OpenSubdiv::FarRefineTables::IndexArray const verts =
+                    refTables.GetFaceVertices(level, face);
+
+                float weight = 1.0f / (float)verts.size();
+
+                for (int vert=0; vert<verts.size(); ++vert) {
+                    center.AddWithWeight(vertexBuffer[firstvert+verts[vert]], weight);
+                }
+                snprintf(buf, 16, "%d", patch);
+                g_font->Print3D(center.GetPos(), buf, 2);
+            }
+            firstvert+=refTables.GetNumVertices(level);
+        }
     }
 }
 
