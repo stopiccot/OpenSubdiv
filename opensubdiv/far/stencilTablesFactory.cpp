@@ -31,6 +31,7 @@
 #include <cstring>
 #include <algorithm>
 #include <vector>
+#include <map>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -176,8 +177,8 @@ private:
     struct BigStencil {
 
         BigStencil(int size, int const * iindices, float const * iweights) {
-            indices.resize(size+1);
-            weights.resize(size+1);
+            indices.reserve(size+5); indices.resize(size);
+            weights.reserve(size+5); weights.resize(size);
             memcpy(&indices.at(0), iindices, size*sizeof(int) );
             memcpy(&weights.at(0), iweights, size*sizeof(int) );
         }
@@ -186,7 +187,9 @@ private:
         std::vector<float> weights;
     };
 
-    std::vector<BigStencil *> _bigstencils;
+    typedef std::map<int, BigStencil *> BigStencilMap;
+
+    BigStencilMap _bigstencils;
 };
 
 // Find the location of vertex 'vertex' in the stencil indices.
@@ -311,8 +314,9 @@ StencilAllocator::StencilAllocator(FarRefineTables const & refTables) {
 
 // Destructor
 StencilAllocator::~StencilAllocator() {
-    for (int i=0; i<(int)_bigstencils.size(); ++i) {
-        delete _bigstencils[i];
+
+    for (BigStencilMap::iterator it=_bigstencils.begin(); it!=_bigstencils.end(); ++it) {
+        delete it->second;
     }
 }
 
@@ -347,6 +351,8 @@ StencilAllocator::Resize(int numStencils) {
 void
 StencilAllocator::PushBackVertex(Stencil & stencil, int index, float weight) {
 
+    assert(weight>0.0f);
+
     unsigned char * size    = getSize(stencil);
     int           * indices = getIndices(stencil);
     float         * weights = getWeights(stencil);
@@ -364,8 +370,8 @@ StencilAllocator::PushBackVertex(Stencil & stencil, int index, float weight) {
         // Is this stencil already a BigStencil or do we need a new one ?
         if (*size==(_maxsize-1)) {
             dst = new BigStencil(*size, indices, weights);
-            stencil._ID = (int) _bigstencils.size();
-            _bigstencils.push_back(dst);
+            assert(_bigstencils.find(stencil.GetID())==_bigstencils.end());
+            _bigstencils[stencil.GetID()]=dst;
         } else {
             dst = _bigstencils[stencil.GetID()];
         }
@@ -407,7 +413,7 @@ FarStencilTablesFactory::copyStencil(Stencil const & src, FarStencil & dst) {
 // (Sort &) Copy a vector of stencils into FarStencilTables
 template <> void
 FarStencilTablesFactory::copyStencils(StencilVec & src,
-        FarStencil & dst, bool sortBySize) {
+    FarStencil & dst, bool sortBySize) {
 
     if (sortBySize) {
         std::sort(src.begin(), src.end(), Stencil::CompareSize);

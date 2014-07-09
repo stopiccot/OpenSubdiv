@@ -51,6 +51,8 @@
 #include <osd/cpuGLVertexBuffer.h>
 
 #include <far/patchTablesFactory.h>
+#include <far/stencilTables.h>
+#include <far/stencilTablesFactory.h>
 
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
@@ -626,12 +628,12 @@ createVtrMesh(Shape * shape, int maxlevel) {
     } else {
         refTables->RefineUniform(maxlevel, /*fullTopology*/true);
     }
+    s.Stop();
 
     // create vertex primvar data buffer
     std::vector<Vertex> vertexBuffer(refTables->GetNumVerticesTotal());
     Vertex * verts = &vertexBuffer[0];
 
-    s.Stop();
     //printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
 
     // copy coarse vertices positions
@@ -641,15 +643,29 @@ createVtrMesh(Shape * shape, int maxlevel) {
         verts[i].SetPosition(ptr[0], ptr[1], ptr[2]);
     }
 
-    s.Start();
-
-    // populate buffer with Vtr interpolated vertex data
-    refTables->Interpolate(verts, verts + ncoarseverts);
-
-    s.Stop();
-    //printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
-    //printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
-
+//#define no_stencils
+#ifdef no_stencils
+    { 
+        s.Start();
+        // populate buffer with Vtr interpolated vertex data
+        refTables->Interpolate(verts, verts + ncoarseverts);
+        s.Stop();
+        //printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
+        //printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
+    }
+#else
+    {
+        OpenSubdiv::FarStencilTablesFactory::Options options;
+        options.generateOffsets=true;
+        options.generateAllLevels=true;
+        options.sortBySize=false;
+        
+        OpenSubdiv::FarStencilTables const * stencilTables =
+            OpenSubdiv::FarStencilTablesFactory::Create(*refTables, options);
+        
+        stencilTables->UpdateValues(verts, verts + ncoarseverts);
+    }
+#endif    
 
     if (g_VtrDrawVertIDs) {
         createVertNumbers(*refTables, vertexBuffer);
