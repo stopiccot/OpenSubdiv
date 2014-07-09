@@ -22,7 +22,6 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#include "../far/dispatcher.h"
 #include "../osd/glDrawRegistry.h"
 #include "../osd/glDrawContext.h"
 
@@ -103,7 +102,7 @@ OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElemen
         
         OsdGLDrawContext * result = new OsdGLDrawContext();
         
-        if (result->create(patchTables, numVertexElements, requireFVarData)) {
+        if (result->create(*patchTables, numVertexElements, requireFVarData)) {
             return result;
         } else {
             delete result;
@@ -113,14 +112,12 @@ OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElemen
 }
 
 bool
-OsdGLDrawContext::create(FarPatchTables const * patchTables, int numVertexElements, bool requireFVarData) {
+OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElements, bool requireFVarData) {
 
-    assert(patchTables);
-         
-    _isAdaptive = patchTables->IsFeatureAdaptive();
+    _isAdaptive = patchTables.IsFeatureAdaptive();
     
     // Process PTable
-    FarPatchTables::PTable const & ptables = patchTables->GetPatchTable();
+    FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
 
     glGenBuffers(1, &_patchIndexBuffer);
 
@@ -138,15 +135,15 @@ OsdGLDrawContext::create(FarPatchTables const * patchTables, int numVertexElemen
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
     
-    OsdDrawContext::ConvertPatchArrays(patchTables->GetPatchArrayVector(),
-        patchArrays, patchTables->GetMaxValence(), numVertexElements);
+    OsdDrawContext::ConvertPatchArrays(patchTables.GetPatchArrayVector(),
+        patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
     // allocate and initialize additional buffer data
 
 #if defined(GL_ARB_texture_buffer_object) || defined(GL_VERSION_3_1)
     // create vertex valence buffer and vertex texture
     FarPatchTables::VertexValenceTable const &
-        valenceTable = patchTables->GetVertexValenceTable();
+        valenceTable = patchTables.GetVertexValenceTable();
 
     if (not valenceTable.empty()) {
         _vertexValenceTextureBuffer = createTextureBuffer(valenceTable, GL_R32I);
@@ -158,7 +155,7 @@ OsdGLDrawContext::create(FarPatchTables const * patchTables, int numVertexElemen
 
     // create quad offset table buffer
     FarPatchTables::QuadOffsetTable const &
-        quadOffsetTable = patchTables->GetQuadOffsetTable();
+        quadOffsetTable = patchTables.GetQuadOffsetTable();
 
     if (not quadOffsetTable.empty())
         _quadOffsetsTextureBuffer = createTextureBuffer(quadOffsetTable, GL_R32I);
@@ -166,7 +163,7 @@ OsdGLDrawContext::create(FarPatchTables const * patchTables, int numVertexElemen
 
     // create ptex coordinate buffer
     FarPatchTables::PatchParamTable const &
-        patchParamTables = patchTables->GetPatchParamTable();
+        patchParamTables = patchTables.GetPatchParamTable();
 
     if (not patchParamTables.empty())
         _patchParamTextureBuffer = createTextureBuffer(patchParamTables, GL_RG32I);
@@ -174,7 +171,7 @@ OsdGLDrawContext::create(FarPatchTables const * patchTables, int numVertexElemen
 
     // create fvar data buffer if requested
     std::vector<float> const &
-        fvarData = patchTables->GetFVarData().GetAllData();
+        fvarData = patchTables.GetFVarData().GetAllData();
 
     if (requireFVarData and not fvarData.empty())
         _fvarDataTextureBuffer = createTextureBuffer(fvarData, GL_R32F);

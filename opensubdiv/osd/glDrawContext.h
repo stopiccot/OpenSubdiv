@@ -125,7 +125,7 @@ protected:
     OsdGLDrawContext();
 
     // allocate buffers from patchTables
-    bool create(FarPatchTables const *patchTables, int numElements, bool requireFVarData);
+    bool create(FarPatchTables const & patchTables, int numElements, bool requireFVarData);
 
     void updateVertexTexture(GLuint vbo);
 };
