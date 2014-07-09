@@ -216,7 +216,9 @@ Stencil::Clear() {
 inline void
 Stencil::AddWithWeight(int vertIndex, float weight) {
 
-    assert(weight>0.0f);
+    if (weight==0.0f) {
+        return;
+    }
 
     int n = findVertex(vertIndex);
     if (n<0) {
@@ -224,6 +226,7 @@ Stencil::AddWithWeight(int vertIndex, float weight) {
     } else {
         float * dstWeights = _alloc->getWeights(*this);
         dstWeights[n] += weight;
+        assert(dstWeights[n]>0.0f);
     }
 }
 
@@ -231,7 +234,9 @@ Stencil::AddWithWeight(int vertIndex, float weight) {
 inline void
 Stencil::AddWithWeight(Stencil const & src, float weight) {
 
-    assert(weight>0.0f);
+    if (weight==0.0f) {
+        return;
+    }
 
     unsigned char const * srcSize    = src._alloc->getSize(src);
     int                 * srcIndices = src._alloc->getIndices(src);
