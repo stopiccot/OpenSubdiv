@@ -591,8 +591,8 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
         refTables->RefineAdaptive(maxlevel, /*fullTopology*/true);
 
-        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(refTables);
-        
+        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(*refTables);
+
         g_numPatches = patchTables->GetNumPatches();
     } else {
         refTables->RefineUniform(maxlevel, /*fullTopology*/true);
@@ -833,11 +833,11 @@ display() {
             if (g_Adaptive and g_currentPatch) {
                 g_hud.DrawString(g_width/2-100, 100, "Current Patch : %d/%d (%s - %d CVs)",
                     g_currentPatch, g_numPatches,
-                        patchTypes[g_currentPatchDesc.GetType()],  
+                        patchTypes[g_currentPatchDesc.GetType()],
                             g_currentPatchDesc.GetNumControlVertices());
             }
         }
-        
+
         static char const * schemeNames[3] = { "BILINEAR", "CATMARK", "LOOP" };
 
         g_hud.DrawString(10, -140, "Primitives : %d", numPrimsGenerated);
@@ -965,12 +965,12 @@ keyboard(int key, int event) {
         case 'F': fitFrame(); break;
 
         case '[': if (g_currentPatch > 0) {
-                      --g_currentPatch; 
+                      --g_currentPatch;
                       rebuildOsdMeshes();
                   } break;
 
         case ']': if (g_currentPatch < g_numPatches) {
-                      ++g_currentPatch; 
+                      ++g_currentPatch;
                       rebuildOsdMeshes();
                   } break;
 

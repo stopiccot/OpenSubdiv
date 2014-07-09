@@ -495,11 +495,21 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
 
             for (int j=0; j<(int)pa.GetNumPatches(); ++j, ++face, cvs+=ncvs) {
 
-                if (pa.GetDescriptor().GetType()==PatchTables::CORNER) {
-                    eao[face*4  ] = cvs[0]; // corner patches are mapped CW
-                    eao[face*4+1] = cvs[3]; // need adjusted to CCW
-                    eao[face*4+2] = cvs[2];
-                    eao[face*4+3] = cvs[1];
+                if (pa.GetDescriptor().GetType()==PatchTables::REGULAR) {
+                    eao[face*4  ] = cvs[ 5];
+                    eao[face*4+1] = cvs[ 6];
+                    eao[face*4+2] = cvs[10];
+                    eao[face*4+3] = cvs[ 9];
+                } else if (pa.GetDescriptor().GetType()==PatchTables::BOUNDARY) {
+                    eao[face*4  ] = cvs[ 2];
+                    eao[face*4+1] = cvs[ 6];
+                    eao[face*4+2] = cvs[ 5];
+                    eao[face*4+3] = cvs[ 1];
+                } else if (pa.GetDescriptor().GetType()==PatchTables::CORNER) {
+                    eao[face*4  ] = cvs[ 0];
+                    eao[face*4+1] = cvs[ 1];
+                    eao[face*4+2] = cvs[ 4];
+                    eao[face*4+3] = cvs[ 3];
                 } else {
                     memcpy(&eao[face*4], cvs, 4*sizeof(int));
                 }
