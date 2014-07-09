@@ -24,7 +24,7 @@
 
 
 
-if( OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
+if (OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
 
     # optional dependency - enables screenshots in some examples
     find_package(PNG)
@@ -46,11 +46,11 @@ if( OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
     add_subdirectory(topologySharing)
     add_subdirectory(vtrViewer)
 
-    if(OPENGL_4_3_FOUND AND (NOT APPLE))
+    if (OPENGL_4_3_FOUND AND (NOT APPLE))
         add_subdirectory(paintTest)
     endif()
 
-    if(PTEX_FOUND)
+    if (PTEX_FOUND)
         add_subdirectory(ptexViewer)
     endif()
 
@@ -79,18 +79,18 @@ else()
     )
 endif()
 
-if(DXSDK_FOUND)
+if (DXSDK_FOUND)
 
    add_subdirectory(dxViewer)
 
-   if(PTEX_FOUND)
+   if (PTEX_FOUND)
        add_subdirectory(dxPtexViewer)
    endif()
 
 endif()
 
 
-if(MAYA_FOUND AND (NOT NO_MAYA))
+if (MAYA_FOUND AND (NOT NO_MAYA))
     add_subdirectory(osdPolySmooth)
 
     # manuelk: the following plugins are disabled until further notice
