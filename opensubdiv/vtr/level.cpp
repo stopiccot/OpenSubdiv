@@ -533,7 +533,7 @@ VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVer
 //         |     |     |     |
 //
 int
-VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int ringVerts[]) const
+VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int ringVerts[], int rotation) const
 {
     VtrLevel const& level = *this;
 
@@ -542,14 +542,21 @@ VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int
     //  the given/central face, within which are three vertices of the ring:
     //
     VtrIndexArray thisFaceVerts = level.getFaceVertices(thisFace);
-    ringVerts[0] = thisFaceVerts[0];
-    ringVerts[1] = thisFaceVerts[1];
-    ringVerts[2] = thisFaceVerts[2];
-    ringVerts[3] = thisFaceVerts[3];
+    if (rotation) {
+        ringVerts[0] = thisFaceVerts[fastMod4(rotation)];
+        ringVerts[1] = thisFaceVerts[fastMod4(rotation + 1)];
+        ringVerts[2] = thisFaceVerts[fastMod4(rotation + 2)];
+        ringVerts[3] = thisFaceVerts[fastMod4(rotation + 3)];
+    } else {
+        ringVerts[0] = thisFaceVerts[0];
+        ringVerts[1] = thisFaceVerts[1];
+        ringVerts[2] = thisFaceVerts[2];
+        ringVerts[3] = thisFaceVerts[3];
+    }
 
     int ringIndex = 4;
     for (int i = 0; i < 4; ++i) {
-        VtrIndex v = thisFaceVerts[i];
+        VtrIndex v = ringVerts[i];
 
         VtrIndexArray      vFaces   = level.getVertexFaces(v);
         VtrLocalIndexArray vInFaces = level.getVertexFaceLocalIndices(v);
