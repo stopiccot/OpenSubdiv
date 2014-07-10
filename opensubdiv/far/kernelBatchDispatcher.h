@@ -100,6 +100,10 @@ template <class CONTROLLER, class CONTEXT> bool
 FarKernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
     FarKernelBatch const &batch) {
 
+    if (batch.end==0) {
+        return true;
+    }
+
     switch(batch.kernelType) {
 
         case FarKernelBatch::KERNEL_UNKNOWN:

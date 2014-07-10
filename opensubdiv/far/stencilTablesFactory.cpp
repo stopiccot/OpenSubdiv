@@ -435,6 +435,10 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
     int maxlevel = refTables.GetMaxLevel();
 
+    if (maxlevel==0) {
+        return new FarStencilTables;
+    }
+
     std::vector<StencilAllocator> allocators(
         options.generateAllLevels ? maxlevel : 2, StencilAllocator(refTables));
 
