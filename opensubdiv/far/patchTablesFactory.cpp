@@ -260,23 +260,23 @@ public:
         _isTransitional = (transitionEdgeMask != 0);
 
         switch (transitionEdgeMask) {
-        case 0x0:  _transitionType = NONE;           break;  // no transitions
-        case 0x1:  _transitionType = TRANS_ONE;      break;  // single edge 0
-        case 0x2:  _transitionType = TRANS_ONE;      break;  // single edge 1
-        case 0x3:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 0 and 1
-        case 0x4:  _transitionType = TRANS_ONE;      break;  // single edge 2
-        case 0x5:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 0 and 2
-        case 0x6:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 1 and 2
-        case 0x7:  _transitionType = TRANS_THREE;    break;  // three edges, all but 3
-        case 0x8:  _transitionType = TRANS_ONE;      break;  // single edge 3
-        case 0x9:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 3 and 0
-        case 0xa:  _transitionType = TRANS_TWO_OPP;  break;  // two opposite edges, 1 and 3
-        case 0xb:  _transitionType = TRANS_THREE;    break;  // three edges, all but 2
-        case 0xc:  _transitionType = TRANS_TWO_ADJ;  break;  // two adjacent edges, 2 and 3
-        case 0xd:  _transitionType = TRANS_THREE;    break;  // three edges, all but 1
-        case 0xe:  _transitionType = TRANS_THREE;    break;  // three edges, all but 0
-        case 0xf:  _transitionType = TRANS_ALL;      break;  // all edges
-        default:   assert(false);                    break;
+            case 0x0:  _transitionType = NONE;          break;  // no transitions
+            case 0x1:  _transitionType = TRANS_ONE;     break;  // single edge 0
+            case 0x2:  _transitionType = TRANS_ONE;     break;  // single edge 1
+            case 0x3:  _transitionType = TRANS_TWO_ADJ; break;  // two adjacent edges, 0 and 1
+            case 0x4:  _transitionType = TRANS_ONE;     break;  // single edge 2
+            case 0x5:  _transitionType = TRANS_TWO_OPP; break;  // two opposite edges, 0 and 2
+            case 0x6:  _transitionType = TRANS_TWO_ADJ; break;  // two adjacent edges, 1 and 2
+            case 0x7:  _transitionType = TRANS_THREE;   break;  // three edges, all but 3
+            case 0x8:  _transitionType = TRANS_ONE;     break;  // single edge 3
+            case 0x9:  _transitionType = TRANS_TWO_ADJ; break;  // two adjacent edges, 3 and 0
+            case 0xa:  _transitionType = TRANS_TWO_OPP; break;  // two opposite edges, 1 and 3
+            case 0xb:  _transitionType = TRANS_THREE;   break;  // three edges, all but 2
+            case 0xc:  _transitionType = TRANS_TWO_ADJ; break;  // two adjacent edges, 2 and 3
+            case 0xd:  _transitionType = TRANS_THREE;   break;  // three edges, all but 1
+            case 0xe:  _transitionType = TRANS_THREE;   break;  // three edges, all but 0
+            case 0xf:  _transitionType = TRANS_ALL;     break;  // all edges
+            default:   assert(false);                   break;
         }
 
         //  May need another switch/lookup table here or combine it with the above -- the
@@ -284,7 +284,8 @@ public:
         if (transitionEdgeMask == 0) {
             _transitionRot = 0;
         } else if (_boundaryCount == 0) {
-            _transitionRot = _boundaryIndex;
+            static unsigned char transitionRots[16] = {0, 0, 1, 0,  2, 0, 1, 0,  3, 2, 1, 1,  3, 2, 3, 0  };
+            _transitionRot = transitionRots[transitionEdgeMask];
         } else if (_boundaryCount == 1) {
             assignTransitionRotationForBoundary(transitionEdgeMask);
         } else if (_boundaryCount == 2) {
@@ -690,7 +691,8 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
                 if (patchTag._boundaryCount == 0) {
                     patchInventory.R[transIndex]++;
                 } else if (patchTag._boundaryCount == 1) {
-                    patchInventory.B[transIndex][transRot]++;
+                    int index = transIndex > 0 ? (4-transRot)%4 : transRot;
+                    patchInventory.B[transIndex][index]++;
                 } else {
                     patchInventory.C[transIndex][transRot]++;
                 }
@@ -784,7 +786,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     //unsigned int const permuteInterior[16] = { 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4 };
                     //unsigned int const * permuteInterior = 0;
 
-                    level->gatherQuadRegularInteriorPatchVertices(faceIndex, patchVerts);
+                    level->gatherQuadRegularInteriorPatchVertices(faceIndex, patchVerts, rIndex);
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
 
                     iptrs.R[tIndex] += 16;
@@ -812,28 +814,23 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     //
                     if (patchTag._boundaryCount == 1) {
                         unsigned int const permuteBoundary[12] = { 11, 3, 0, 4, 10, 2, 1, 5, 9, 8, 7, 6 };
-                        //unsigned int const permuteBoundary[12] = { 4, 0, 3, 11, 5, 1, 2, 10, 6, 7, 8, 9 };
-                        //unsigned int const permuteBoundary[12] = { 0, 1, 2, 3, 4, 11, 10, 9, 8, 7, 6, 5 };
-                        //unsigned int const * permuteBoundary = 0;
+
+                        int index = tIndex > 0 ? (4-rIndex)%4 : rIndex;
 
                         level->gatherQuadRegularBoundaryPatchVertices(faceIndex, patchVerts, bIndex);
-                        offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][rIndex]);
+                        offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][index]);
 
-                        iptrs.B[tIndex][rIndex] += 12;
-                        pptrs.B[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
+                        iptrs.B[tIndex][index] += 12;
+                        pptrs.B[tIndex][index] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][index]);
                         // fptrs.B[tIndex][rIndex] = computeFVarData(...,   fptrs.B[tIndex][rIndex], true);
                     } else {
-                        unsigned int const permuteCorner[9] = { 0, 1, 4, 3, 2, 5, 8, 7, 6 };
-                        //unsigned int const permuteCorner[9] = { 0, 3, 2, 1, 8, 7, 6, 5, 4 };
-                        //unsigned int const * permuteCorner = 0;
-
-                        int paramRots = (bIndex + 3) % 4;
+                        unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
 
                         level->gatherQuadRegularCornerPatchVertices(faceIndex, patchVerts, bIndex);
                         offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
 
                         iptrs.C[tIndex][rIndex] += 9;
-                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, paramRots, pptrs.C[tIndex][rIndex]);
+                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.C[tIndex][rIndex]);
                         // fptrs.C[tIndex][rIndex] = computeFVarData(...,   fptrs.C[tIndex][rIndex], true);
                     }
                 }
