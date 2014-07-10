@@ -136,8 +136,7 @@ public:
             // Slow path for non-aligned data
             float * result = (float*)alloca(_vertexDesc.length * sizeof(float));
 
-            int nstencils = r.end()-r.begin();
-            for (int i=0; i<nstencils; ++i, ++sizes) {
+            for (int i=r.begin(); i<r.end(); ++i, ++sizes) {
 
                 clear(result, _vertexDesc);
 
@@ -162,7 +161,7 @@ OsdTbbComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
                       int start, int end) {
 
     assert(start>=0 and start<end);
-    
+
     TBBStencilKernel kernel(vertexDesc, vertexSrc, vertexDst,
         sizes, offsets, indices, weights);
 
