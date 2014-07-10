@@ -69,13 +69,13 @@ struct PatchTypes {
     int getNumPatchArrays() const {
         int result=0;
         for (int i=0; i<6; ++i) {
-    
+
             if (R[i]) ++result;
-    
+
             for (int j=0; j<4; ++j) {
                 if (B[i][j]) ++result;
                 if (C[i][j]) ++result;
-    
+
             }
         }
         if (G) ++result;
@@ -239,9 +239,10 @@ public:
             } else {
                 _transitionRot = 3;
             }
+            // XXXX manuelk mirror this rotation to match shader idiosyncracies
+            _transitionRot = (4-_transitionRot)%4;
         } else if (_transitionType == TRANS_TWO_ADJ) {
             int const edgeMaskPerBoundary[] = { 6, 12, 9, 3 };
-
             _transitionRot = 1 + (edgeMaskPerBoundary[_boundaryIndex] == transitionEdgeMask);
         } else {
             _transitionRot = 1;
@@ -284,7 +285,10 @@ public:
         if (transitionEdgeMask == 0) {
             _transitionRot = 0;
         } else if (_boundaryCount == 0) {
-            static unsigned char transitionRots[16] = {0, 0, 1, 0,  2, 0, 1, 0,  3, 2, 1, 1,  3, 2, 3, 0  };
+            // XXXX manuelk rotations are mostly a direct map of the transitionEdgeMask
+            //              except for TRANS_TWO_ADJ that has rotation { 1, 2, 0, 3 }
+            //              (again, matching shader idiosyncracies)       
+            static unsigned char transitionRots[16] = {0, 0, 1, 1, 2, 0, 2, 0, 3, 0, 1, 1, 3, 2, 3, 0  };
             _transitionRot = transitionRots[transitionEdgeMask];
         } else if (_boundaryCount == 1) {
             assignTransitionRotationForBoundary(transitionEdgeMask);
@@ -588,7 +592,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
         VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refineTables.getRefinement(i-1);
         VtrRefinement const * refineNext = isLevelLast  ? 0 : &refineTables.getRefinement(i);
 
-        VtrRefinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0; 
+        VtrRefinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0;
 
         for (int faceIndex = 0; faceIndex < level->getNumFaces(); ++faceIndex) {
             VtrRefinement::SparseTag vtrFaceTag = vtrFaceTags ? vtrFaceTags[faceIndex] : VtrRefinement::SparseTag();
@@ -691,8 +695,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
                 if (patchTag._boundaryCount == 0) {
                     patchInventory.R[transIndex]++;
                 } else if (patchTag._boundaryCount == 1) {
-                    int index = transIndex > 0 ? (4-transRot)%4 : transRot;
-                    patchInventory.B[transIndex][index]++;
+                    patchInventory.B[transIndex][transRot]++;
                 } else {
                     patchInventory.C[transIndex][transRot]++;
                 }
@@ -780,11 +783,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                 int bIndex = patchTag._boundaryIndex;
 
                 if (patchTag._boundaryCount == 0) {
-
                     unsigned int const permuteInterior[16] = { 5, 6, 7, 8, 4, 0, 1, 9, 15, 3, 2, 10, 14, 13, 12, 11 };
-                    //unsigned int const permuteInterior[16] = { 0, 3, 2, 1, 6, 5, 4, 15, 14, 13, 12, 11, 10, 9, 8, 7  };
-                    //unsigned int const permuteInterior[16] = { 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4 };
-                    //unsigned int const * permuteInterior = 0;
 
                     level->gatherQuadRegularInteriorPatchVertices(faceIndex, patchVerts, rIndex);
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
@@ -815,13 +814,11 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     if (patchTag._boundaryCount == 1) {
                         unsigned int const permuteBoundary[12] = { 11, 3, 0, 4, 10, 2, 1, 5, 9, 8, 7, 6 };
 
-                        int index = tIndex > 0 ? (4-rIndex)%4 : rIndex;
-
                         level->gatherQuadRegularBoundaryPatchVertices(faceIndex, patchVerts, bIndex);
-                        offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][index]);
+                        offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][rIndex]);
 
-                        iptrs.B[tIndex][index] += 12;
-                        pptrs.B[tIndex][index] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][index]);
+                        iptrs.B[tIndex][rIndex] += 12;
+                        pptrs.B[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
                         // fptrs.B[tIndex][rIndex] = computeFVarData(...,   fptrs.B[tIndex][rIndex], true);
                     } else {
                         unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
