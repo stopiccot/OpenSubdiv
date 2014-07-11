@@ -420,6 +420,10 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
         faceIndex = parentFaceIndex;
     }
 
+    if (nonquad) {
+        --depth;
+    }
+
     //if (refTables.HasPtex()) {
     //    faceIndex = refTables.GetPtexIndex(faceIndex);
     //}
