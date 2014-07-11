@@ -225,7 +225,7 @@ public:
     int gatherQuadRegularBoundaryPatchVertices(VtrIndex fIndex, unsigned int patchVerts[], int boundaryEdgeInFace) const;
     int gatherQuadRegularCornerPatchVertices(  VtrIndex fIndex, unsigned int patchVerts[], int cornerVertInFace) const;
 
-    int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVerts[]) const;
+    int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, VtrIndex vOffset, int ringVerts[]) const;
 
 protected:
     template <class MESH>

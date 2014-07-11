@@ -474,7 +474,7 @@ namespace {
 //  the last face.
 //
 int
-VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVerts[]) const
+VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, VtrIndex vOffset, int ringVerts[]) const
 {
     VtrLevel const& level = *this;
 
@@ -495,14 +495,17 @@ VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int ringVer
 
         int vInThisFace = vInFaces[i];
 
-        ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 1)];
-        ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 2)];
+        ringVerts[ringIndex++] = vOffset + fVerts[fastMod4(vInThisFace + 1)];
+        ringVerts[ringIndex++] = vOffset + fVerts[fastMod4(vInThisFace + 2)];
 
         if (isBoundary && (i == (vFaces.size() - 1))) {
-            ringVerts[ringIndex++] = fVerts[fastMod4(vInThisFace + 3)];
+            ringVerts[ringIndex++] = vOffset + fVerts[fastMod4(vInThisFace + 3)];
         }
     }
-    return ringIndex;
+    
+    int valence = vFaces.size();
+    
+    return valence;
 }
 
 //

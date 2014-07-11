@@ -287,7 +287,7 @@ public:
         } else if (_boundaryCount == 0) {
             // XXXX manuelk rotations are mostly a direct map of the transitionEdgeMask
             //              except for TRANS_TWO_ADJ that has rotation { 1, 2, 0, 3 }
-            //              (again, matching shader idiosyncracies)       
+            //              (again, matching shader idiosyncracies)
             static unsigned char transitionRots[16] = {0, 0, 1, 1, 2, 0, 2, 0, 3, 0, 1, 1, 3, 2, 3, 0  };
             _transitionRot = transitionRots[transitionEdgeMask];
         } else if (_boundaryCount == 1) {
@@ -448,6 +448,7 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
     VtrIndexArray fVerts = level.getFaceVertices(fIndex);
 
     for (int i = 0; i < 4; ++i) {
+
         VtrIndex      vIndex = fVerts[i];
         VtrIndexArray vFaces = level.getVertexFaces(vIndex);
 
@@ -462,11 +463,7 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
 
         unsigned int vOffsets[2];
         vOffsets[0] = thisFaceInVFaces;
-        vOffsets[1] = thisFaceInVFaces + 1;
-        if ((int)vOffsets[1] == vFaces.size()) {
-            vOffsets[0] = 0;
-            vOffsets[1] = vFaces.size() - 1;
-        }
+        vOffsets[1] = (thisFaceInVFaces + 1)%vFaces.size();
         offsets[i] = vOffsets[0] | (vOffsets[1] << 8);
     }
 }
@@ -535,7 +532,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, int
     allocateTables( tables, 0, fvarwidth );
 
     // Specifics for Gregory patches
-    if ((patchInventory.G > 0) || (patchInventory.GB > 0)) {
+    if ((patchInventory.G > 0) or (patchInventory.GB > 0)) {
         tables->_quadOffsetTable.resize( patchInventory.G*4 + patchInventory.GB*4 );
     }
 
@@ -622,10 +619,10 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
             VtrIndexArray const& fVerts = level->getFaceVertices(faceIndex);
             assert(fVerts.size() == 4);
 
-            if (!isLevelFirst && (refinePrev->_childVertexTag[fVerts[0]]._incomplete ||
-                                  refinePrev->_childVertexTag[fVerts[1]]._incomplete ||
-                                  refinePrev->_childVertexTag[fVerts[2]]._incomplete ||
-                                  refinePrev->_childVertexTag[fVerts[3]]._incomplete)) {
+            if (!isLevelFirst and (refinePrev->_childVertexTag[fVerts[0]]._incomplete or
+                                   refinePrev->_childVertexTag[fVerts[1]]._incomplete or
+                                   refinePrev->_childVertexTag[fVerts[2]]._incomplete or
+                                   refinePrev->_childVertexTag[fVerts[3]]._incomplete)) {
                 continue;
             }
 
@@ -754,7 +751,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
     //  To avoid gathering vertex neighborhoods for all vertices, identify vertices involved in
     //  gregory patches as the faces are traversed, to be gathered later:
     //
-    bool hasGregoryPatches = (patchInventory.G > 0) || (patchInventory.GB > 0);
+    bool hasGregoryPatches = (patchInventory.G > 0) or (patchInventory.GB > 0);
     if (hasGregoryPatches) {
         gregoryVertexFlags.resize(refineTables.GetNumVerticesTotal(), false);
     }
@@ -885,16 +882,13 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
         int vOffset = 0;
         int levelLast = (int)refineTables.getNumLevels() - 1;
         for (int i = 0; i <= levelLast; ++i) {
+
             VtrLevel const * level = &refineTables.getLevel(i);
 
-            int vTableOffset = vOffset * SizePerVertex;
+            if (i == levelLast) {
 
-            if (i < levelLast) {
-                for (int vIndex = 0; vIndex < level->getNumVertices(); ++vIndex) {
-                    vTable[vTableOffset] = 0;
-                    vTableOffset += SizePerVertex;
-                }
-            } else {
+                int vTableOffset = vOffset * SizePerVertex;
+
                 for (int vIndex = 0; vIndex < level->getNumVertices(); ++vIndex) {
                     int* vTableEntry = &vTable[vTableOffset];
 
@@ -907,7 +901,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                         vTableEntry[0] = 0;
                     } else {
                         int* ringDest = vTableEntry + 1;
-                        int  ringSize = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, ringDest);
+                        int  ringSize = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, vOffset, ringDest);
 
                         //  Determine boundary/interior from size of the ring returned:
                         if (ringSize & 1) {
