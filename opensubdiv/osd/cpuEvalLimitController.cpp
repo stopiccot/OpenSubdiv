@@ -75,7 +75,7 @@ OsdCpuEvalLimitController::EvalLimitSample( OpenSubdiv::OsdEvalCoords const & co
     VertexData const & vertexData = _currentBindState.vertexData;
 
     if (vertexData.in) {
-    
+
         float * out   = outQ ? outQ + outDesc.offset : 0,
               * outDu = outDQU ? outDQU + outDesc.offset : 0,
               * outDv = outDQV ? outDQV + outDesc.offset : 0;
@@ -102,8 +102,6 @@ OsdCpuEvalLimitController::EvalLimitSample( OpenSubdiv::OsdEvalCoords const & co
                                                         outDesc,
                                                         out, outDu, outDv );
                                             break;
-
-
             case FarPatchTables::GREGORY  : evalGregory( v, u, cvs,
                                                          &context->GetVertexValenceTable()[0],
                                                          &context->GetQuadOffsetTable()[ parray.GetQuadOffsetIndex() + handle->vertexOffset ],
@@ -124,12 +122,11 @@ OsdCpuEvalLimitController::EvalLimitSample( OpenSubdiv::OsdEvalCoords const & co
                                                                  outDesc,
                                                                  out, outDu, outDv );
                                             break;
-
             default:
                 assert(0);
         }
     }
-
+    assert(0);
     return 1;
 }
 
@@ -189,8 +186,6 @@ OsdCpuEvalLimitController::_EvalLimitSample( OpenSubdiv::OsdEvalCoords const & c
                                                             vertexData.outDesc,
                                                             out, outDu, outDv );
                                                 break;
-
-
                 case FarPatchTables::GREGORY  : evalGregory( v, u, cvs,
                                                              &context->GetVertexValenceTable()[0],
                                                              &context->GetQuadOffsetTable()[ parray.GetQuadOffsetIndex() + handle->vertexOffset ],
@@ -211,7 +206,6 @@ OsdCpuEvalLimitController::_EvalLimitSample( OpenSubdiv::OsdEvalCoords const & c
                                                                      vertexData.outDesc,
                                                                      out, outDu, outDv );
                                                 break;
-
                 default:
                     assert(0);
             }
@@ -269,7 +263,6 @@ OsdCpuEvalLimitController::_EvalLimitSample( OpenSubdiv::OsdEvalCoords const & c
                           facevaryingData.out+offset);
         }
     }
-
     return 1;
 }
 

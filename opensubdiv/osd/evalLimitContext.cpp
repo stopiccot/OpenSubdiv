@@ -28,9 +28,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdEvalLimitContext::OsdEvalLimitContext(FarPatchTables const *patchTables) {
+OsdEvalLimitContext::OsdEvalLimitContext(FarPatchTables const & patchTables) {
 
-    _adaptive = patchTables->IsFeatureAdaptive();
+    _adaptive = patchTables.IsFeatureAdaptive();
 }
 
 OsdEvalLimitContext::~OsdEvalLimitContext() {

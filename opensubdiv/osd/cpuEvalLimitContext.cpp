@@ -34,40 +34,36 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 OsdCpuEvalLimitContext *
-OsdCpuEvalLimitContext::Create(FarPatchTables const *patchTables, bool requireFVarData) {
+OsdCpuEvalLimitContext::Create(FarPatchTables const & patchTables, bool requireFVarData) {
 
-    assert(patchTables);
-    
-    // we do not support uniform yet
-    if (not patchTables->IsFeatureAdaptive())
+    // there is no limit with uniform subdivision
+    if (not patchTables.IsFeatureAdaptive())
         return NULL;
                                           
     return new OsdCpuEvalLimitContext(patchTables, requireFVarData);
 }
 
-OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const *patchTables, bool requireFVarData) :
+OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const & patchTables, bool requireFVarData) :
     OsdEvalLimitContext(patchTables) {
     
-    assert(patchTables);
-
     // copy the data from the FarTables
-    _patches = patchTables->GetPatchTable();
+    _patches = patchTables.GetPatchTable();
 
-    _patchArrays = patchTables->GetPatchArrayVector();
+    _patchArrays = patchTables.GetPatchArrayVector();
     
-    _vertexValenceTable = patchTables->GetVertexValenceTable();
+    _vertexValenceTable = patchTables.GetVertexValenceTable();
     
-    _quadOffsetTable = patchTables->GetQuadOffsetTable();
+    _quadOffsetTable = patchTables.GetQuadOffsetTable();
     
-    _maxValence = patchTables->GetMaxValence();
+    _maxValence = patchTables.GetMaxValence();
     
     // Copy the bitfields, the faceId will be the key to our map
-    int npatches = patchTables->GetNumPatches();
+    int npatches = patchTables.GetNumPatches();
     
     _patchBitFields.reserve(npatches);
 
     FarPatchTables::PatchParamTable const & ptxTable =
-        patchTables->GetPatchParamTable();
+        patchTables.GetPatchParamTable();
 
     if ( not ptxTable.empty() ) {
 
@@ -85,13 +81,13 @@ OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const *patchTables
     
     // Copy the face-varying table if necessary    
     if (requireFVarData) {
-        _fvarwidth = patchTables->GetFVarData().GetFVarWidth();
+        _fvarwidth = patchTables.GetFVarData().GetFVarWidth();
         if (_fvarwidth>0) {
-            _fvarData = patchTables->GetFVarData().GetAllData();
+            _fvarData = patchTables.GetFVarData().GetAllData();
         }
     }
     
-    _patchMap = new FarPatchMap( *patchTables );
+    _patchMap = new FarPatchMap( patchTables );
 }
 
 OsdCpuEvalLimitContext::~OsdCpuEvalLimitContext() {

@@ -50,7 +50,7 @@ public:
     ///
     /// @param requireFVarData  flag for generating face-varying data
     ///
-    static OsdCpuEvalLimitContext * Create(FarPatchTables const *patchTables,
+    static OsdCpuEvalLimitContext * Create(FarPatchTables const &patchTables,
                                            bool requireFVarData=false);
 
     virtual ~OsdCpuEvalLimitContext();
@@ -102,7 +102,7 @@ public:
     }
 
 protected:
-    explicit OsdCpuEvalLimitContext(FarPatchTables const *patchTables, bool requireFVarData);
+    explicit OsdCpuEvalLimitContext(FarPatchTables const & patchTables, bool requireFVarData);
 
 private:
 
