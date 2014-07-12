@@ -904,8 +904,19 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     //if (!gregoryVertexFlags[vIndex + vOffset]) {
                         vTableEntry[0] = 0;
                     //} else {
-                        int* ringDest = vTableEntry + 1;
-                        vTableEntry[0] = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, vOffset, ringDest);
+
+                        int * ringDest = vTableEntry + 1,
+                              ringSize = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, vOffset, ringDest);
+
+                        if (ringSize & 1) {
+                            // boundary vertex : duplicate boundary vertex index
+                            // and store negative valence.
+                            ringSize++;
+                            vTableEntry[ringSize]=vTableEntry[ringSize-1];
+                            vTableEntry[0] = -ringSize/2;
+                        } else {
+                            vTableEntry[0] = ringSize/2;
+                        }
                     //}
                     vTableOffset += SizePerVertex;
                 }
