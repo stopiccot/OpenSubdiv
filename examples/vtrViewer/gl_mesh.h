@@ -22,6 +22,9 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+#ifndef GL_MESH_H
+#define GL_MESH_H
+
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
 #include <far/patchTables.h>
@@ -237,3 +240,4 @@ private:
           _diffuseColor[4];
 };
 
+#endif // GL_MESH_H

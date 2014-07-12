@@ -46,6 +46,7 @@
     #include <GL/glfw.h>
 #endif
 
+
 #include <osd/error.h>
 #include <osd/vertex.h>
 #include <osd/cpuGLVertexBuffer.h>
@@ -54,8 +55,14 @@
 #include <far/stencilTables.h>
 #include <far/stencilTablesFactory.h>
 
+#ifndef HBR_ADAPTIVE
+#define HBR_ADAPTIVE
+#endif
+
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
+
+#include "hbr_refine.h"
 
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
@@ -331,6 +338,7 @@ createHbrMesh(Shape * shape, int maxlevel) {
     createVerticesWithPositions<Vertex>(shape, hmesh);
 
     createTopology<Vertex>(shape, hmesh, shape->scheme);
+    s.Stop();
 
     std::vector<Hface const *>   coarseFaces,  // list of Hbr coarse faces
                                  refinedFaces; // list of Hbr faces refined at maxlevel
@@ -353,32 +361,14 @@ createHbrMesh(Shape * shape, int maxlevel) {
     }
 
     { // create maxlevel refined GL mesh
-
-        // refine the Hbr mesh uniformly
-        for (int level=0, firstface=0; level<=maxlevel; ++level ) {
-
-            if (level==maxlevel) {
-
-                refinedFaces.resize(nfaces-firstface);
-                for (int i=firstface, ofs=0; i<nfaces; ++i) {
-                    refinedFaces[ofs++]=hmesh->GetFace(i);
-                }
-            } else {
-
-                for (int i=firstface; i<nfaces; ++i) {
-                    Hface * f = hmesh->GetFace(i);
-                    assert(f->GetDepth()==level);
-                    if (not f->IsHole()) {
-                        f->Refine();
-                    }
-                }
-            }
-
-            // Hbr allocates faces sequentially, skip faces that have
-            // already been refined.
-            firstface = nfaces;
-            nfaces = hmesh->GetNumFaces();
+        s.Start();
+        
+        if (g_Adaptive) {
+            RefineAdaptive(*hmesh, maxlevel, refinedFaces);
+        } else {
+            RefineUniform(*hmesh, maxlevel, refinedFaces);
         }
+
         s.Stop();
         //printf("Hbr time: %f ms\n", float(s.GetElapsed())*1000.0f);
 

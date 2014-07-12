@@ -22,6 +22,9 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+#ifndef GL_FONT_UTILS_H
+#define GL_FONT_UTILS_H
+
 #include "../common/gl_common.h"
 
 #include <vector>
@@ -72,3 +75,4 @@ private:
            _VBO;
 };
 
+#endif // GL_FONT_UTILS_H
