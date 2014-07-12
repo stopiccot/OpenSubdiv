@@ -27,7 +27,6 @@
 
 #include "../version.h"
 
-#include "../hbr/mesh.h"
 #include "../far/patchTables.h"
 
 namespace OpenSubdiv {
