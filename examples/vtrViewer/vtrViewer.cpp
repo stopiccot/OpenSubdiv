@@ -55,10 +55,6 @@
 #include <far/stencilTables.h>
 #include <far/stencilTablesFactory.h>
 
-#ifndef HBR_ADAPTIVE
-#define HBR_ADAPTIVE
-#endif
-
 #include <common/vtr_utils.h>
 #include <common/hbr_utils.h>
 
@@ -110,7 +106,7 @@ int   g_displayPatchColor    = 1,
       g_HbrDrawVertIDs       = false,
       g_HbrDrawEdgeSharpness = false,
       g_HbrDrawFaceIDs       = false,
-      g_VtrDrawMode          = kDRAW_FACES,
+      g_VtrDrawMode          = kDRAW_NONE,
       g_VtrDrawVertIDs       = false,
       g_VtrDrawEdgeIDs       = false,
       g_VtrDrawFaceIDs       = false,
@@ -153,74 +149,15 @@ struct Transform {
     float ModelViewProjectionMatrix[16];
 } g_transformData;
 
-//------------------------------------------------------------------------------
-// Vertex class implementation
-struct Vertex {
-
-    Vertex() { /* _pos[0]=_pos[1]=_pos[2]=0.0f; */ }
-
-    Vertex( int /*i*/ ) { }
-
-    Vertex( float x, float y, float z ) { _pos[0]=x; _pos[1]=y; _pos[2]=z; }
-
-    Vertex( const Vertex & src ) { _pos[0]=src._pos[0]; _pos[1]=src._pos[1]; _pos[2]=src._pos[2]; }
-
-   ~Vertex( ) { }
-
-    void AddWithWeight(const Vertex& src, float weight) {
-        _pos[0]+=weight*src._pos[0];
-        _pos[1]+=weight*src._pos[1];
-        _pos[2]+=weight*src._pos[2];
-    }
-
-    void AddVaryingWithWeight(const Vertex& , float) { }
-
-    void Clear( void * =0 ) { _pos[0]=_pos[1]=_pos[2]=0.0f; }
-
-    void SetPosition(float x, float y, float z) { _pos[0]=x; _pos[1]=y; _pos[2]=z; }
-
-    void ApplyVertexEdit(const OpenSubdiv::HbrVertexEdit<Vertex> & edit) {
-        const float *src = edit.GetEdit();
-        switch(edit.GetOperation()) {
-          case OpenSubdiv::HbrHierarchicalEdit<Vertex>::Set:
-            _pos[0] = src[0];
-            _pos[1] = src[1];
-            _pos[2] = src[2];
-            break;
-          case OpenSubdiv::HbrHierarchicalEdit<Vertex>::Add:
-            _pos[0] += src[0];
-            _pos[1] += src[1];
-            _pos[2] += src[2];
-            break;
-          case OpenSubdiv::HbrHierarchicalEdit<Vertex>::Subtract:
-            _pos[0] -= src[0];
-            _pos[1] -= src[1];
-            _pos[2] -= src[2];
-            break;
-        }
-    }
-
-    void ApplyMovingVertexEdit(const OpenSubdiv::HbrMovingVertexEdit<Vertex> &) { }
-
-    const float * GetPos() const { return _pos; }
-
-private:
-    float _pos[3];
-};
-
-//------------------------------------------------------------------------------
-typedef OpenSubdiv::HbrMesh<Vertex>           Hmesh;
-typedef OpenSubdiv::HbrFace<Vertex>           Hface;
-typedef OpenSubdiv::HbrVertex<Vertex>         Hvertex;
-typedef OpenSubdiv::HbrHalfedge<Vertex>       Hhalfedge;
-
-typedef OpenSubdiv::FarRefineTables               FRefineTables;
-typedef OpenSubdiv::FarRefineTablesFactory<Shape> FRefineTablesFactory;
-
-
 static GLMesh g_base_glmesh,
               g_hbr_glmesh,
               g_vtr_glmesh;
+
+
+//------------------------------------------------------------------------------
+
+typedef OpenSubdiv::FarRefineTables               FRefineTables;
+typedef OpenSubdiv::FarRefineTablesFactory<Shape> FRefineTablesFactory;
 
 //------------------------------------------------------------------------------
 // generate display IDs for Hbr faces
@@ -364,7 +301,10 @@ createHbrMesh(Shape * shape, int maxlevel) {
         s.Start();
         
         if (g_Adaptive) {
-            RefineAdaptive(*hmesh, maxlevel, refinedFaces);
+            int maxvalence = RefineAdaptive(*hmesh, maxlevel, refinedFaces);
+            
+            OpenSubdiv::FarPatchTables const * patchTables = 
+                CreatePatchTables(*hmesh, maxvalence);
         } else {
             RefineUniform(*hmesh, maxlevel, refinedFaces);
         }
