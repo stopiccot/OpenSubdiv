@@ -500,12 +500,11 @@ VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, VtrIndex vO
 
         if (isBoundary && (i == (vFaces.size() - 1))) {
             ringVerts[ringIndex++] = vOffset + fVerts[fastMod4(vInThisFace + 3)];
+            ringVerts[ringIndex] = ringVerts[ringIndex-1];
+            ++ringIndex;
         }
     }
-    
-    int valence = vFaces.size();
-    
-    return valence;
+    return isBoundary ? -ringIndex/2 : ringIndex/2;
 }
 
 //

@@ -901,20 +901,12 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     //  gather the one-ring around the vertex and set its resulting size (note the negative
                     //  size used to distinguish between boundary/interior):
                     //
-                    if (!gregoryVertexFlags[vIndex + vOffset]) {
+                    //if (!gregoryVertexFlags[vIndex + vOffset]) {
                         vTableEntry[0] = 0;
-                    } else {
+                    //} else {
                         int* ringDest = vTableEntry + 1;
-                        int  ringSize = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, vOffset, ringDest);
-
-                        //  Determine boundary/interior from size of the ring returned:
-                        if (ringSize & 1) {
-                            //  May need to permute the boundary order to match...
-                            vTableEntry[0] = -ringSize;
-                        } else {
-                            vTableEntry[0] = ringSize;
-                        }
-                    }
+                        vTableEntry[0] = level->gatherManifoldVertexRingFromIncidentQuads(vIndex, vOffset, ringDest);
+                    //}
                     vTableOffset += SizePerVertex;
                 }
             }
