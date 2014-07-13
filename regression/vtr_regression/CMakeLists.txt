@@ -25,7 +25,7 @@
 include_directories("${PROJECT_SOURCE_DIR}/opensubdiv")
 
 set(SOURCE_FILES
-    main.cpp
+    vtr_regression.cpp
 )
 
 set(PLATFORM_LIBRARIES

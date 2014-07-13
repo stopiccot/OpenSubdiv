@@ -141,18 +141,18 @@ interpolateHbrVertexData(ShapeDesc const & desc, int maxlevel) {
 }
 
 //------------------------------------------------------------------------------
-typedef OpenSubdiv::FarRefineTables               FRefineTables;
-typedef OpenSubdiv::FarRefineTablesFactory<Shape> FRefineTablesFactory;
+typedef OpenSubdiv::FarRefineTables               FaRefineTables;
+typedef OpenSubdiv::FarRefineTablesFactory<Shape> FaRefineTablesFactory;
 
-static FRefineTables *
+static FaRefineTables *
 interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV> & data) {
 
     // Vtr interpolation
     Shape * shape = Shape::parseObj(desc.data.c_str(), desc.scheme);
 
-    FRefineTablesFactory refFactory;
+    FaRefineTablesFactory refFactory;
 
-    FRefineTables * refTables = refFactory.Create( GetSdcType(*shape),
+    FaRefineTables * refTables = refFactory.Create( GetSdcType(*shape),
                                                    GetSdcOptions(*shape),
                                                    *shape,
                                                    maxlevel,
@@ -168,7 +168,7 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
     }
 
     xyzVV * verts = &data[0];
-    refTables->InterpolateVertex(verts, verts+refTables->GetNumVertices(0));
+    refTables->Interpolate(verts, verts+refTables->GetNumVertices(0));
 
     delete shape;
     return refTables;
@@ -202,7 +202,7 @@ struct Mapper {
 
     std::vector<LevelMap> maps;
     
-    Mapper(FRefineTables * refTables, Hmesh * hmesh) {
+    Mapper(FaRefineTables * refTables, Hmesh * hmesh) {
 
         assert(refTables and hmesh);
 
@@ -332,7 +332,7 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
     Hmesh *  hmesh =
         interpolateHbrVertexData(desc, maxlevel);
 
-    FRefineTables * refTables =
+    FaRefineTables * refTables =
         interpolateVtrVertexData(desc, maxlevel, vtrVertexData);
 
     {   // copy Hbr vertex data into a re-ordered buffer (for easier comparison)
