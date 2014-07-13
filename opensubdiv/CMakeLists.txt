@@ -124,7 +124,7 @@ if (NOT NO_LIB)
 
     add_subdirectory(osd)
 
-    add_subdirectory(osdutil)
+#    add_subdirectory(osdutil)
 
     #---------------------------------------------------------------------------
 

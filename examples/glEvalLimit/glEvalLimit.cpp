@@ -66,6 +66,7 @@
 
 #include <cfloat>
 #include <vector>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
