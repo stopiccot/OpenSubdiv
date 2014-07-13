@@ -454,7 +454,8 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
     for (int i = 0; i < 4; ++i) {
 
         VtrIndex      vIndex = fVerts[i];
-        VtrIndexArray vFaces = level.getVertexFaces(vIndex);
+        VtrIndexArray vFaces = level.getVertexFaces(vIndex),
+                      vEdges = level.getVertexEdges(vIndex);
 
         int thisFaceInVFaces = -1;
         for (int j = 0; j < vFaces.size(); ++j) {
@@ -467,7 +468,10 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
 
         unsigned int vOffsets[2];
         vOffsets[0] = thisFaceInVFaces;
-        vOffsets[1] = (thisFaceInVFaces + 1)%vFaces.size();
+        vOffsets[1] = (thisFaceInVFaces + 1)%vEdges.size();
+        // we have to use the number of incident edges to modulo the local index
+        // because there could be 2 consecutive edges in the face belonging to
+        // the Gregory patch.
         offsets[i] = vOffsets[0] | (vOffsets[1] << 8);
     }
 }
