@@ -300,11 +300,15 @@ createHbrMesh(Shape * shape, int maxlevel) {
     { // create maxlevel refined GL mesh
         s.Start();
         
+        OpenSubdiv::FarPatchTables const * patchTables = 0;
+
         if (g_Adaptive) {
             int maxvalence = RefineAdaptive(*hmesh, maxlevel, refinedFaces);
             
-            OpenSubdiv::FarPatchTables const * patchTables = 
-                CreatePatchTables(*hmesh, maxvalence);
+            patchTables = CreatePatchTables(*hmesh, maxvalence);
+            
+            patchTables->GetNumPatches();
+
         } else {
             RefineUniform(*hmesh, maxlevel, refinedFaces);
         }
@@ -350,17 +354,26 @@ createVertNumbers(OpenSubdiv::FarRefineTables const & refTables,
     int maxlevel = refTables.GetMaxLevel(),
         firstvert = 0;
 
-    if (not g_Adaptive) {
+    if (refTables.IsUniform()) {
         for (int i=0; i<maxlevel; ++i) {
             firstvert += refTables.GetNumVertices(i);
         }
     }
 
     static char buf[16];
-    for (int i=firstvert; i<(int)vertexBuffer.size(); ++i) {
+    if (refTables.IsUniform()) {
+        for (int i=firstvert; i<(int)vertexBuffer.size(); ++i) {
+            snprintf(buf, 16, "%d", i);
+            g_font->Print3D(vertexBuffer[i].GetPos(), buf, 1);
+        }
+    } else {
 
-        snprintf(buf, 16, "%d", i);
-        g_font->Print3D(vertexBuffer[i].GetPos(), buf, 1);
+        for (int level=0, vert=0; level<=refTables.GetMaxLevel(); ++level) {
+            for (int i=0; i<refTables.GetNumVertices(level); ++i, ++vert) {
+                snprintf(buf, 16, "%d", i);
+                g_font->Print3D(vertexBuffer[vert].GetPos(), buf, 1);
+            }
+        }
     }
 }
 
@@ -441,14 +454,14 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
         }
     } else {
         int maxlevel = refTables.GetMaxLevel(),
-            patch = refTables.GetNumFaces(0),
+//            patch = refTables.GetNumFaces(0),
             firstvert = refTables.GetNumVertices(0);
             
         for (int level=1; level<=maxlevel; ++level) {
             
             int nfaces = refTables.GetNumFaces(level);
 
-            for (int face=0; face<nfaces; ++face, ++patch) {
+            for (int face=0; face<nfaces; ++face /*, ++patch */) {
 
                 Vertex center(0.0f, 0.0f, 0.0f);
 
@@ -460,7 +473,7 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
                 for (int vert=0; vert<verts.size(); ++vert) {
                     center.AddWithWeight(vertexBuffer[firstvert+verts[vert]], weight);
                 }
-                snprintf(buf, 16, "%d", patch);
+                snprintf(buf, 16, "%d", face);
                 g_font->Print3D(center.GetPos(), buf, 2);
             }
             firstvert+=refTables.GetNumVertices(level);
@@ -605,11 +618,11 @@ createVtrMesh(Shape * shape, int maxlevel) {
         createFaceNumbers(*refTables, vertexBuffer);
     }
 
-    createEdgeNumbers(*refTables, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
-
     if (g_Adaptive and patchTables) {
         createPatchNumbers(*patchTables, vertexBuffer);
     }
+
+    createEdgeNumbers(*refTables, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
 
     GLMesh::Options options;
     options.vertColorMode=g_Adaptive ? GLMesh::VERTCOLOR_BY_LEVEL : GLMesh::VERTCOLOR_BY_SHARPNESS;
