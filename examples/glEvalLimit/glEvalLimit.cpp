@@ -220,9 +220,7 @@ getNumPtexFaces(OpenSubdiv::FarRefineTables const & refTables) {
     int result = 0;
     for (int face=0; face<refTables.GetNumFaces(0); ++face) {
         OpenSubdiv::FarIndexArray fverts = refTables.GetFaceVertices(0, face);
-        for (int vert=0; vert<fverts.size(); ++vert) {
-            result += fverts[vert]==4 ? 1 : fverts[vert];
-        }
+        result += fverts.size()==4 ? 1 : fverts.size();
     }
     return result;
 }
@@ -310,7 +308,7 @@ updateGeom() {
     // outside of the parallel loop
     g_evalCtrl.BindVertexBuffers( g_idesc, g_vertexData, g_odesc, g_Q, g_dQu, g_dQv );
 
-#define USE_OPENMP
+//#define USE_OPENMP
 #if defined(OPENSUBDIV_HAS_OPENMP) and defined(USE_OPENMP)
     #pragma omp parallel for
 #endif
