@@ -184,7 +184,7 @@ FarPatchMap::resolveQuadrant(T & median, T & u, T & v) {
 inline FarPatchMap::Handle const * 
 FarPatchMap::FindPatch( int faceid, float u, float v ) const {
     
-    if (faceid>(int)_quadtree.size())
+    if (faceid>=(int)_quadtree.size())
         return NULL;
 
     assert( (u>=0.0f) and (u<=1.0f) and (v>=0.0f) and (v<=1.0f) );
