@@ -1727,7 +1727,7 @@ int main(int argc, char ** argv)
                 ss << ifs.rdbuf();
                 ifs.close();
                 str = ss.str();
-                g_defaultShapes.push_back(ShapeDesc(str.c_str(), argv[1], kCatmark));
+                g_defaultShapes.push_back(ShapeDesc(argv[1], str.c_str(), kCatmark));
             }
         }
     }
