@@ -285,10 +285,13 @@ public:
         if (transitionEdgeMask == 0) {
             _transitionRot = 0;
         } else if (_boundaryCount == 0) {
-            // XXXX manuelk rotations are mostly a direct map of the transitionEdgeMask
-            //              except for TRANS_TWO_ADJ that has rotation { 1, 2, 0, 3 }
-            //              (again, matching shader idiosyncracies)
-            static unsigned char transitionRots[16] = {0, 0, 1, 1, 2, 0, 2, 0, 3, 0, 1, 1, 3, 2, 3, 0  };
+            // XXXX manuelk Rotations are mostly a direct map of the transitionEdgeMask
+            //                  Except for:
+            //                  - TRANS_TWO_ADJ that has rotation { 1, 2, 0, 3 }
+            //                  - TRANS_THREE that has rotation { 3, 2, 1, 0 }
+            //                  (matching shader idiosyncracies)
+            static unsigned char transitionRots[16] = {0, 0, 1, 1, 2, 0, 2, 3, 3, 0, 1, 2, 3, 1, 0, 0};
+
             _transitionRot = transitionRots[transitionEdgeMask];
         } else if (_boundaryCount == 1) {
             assignTransitionRotationForBoundary(transitionEdgeMask);
