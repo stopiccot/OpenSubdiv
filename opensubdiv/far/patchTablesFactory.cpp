@@ -797,7 +797,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
 
                     iptrs.R[tIndex] += 16;
-                    pptrs.R[tIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.R[tIndex]);
+                    pptrs.R[tIndex] = computePatchParam(refineTables, i, faceIndex, rIndex, pptrs.R[tIndex]);
                     // fptrs.R[tIndex] += fvarwidth * 4;
                 } else {
                     //  For the boundary and corner cases, the Hbr code makes some adjustments to the
@@ -835,7 +835,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                         offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
 
                         iptrs.C[tIndex][rIndex] += 9;
-                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.C[tIndex][rIndex]);
+                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, (bIndex+3)%4, pptrs.C[tIndex][rIndex]);
                         // fptrs.C[tIndex][rIndex] = computeFVarData(...,   fptrs.C[tIndex][rIndex], true);
                     }
                 }
