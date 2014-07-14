@@ -145,7 +145,8 @@ public:
     //
 
 
-    /// \brief Apply interpolation weights to a primvar buffer
+    /// \brief Apply vertex and varying interpolation weights to a primvar
+    ///        buffer
     ///
     /// The destination buffer must allocate an array of data for all the
     /// refined vertices (at least GetNumVerticesTotal()-GetNumVertices(0))
@@ -156,7 +157,8 @@ public:
     ///
     template <class T, class U> void Interpolate(T const * src, U * dst) const;
 
-    /// \brief Apply interpolation weights to a primvar buffer for a single level
+    /// \brief Apply vertex and varying interpolation weights to a primvar
+    ///        buffer for a single level
     /// level of refinement.
     ///
     /// The destination buffer must allocate an array of data for all the
@@ -170,6 +172,37 @@ public:
     ///
     template <class T, class U> void Interpolate(int level, T const * src, U * dst) const;
 
+
+    /// \brief Apply only varying interpolation weights to a primvar buffer
+    ///
+    /// This method can be a useful alternative if the varying primvar data
+    /// does not need to be re-computed over time.
+    ///
+    /// The destination buffer must allocate an array of data for all the
+    /// refined vertices (at least GetNumVerticesTotal()-GetNumVertices(0))
+    ///
+    /// @param src  Source primvar buffer (control vertex data)
+    ///
+    /// @param dst  Destination primvar buffer (refined vertex data)
+    ///
+    template <class T, class U> void InterpolateVarying(T const * src, U * dst) const;
+
+    /// \brief Apply only varying interpolation weights to a primvar buffer
+    ///        for a single level level of refinement.
+    ///
+    /// This method can be a useful alternative if the varying primvar data
+    /// does not need to be re-computed over time.
+    ///
+    /// The destination buffer must allocate an array of data for all the
+    /// refined vertices (at least GetNumVertices(level))
+    ///
+    /// @param level  The refinement level
+    ///
+    /// @param src    Source primvar buffer (control vertex data)
+    ///
+    /// @param dst    Destination primvar buffer (refined vertex data)
+    ///
+    template <class T, class U> void InterpolateVarying(int level, T const * src, U * dst) const;
 
     //
     //  Inspection of components per level:
@@ -371,6 +404,10 @@ private:
     template <class T, class U> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
     template <class T, class U> void interpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
     template <class T, class U> void interpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
+
+    template <class T, class U> void varyingInterpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
+    template <class T, class U> void varyingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
+    template <class T, class U> void varyingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
 
 private:
     //  The following should be private but leaving it open while still early...
@@ -575,6 +612,119 @@ FarRefineTables::interpolateChildVertsFromVerts(
         }
     }
 }
+
+//
+// Varying only interpolation
+//
+
+template <class T, class U>
+inline void
+FarRefineTables::InterpolateVarying(T const * src, U * dst) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+
+    for (int level=1; level<=GetMaxLevel(); ++level) {
+
+        InterpolateVarying(level, src, dst);
+
+        src = dst;
+        dst += GetNumVertices(level);
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::InterpolateVarying(int level, T const * src, U * dst) const {
+
+    assert(level>0 and level<=(int)_refinements.size());
+
+    VtrRefinement const & refinement = _refinements[level-1];
+
+    varyingInterpolateChildVertsFromFaces(refinement, src, dst);
+    varyingInterpolateChildVertsFromEdges(refinement, src, dst);
+    varyingInterpolateChildVertsFromVerts(refinement, src, dst);
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::varyingInterpolateChildVertsFromFaces(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
+
+    const VtrLevel& parent = refinement.parent();
+
+    for (int face = 0; face < parent.getNumFaces(); ++face) {
+
+        VtrIndex cVert = refinement.getFaceChildVertex(face);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        VtrIndexArray const fVerts = parent.getFaceVertices(face);
+
+        float fVaryingWeight = 1.0f / (float) fVerts.size();
+
+        //  Apply the weights to the parent face's vertices:
+        U & vdst = dst[cVert];
+
+        vdst.Clear();
+
+        for (int i = 0; i < fVerts.size(); ++i) {
+            vdst.AddVaryingWithWeight(src[fVerts[i]], fVaryingWeight);
+        }
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::varyingInterpolateChildVertsFromEdges(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+
+    const VtrLevel& parent = refinement.parent();
+
+    for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
+
+        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        //  Declare and compute mask weights for this vertex relative to its parent edge:
+        VtrIndexArray const eVerts = parent.getEdgeVertices(edge);
+
+        //  Apply the weights to the parent edges's vertices
+        U & vdst = dst[cVert];
+
+        vdst.Clear();
+
+        vdst.AddVaryingWithWeight(src[eVerts[0]], 0.5f);
+        vdst.AddVaryingWithWeight(src[eVerts[1]], 0.5f);
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::varyingInterpolateChildVertsFromVerts(
+    VtrRefinement const & refinement, T const * src, U * dst) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+
+    const VtrLevel& parent = refinement.parent();
+
+    for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
+
+        VtrIndex cVert = refinement.getVertexChildVertex(vert);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        //  Apply the weights to the parent vertex
+        U & vdst = dst[cVert];
+
+        vdst.Clear();
+    }
+}
+
+
+
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
