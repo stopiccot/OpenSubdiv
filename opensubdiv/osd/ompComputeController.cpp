@@ -43,23 +43,28 @@ OsdOmpComputeController::ApplyStencilTableKernel(
 
     assert(context);
 
-    FarStencilTables const & stencilTables = context->GetStencilTables();
+    FarStencilTables const * vertexStencilTables =
+        context->GetVertexStencilTables();
 
-    // We assume that the control vertices are packed at the beginning of
-    // the vertex buffer (hence the single descriptor)
-    float * destBuffer =
-        _currentBindState.GetElement(stencilTables.GetNumControlVertices());
+    if (vertexStencilTables) {
 
-    OsdOmpComputeStencils(_currentBindState.desc,
-                          _currentBindState.buffer,
-                          destBuffer,
-                          &stencilTables.GetSizes().at(0),
-                          &stencilTables.GetOffsets().at(0),
-                          &stencilTables.GetControlIndices().at(0),
-                          &stencilTables.GetWeights().at(0),
-                          batch.start,
-                          batch.end);
+        // We assume that the control vertices are packed at the beginning of
+        // the vertex buffer (hence the single descriptor)
 
+        float * destBuffer = _currentBindState.vertexBuffer + 
+            vertexStencilTables->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
+
+
+        OsdOmpComputeStencils(_currentBindState.vertexDesc,
+                              _currentBindState.vertexBuffer,
+                              destBuffer,
+                              &vertexStencilTables->GetSizes().at(0),
+                              &vertexStencilTables->GetOffsets().at(0),
+                              &vertexStencilTables->GetControlIndices().at(0),
+                              &vertexStencilTables->GetWeights().at(0),
+                              batch.start,
+                              batch.end);
+    }
 }
 
 void
