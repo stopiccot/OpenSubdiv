@@ -48,13 +48,20 @@ class FarStencilTablesFactory {
 
 public:
 
+    enum Mode {
+        INTERPOLATE_VERTEX=0,
+        INTERPOLATE_VARYING
+    };
+
     struct Options {
     
-        Options() : generateOffsets(false),    
+        Options() : interpolationMode(INTERPOLATE_VERTEX),
+                    generateOffsets(false),    
                     generateAllLevels(true),   
                     sortBySize(false) { }
     
-        int generateOffsets   : 1, ///< populate optional "_offsets" field          
+        int interpolationMode : 1, ///< interpolation mode
+            generateOffsets   : 1, ///< populate optional "_offsets" field          
             generateAllLevels : 1, ///< vertices at all levels or highest only
             sortBySize        : 1; ///< sort stencils by size (within a level)
     };

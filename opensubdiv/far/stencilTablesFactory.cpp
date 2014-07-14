@@ -64,10 +64,10 @@ public:
     void AddWithWeight(Stencil const & src, float weight);
 
     // Weighted add for coarse vertices (size=1, weight=1.0f)
-    void AddVaryingWithWeight(int, float) {}
+    void AddVaryingWithWeight(int, float);
 
     // Weighted add of a Stencil
-    void AddVaryingWithWeight(Stencil const &, float) {}
+    void AddVaryingWithWeight(Stencil const &, float);
 
     // Returns the current size of the Stencil
     int GetSize() const;
@@ -113,15 +113,22 @@ class StencilAllocator {
 public:
 
     // Constructor
-    StencilAllocator(FarRefineTables const & refTables);
+    StencilAllocator(FarRefineTables const & refTables,
+        FarStencilTablesFactory::Mode mode);
 
     // Destructor
     ~StencilAllocator() ;
 
-
+    // Returns the stencil interpolation mode
     // Returns an array of all the Stencils in the allocator
     StencilVec & GetStencils() {
         return _stencils;
+    }
+    
+    // Returns true if the allocator is generating varying interpolation
+    // stencils
+    bool InterpolateVarying() const {
+        return _interpolateVarying;
     }
 
     // Append a support vertex of index 'index' and weight 'weight' to the
@@ -164,6 +171,8 @@ private:
     }
 
 private:
+
+    bool _interpolateVarying;
 
     int _maxsize; // maximum size of a pre-allocated stencil
 
@@ -263,6 +272,23 @@ Stencil::AddWithWeight(Stencil const & src, float weight) {
     }
 }
 
+inline void
+Stencil::AddVaryingWithWeight(int vertIndex, float weight) {
+
+    if (_alloc->InterpolateVarying()) {
+        AddWithWeight(vertIndex, weight);
+    }
+}
+
+inline void
+Stencil::AddVaryingWithWeight(Stencil const & src, float weight) {
+
+    if (_alloc->InterpolateVarying()) {
+        AddWithWeight(src, weight);
+    }
+}
+
+
 // Returns the current size of the Stencil
 int
 Stencil::GetSize() const {
@@ -297,18 +323,25 @@ Stencil::Print() const {
 }
 
 // Constructor
-StencilAllocator::StencilAllocator(FarRefineTables const & refTables) {
+StencilAllocator::StencilAllocator( FarRefineTables const & refTables,
+    FarStencilTablesFactory::Mode mode) : _interpolateVarying(false) {
+
+    if (mode == FarStencilTablesFactory::INTERPOLATE_VARYING) {
+        _interpolateVarying = true;
+    }
 
     // Make an educated guess as to what the max size should be
 
-        SdcType type = refTables.GetSchemeType();
-
-           if (type==TYPE_BILINEAR) {
-        _maxsize = 5;
-    } else if (type==TYPE_CATMARK) {
-        _maxsize = 10;
-    } else if (type==TYPE_LOOP) {
-        _maxsize = 10;
+    SdcType type = refTables.GetSchemeType();
+    switch (type) {
+        case TYPE_BILINEAR :
+            _maxsize = _interpolateVarying ? 5 : 5; break;
+        case TYPE_CATMARK :
+            _maxsize = _interpolateVarying ? 10 : 5; break;
+        case TYPE_LOOP :
+            _maxsize = _interpolateVarying ? 10 : 5; break;
+        default:
+            assert(0);
     }
 }
 
@@ -440,7 +473,8 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
     }
 
     std::vector<StencilAllocator> allocators(
-        options.generateAllLevels ? maxlevel : 2, StencilAllocator(refTables));
+        options.generateAllLevels ? maxlevel : 2,
+            StencilAllocator(refTables, INTERPOLATE_VERTEX));
 
     StencilAllocator * srcAlloc, * dstAlloc;
     if (options.generateAllLevels) {
