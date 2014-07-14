@@ -96,7 +96,7 @@ vertexIsBSpline(Hvertex * v, bool next) {
 
             // the vertex may not need isolation depending on boundary
             // interpolation rule (sharp vs. rounded corner)
-            typename Hmesh::InterpolateBoundaryMethod method =
+            Hmesh::InterpolateBoundaryMethod method =
                 f->GetMesh()->GetInterpolateBoundaryMethod();
 
             if (method==Hmesh::k_InterpolateBoundaryEdgeAndCorner) {
@@ -270,7 +270,7 @@ RefineAdaptive(Hmesh & mesh, int maxlevel,
         nextverts.clear();
 
         // Refine vertices
-        for (typename VertSet::iterator i=verts.begin(); i!=verts.end(); ++i) {
+        for (VertSet::iterator i=verts.begin(); i!=verts.end(); ++i) {
 
             Hvertex * v = *i;
             assert(v);

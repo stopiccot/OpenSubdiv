@@ -506,10 +506,10 @@ GLMesh::initializeBuffers(Options options, RefineTables const & refTables,
                     eao[face*4+2] = cvs[ 5];
                     eao[face*4+3] = cvs[ 1];
                 } else if (pa.GetDescriptor().GetType()==PatchTables::CORNER) {
-                    eao[face*4  ] = cvs[ 0];
-                    eao[face*4+1] = cvs[ 1];
-                    eao[face*4+2] = cvs[ 4];
-                    eao[face*4+3] = cvs[ 3];
+                    eao[face*4  ] = cvs[ 1];
+                    eao[face*4+1] = cvs[ 2];
+                    eao[face*4+2] = cvs[ 5];
+                    eao[face*4+3] = cvs[ 4];
                 } else {
                     memcpy(&eao[face*4], cvs, 4*sizeof(int));
                 }
