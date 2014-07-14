@@ -279,7 +279,7 @@ updateGeom() {
     
     g_vertexData->UpdateData( &g_positions[0], 0, nverts);
     
-    g_computeCtrl.Compute(g_computeCtx, g_kernelBatches, g_vertexData, &g_idesc);
+    g_computeCtrl.Compute(g_computeCtx, g_kernelBatches, g_vertexData);
 
     s.Stop();
     g_computeTime = float(s.GetElapsed() * 1000.0f);
@@ -399,7 +399,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         // Create a Compute context, used to "pose" the vertices
         delete g_computeCtx;
-        g_computeCtx = OsdCpuComputeContext::Create(*stencilTables);
+        g_computeCtx = OsdCpuComputeContext::Create(stencilTables);
 
         // Create a limit Eval context
         delete g_evalCtx;

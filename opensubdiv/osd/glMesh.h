@@ -114,14 +114,12 @@ public:
     }
 
     virtual void Refine(OsdVertexBufferDescriptor const * vertexDesc,
-                        OsdVertexBufferDescriptor const * /* varyingDesc */,
-                        bool /* interleaved */) {
+                        OsdVertexBufferDescriptor const * varyingDesc,
+                        bool interleaved) {
         assert(0);
-        _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, vertexDesc);
-
-        //_computeController->Refine(_computeContext, _farMesh->GetKernelBatches(),
-        //                           _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
-        //                            vertexDesc, varyingDesc);
+        _computeController->Compute(_computeContext, _kernelBatches,
+                                    _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
+                                    vertexDesc, varyingDesc);
     }
 
     virtual void Synchronize() {
@@ -175,7 +173,7 @@ private:
 
             _kernelBatches.push_back(FarStencilTablesFactory::Create(*stencilTables));
 
-            _computeContext = ComputeContext::Create(*stencilTables);
+            _computeContext = ComputeContext::Create(stencilTables);
 
             delete stencilTables;
         }
@@ -286,9 +284,9 @@ public:
                         OsdVertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
         assert(0);
-        //_computeController->Refine(_computeContext, _farMesh->GetKernelBatches(),
-        //                           _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
-        //                           vertexDesc, varyingDesc);
+        _computeController->Refine(_computeContext, _farMesh->GetKernelBatches(),
+                                   _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
+                                   vertexDesc, varyingDesc);
     }
 
     virtual void Synchronize() {
@@ -342,7 +340,7 @@ private:
 
             _kernelBatches.push_back(FarStencilTablesFactory::Create(*stencilTables));
 
-            _computeContext = ComputeContext::Create(*stencilTables);
+            _computeContext = ComputeContext::Create(stencilTables);
 
             delete stencilTables;
         }

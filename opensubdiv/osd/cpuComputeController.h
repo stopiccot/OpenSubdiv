@@ -71,19 +71,48 @@ public:
     ///                       if it's null, all primvars in the vertex buffer
     ///                       will be refined.
     ///
-    template<class VERTEX_BUFFER>
-        void Compute(OsdCpuComputeContext const * context,
-                     FarKernelBatchVector const & batches,
-                     VERTEX_BUFFER *vertexBuffer,
-                     OsdVertexBufferDescriptor const *vertexDesc=NULL) {
+    /// @param  varyingBuffer Vertex-interpolated data buffer
+    ///
+    /// @param  varyingDesc   The descriptor of varying elements to be refined.
+    ///                       if it's null, all primvars in the vertex buffer
+    ///                       will be refined.
+    ///
+    template<class VERTEX_BUFFER, class VARYING_BUFFER>
+        void Compute( OsdCpuComputeContext const * context,
+                      FarKernelBatchVector const & batches,
+                      VERTEX_BUFFER  * vertexBuffer,
+                      VARYING_BUFFER * varyingBuffer,
+                      OsdVertexBufferDescriptor const * vertexDesc=NULL,
+                      OsdVertexBufferDescriptor const * varyingDesc=NULL ){
 
         if (batches.empty()) return;
 
-        bind(vertexDesc, vertexBuffer);
+        bind(vertexBuffer, varyingBuffer, vertexDesc, varyingDesc);
 
         FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1); 
         
         unbind();
+    }
+
+    /// Execute subdivision kernels and apply to given vertex buffers.
+    ///
+    /// @param  context       The OsdCpuContext to apply refinement operations to
+    ///
+    /// @param  batches       Vector of batches of vertices organized by operative 
+    ///                       kernel
+    ///
+    /// @param  vertexBuffer  Vertex-interpolated data buffer
+    ///
+    /// @param  vertexDesc    The descriptor of vertex elements to be refined.
+    ///                       if it's null, all primvars in the vertex buffer
+    ///                       will be refined.
+    ///
+    template<class VERTEX_BUFFER>
+        void Compute(OsdCpuComputeContext const * context,
+                     FarKernelBatchVector const & batches,
+                     VERTEX_BUFFER *vertexBuffer) {
+
+        Compute<VERTEX_BUFFER>(context, batches, vertexBuffer, (VERTEX_BUFFER*)0);
     }
 
     /// Waits until all running subdivision kernels finish.
@@ -97,23 +126,37 @@ protected:
     void ApplyStencilTableKernel(FarKernelBatch const &batch,
         ComputeContext const *context) const;
 
-    template<class VERTEX_BUFFER>
-        void bind(OsdVertexBufferDescriptor const *desc,
-              VERTEX_BUFFER *buffer) {                       
+    template<class VERTEX_BUFFER, class VARYING_BUFFER>
+        void bind( VERTEX_BUFFER * vertexBuffer,
+                   VARYING_BUFFER * varyingBuffer,
+                   OsdVertexBufferDescriptor const * vertexDesc,
+                   OsdVertexBufferDescriptor const * varyingDesc ) {                       
 
         // if the vertex buffer descriptor is specified, use it.
         // otherwise, assumes the data is tightly packed in the vertex buffer.
-        if (desc) {
-            _currentBindState.desc = *desc;
+        if (vertexDesc) {
+            _currentBindState.vertexDesc = *vertexDesc;
         } else {
-            int numElements = buffer ? buffer->GetNumElements() : 0;
-            _currentBindState.desc = OsdVertexBufferDescriptor(0, numElements, numElements);
+            int numElements = vertexBuffer ? vertexBuffer->GetNumElements() : 0;
+            _currentBindState.vertexDesc = 
+                OsdVertexBufferDescriptor(0, numElements, numElements);
+        }
+
+        if (varyingDesc) {
+            _currentBindState.varyingDesc = *varyingDesc;
+        } else {
+            int numElements = varyingBuffer ? varyingBuffer->GetNumElements() : 0;
+            _currentBindState.varyingDesc = 
+                OsdVertexBufferDescriptor(0, numElements, numElements);
         }
 
         // apply vertex offset here
-        _currentBindState.buffer = buffer ?
-            buffer->BindCpuBuffer() + _currentBindState.desc.offset : 0;
+        _currentBindState.vertexBuffer = vertexBuffer ?
+            vertexBuffer->BindCpuBuffer() + _currentBindState.vertexDesc.offset : 0;
 
+        // apply vertex offset here
+        _currentBindState.varyingBuffer = varyingBuffer ?
+            varyingBuffer->BindCpuBuffer() + _currentBindState.varyingDesc.offset : 0;
     }
 
     void unbind() {
@@ -126,20 +169,19 @@ private:
     // It doesn't take an ownership of the vertex buffers.
     struct BindState {
 
-        BindState() : buffer(0) { }
-
-        float * GetElement(int index) const {
-            return buffer + index*desc.stride;
-        }
+        BindState() : vertexBuffer(0), varyingBuffer(0) { }
 
         void Reset() {
-            buffer = 0;
-            desc.Reset();
+            vertexBuffer = varyingBuffer = 0;
+            vertexDesc.Reset();
+            varyingDesc.Reset();
         }
 
-        float * buffer;
+        float * vertexBuffer,
+              * varyingBuffer;
 
-        OsdVertexBufferDescriptor desc;
+        OsdVertexBufferDescriptor vertexDesc,
+                                  varyingDesc;
     };
 
     BindState _currentBindState;

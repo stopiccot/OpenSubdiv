@@ -55,25 +55,32 @@ class OsdCpuComputeContext : private OsdNonCopyable<OsdCpuComputeContext> {
 public:
     /// Creates an OsdCpuComputeContext instance
     ///
-    /// @param stencilTables  The FarStencilTables used for this Context.
+    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    ///                              interpolation
     ///
-    static OsdCpuComputeContext * Create(FarStencilTables const &stencilTables);
+    /// @param varyingStencilTables  The FarStencilTables used for varying
+    ///                              interpolation
+    ///
+    static OsdCpuComputeContext * Create(FarStencilTables const * vertexStencilTables,
+                                         FarStencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdCpuComputeContext();
 
     /// Returns the stencils data applied by this context
-    FarStencilTables const & GetStencilTables() const {
-        return _stencilTables;
+    FarStencilTables const * GetVertexStencilTables() const {
+        return _vertexStencilTables;
     }
 
 protected:
 
-    explicit OsdCpuComputeContext(FarStencilTables const &subdivisionTables);
+    explicit OsdCpuComputeContext(FarStencilTables const * vertexStencilTables,
+                                  FarStencilTables const * varyingStencilTables=0);
 
 private:
 
-    FarStencilTables _stencilTables;
+    FarStencilTables const * _vertexStencilTables,
+                           * _varyingStencilTables;
 };
 
 }  // end namespace OPENSUBDIV_VERSION

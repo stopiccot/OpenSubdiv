@@ -49,20 +49,21 @@ OsdCpuComputeController::ApplyStencilTableKernel(
 
     assert(context);
 
-    FarStencilTables const & stencilTables = context->GetStencilTables();
+    FarStencilTables const * stencilTables = context->GetVertexStencilTables();
 
     // We assume that the control vertices are packed at the beginning of
     // the vertex buffer (hence the single descriptor)
-    float * destBuffer =
-        _currentBindState.GetElement(stencilTables.GetNumControlVertices());
 
-    OsdCpuComputeStencils(_currentBindState.desc,
-                          _currentBindState.buffer,
+    float * destBuffer = _currentBindState.vertexBuffer + 
+        stencilTables->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
+
+    OsdCpuComputeStencils(_currentBindState.vertexDesc,
+                          _currentBindState.vertexBuffer,
                           destBuffer,
-                          &stencilTables.GetSizes().at(0),
-                          &stencilTables.GetOffsets().at(0),
-                          &stencilTables.GetControlIndices().at(0),
-                          &stencilTables.GetWeights().at(0),
+                          &stencilTables->GetSizes().at(0),
+                          &stencilTables->GetOffsets().at(0),
+                          &stencilTables->GetControlIndices().at(0),
+                          &stencilTables->GetWeights().at(0),
                           batch.start,
                           batch.end);    
         

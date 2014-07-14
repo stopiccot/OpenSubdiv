@@ -213,7 +213,7 @@ private:
 
             _kernelBatches.push_back(FarStencilTablesFactory::Create(*stencilTables));
 
-            _computeContext = ComputeContext::Create(*stencilTables);
+            _computeContext = ComputeContext::Create(stencilTables);
 
             delete stencilTables;
         }

@@ -33,20 +33,34 @@ namespace OPENSUBDIV_VERSION {
 
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext::OsdCpuComputeContext(FarStencilTables const &stencilTables) {
+OsdCpuComputeContext::OsdCpuComputeContext(
+    FarStencilTables const * vertexStencilTables,
+        FarStencilTables const * varyingStencilTables) {
 
     // XXXX manuelk we do not own the tables, so use copy-constructor for now 
     //              smart pointers eventually
-    _stencilTables=stencilTables;
+    if (vertexStencilTables) {
+        _vertexStencilTables= new FarStencilTables(*vertexStencilTables);
+    }
+
+    if (varyingStencilTables) {
+        //_varyingStencilTables=*varyingStencilTables;
+    }
 }
+
+// ----------------------------------------------------------------------------
 
 OsdCpuComputeContext::~OsdCpuComputeContext() {
 }
 
-OsdCpuComputeContext *
-OsdCpuComputeContext::Create(FarStencilTables const &stencilTables) {
+// ----------------------------------------------------------------------------
 
-    return new OsdCpuComputeContext(stencilTables);
+OsdCpuComputeContext *
+OsdCpuComputeContext::Create(
+    FarStencilTables const * vertexStencilTables,
+        FarStencilTables const * varyingStencilTables) {
+
+    return new OsdCpuComputeContext(vertexStencilTables, varyingStencilTables);
 }
 
 }  // end namespace OPENSUBDIV_VERSION
