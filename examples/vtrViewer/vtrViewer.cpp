@@ -820,7 +820,7 @@ display() {
 
             if (g_Adaptive and g_currentPatch) {
                 g_hud.DrawString(g_width/2-100, 100, "Current Patch : %d/%d (%s - %d CVs)",
-                    g_currentPatch, g_numPatches,
+                    g_currentPatch-1, g_numPatches,
                         patchTypes[g_currentPatchDesc.GetType()],
                             g_currentPatchDesc.GetNumControlVertices());
             }
