@@ -106,10 +106,12 @@ int   g_displayPatchColor    = 1,
       g_HbrDrawVertIDs       = false,
       g_HbrDrawEdgeSharpness = false,
       g_HbrDrawFaceIDs       = false,
+      g_HbrDrawPtexIDs       = false,
       g_VtrDrawMode          = kDRAW_NONE,
       g_VtrDrawVertIDs       = false,
       g_VtrDrawEdgeIDs       = false,
       g_VtrDrawFaceIDs       = false,
+      g_VtrDrawPtexIDs       = false,
       g_VtrDrawEdgeSharpness = false,
       g_numPatches           = 0,
       g_currentPatch         = 0,
@@ -162,7 +164,7 @@ typedef OpenSubdiv::FarRefineTablesFactory<Shape> FRefineTablesFactory;
 //------------------------------------------------------------------------------
 // generate display IDs for Hbr faces
 static void
-createFaceNumbers(std::vector<Hface const *> faces) {
+createFaceNumbers(std::vector<Hface const *> faces, bool doPtex=false) {
 
     static char buf[16];
 
@@ -179,7 +181,11 @@ createFaceNumbers(std::vector<Hface const *> faces) {
             center.AddWithWeight(f->GetVertex(j)->GetData(), weight);
         }
 
-        snprintf(buf, 16, "%d", f->GetID());
+        if (doPtex) {
+            snprintf(buf, 16, "%d", f->GetPtexIndex());
+        } else {
+            snprintf(buf, 16, "%d", f->GetID());
+        }
         g_font->Print3D(center.GetPos(), buf, 2);
     }
 }
@@ -299,16 +305,17 @@ createHbrMesh(Shape * shape, int maxlevel) {
 
     { // create maxlevel refined GL mesh
         s.Start();
-        
+
         OpenSubdiv::FarPatchTables const * patchTables = 0;
 
         if (g_Adaptive) {
             int maxvalence = RefineAdaptive(*hmesh, maxlevel, refinedFaces);
-            
+
             patchTables = CreatePatchTables(*hmesh, maxvalence);
-            
+
             patchTables->GetNumPatches();
 
+            delete patchTables;
         } else {
             RefineUniform(*hmesh, maxlevel, refinedFaces);
         }
@@ -328,7 +335,11 @@ createHbrMesh(Shape * shape, int maxlevel) {
         }
 
         if (g_HbrDrawFaceIDs) {
-            createFaceNumbers(refinedFaces);
+            createFaceNumbers(refinedFaces, /*ptex*/ false);
+        }
+
+        if (g_HbrDrawPtexIDs) {
+            createFaceNumbers(refinedFaces, /*ptex*/ true);
         }
 
         GLMesh::Options refinedOptions;
@@ -456,9 +467,9 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
         int maxlevel = refTables.GetMaxLevel(),
 //            patch = refTables.GetNumFaces(0),
             firstvert = refTables.GetNumVertices(0);
-            
+
         for (int level=1; level<=maxlevel; ++level) {
-            
+
             int nfaces = refTables.GetNumFaces(level);
 
             for (int face=0; face<nfaces; ++face /*, ++patch */) {
@@ -527,24 +538,61 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
 }
 
 //------------------------------------------------------------------------------
-/*
+// generate display IDs for Vtr faces
 static void
-setFaceColors(OpenSubdiv::FarRefineTables const & refTables) {
+createPtexNumbers(OpenSubdiv::FarPatchTables const & patchTables,
+    std::vector<Vertex> const & vertexBuffer) {
 
-    int maxlevel = refTables.GetMaxLevel();
+    typedef OpenSubdiv::FarPatchTables FPatchTables;
 
-    srand( static_cast<int>(2147483647) ); // use a large Pell prime number
+    FPatchTables::PatchParamTable const & pparams =
+         patchTables.GetPatchParamTable();
 
-    for (int i=0; i<refTables.GetNumFaces(maxlevel); ++i) {
+    FPatchTables::PTable const & ptable =
+        patchTables.GetPatchTable();
 
-        float color[4] = { (float)rand()/(float)RAND_MAX,
-                           (float)rand()/(float)RAND_MAX,
-                           (float)rand()/(float)RAND_MAX, 1.0f  };
+    FPatchTables::PatchArrayVector const & parrays =
+         patchTables.GetPatchArrayVector();
 
-        g_vtr_glmesh.SetFaceColor(i, color[0], color[1], color[2], color[3] );
+    static char buf[16];
+
+    static int regular[4]  = {5, 6, 9, 10},
+               boundary[4] = {1, 2, 5, 6},
+               corner[4]   = {1, 2, 4, 5},
+               gregory[4]  = {0, 1, 2, 3};
+
+    for (int i=0, patch=0; i<(int)parrays.size(); ++i) {
+
+        FPatchTables::PatchArray const & pa = parrays[i];
+
+        for (int j=0; j<(int)pa.GetNumPatches(); ++j, ++patch) {
+
+            int ncvs = pa.GetDescriptor().GetNumControlVertices();
+
+            unsigned int const * cvs = &ptable[pa.GetVertIndex()] + ncvs*j;
+
+            int * remap = 0;
+            switch (pa.GetDescriptor().GetType()) {
+                case FPatchTables::REGULAR:          remap = regular; break;
+                case FPatchTables::BOUNDARY:         remap = boundary; break;
+                case FPatchTables::CORNER:           remap = corner; break;
+                case FPatchTables::GREGORY:
+                case FPatchTables::GREGORY_BOUNDARY: remap = gregory; break;
+                default:
+                    assert(0);
+            }
+
+            Vertex center(0.0f, 0.0f, 0.0f);
+            for (int k=0; k<4; ++k) {
+                center.AddWithWeight(vertexBuffer[cvs[remap[k]]], 0.25f);
+            }
+
+            snprintf(buf, 16, "%d", pparams[patch].faceIndex);
+            g_font->Print3D(center.GetPos(), buf, 1);
+        }
     }
 }
-*/
+
 //------------------------------------------------------------------------------
 static void
 createVtrMesh(Shape * shape, int maxlevel) {
@@ -588,7 +636,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
 //#define no_stencils
 #ifdef no_stencils
-    { 
+    {
         s.Start();
         // populate buffer with Vtr interpolated vertex data
         refTables->Interpolate(verts, verts + ncoarseverts);
@@ -602,13 +650,13 @@ createVtrMesh(Shape * shape, int maxlevel) {
         options.generateOffsets=true;
         options.generateAllLevels=true;
         options.sortBySize=false;
-        
+
         OpenSubdiv::FarStencilTables const * stencilTables =
             OpenSubdiv::FarStencilTablesFactory::Create(*refTables, options);
-        
+
         stencilTables->UpdateValues(verts, verts + ncoarseverts);
     }
-#endif    
+#endif
 
     if (g_VtrDrawVertIDs) {
         createVertNumbers(*refTables, vertexBuffer);
@@ -616,6 +664,10 @@ createVtrMesh(Shape * shape, int maxlevel) {
 
     if (g_VtrDrawFaceIDs) {
         createFaceNumbers(*refTables, vertexBuffer);
+    }
+
+    if (g_VtrDrawPtexIDs and patchTables) {
+        createPtexNumbers(*patchTables, vertexBuffer);
     }
 
     if (g_Adaptive and patchTables) {
@@ -1022,12 +1074,14 @@ callbackDrawIDs(bool checked, int button) {
     switch (button) {
         case 0: g_HbrDrawVertIDs = checked; break;
         case 1: g_HbrDrawFaceIDs = checked; break;
-        case 2: g_HbrDrawEdgeSharpness = checked; break;
+        case 2: g_HbrDrawPtexIDs = checked; break;
+        case 3: g_HbrDrawEdgeSharpness = checked; break;
 
-        case 3: g_VtrDrawVertIDs = checked; break;
-        case 4: g_VtrDrawEdgeIDs = checked; break;
-        case 5: g_VtrDrawFaceIDs = checked; break;
-        case 6: g_VtrDrawEdgeSharpness = checked; break;
+        case 4: g_VtrDrawVertIDs = checked; break;
+        case 5: g_VtrDrawEdgeIDs = checked; break;
+        case 6: g_VtrDrawFaceIDs = checked; break;
+        case 7: g_VtrDrawPtexIDs = checked; break;
+        case 8: g_VtrDrawEdgeSharpness = checked; break;
         default: break;
     }
     rebuildOsdMeshes();
@@ -1067,20 +1121,22 @@ initHUD()
 
     g_hud.AddCheckBox("Vert IDs",   g_HbrDrawVertIDs, 10, 95, callbackDrawIDs, 0);
     g_hud.AddCheckBox("Face IDs",   g_HbrDrawFaceIDs, 10, 115, callbackDrawIDs, 1);
-    g_hud.AddCheckBox("Edge Sharp", g_HbrDrawEdgeSharpness, 10, 135, callbackDrawIDs, 2);
+    g_hud.AddCheckBox("Ptex IDs",   g_HbrDrawPtexIDs, 10, 135, callbackDrawIDs, 2);
+    g_hud.AddCheckBox("Edge Sharp", g_HbrDrawEdgeSharpness, 10, 155, callbackDrawIDs, 3);
 
-    pulldown = g_hud.AddPullDown("Vtr Draw Mode (v)", 10, 175, 250, callbackVtrDrawMode, 'v');
+    pulldown = g_hud.AddPullDown("Vtr Draw Mode (v)", 10, 195, 250, callbackVtrDrawMode, 'v');
     g_hud.AddPullDownButton(pulldown, "None",      0, g_VtrDrawMode==kDRAW_NONE);
     g_hud.AddPullDownButton(pulldown, "Vertices",  1, g_VtrDrawMode==kDRAW_VERTICES);
     g_hud.AddPullDownButton(pulldown, "Wireframe", 2, g_VtrDrawMode==kDRAW_WIREFRAME);
     g_hud.AddPullDownButton(pulldown, "Faces",     3, g_VtrDrawMode==kDRAW_FACES);
 
-    g_hud.AddCheckBox("Vert IDs",   g_VtrDrawVertIDs, 10, 195, callbackDrawIDs, 3);
-    g_hud.AddCheckBox("Edge IDs",   g_VtrDrawEdgeIDs, 10, 215, callbackDrawIDs, 4);
-    g_hud.AddCheckBox("Face IDs",   g_VtrDrawFaceIDs, 10, 235, callbackDrawIDs, 5);
-    g_hud.AddCheckBox("Edge Sharp", g_VtrDrawEdgeSharpness, 10, 255, callbackDrawIDs, 6);
+    g_hud.AddCheckBox("Vert IDs",   g_VtrDrawVertIDs, 10, 215, callbackDrawIDs, 4);
+    g_hud.AddCheckBox("Edge IDs",   g_VtrDrawEdgeIDs, 10, 235, callbackDrawIDs, 5);
+    g_hud.AddCheckBox("Face IDs",   g_VtrDrawFaceIDs, 10, 255, callbackDrawIDs, 6);
+    g_hud.AddCheckBox("Ptex IDs",   g_VtrDrawPtexIDs, 10, 275, callbackDrawIDs, 7);
+    g_hud.AddCheckBox("Edge Sharp", g_VtrDrawEdgeSharpness, 10, 295, callbackDrawIDs, 8);
 
-    g_hud.AddCheckBox("Adaptive (`)", g_Adaptive, 10, 300, callbackAdaptive, 0, '`');
+    g_hud.AddCheckBox("Adaptive (`)", g_Adaptive, 10, 320, callbackAdaptive, 0, '`');
 
 
     g_hud.AddSlider("Font Scale", 0.0f, 0.1f, 0.025f,
