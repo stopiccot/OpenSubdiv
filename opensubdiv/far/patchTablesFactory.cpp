@@ -866,7 +866,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     getQuadOffsets(*level, faceIndex, quad_G_C1_P);
                     quad_G_C1_P += 4;
 
-                    pptrs.GB = computePatchParam(refineTables, i, faceIndex, patchTag._boundaryIndex, pptrs.GB);
+                    pptrs.GB = computePatchParam(refineTables, i, faceIndex, (patchTag._boundaryIndex+1)%4, pptrs.GB);
                     // fptrs.GB = computeFVarData(f, fvarwidth, fptrs.GB, true);
                 }
             }
