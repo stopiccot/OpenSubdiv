@@ -40,21 +40,18 @@ FarRefineTables::FarRefineTables(SdcType schemeType, SdcOptions schemeOptions) :
     _subdivType(schemeType),
     _subdivOptions(schemeOptions),
     _isUniform(true),
-    _maxLevel(0)
-{
+    _maxLevel(0) {
+
     //  Need to revisit allocation scheme here -- want to use smart-ptrs for these
     //  but will probably have to settle for explicit new/delete...
     _levels.reserve(8);
     _levels.resize(1);
 }
 
-FarRefineTables::~FarRefineTables()
-{
-}
+FarRefineTables::~FarRefineTables() { }
 
 void
-FarRefineTables::Unrefine()
-{
+FarRefineTables::Unrefine() {
     if (_levels.size()) {
         _levels.resize(1);
     }
@@ -62,8 +59,7 @@ FarRefineTables::Unrefine()
 }
 
 void
-FarRefineTables::Clear()
-{
+FarRefineTables::Clear() {
     _levels.clear();
     _refinements.clear();
 }
@@ -73,8 +69,7 @@ FarRefineTables::Clear()
 //  Accessors to the topology information:
 //
 int
-FarRefineTables::GetNumVerticesTotal() const
-{
+FarRefineTables::GetNumVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumVertices();
@@ -82,8 +77,7 @@ FarRefineTables::GetNumVerticesTotal() const
     return sum;
 }
 int
-FarRefineTables::GetNumEdgesTotal() const
-{
+FarRefineTables::GetNumEdgesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumEdges();
@@ -91,8 +85,7 @@ FarRefineTables::GetNumEdgesTotal() const
     return sum;
 }
 int
-FarRefineTables::GetNumFacesTotal() const
-{
+FarRefineTables::GetNumFacesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaces();
@@ -100,8 +93,7 @@ FarRefineTables::GetNumFacesTotal() const
     return sum;
 }
 int
-FarRefineTables::GetNumFaceVerticesTotal() const
-{
+FarRefineTables::GetNumFaceVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaceVerticesTotal();
@@ -109,12 +101,57 @@ FarRefineTables::GetNumFaceVerticesTotal() const
     return sum;
 }
 
+template <SdcType SCHEME_TYPE> void
+computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices) {
+    int nfaces = coarseLevel.getNumFaces();
+    ptexIndices.resize(nfaces+1);
+    int ptexID=0;
+    for (int i = 0; i < nfaces; ++i) {
+        ptexIndices[i] = ptexID;
+        VtrIndexArray fverts = coarseLevel.getFaceVertices(i);
+        ptexID += fverts.size()==SdcTypeTraits<SCHEME_TYPE>::RegularFaceValence() ? 1 : fverts.size();
+    }
+    // last entry contains the number of ptex texture faces
+    ptexIndices[nfaces]=ptexID;
+}
+void
+FarRefineTables::initializePtexIndices() const {
+    std::vector<int> & indices = const_cast<std::vector<int> &>(_ptexIndices);
+    switch (GetSchemeType()) {
+        case TYPE_BILINEAR:
+            computePtexIndices<TYPE_BILINEAR>(_levels[0], indices); break;
+        case TYPE_CATMARK :
+            computePtexIndices<TYPE_CATMARK>(_levels[0], indices); break;
+        case TYPE_LOOP    :
+            computePtexIndices<TYPE_LOOP>(_levels[0], indices); break;
+    }
+}
+int
+FarRefineTables::GetNumPtexFaces() const {
+    if (_ptexIndices.empty()) {
+        initializePtexIndices();
+    }
+    // see computePtexIndices()
+    return _ptexIndices.back();
+}
+int
+FarRefineTables::GetPtexIndex(Index f) const {
+    if (_ptexIndices.empty()) {
+        initializePtexIndices();
+    }
+    if (f<((int)_ptexIndices.size()-1)) {
+        return _ptexIndices[f];
+    }
+    return -1;
+}
+
+
 //
 //  Main refinement method -- allocating and initializing levels and refinements:
 //
 void
-FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
-{
+FarRefineTables::RefineUniform(int maxLevel, bool fullTopology) {
+
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
 
@@ -144,8 +181,8 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology)
 
 
 void
-FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
-{
+FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology) {
+
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
 
@@ -235,7 +272,7 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
 //       corner.  It is currently difficult to extract all that is needed from the edges
 //       and vertices of a face, but once more tags are added to the edges and vertices,
 //       this can be greatly simplified.
-//       
+//
 //  So once more tagging of components is in place, I favor a more face-centric approach than
 //  what exists below.  We should be able to iterate through the faces once and make optimal
 //  decisions without any additional passes through the vertices or edges here.  Most common
@@ -251,8 +288,8 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology)
 //  that work should be minimal.
 //
 void
-FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
-{
+FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
+
     VtrLevel const& level = selector.getRefinement().parent();
 
     //
@@ -443,8 +480,8 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector)
 }
 
 void
-FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector)
-{
+FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector) {
+
     VtrLevel const& level = selector.getRefinement().parent();
 
     for (VtrIndex face = 0; face < level.getNumFaces(); ++face) {
@@ -490,8 +527,8 @@ FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selecto
 
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
 void
-FarRefineTables::ComputeMaskWeights()
-{
+FarRefineTables::ComputeMaskWeights() {
+
     assert(_subdivType == TYPE_CATMARK);
 
     for (int i = 0; i < _maxLevel; ++i) {

@@ -223,7 +223,7 @@ public:
     int GetNumFaces(int level) const {
         return _levels[level].getNumFaces();
     }
-    
+
     /// \brief Returns the number of faces at a given level of refinement
     int GetNumFaceVertices(int level) const {
         return _levels[level].getNumFaceVerticesTotal();
@@ -335,6 +335,17 @@ public:
 
 
     //
+    //  Ptex:
+    //
+
+    /// \brief Returns the number of ptex faces in the mesh
+    int GetNumPtexFaces() const;
+
+    /// \brief Returns the ptex face index given a coarse face 'f' or -1
+    int GetPtexIndex(Index f) const;
+
+
+    //
     //  Debugging aides:
     //
 
@@ -409,6 +420,8 @@ private:
     template <class T, class U> void varyingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
     template <class T, class U> void varyingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
 
+    void initializePtexIndices() const;
+
 private:
     //  The following should be private but leaving it open while still early...
     SdcType    _subdivType;
@@ -419,6 +432,8 @@ private:
 
     std::vector<VtrLevel>      _levels;
     std::vector<VtrRefinement> _refinements;
+
+    std::vector<Index>         _ptexIndices;
 };
 
 template <class T, class U>

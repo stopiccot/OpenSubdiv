@@ -396,9 +396,10 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
     if (coord == NULL) return NULL;
 
     // Move up the hierarchy accumulating u,v indices to the coarse level:
-    int u = 0;
-    int v = 0;
-    int ofs = 1;
+    int childIndexInParent = 0,
+        u = 0,
+        v = 0,
+        ofs = 1;
 
     bool nonquad = (refTables.GetFaceVertices(depth, faceIndex).size() != 4);
 
@@ -407,7 +408,7 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
         VtrLevel const&      parentLevel = refTables.getLevel(i-1);
 
         VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
-        int      childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
+                 childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
 
         if (parentLevel.getFaceVertices(parentFaceIndex).size() == 4) {
             switch ( childIndexInParent ) {
@@ -419,18 +420,28 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
             ofs = (unsigned short)(ofs << 1);
         } else {
             nonquad = true;
+            // If the root face is not a quad, we need to offset the ptex index
+            // CCW to match the correct child face
+            VtrIndexArray children = refinement.getFaceChildFaces(parentFaceIndex);
+            for (int i=0; i<children.size(); ++i) {
+                if (children[i]==faceIndex) {
+                    childIndexInParent = i;
+                    break;
+                }
+            }
         }
         faceIndex = parentFaceIndex;
     }
 
+    VtrIndex ptexIndex = refTables.GetPtexIndex(faceIndex);
+    assert(ptexIndex!=-1);
+
     if (nonquad) {
+        ptexIndex+=childIndexInParent;
         --depth;
     }
 
-    //if (refTables.HasPtex()) {
-    //    faceIndex = refTables.GetPtexIndex(faceIndex);
-    //}
-    coord->Set(faceIndex, (short)u, (short)v, (unsigned char) rotation, (unsigned char) depth, nonquad);
+    coord->Set(ptexIndex, (short)u, (short)v, (unsigned char) rotation, (unsigned char) depth, nonquad);
 
     return ++coord;
 }
@@ -537,7 +548,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, int
     }
 
     tables->_fvarData._fvarWidth = fvarwidth;
-    tables->_numPtexFaces = refineTables.getLevel(0).getNumFaces();
+    tables->_numPtexFaces = refineTables.GetNumPtexFaces();
 
     // Allocate various tables
     allocateTables( tables, 0, fvarwidth );
