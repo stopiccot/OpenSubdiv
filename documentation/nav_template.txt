@@ -47,7 +47,7 @@
                     <li><a href="subdivision_surfaces.html#feature-adaptive-subdivision">Feature Adaptive</a></li>
                 </ul>
             </li>
-            <li><a href="api_overview.html">APIs Overview</a>
+            <li><a href="api_overview.html">API Overview</a>
                 <ul>
                     <li><a href="hbr_overview.html">Hbr</a></li>
                     <li><a href="far_overview.html">Far Layer</a></li>

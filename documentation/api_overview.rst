@@ -33,7 +33,7 @@ API Overview
 Architecture Overview
 =====================
 
-Because the OpenSubdiv software is intended to run on a variete of computing
+Because the OpenSubdiv software is intended to run on a variety of computing
 resources, the API architecture has to accomodate a fairly complex matrix of
 interoperations. In order to achieve the requisite flexibility, the code structure
 is both layered and modular.
@@ -56,54 +56,68 @@ processing costs of any given feature that is not used.
 Layers
 ======
 
-From a top-down point of view, OpenSubdiv is comprised of 3 layers : **Hbr**, 
-**Far** and **Osd**. 
+From a top-down point of view, OpenSubdiv is comprised of 2 public layers (**Far**
+and **Osd**) and 1 private layer (**Vtr**). 
 
 .. image:: images/api_layers.png
 
 The color groupings indicate inter-layer functional dependencies:
 
-  * Osd depends on Far, but not on Hbr
-  * Far depends on Hbr
-  * Hbr has no dependencies
+  * **Osd** depends on **Far**
+  * **Far** has private dependencies on Vtr
+  * **Vtr** has no dependencies
 
-It is therefore possible to use functionality from Hbr without introducing any
-dependency on either Far or Osd.
+It is therefore possible to use functionality from Far without introducing any
+dependency on Osd. See `Using the Right Tools`_ for more in-depth coverage.
 
 ----
 
 Representation vs. Implementation Layers
-****************************************
+========================================
 
 One of the core performance goals of our subdivision algorithms is to leverage
 interactive performance out of massively parallel code execution wherever 
-possible. In order to support a large diversity of discrete compute devices through
-multiple dedicated SDKs, it is critical to distill the computations into the
-smallest and simplest kernels possible. These can in turn be safely ported and 
-optimized for each of the hardware platforms. 
+possible. In order to support a large diversity of compute architectures
+it is critical to stream the geometric data to the compute kernels in the
+most optimal way.
+
+Data structures that are efficient for topology analysis during the pre-computation
+stage are not very good candidates for parallel processing. Our layered structure
+reflects this requirement: topology analysis and other pre-computation tasks are
+delegated to "representation" layers, while the actual execution of computations
+has been moved to an "implementation" layer.
 
 .. image:: images/api_representations.png
 
-This separation of general purpose against hardware-specific code is translated into
-two types of layers : the **implementation** layer against the **representation** 
-layers.
+**Representation** layers are for general purpose algorithms and differenciated by
+the requirements placed on data represenation. See `Multiple Representations`_ for
+more details.
+
+The **Implementation** layer contains hardware and API-specific implementations.
+In order to minimize code redundancy and bugs, we strive to reduce device-specific
+computation logic to the most simplistic expression possible (in many cases as
+simple as series of multiply-ads).
 
 ----
 
 Data Flows
-**********
+==========
 
 Data flows are mostly 1-directional, from top to bottom as a number of algorithms 
-are preparing the coarse mesh data to be refined and passing their results to 
-the next element in the processing chain.
+are preparing the coarse mesh data to be refined and pass their results to the next
+stage in the pre-computation's chain.
 
 .. image:: images/api_data_flow.png
    :align: center
 
+Although there are several entry-points to provide topology and primitive variable
+data to OpenSubdiv, eventually everything must pass through the private Vtr
+representation for topological analysis.
+
 ----
 
 Multiple Representations
-************************
+========================
 
 The coarse mesh of a subdivision surface is represented by a collection of 
 components that maintain relationships to each other. 
@@ -126,14 +140,15 @@ the very description of these connections (dependencies) between vertices.
    :align: center
 
 This is why OpenSubdiv provides specific representations for mesh data: 
-  - Hbr is a half-edge relational representation
+  - Hbr is a general-purpose half-edge relational representation
+  - Vtr is a vectorized topology-only representation
   - Far is a serialized representation
 
 A typical workflow would be to manipulate the topology in authoring applications,
-maybe using Hbr meshes for common editing operations. Once the topology of the mesh 
-has stabilized, it is processed into a serialized form that can then be evaluated 
-at interactive framerates. The serialized form is embodied by Far, which can then 
-be migrated by the device-specific functions in Osd.
+maybe using Hbr or a similar representation, for common editing operations. Once
+the topology of the mesh has stabilized, it is processed into a serialized form
+that can then be evaluated at interactive framerates. The serialized form is 
+embodied by Far, which can then be migrated by the device-specific functions in Osd.
 
 .. image:: images/api_workflows.png
    :align: center
@@ -153,10 +168,43 @@ architecture:
 
 .. image:: images/osd_layers.png
 
-Hbr serves both as an advanced topological description and the custodian of the
-Catmull-Clark (and Loop) subdivision rules. Far is then used to leverage these
-rules in order to produce serialized topological tables. 
+Vtr serves both as a private, efficient, intermediate topological description and
+as the custodian of the Catmull-Clark (and Loop) subdivision rules. Far is used to
+leverage these rules in order to produce serialized topological tables. 
 
 The remaining computations have been reduced to extremely simple forms of 
 interpolation, which can be dispatched to a variety of discrete computation 
 platforms.
+
+----
+
+Using the Right Tools
+=====================
+
+OpenSubdiv's tiered interface offers a lot flexibility to make your application
+both fast and robust. Because navigating through the large collection of classes and
+features can be challengeing, here is a snapshot flow-chart that should help sketch
+the broad lines of going about using subdivisions in your application.
+
+.. image:: images/osd_flow.png
+   :align: center
+   :target: images/osd_flow.png 
+
+General requirements:
+
+* Surface limits ? For some applications, a polygonal approximation of the smooth
+  surface is enough. Others require C :sup:`2` continuous differentiable bi-cubic
+  patches (ex: deformable displacement mapping, smooth normals and semi-sharp
+  creases...)
+
+* Refine more than once ? Applications such as off-line image renderers often
+  process a single frame at a time. Others, such as interactive games need to
+  evaluate deforming character surface every frame. Because we can amortize many
+  computations if the topology of the mesh does not change, OpenSubdiv provides
+  a variety of data-structures to leverage this performance.
+
+* Multi-thread ? OpenSubdiv provides dedicated interfaces to leverage parallelism
+  on a wide variety of platforms and API standards, including both CPUs and GPUs.
+
+* Draw ? Does the applications need to draw on screen interactively ?
+
