@@ -107,10 +107,6 @@ public:
     ///
     /// @param  vertexBuffer  Vertex-interpolated data buffer
     ///
-    /// @param  vertexDesc    The descriptor of vertex elements to be refined.
-    ///                       if it's null, all primvars in the vertex buffer
-    ///                       will be refined.
-    ///
     template<class VERTEX_BUFFER>
         void Compute(OsdCpuComputeContext const * context,
                      FarKernelBatchVector const & batches,
