@@ -721,8 +721,11 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
             } else {
                 if (patchTag._boundaryCount == 0) {
                     patchInventory.G++;
-                } else {
+                } else if (patchTag._boundaryCount == 1) {
                     patchInventory.GB++;
+                } else {
+                    // XXXX manuelk smooth corners use regular corner patches, not Gregory
+                    patchInventory.C[patchTag._transitionType][patchTag._transitionRot]++;
                 }
             }
         }
@@ -865,7 +868,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
                     pptrs.G = computePatchParam(refineTables, i, faceIndex, 0, pptrs.G);
                     // fptrs.G = computeFVarData(f, fvarwidth, fptrs.G, true);
-                } else {
+                } else if (patchTag._boundaryCount == 1) {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
                     VtrIndexArray const faceVerts = level->getFaceVertices(faceIndex);
                     for (int j = 0; j < 4; ++j) {
@@ -879,6 +882,21 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
                     pptrs.GB = computePatchParam(refineTables, i, faceIndex, (patchTag._boundaryIndex+1)%4, pptrs.GB);
                     // fptrs.GB = computeFVarData(f, fvarwidth, fptrs.GB, true);
+                } else {
+                    // XXXX manuelk smooth corners use regular corner patches, not Gregory
+                    unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
+                    unsigned int   patchVerts[9];
+
+                    int tIndex = patchTag._transitionType;
+                    int rIndex = patchTag._transitionRot;
+                    int bIndex = patchTag._boundaryIndex;
+
+                    level->gatherQuadRegularCornerPatchVertices(faceIndex, patchVerts, bIndex);
+                    offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
+
+                    iptrs.C[tIndex][rIndex] += 9;
+                    pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, (bIndex+3)%4, pptrs.C[tIndex][rIndex]);
+                    // fptrs.C[tIndex][rIndex] = computeFVarData(...,   fptrs.C[tIndex][rIndex], true);
                 }
             }
         }
