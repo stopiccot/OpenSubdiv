@@ -145,6 +145,13 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${OPENMP_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+set(TBB_PUBLIC_HEADERS
+    tbbKernel.h
+    tbbComputeController.h
+#    tbbEvalStencilsController.h
+    tbbSmoothNormalController.h
+)
+
 if( TBB_FOUND )
     include_directories("${TBB_INCLUDE_DIR}")
 
@@ -154,12 +161,9 @@ if( TBB_FOUND )
 #        tbbEvalStencilsController.cpp
         tbbSmoothNormalController.cpp
     )
-    list(APPEND PUBLIC_HEADER_FILES
-        tbbKernel.h
-        tbbComputeController.h
-#        tbbEvalStencilsController.h
-        tbbSmoothNormalController.h
-    )
+
+    list(APPEND PUBLIC_HEADER_FILES ${TBB_PUBLIC_HEADERS})
+
     if (CMAKE_COMPILER_IS_GNUCXX)
         list(APPEND PLATFORM_CPU_LIBRARIES gomp)
     endif()
@@ -168,6 +172,8 @@ if( TBB_FOUND )
         ${TBB_LIBRARIES}
     )
 endif()
+
+list(APPEND DOXY_HEADER_FILES ${TBB_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
 # GL code & dependencies
