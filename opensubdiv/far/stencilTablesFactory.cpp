@@ -337,9 +337,9 @@ StencilAllocator::StencilAllocator( FarRefineTables const & refTables,
         case TYPE_BILINEAR :
             _maxsize = _interpolateVarying ? 5 : 5; break;
         case TYPE_CATMARK :
-            _maxsize = _interpolateVarying ? 10 : 5; break;
+            _maxsize = _interpolateVarying ? 5 : 10; break;
         case TYPE_LOOP :
-            _maxsize = _interpolateVarying ? 10 : 5; break;
+            _maxsize = _interpolateVarying ? 5 : 10; break;
         default:
             assert(0);
     }
@@ -376,6 +376,7 @@ StencilAllocator::Resize(int numStencils) {
     for (int i=0; i<(int)_bigstencils.size(); ++i) {
         delete _bigstencils[i];
     }
+    _bigstencils.clear();
 }
 
 // Append a support vertex of index 'index' and weight 'weight' to the
