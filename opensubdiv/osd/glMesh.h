@@ -166,7 +166,7 @@ private:
         {
             FarStencilTablesFactory::Options options;
             options.generateOffsets=true;
-            options.generateAllLevels=true;
+            options.generateAllLevels = _refTables->IsUniform() ? false : true;
 
             FarStencilTables const * stencilTables =
                 FarStencilTablesFactory::Create(*_refTables, options);
@@ -333,7 +333,7 @@ private:
         {
             FarStencilTablesFactory::Options options;
             options.generateOffsets=true;
-            options.generateAllLevels=true;
+            options.generateAllLevels = _refTables->IsUniform() ? false : true;
 
             FarStencilTables const * stencilTables =
                 FarStencilTablesFactory::Create(*_refTables, options);

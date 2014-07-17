@@ -48,27 +48,34 @@ class FarPatchTablesFactory {
 
 public:
 
-    /// \brief Factory constructor for adaptive meshes
+    struct Options {
+
+        Options() : fvarWidth(0),
+                    generateAllLevels(false),
+                    triangulateQuads(false) { }
+
+        int fvarWidth         : 16, ///< Width of face-varying primvar data
+            generateAllLevels : 1,  ///< Include levels from 'firstLevel' to 'maxLevel' (Uniform mode only)
+            triangulateQuads  : 1;  ///< Triangulate 'QUADS' primitives (Uniform mode only)
+    };
+
+    /// \brief Factory constructor for FarPatchTables
     ///
     /// @param refineTables  FarRefineTables from which to generate patches
     ///
-    /// @param fvarwidth     The width of the interleaved face-varying data
+    /// @param options       Options controlling the creation of the tables
     ///
     /// @return              A new instance of FarPatchTables
     ///
-    static FarPatchTables * Create(FarRefineTables const & refineTables, int fvarwidth=0);
+    static FarPatchTables * Create(FarRefineTables const & refineTables, Options options=Options());
 
 private:
-    //  (I would really prefer to hide all of these implementation details from the header...)
 
     typedef FarPatchTables::Descriptor Descriptor;
 
-    //
-    //  Support for uniform tables is not yet implemented, but should be able to use the same Create()
-    //  method above as the FarRefineTables contain most (all?) of what we need:
-    //
-    static FarPatchTables * createUniform(  FarRefineTables const & refineTables, int fvarwidth=0 );
-    static FarPatchTables * createAdaptive( FarRefineTables const & refineTables, int fvarwidth=0 );
+    static FarPatchTables * createUniform( FarRefineTables const & refineTables, Options options );
+
+    static FarPatchTables * createAdaptive( FarRefineTables const & refineTables, Options options );
 
     //  High-level methods for identifying and populating patches associated with faces:
     static void identifyAdaptivePatches( FarRefineTables const &     refTables,

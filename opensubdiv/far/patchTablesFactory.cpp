@@ -27,6 +27,7 @@
 #include "../vtr/level.h"
 #include "../vtr/refinement.h"
 
+#include <cassert>
 #include <cstring>
 
 
@@ -496,28 +497,140 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
 //  but that may no longer be necessary (see notes in the uniform version below)...
 //
 FarPatchTables *
-FarPatchTablesFactory::Create( FarRefineTables const & refineTables, int fvarwidth ) {
+FarPatchTablesFactory::Create( FarRefineTables const & refineTables, Options options ) {
 
     if (refineTables.IsUniform()) {
-        return createUniform(refineTables, fvarwidth);
+        return createUniform(refineTables, options);
     } else {
-        return createAdaptive(refineTables, fvarwidth);
+        return createAdaptive(refineTables, options);
     }
 }
 
 FarPatchTables *
-FarPatchTablesFactory::createUniform( FarRefineTables const & /*refineTables*/, int /*fvarwidth*/ ) {
+FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Options options ) {
+
+    assert(refineTables.IsUniform());
+
+    bool triangulateQuads = (options.triangulateQuads and
+        refineTables.GetSchemeType()==TYPE_LOOP);
+
+    int maxvalence = refineTables.getLevel(0).findMaxValence(),
+        maxlevel = refineTables.GetMaxLevel(),
+        firstlevel = options.generateAllLevels ? 0 : maxlevel,
+        nlevels = maxlevel-firstlevel+1,
+        nCVs = 0;
+
+    FarPatchTables::Type ptype = FarPatchTables::NON_PATCH;
+    switch (refineTables.GetSchemeType()) {
+        case TYPE_BILINEAR :
+        case TYPE_CATMARK  : ptype = FarPatchTables::QUADS; break;
+        case TYPE_LOOP     : ptype = FarPatchTables::TRIANGLES; break;
+    }
+    assert(ptype!=FarPatchTables::NON_PATCH);
+
+    switch (ptype) {
+        case FarPatchTables::TRIANGLES: nCVs=3; break;
+        case FarPatchTables::QUADS:     nCVs=4; break;
+        default:
+            assert(0);
+    }
 
     //
-    //  We shouldn't need all the arguments that were previously necessary as the RefineTables
-    //  should include most of what we need, i.e. the scheme, whether we need Tris or Quads,
-    //  the depth of the refinement, number of Ptex faces, etc...
+    //  Create the instance of the tables and allocate and initialize its members.
     //
-    assert(false);
+    FarPatchTables * tables = new FarPatchTables(maxvalence);
+
+    tables->_fvarData._fvarWidth = options.fvarWidth;
+    tables->_numPtexFaces = refineTables.GetNumPtexFaces();
+
+    FarPatchTables::PatchArrayVector & parrays = tables->_patchArrays;
+    parrays.reserve( nlevels );
+
+    Descriptor desc( ptype, FarPatchTables::NON_TRANSITION, 0 );
+
+    // generate patch arrays
+    for (int level=firstlevel, poffset=0, voffset=0; level<=maxlevel; ++level) {
+
+        int npatches = refineTables.GetNumFaces(level);
+        if (triangulateQuads) {
+            assert(ptype==FarPatchTables::QUADS);
+            npatches *= 2;
+        }
+        if (level>=firstlevel) {
+            parrays.push_back(FarPatchTables::PatchArray(desc, voffset, poffset, npatches, 0));
+            voffset += npatches * nCVs;
+            poffset += npatches;
+        }
+    }
+
+    // Allocate various tables
+    allocateTables( tables, 0, options.fvarWidth );
+
+    //
+    //  Now populate the patches:
+    //
+    unsigned int  * iptr = &tables->_patches[0];
+    FarPatchParam * pptr = &tables->_paramTable[0];
+    //float         * fptr = options.fvarWidth > 0 ? &tables->_fvarData._data[0] : 0;
+
+    int levelVertOffset = options.generateAllLevels ? 0 : refineTables.GetNumVertices(0);
+
+    for (int level=1, fvarOffset=0; level<=maxlevel; ++level) {
+
+        int nfaces = refineTables.GetNumFaces(level);
+        if (level>=firstlevel) {
+            for (int face=0; face<nfaces; ++face) {
+
+                FarIndexArray const & fverts = refineTables.GetFaceVertices(level, face);
+
+                for (int vert=0; vert<fverts.size(); ++vert) {
+                    *iptr++ = levelVertOffset + fverts[vert];
+                }
+
+                pptr = computePatchParam(refineTables, level, face, /*rot*/0, pptr);
+
+                if (options.fvarWidth>0) {
+                    //fptrs = computeFVarData(...);
+                }
+            }
+
+            if (triangulateQuads) {
+                // Triangulate the quadrilateral: {v0,v1,v2,v3} -> {v0,v1,v2},{v3,v0,v2}.
+                *iptr = *(iptr - 4); // copy v0 index
+                ++iptr;
+                *iptr = *(iptr - 3); // copy v2 index
+                ++iptr;
+
+                *pptr = *(pptr - 1); // copy first patch param
+                ++pptr;
+
+
+                /* XXXX manuelk fvar to be implemented
+                for (int i = 0; i < options.fvarWidth; ++i, ++fptr) {
+                    *fptr = *(fptr - 4 * options.fvarWidth); // copy v0 fvar data
+                }
+                for (int i = 0; i < options.fvarWidth; ++i, ++fptr) {
+                    *fptr = *(fptr - 3 * options.fvarWidth); // copy v2 fvar data
+                }*/
+            }
+
+            if (options.fvarWidth>0) {
+                assert(not tables->_fvarData._offsets.empty());
+                tables->_fvarData._offsets[level-firstlevel] = (fvarOffset+=nfaces*nCVs*options.fvarWidth);
+            }
+        }
+
+        if (options.generateAllLevels) {
+            levelVertOffset += refineTables.GetNumVertices(level);
+        }
+    }
+    return tables;
 }
 
 FarPatchTables *
-FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, int fvarwidth ) {
+FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Options options ) {
+
+    assert(not refineTables.IsUniform());
 
     //
     //  First identify the patches -- accumulating the inventory patches for all of the
@@ -547,11 +660,11 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, int
         pushPatchArray( *it, parray, patchInventory.getValue(*it), &voffset, &poffset, &qoffset );
     }
 
-    tables->_fvarData._fvarWidth = fvarwidth;
+    tables->_fvarData._fvarWidth = options.fvarWidth;
     tables->_numPtexFaces = refineTables.GetNumPtexFaces();
 
     // Allocate various tables
-    allocateTables( tables, 0, fvarwidth );
+    allocateTables( tables, 0, options.fvarWidth );
 
     // Specifics for Gregory patches
     if ((patchInventory.G > 0) or (patchInventory.GB > 0)) {

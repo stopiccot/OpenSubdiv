@@ -86,7 +86,7 @@ protected:
 
     static inline int getNumVertices(FarRefineTables const & refTables) {
         return refTables.IsUniform() ?
-            refTables.GetNumVertices(refTables.GetMaxLevel()) :
+            refTables.GetNumVertices(0) + refTables.GetNumVertices(refTables.GetMaxLevel()) :
                 refTables.GetNumVerticesTotal();
     }
 
@@ -206,7 +206,7 @@ private:
         {
             FarStencilTablesFactory::Options options;
             options.generateOffsets=true;
-            options.generateAllLevels=true;
+            options.generateAllLevels = _refTables->IsUniform() ? false : true;
 
             FarStencilTables const * stencilTables =
                 FarStencilTablesFactory::Create(*_refTables, options);
