@@ -41,36 +41,6 @@ or in your local ``<repository root>/turorials``.
 
   <style> .line {text-align:justify;} </style>
 
-.. |hbr_tut_2| image:: images/hbr_tutorial_2.0.png
-   :width: 100px
-   :target: images/hbr_tutorial_2.0.png
-
-.. list-table:: **Hbr Tutorials**
-   :class: quickref
-   :widths: 50 50
-
-   * - | **Tutorial 0**
-       | This tutorial presents, in a very succint way, the requisite steps to
-         instantiate an Hbr mesh from simple topological data.
-       |
-       | **Tutorial 1**
-       | This tutorial shows how to safely create Hbr meshes from arbitrary topology.
-         Because Hbr is a half-edge data structure, it cannot represeent non-manifold
-         topology. Ensuring that the geometry used is manifold is a requirement to use
-         Hbr safely. This tutorial presents some simple tests to detect inappropriate
-         topology.
-       |
-     - | **Tutorial 2**
-       | This tutorial shows how to subdivide uniformly a simple Hbr mesh. We are
-         building upon previous turtorials and assuming a fully instantiated mesh:
-         we start with an HbrMesh pointer initialized from the same pyramid shape
-         used in hbr_tutorial_0. We then apply the Refine() function sequentially
-         to all the faces in the mesh to generate several levels of uniform
-         subdivision. The resulting data is then dumped to the terminal in Wavefront
-         OBJ format for inspection.
-       | |hbr_tut_2|
-       |
-
 ----
 
 .. |far_tut_0| image:: images/far_tutorial_0.0.png
@@ -123,4 +93,34 @@ or in your local ``<repository root>/turorials``.
          'Controllers'.
        |
      - |
+
+.. |hbr_tut_2| image:: images/hbr_tutorial_2.0.png
+   :width: 100px
+   :target: images/hbr_tutorial_2.0.png
+
+.. list-table:: **Hbr Tutorials**
+   :class: quickref
+   :widths: 50 50
+
+   * - | **Tutorial 0**
+       | This tutorial presents, in a very succint way, the requisite steps to
+         instantiate an Hbr mesh from simple topological data.
+       |
+       | **Tutorial 1**
+       | This tutorial shows how to safely create Hbr meshes from arbitrary topology.
+         Because Hbr is a half-edge data structure, it cannot represeent non-manifold
+         topology. Ensuring that the geometry used is manifold is a requirement to use
+         Hbr safely. This tutorial presents some simple tests to detect inappropriate
+         topology.
+       |
+     - | **Tutorial 2**
+       | This tutorial shows how to subdivide uniformly a simple Hbr mesh. We are
+         building upon previous turtorials and assuming a fully instantiated mesh:
+         we start with an HbrMesh pointer initialized from the same pyramid shape
+         used in hbr_tutorial_0. We then apply the Refine() function sequentially
+         to all the faces in the mesh to generate several levels of uniform
+         subdivision. The resulting data is then dumped to the terminal in Wavefront
+         OBJ format for inspection.
+       | |hbr_tut_2|
+       |
 

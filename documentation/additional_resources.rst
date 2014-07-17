@@ -31,9 +31,6 @@ Additional Resources
 
 ----
 
-Tutorials
-=========
-
 Links
 =====
 

@@ -29,17 +29,20 @@ Using OpenSubdiv
    :local:
    :backlinks: none
 
-Using OpenSubdiv
-================
+.. image:: images/osd_splash.png 
+   :align: center
+   :target: images/osd_splash.png 
 
+
+Coding With OpenSubdiv
+======================
 
 .. list-table:: **General Topics**
    :class: quickref
    :widths: 50 50
    
    * - | `Compiling & Linking <using_osd_compile.html>`_
-       | `Textures <using_osd_textures.html>`_
-     - | `Manipulating Topology <using_osd_hbr.html>`_
-       |
-
+       | `Tutorials <tutorials.html>`_
+     - | `Manipulating Topology With Hbr <using_osd_hbr.html>`_
+       | `Textures (UV & Ptex) <using_osd_textures.html>`_
 
