@@ -40,7 +40,11 @@ or in your local ``<repository root>/turorials``.
 .. raw:: html
 
   <style> .line {text-align:justify;} </style>
-  
+
+.. |hbr_tut_2| image:: images/hbr_tutorial_2.0.png
+   :width: 100px
+   :target: images/hbr_tutorial_2.0.png
+
 .. list-table:: **Hbr Tutorials**
    :class: quickref
    :widths: 50 50
@@ -64,9 +68,14 @@ or in your local ``<repository root>/turorials``.
          to all the faces in the mesh to generate several levels of uniform
          subdivision. The resulting data is then dumped to the terminal in Wavefront
          OBJ format for inspection.
+       | |hbr_tut_2|
        |
 
 ----
+
+.. |far_tut_0| image:: images/far_tutorial_0.0.png
+   :width: 100px
+   :target: images/far_tutorial_0.0.png
 
 .. |far_tut_1| image:: images/far_tutorial_1.0.png
    :width: 100px
@@ -79,6 +88,7 @@ or in your local ``<repository root>/turorials``.
    * - | **Tutorial 0**
        | This tutorial presents in a very succint way the requisite steps to
          instantiate a Far mesh from simple topological data.
+       | |far_tut_0|
        |
        | **Tutorial 1**
        | This tutorial shows how to interface a high-level topology representation
@@ -86,15 +96,20 @@ or in your local ``<repository root>/turorials``.
          topology from a simple face-vertex list. Here we will show how to take
          advantage of more complex data structures.
        |
-     - | **Tutorial 2**
+       | **Tutorial 2**
        | Building on tutorial 0, this example shows how to instantiate a simple mesh,
          refine it uniformly and then interpolate both 'vertex' and 'varying' primvar
          data.
        | |far_tut_1|
        |
-       | **Tutorial 4**
+     - | **Tutorial 4**
        | This tutorial shows how to create and manipulate FarStencilTables. We use the
          factorized stencils to interpolate vertex primvar data buffers.
+       |
+       | **Tutorial 5**
+       | This tutorial shows how to create and manipulate both 'vertex' and 'varying'
+         FarStencilTables to interpolate 2 primvar data buffers: vertex positions and
+         vertex colors.
        |
 
 ----
