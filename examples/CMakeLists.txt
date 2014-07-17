@@ -47,7 +47,7 @@ if (OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
     add_subdirectory(vtrViewer)
 
     if (OPENGL_4_3_FOUND AND (NOT APPLE))
-#        add_subdirectory(paintTest)
+        add_subdirectory(glPaintTest)
     endif()
 
     if (PTEX_FOUND)

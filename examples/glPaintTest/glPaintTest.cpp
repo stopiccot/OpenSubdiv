@@ -59,10 +59,12 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 #include <osd/glMesh.h>
 OpenSubdiv::OsdGLMeshInterface *g_mesh;
 
-#include <common/hbr_utils.h>
+#include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"
+
+#include "init_shapes.h"
 
 static const char *shaderSource =
 #include "shader.gen.h"
@@ -73,13 +75,9 @@ static const char *paintShaderSource =
 
 #include <cfloat>
 #include <vector>
+#include <iostream>
 #include <fstream>
 #include <sstream>
-
-typedef OpenSubdiv::HbrMesh<OpenSubdiv::OsdVertex>     OsdHbrMesh;
-typedef OpenSubdiv::HbrVertex<OpenSubdiv::OsdVertex>   OsdHbrVertex;
-typedef OpenSubdiv::HbrFace<OpenSubdiv::OsdVertex>     OsdHbrFace;
-typedef OpenSubdiv::HbrHalfedge<OpenSubdiv::OsdVertex> OsdHbrHalfedge;
 
 float g_rotate[2] = {0, 0},
       g_dolly = 5,
@@ -147,8 +145,6 @@ struct SimpleShape {
         : name(iname), scheme(ischeme), data(idata) { }
 };
 
-std::vector<SimpleShape> g_defaultShapes;
-
 int g_currentShape = 0;
 
 #define NUM_FPS_TIME_SAMPLES 6
@@ -165,119 +161,6 @@ checkGLErrors(std::string const & where = "")
                   << (where.empty() ? "" : where + " ")
                   << err << "\n";
     }
-}
-
-static void
-initializeShapes( ) {
-
-#include <shapes/catmark_cube_corner0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner0, "catmark_cube_corner0", kCatmark));
-
-#include <shapes/catmark_cube_corner1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner1, "catmark_cube_corner1", kCatmark));
-
-#include <shapes/catmark_cube_corner2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner2, "catmark_cube_corner2", kCatmark));
-
-#include <shapes/catmark_cube_corner3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner3, "catmark_cube_corner3", kCatmark));
-
-#include <shapes/catmark_cube_corner4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner4, "catmark_cube_corner4", kCatmark));
-
-#include <shapes/catmark_cube_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases0, "catmark_cube_creases0", kCatmark));
-
-#include <shapes/catmark_cube_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases1, "catmark_cube_creases1", kCatmark));
-
-#include <shapes/catmark_cube.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube, "catmark_cube", kCatmark));
-
-#include <shapes/catmark_dart_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgecorner, "catmark_dart_edgecorner", kCatmark));
-
-#include <shapes/catmark_dart_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgeonly, "catmark_dart_edgeonly", kCatmark));
-
-#include <shapes/catmark_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgecorner ,"catmark_edgecorner", kCatmark));
-
-#include <shapes/catmark_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgeonly, "catmark_edgeonly", kCatmark));
-
-#include <shapes/catmark_gregory_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test1, "catmark_gregory_test1", kCatmark));
-
-#include <shapes/catmark_gregory_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test2, "catmark_gregory_test2", kCatmark));
-
-#include <shapes/catmark_gregory_test3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test3, "catmark_gregory_test3", kCatmark));
-
-#include <shapes/catmark_gregory_test4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test4, "catmark_gregory_test4", kCatmark));
-
-#include <shapes/catmark_hole_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test1, "catmark_hole_test1", kCatmark));
-
-#include <shapes/catmark_hole_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test2, "catmark_hole_test2", kCatmark));
-
-#include <shapes/catmark_pyramid_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases0, "catmark_pyramid_creases0", kCatmark));
-
-#include <shapes/catmark_pyramid_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases1, "catmark_pyramid_creases1", kCatmark));
-
-#include <shapes/catmark_pyramid.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid, "catmark_pyramid", kCatmark));
-
-#include <shapes/catmark_tent_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases0, "catmark_tent_creases0", kCatmark));
-
-#include <shapes/catmark_tent_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases1, "catmark_tent_creases1", kCatmark));
-
-#include <shapes/catmark_tent.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent, "catmark_tent", kCatmark));
-
-#include <shapes/catmark_torus.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus, "catmark_torus", kCatmark));
-
-#include <shapes/catmark_torus_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus_creases0, "catmark_torus_creases0", kCatmark));
-
-#include <shapes/catmark_square_hedit0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit0, "catmark_square_hedit0", kCatmark));
-
-#include <shapes/catmark_square_hedit1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit1, "catmark_square_hedit1", kCatmark));
-
-#include <shapes/catmark_square_hedit2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit2, "catmark_square_hedit2", kCatmark));
-
-#include <shapes/catmark_square_hedit3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit3, "catmark_square_hedit3", kCatmark));
-
-#include <shapes/catmark_square_hedit4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit4, "catmark_square_hedit4", kCatmark));
-
-#include <shapes/catmark_bishop.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_bishop, "catmark_bishop", kCatmark));
-
-#include <shapes/catmark_car.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_car, "catmark_car", kCatmark));
-
-#include <shapes/catmark_helmet.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_helmet, "catmark_helmet", kCatmark));
-
-#include <shapes/catmark_pawn.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pawn, "catmark_pawn", kCatmark));
-
-#include <shapes/catmark_rook.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_rook, "catmark_rook", kCatmark));
-
 }
 
 //------------------------------------------------------------------------------
@@ -306,7 +189,6 @@ updateGeom() {
     }
 
     g_mesh->UpdateVertexBuffer(&vertex[0], 0, nverts);
-//    g_mesh->UpdateVertexBuffer(&g_orgPositions[0], 0, nverts);
     g_mesh->Refine();
     g_mesh->Synchronize();
 }
@@ -333,21 +215,24 @@ genTextureBuffer(GLenum format, GLsizeiptr size, GLvoid const * data) {
 
 static void
 createOsdMesh() {
-    const char *shape = g_defaultShapes[g_currentShape].data.c_str();
-    int level = g_level;
-    Scheme scheme = g_defaultShapes[g_currentShape].scheme;
+
+    ShapeDesc const & shapeDesc = g_defaultShapes[g_currentShape];
+
+    Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
     checkGLErrors("create osd enter");
-    // generate Hbr representation from "obj" description
-    OsdHbrMesh * hmesh = simpleHbr<OpenSubdiv::OsdVertex>(shape, scheme, g_orgPositions);
+
+    g_orgPositions=shape->verts;
+
+    // create Vtr mesh (topology)
+    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
+    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+
+    OpenSubdiv::FarRefineTables * refTables =
+        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // count ptex face id
-    int numPtexFace = 0;
-    int numFace = hmesh->GetNumFaces();
-    for (int i = 0; i < numFace; ++i) {
-        numPtexFace = std::max(numPtexFace, hmesh->GetFace(i)->GetPtexIndex());
-    }
-    numPtexFace++;
+    int numPtexFaces = refTables->GetNumPtexFaces();
 
     delete g_mesh;
     g_mesh = NULL;
@@ -364,10 +249,7 @@ createOsdMesh() {
         OpenSubdiv::OsdCpuComputeController,
         OpenSubdiv::OsdGLDrawContext>(
             g_cpuComputeController,
-            hmesh, 3, 0, level, bits);
-
-    // Hbr mesh can be deleted
-    delete hmesh;
+            refTables, 3, 0, g_level, bits);
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -387,7 +269,7 @@ createOsdMesh() {
 
     updateGeom();
 
-    // -------- VAO 
+    // -------- VAO
     glBindVertexArray(g_vao);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_mesh->GetDrawContext()->GetPatchIndexBuffer());
@@ -405,7 +287,7 @@ createOsdMesh() {
 
     std::vector<int> pages;
     std::vector<float> layouts;
-    for (int i = 0; i < numPtexFace; ++i) {
+    for (int i = 0; i < numPtexFaces; ++i) {
         pages.push_back(i);
         layouts.push_back(0);
         layouts.push_back(0);
@@ -413,10 +295,10 @@ createOsdMesh() {
         layouts.push_back(1);
     }
     g_ptexPages = genTextureBuffer(GL_R32I,
-                                   numPtexFace * sizeof(GLint), &pages[0]);
-    
+                                   numPtexFaces * sizeof(GLint), &pages[0]);
+
     g_ptexLayouts = genTextureBuffer(GL_RGBA32F,
-                                     numPtexFace * 4 * sizeof(GLfloat),
+                                     numPtexFaces * 4 * sizeof(GLfloat),
                                      &layouts[0]);
 
     // actual texels texture array
@@ -428,17 +310,19 @@ createOsdMesh() {
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    g_pageSize = std::min(512, (int)sqrt((float)1024*1024*1024/64/numPtexFace));
+    g_pageSize = std::min(512, (int)sqrt((float)1024*1024*1024/64/numPtexFaces));
 
     int pageSize = g_pageSize;
 
     std::vector<float> texels;
-    texels.resize(pageSize*pageSize*numPtexFace);
+    texels.resize(pageSize*pageSize*numPtexFaces);
     // allocate ptex
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R32F, 
-                 pageSize, pageSize, numPtexFace, 0, GL_RED, GL_FLOAT, &texels[0]);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R32F,
+                 pageSize, pageSize, numPtexFaces, 0, GL_RED, GL_FLOAT, &texels[0]);
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    checkGLErrors("create osd exit");
 }
 
 //------------------------------------------------------------------------------
@@ -533,7 +417,7 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     } else if (effect.wire == 2) {
         sconfig->geometryShader.AddDefine("GEOMETRY_OUT_LINE");
         sconfig->fragmentShader.AddDefine("GEOMETRY_OUT_LINE");
-    } 
+    }
 
     return sconfig;
 }
@@ -541,7 +425,7 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
 EffectDrawRegistry::ConfigType *
 EffectDrawRegistry::_CreateDrawConfig(
         DescType const & desc,
-        SourceConfigType const * sconfig) 
+        SourceConfigType const * sconfig)
 {
     ConfigType * config = BaseRegistry::_CreateDrawConfig(desc.first, sconfig);
     assert(config);
@@ -621,19 +505,19 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
     GLint texData = glGetUniformLocation(program, "textureImage_Data");
     GLint texPacking = glGetUniformLocation(program, "textureImage_Packing");
     GLint texPages = glGetUniformLocation(program, "textureImage_Pages");
-    
+
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D_ARRAY, g_ptexTexels);
     glProgramUniform1i(program, texData, 5);
-    
+
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_BUFFER, g_ptexLayouts);
     glProgramUniform1i(program, texPacking, 6);
-    
+
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_BUFFER, g_ptexPages);
     glProgramUniform1i(program, texPages, 7);
-    
+
     glActiveTexture(GL_TEXTURE0);
 
     return program;
@@ -664,7 +548,7 @@ display() {
     multMatrix(g_transformData.ModelViewProjectionMatrix,
                g_transformData.ModelViewMatrix,
                g_transformData.ProjectionMatrix);
-    
+
     if (! g_transformUB) {
         glGenBuffers(1, &g_transformUB);
         glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
@@ -711,7 +595,7 @@ display() {
            { 0.1f, 0.1f, 0.1f, 1.0f },
            { 0.7f, 0.7f, 0.7f, 1.0f },
            { 0.8f, 0.8f, 0.8f, 1.0f } },
- 
+
          { { -0.8f, 0.4f, -1.0f, 0.0f },
            {  0.0f, 0.0f,  0.0f, 1.0f },
            {  0.5f, 0.5f,  0.5f, 1.0f },
@@ -756,7 +640,7 @@ display() {
 
     // make sure that the vertex buffer is interoped back as a GL resources.
     g_mesh->BindVertexBuffer();
-    
+
     glBindVertexArray(g_vao);
 
     OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->patchArrays;
@@ -780,13 +664,13 @@ display() {
         glProgramUniform4f(program, diffuseColor, 1, 1, 1, 1);
 
         GLuint uniformGregoryQuadOffsetBase =
-	  glGetUniformLocation(program, "GregoryQuadOffsetBase");
+          glGetUniformLocation(program, "GregoryQuadOffsetBase");
         GLuint uniformPrimitiveIdBase =
-	  glGetUniformLocation(program, "PrimitiveIdBase");
+          glGetUniformLocation(program, "PrimitiveIdBase");
         glProgramUniform1i(program, uniformGregoryQuadOffsetBase,
-			   patch.GetQuadOffsetIndex());
+                           patch.GetQuadOffsetIndex());
         glProgramUniform1i(program, uniformPrimitiveIdBase,
-			   patch.GetPatchIndex());
+                           patch.GetPatchIndex());
 
         if (g_wire == 0) {
             glDisable(GL_CULL_FACE);
@@ -852,7 +736,7 @@ display() {
 }
 
 void
-drawStroke(int x, int y) 
+drawStroke(int x, int y)
 {
     glViewport(0, 0, g_pageSize, g_pageSize);
 
@@ -867,7 +751,7 @@ drawStroke(int x, int y)
                g_transformData.ModelViewMatrix,
                g_transformData.ProjectionMatrix);
     memcpy(g_transformData.ProjectionWithoutPickMatrix, pers, sizeof(float)*16);
-    
+
     if (! g_transformUB) {
         glGenBuffers(1, &g_transformUB);
         glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
@@ -927,13 +811,15 @@ drawStroke(int x, int y)
 
     // make sure that the vertex buffer is interoped back as a GL resources.
     g_mesh->BindVertexBuffer();
-    
+
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->patchArrays;
+    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+        g_mesh->GetDrawContext()->patchArrays;
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {
+
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
         OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
 
@@ -945,16 +831,16 @@ drawStroke(int x, int y)
         effect.displacement = g_displayDisplacement;
         effect.wire = 1;
         effect.paint = 1;
-        
+
         GLuint program = bindProgram(effect, patch);
         GLuint uniformGregoryQuadOffsetBase =
-	  glGetUniformLocation(program, "GregoryQuadOffsetBase");
+            glGetUniformLocation(program, "GregoryQuadOffsetBase");
         GLuint uniformPrimitiveIdBase =
-	  glGetUniformLocation(program, "PrimitiveIdBase");
+            glGetUniformLocation(program, "PrimitiveIdBase");
         glProgramUniform1i(program, uniformGregoryQuadOffsetBase,
-			   patch.GetQuadOffsetIndex());
+            patch.GetQuadOffsetIndex());
         glProgramUniform1i(program, uniformPrimitiveIdBase,
-			   patch.GetPatchIndex());
+            patch.GetPatchIndex());
 
         glDrawElements(primType,
                        patch.GetNumIndices(), GL_UNSIGNED_INT,
@@ -1045,7 +931,7 @@ reshape(int width, int height) {
 
     g_width = width;
     g_height = height;
-    
+
     int windowWidth = g_width, windowHeight = g_height;
 #if GLFW_VERSION_MAJOR>=3
     // window size might not match framebuffer size on a high DPI display
@@ -1087,7 +973,7 @@ int windowClose() {
 #endif
 
 //------------------------------------------------------------------------------
-static void 
+static void
 toggleFullScreen() {
     // XXXX manuelk : to re-implement from glut
 }
@@ -1166,7 +1052,7 @@ initHUD()
     g_hud.AddPullDownButton(shading_pulldown, "Wire", 0, g_wire==0);
     g_hud.AddPullDownButton(shading_pulldown, "Shaded", 1, g_wire==1);
     g_hud.AddPullDownButton(shading_pulldown, "Wire+Shaded", 2, g_wire==2);
-    
+
     for (int i = 1; i < 11; ++i) {
         char level[16];
         sprintf(level, "Lv. %d", i);
@@ -1176,7 +1062,7 @@ initHUD()
     int pulldown_handle = g_hud.AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
     for (int i = 0; i < (int)g_defaultShapes.size(); ++i) {
         g_hud.AddPullDownButton(pulldown_handle, g_defaultShapes[i].name.c_str(),i);
-    }   
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1293,11 +1179,11 @@ int main(int argc, char ** argv)
                 ss << ifs.rdbuf();
                 ifs.close();
                 str = ss.str();
-                g_defaultShapes.push_back(SimpleShape(str.c_str(), argv[1], kCatmark));
+                g_defaultShapes.push_back(ShapeDesc(argv[1], str.c_str(), kCatmark));
             }
         }
     }
-    initializeShapes();
+    initShapes();
     OsdSetErrorCallback(callbackError);
 
     if (not glfwInit()) {
@@ -1306,7 +1192,7 @@ int main(int argc, char ** argv)
     }
 
     static const char windowTitle[] = "OpenSubdiv painting test";
-    
+
 #define CORE_PROFILE
 #ifdef CORE_PROFILE
     setGLCoreProfile();
@@ -1314,11 +1200,11 @@ int main(int argc, char ** argv)
 
 #if GLFW_VERSION_MAJOR>=3
     if (fullscreen) {
-    
+
         g_primary = glfwGetPrimaryMonitor();
 
         // apparently glfwGetPrimaryMonitor fails under linux : if no primary,
-        // settle for the first one in the list    
+        // settle for the first one in the list
         if (not g_primary) {
             int count=0;
             GLFWmonitor ** monitors = glfwGetMonitors(&count);
@@ -1326,7 +1212,7 @@ int main(int argc, char ** argv)
             if (count)
                 g_primary = monitors[0];
         }
-        
+
         if (g_primary) {
             GLFWvidmode const * vidmode = glfwGetVideoMode(g_primary);
             g_width = vidmode->width;
@@ -1334,7 +1220,7 @@ int main(int argc, char ** argv)
         }
     }
 
-    if (not (g_window=glfwCreateWindow(g_width, g_height, windowTitle, 
+    if (not (g_window=glfwCreateWindow(g_width, g_height, windowTitle,
                                        fullscreen and g_primary ? g_primary : NULL, NULL))) {
         printf("Failed to open window.\n");
         glfwTerminate();
