@@ -81,55 +81,65 @@ static int g_faceverts[16] = { 0, 1, 2,
 
 // index of edge vertices (2 per edge)
 static int g_edgeverts[16] = { 0, 1,
-                               0, 2,
-                               0, 3,
-                               0, 4,
                                1, 2,
+                               2, 0,
                                2, 3,
+                               3, 0,
                                3, 4,
+                               4, 0,
                                4, 1 };
 
 
 // index of face edges
-static int g_faceedges[16] = { 0, 4, 1,
-                               1, 5, 2,
-                               2, 6, 3,
-                               3, 7, 0,
-                               6, 5, 4, 7 };
+static int g_faceedges[16] = { 0, 1, 2,
+                               2, 3, 4,
+                               4, 5, 6,
+                               6, 7, 0,
+                               5, 3, 1, 7 };
 
 // number of faces adjacent to each edge
 static int g_edgenfaces[8] = { 2, 2, 2, 2, 2, 2, 2, 2 };
 
 // index of faces incident to a given edge
-static int g_edgefaces[16] = { 3, 0,
-                               0, 1,
-                               1, 2,
-                               2, 3,
+static int g_edgefaces[16] = { 0, 3,
                                0, 4,
+                               0, 1,
                                1, 4,
+                               1, 2,
                                2, 4,
+                               2, 3,
                                3, 4 };
 
 // number of faces incident to each vertex
-static int g_vertexnfaces[8] = { 4, 3, 3, 3, 3, 3, 3, 3 };
+static int g_vertexnfaces[5] = { 4, 3, 3, 3, 3 };
 
 // index of faces incident to each vertex
 static int g_vertexfaces[25] = { 0, 1, 2, 3,
                                  0, 3, 4,
-                                 0, 1, 4,
-                                 1, 2, 4,
-                                 2, 3, 4 };
+                                 0, 4, 1,
+                                 1, 4, 2,
+                                 2, 4, 3 };
 
 
 // number of edges incident to each vertex
-static int g_vertexnedges[8] = { 4, 3, 3, 3, 3, 3, 3, 3 };
+static int g_vertexnedges[5] = { 4, 3, 3, 3, 3 };
 
 // index of edges incident to each vertex
-static int g_vertexedges[25] = { 0, 1, 2, 3,
-                                 0, 4, 7,
-                                 1, 4, 5,
-                                 2, 5, 6,
-                                 3, 6, 7 };
+static int g_vertexedges[25] = { 0, 2, 4, 6,
+                                 1, 0, 7,
+                                 2, 1, 3,
+                                 4, 3, 5,
+                                 6, 5, 7 };
+
+// Edge crease sharpness
+static float g_edgeCreases[8] = { 0.0f, 
+                                  2.5f, 
+                                  0.0f, 
+                                  2.5f, 
+                                  0.0f, 
+                                  2.5f, 
+                                  0.0f, 
+                                  2.5f };
 
 //------------------------------------------------------------------------------
 //
@@ -175,7 +185,7 @@ public:
 
     int const * GetFaceVerts(int face) const { return g_faceverts+getCompOffset(g_facenverts, face); }
 
-    int const * GetFaceEdges(int face) const { return g_faceedges+getCompOffset(g_facenverts, face); }
+    int const * GetFaceEdges(int edge) const { return g_faceedges+getCompOffset(g_facenverts, edge); }
 
 
     //
@@ -229,7 +239,7 @@ FarRefineTablesFactory<Converter>::resizeComponentTopology(
         refTables.setNumBaseFaceVertices(face, nv);
     }
 
-    // Edges and edge-faces
+   // Edges and edge-faces
     int nedges = conv.GetNumEdges();
     refTables.setNumBaseEdges(nedges);
     for (int edge=0; edge<nedges; ++edge) {
@@ -311,21 +321,24 @@ FarRefineTablesFactory<Converter>::assignComponentTopology(
             //  Vert-Edges:
             IndexArray vertEdges = refTables.setBaseVertexEdges(vert);
             LocalIndexArray vertInEdgeIndices = refTables.setBaseVertexEdgeLocalIndices(vert);
-            for (int edge=0; edge<conv.GetNumVertexEdges(edge); ++edge) {
+            for (int edge=0; edge<conv.GetNumVertexEdges(vert); ++edge) {
                 vertEdges[edge] = conv.GetVertexEdges(vert)[edge];
             }
         }
     }
+    
+    // XXXX manuelk this should be exposed through FarRefineTablesFactory
+    refTables.getBaseLevel().populateLocalIndices();
 };
 
 template <>
 void
 FarRefineTablesFactory<Converter>::assignComponentTags(
-    FarRefineTables & refTables, Converter const & /* conv */) {
+    FarRefineTables & refTables, Converter const & conv) {
 
     // arbitrarily sharpen the 4 bottom edges of the pyramid to 2.5f
-    for (int edge=4; edge<7; ++edge) {
-        refTables.baseEdgeSharpness(4) = 2.5f;
+    for (int edge=0; edge<conv.GetNumEdges(); ++edge) {
+        refTables.baseEdgeSharpness(edge) = g_edgeCreases[edge];
     }
 }
 
@@ -385,7 +398,7 @@ int main(int, char **) {
         conv.GetType(), conv.GetOptions(), conv);
 
 
-    int maxlevel = 2;
+    int maxlevel = 5;
 
     // Uniformly refine the topolgy up to 'maxlevel'
     refTables->RefineUniform( maxlevel );
