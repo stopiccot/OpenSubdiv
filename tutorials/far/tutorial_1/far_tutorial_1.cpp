@@ -132,13 +132,13 @@ static int g_vertexedges[25] = { 0, 2, 4, 6,
                                  6, 5, 7 };
 
 // Edge crease sharpness
-static float g_edgeCreases[8] = { 0.0f, 
-                                  2.5f, 
-                                  0.0f, 
-                                  2.5f, 
-                                  0.0f, 
-                                  2.5f, 
-                                  0.0f, 
+static float g_edgeCreases[8] = { 0.0f,
+                                  2.5f,
+                                  0.0f,
+                                  2.5f,
+                                  0.0f,
+                                  2.5f,
+                                  0.0f,
                                   2.5f };
 
 //------------------------------------------------------------------------------
@@ -286,11 +286,11 @@ FarRefineTablesFactory<Converter>::assignComponentTopology(
     }
 
     { // Edge relations
-      //       
+      //
       // Note: if your representation is unable to provide edge relationships
       //       (ex: half-edges), you can comment out this section and Far will
       //       automatically generate the missing information.
-      //       
+      //
         int nedges = conv.GetNumEdges();
         for (int edge=0; edge<nedges; ++edge) {
 
@@ -326,7 +326,7 @@ FarRefineTablesFactory<Converter>::assignComponentTopology(
             }
         }
     }
-    
+
     // XXXX manuelk this should be exposed through FarRefineTablesFactory
     refTables.getBaseLevel().populateLocalIndices();
 };
@@ -452,8 +452,6 @@ int main(int, char **) {
             printf("\n");
         }
     }
-
 }
-
 
 //------------------------------------------------------------------------------
