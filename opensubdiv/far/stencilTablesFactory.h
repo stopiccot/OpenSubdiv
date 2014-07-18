@@ -60,7 +60,7 @@ public:
                     generateAllLevels(true),   
                     sortBySize(false) { }
     
-        int interpolationMode : 1, ///< interpolation mode
+        int interpolationMode : 2, ///< interpolation mode
             generateOffsets   : 1, ///< populate optional "_offsets" field          
             generateAllLevels : 1, ///< vertices at all levels or highest only
             sortBySize        : 1; ///< sort stencils by size (within a level)

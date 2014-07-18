@@ -373,8 +373,8 @@ StencilAllocator::Resize(int numStencils) {
     _indices.resize(nelems);
     _weights.resize(nelems);
 
-    for (int i=0; i<(int)_bigstencils.size(); ++i) {
-        delete _bigstencils[i];
+    for (BigStencilMap::iterator it=_bigstencils.begin(); it!=_bigstencils.end(); ++it) {
+        delete it->second;
     }
     _bigstencils.clear();
 }
@@ -407,6 +407,7 @@ StencilAllocator::PushBackVertex(Stencil & stencil, int index, float weight) {
             assert(_bigstencils.find(stencil.GetID())==_bigstencils.end());
             _bigstencils[stencil.GetID()]=dst;
         } else {
+            assert(_bigstencils.find(stencil.GetID())!=_bigstencils.end());
             dst = _bigstencils[stencil.GetID()];
         }
         assert(dst);
@@ -473,9 +474,11 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
         return new FarStencilTables;
     }
 
+    Mode mode = (Mode)options.interpolationMode;
+
     std::vector<StencilAllocator> allocators(
         options.generateAllLevels ? maxlevel : 2,
-            StencilAllocator(refTables, INTERPOLATE_VERTEX));
+            StencilAllocator(refTables, mode));
 
     StencilAllocator * srcAlloc, * dstAlloc;
     if (options.generateAllLevels) {
@@ -495,23 +498,31 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
         if (level==1) {
 
-           // coarse vertices have a single index and a weight of 1.0f
-           int * srcStencils = new int[refTables.GetNumVertices(0)];
-           for (int i=0; i<refTables.GetNumVertices(0); ++i) {
-               srcStencils[i]=i;
-           }
+            // coarse vertices have a single index and a weight of 1.0f
+            int * srcStencils = new int[refTables.GetNumVertices(0)];
+            for (int i=0; i<refTables.GetNumVertices(0); ++i) {
+                srcStencils[i]=i;
+            }
 
-           Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
+            Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-           refTables.Interpolate(level, srcStencils, dstStencils);
+            if (mode==INTERPOLATE_VERTEX) {
+                refTables.Interpolate(level, srcStencils, dstStencils);
+            } else {
+                refTables.InterpolateVarying(level, srcStencils, dstStencils);
+            }
 
-           delete [] srcStencils;
+            delete [] srcStencils;
         } else {
 
             Stencil * srcStencils = &(srcAlloc->GetStencils()).at(0),
                     * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
-            refTables.Interpolate(level, srcStencils, dstStencils);
+            if (mode==INTERPOLATE_VERTEX) {
+                refTables.Interpolate(level, srcStencils, dstStencils);
+            } else {
+                refTables.InterpolateVarying(level, srcStencils, dstStencils);
+            }
         }
 
         if (options.generateAllLevels) {

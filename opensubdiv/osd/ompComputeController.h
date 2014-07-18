@@ -64,7 +64,7 @@ public:
     ///
     /// @param  context       The OsdCpuContext to apply refinement operations to
     ///
-    /// @param  batches       Vector of batches of vertices organized by operative 
+    /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
     ///
     /// @param  vertexBuffer  Vertex-interpolated data buffer
@@ -93,8 +93,8 @@ public:
 
         bind(vertexBuffer, varyingBuffer, vertexDesc, varyingDesc);
 
-        FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1); 
-        
+        FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
+
         unbind();
     }
 
@@ -102,7 +102,7 @@ public:
     ///
     /// @param  context       The OsdCpuContext to apply refinement operations to
     ///
-    /// @param  batches       Vector of batches of vertices organized by operative 
+    /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
     ///
     /// @param  vertexBuffer  Vertex-interpolated data buffer
@@ -129,7 +129,7 @@ protected:
         void bind( VERTEX_BUFFER * vertexBuffer,
                    VARYING_BUFFER * varyingBuffer,
                    OsdVertexBufferDescriptor const * vertexDesc,
-                   OsdVertexBufferDescriptor const * varyingDesc ) {                       
+                   OsdVertexBufferDescriptor const * varyingDesc ) {
 
         // if the vertex buffer descriptor is specified, use it.
         // otherwise, assumes the data is tightly packed in the vertex buffer.
@@ -137,7 +137,7 @@ protected:
             _currentBindState.vertexDesc = *vertexDesc;
         } else {
             int numElements = vertexBuffer ? vertexBuffer->GetNumElements() : 0;
-            _currentBindState.vertexDesc = 
+            _currentBindState.vertexDesc =
                 OsdVertexBufferDescriptor(0, numElements, numElements);
         }
 
@@ -145,7 +145,7 @@ protected:
             _currentBindState.varyingDesc = *varyingDesc;
         } else {
             int numElements = varyingBuffer ? varyingBuffer->GetNumElements() : 0;
-            _currentBindState.varyingDesc = 
+            _currentBindState.varyingDesc =
                 OsdVertexBufferDescriptor(0, numElements, numElements);
         }
 

@@ -42,12 +42,12 @@ struct OsdVertexDescriptor;
 ///
 /// \brief CPU Compute Context
 ///
-/// The CPU implementation of the Compute module contextual functionality. 
+/// The CPU implementation of the Compute module contextual functionality.
 ///
 /// The Osd Compute module provides functionality to interpolate primitive
 /// variable data according to a subdivision scheme.
 ///
-/// Contexts provide an interface between the serialized topological data 
+/// Contexts provide an interface between the serialized topological data
 /// of a geometric primitive and the computation resources of a compute device.
 ///
 class OsdCpuComputeContext : private OsdNonCopyable<OsdCpuComputeContext> {
@@ -67,9 +67,14 @@ public:
     /// Destructor
     virtual ~OsdCpuComputeContext();
 
-    /// Returns the stencils data applied by this context
+    /// Returns the stencils data applied by this context for vertex interpolation
     FarStencilTables const * GetVertexStencilTables() const {
         return _vertexStencilTables;
+    }
+
+    /// Returns the stencils data applied by this context for varying interpolation
+    FarStencilTables const * GetVaryingStencilTables() const {
+        return _varyingStencilTables;
     }
 
 protected:

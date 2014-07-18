@@ -43,25 +43,38 @@ OsdOmpComputeController::ApplyStencilTableKernel(
 
     assert(context);
 
-    FarStencilTables const * vertexStencilTables =
-        context->GetVertexStencilTables();
+    FarStencilTables const * vertexStencils = context->GetVertexStencilTables();
 
-    if (vertexStencilTables) {
+    if (vertexStencils and _currentBindState.vertexBuffer) {
 
-        // We assume that the control vertices are packed at the beginning of
-        // the vertex buffer (hence the single descriptor)
-
-        float * destBuffer = _currentBindState.vertexBuffer + 
-            vertexStencilTables->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
-
+        float * destBuffer = _currentBindState.vertexBuffer +
+            vertexStencils->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
 
         OsdOmpComputeStencils(_currentBindState.vertexDesc,
                               _currentBindState.vertexBuffer,
                               destBuffer,
-                              &vertexStencilTables->GetSizes().at(0),
-                              &vertexStencilTables->GetOffsets().at(0),
-                              &vertexStencilTables->GetControlIndices().at(0),
-                              &vertexStencilTables->GetWeights().at(0),
+                              &vertexStencils->GetSizes().at(0),
+                              &vertexStencils->GetOffsets().at(0),
+                              &vertexStencils->GetControlIndices().at(0),
+                              &vertexStencils->GetWeights().at(0),
+                              batch.start,
+                              batch.end);
+    }
+
+    FarStencilTables const * varyingStencils = context->GetVaryingStencilTables();
+
+    if (varyingStencils and _currentBindState.varyingBuffer) {
+
+        float * destBuffer = _currentBindState.varyingBuffer +
+            varyingStencils->GetNumControlVertices() * _currentBindState.varyingDesc.stride;
+
+        OsdOmpComputeStencils(_currentBindState.varyingDesc,
+                              _currentBindState.varyingBuffer,
+                              destBuffer,
+                              &varyingStencils->GetSizes().at(0),
+                              &varyingStencils->GetOffsets().at(0),
+                              &varyingStencils->GetControlIndices().at(0),
+                              &varyingStencils->GetWeights().at(0),
                               batch.start,
                               batch.end);
     }

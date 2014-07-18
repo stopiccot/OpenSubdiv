@@ -49,24 +49,41 @@ OsdCpuComputeController::ApplyStencilTableKernel(
 
     assert(context);
 
-    FarStencilTables const * stencilTables = context->GetVertexStencilTables();
+    FarStencilTables const * vertexStencils = context->GetVertexStencilTables();
 
-    // We assume that the control vertices are packed at the beginning of
-    // the vertex buffer (hence the single descriptor)
+    if (vertexStencils and _currentBindState.vertexBuffer) {
 
-    float * destBuffer = _currentBindState.vertexBuffer + 
-        stencilTables->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
+        float * destBuffer = _currentBindState.vertexBuffer +
+            vertexStencils->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
 
-    OsdCpuComputeStencils(_currentBindState.vertexDesc,
-                          _currentBindState.vertexBuffer,
-                          destBuffer,
-                          &stencilTables->GetSizes().at(0),
-                          &stencilTables->GetOffsets().at(0),
-                          &stencilTables->GetControlIndices().at(0),
-                          &stencilTables->GetWeights().at(0),
-                          batch.start,
-                          batch.end);    
-        
+        OsdCpuComputeStencils(_currentBindState.vertexDesc,
+                              _currentBindState.vertexBuffer,
+                              destBuffer,
+                              &vertexStencils->GetSizes().at(0),
+                              &vertexStencils->GetOffsets().at(0),
+                              &vertexStencils->GetControlIndices().at(0),
+                              &vertexStencils->GetWeights().at(0),
+                              batch.start,
+                              batch.end);
+    }
+
+    FarStencilTables const * varyingStencils = context->GetVaryingStencilTables();
+
+    if (varyingStencils and _currentBindState.varyingBuffer) {
+
+        float * destBuffer = _currentBindState.varyingBuffer +
+            varyingStencils->GetNumControlVertices() * _currentBindState.varyingDesc.stride;
+
+        OsdCpuComputeStencils(_currentBindState.varyingDesc,
+                              _currentBindState.varyingBuffer,
+                              destBuffer,
+                              &varyingStencils->GetSizes().at(0),
+                              &varyingStencils->GetOffsets().at(0),
+                              &varyingStencils->GetControlIndices().at(0),
+                              &varyingStencils->GetWeights().at(0),
+                              batch.start,
+                              batch.end);
+    }
 }
 
 

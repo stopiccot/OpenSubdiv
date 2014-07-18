@@ -37,21 +37,20 @@ OsdCpuComputeContext::OsdCpuComputeContext(
     FarStencilTables const * vertexStencilTables,
         FarStencilTables const * varyingStencilTables) {
 
-    // XXXX manuelk we do not own the tables, so use copy-constructor for now 
+    // XXXX manuelk we do not own the tables, so use copy-constructor for now
     //              smart pointers eventually
     if (vertexStencilTables) {
-        _vertexStencilTables= new FarStencilTables(*vertexStencilTables);
+        _vertexStencilTables = new FarStencilTables(*vertexStencilTables);
     }
 
     if (varyingStencilTables) {
-        //_varyingStencilTables=*varyingStencilTables;
+        _varyingStencilTables = new FarStencilTables(*varyingStencilTables);
     }
 }
 
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext::~OsdCpuComputeContext() {
-}
+OsdCpuComputeContext::~OsdCpuComputeContext() { }
 
 // ----------------------------------------------------------------------------
 

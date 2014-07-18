@@ -735,6 +735,7 @@ FarRefineTables::varyingInterpolateChildVertsFromVerts(
         U & vdst = dst[cVert];
 
         vdst.Clear();
+        vdst.AddVaryingWithWeight(src[vert], 1.0f);
     }
 }
 
