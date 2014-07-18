@@ -52,9 +52,11 @@ public:
 
     /// Creates an OsdCudaComputeContext instance
     ///
-    /// @param subdivisionTables the FarSubdivisionTables used for this Context.
+    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    ///                              interpolation
     ///
-    /// @param vertexEditTables the FarVertexEditTables used for this Context.
+    /// @param varyingStencilTables  The FarStencilTables used for varying
+    ///                              interpolation
     ///
     static OsdCudaComputeContext * Create(FarStencilTables const * vertexStencilTables,
                                           FarStencilTables const * varyingStencilTables=0);
@@ -62,8 +64,10 @@ public:
     /// Destructor
     virtual ~OsdCudaComputeContext();
 
+    /// Returns true if the Context has a 'vertex' interpolation stencil table
     bool HasVertexStencilTables() const;
 
+    /// Returns true if the Context has a 'varying' interpolation stencil table
     bool HasVaryingStencilTables() const;
 
     /// Returns the number of control vertices
@@ -99,8 +103,8 @@ public:
 
 protected:
 
-    OsdCudaComputeContext(FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables);
+    explicit OsdCudaComputeContext(FarStencilTables const * vertexStencilTables,
+                                   FarStencilTables const * varyingStencilTables);
 
 private:
 
@@ -108,7 +112,7 @@ private:
 
     CudaStencilTables * _vertexStencilTables,
                       * _varyingStencilTables;
-    
+
     int _numControlVertices;
 };
 

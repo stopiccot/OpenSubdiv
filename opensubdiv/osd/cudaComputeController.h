@@ -56,7 +56,7 @@ public:
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdCpuContext to apply refinement operations to
+    /// @param  context       The OsdCudaContext to apply refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
@@ -92,7 +92,7 @@ public:
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdCpuContext to apply refinement operations to
+    /// @param  context       The OsdCudaContext to apply refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
@@ -107,7 +107,6 @@ public:
         Compute<VERTEX_BUFFER>(context, batches, vertexBuffer, (VERTEX_BUFFER*)0);
     }
 
-
     /// Waits until all running subdivision kernels finish.
     void Synchronize();
 
@@ -117,7 +116,6 @@ protected:
 
     void ApplyStencilTableKernel(FarKernelBatch const &batch,
         ComputeContext const *context) const;
-
 
     template<class VERTEX_BUFFER, class VARYING_BUFFER>
         void bind( VERTEX_BUFFER * vertexBuffer,

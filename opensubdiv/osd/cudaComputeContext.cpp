@@ -61,7 +61,6 @@ class OsdCudaComputeContext::CudaStencilTables {
 public:
 
     CudaStencilTables(FarStencilTables const & stencilTables) {
-
         _sizes = createCudaBuffer(stencilTables.GetSizes());
         _offsets = createCudaBuffer(stencilTables.GetOffsets());
         _indices = createCudaBuffer(stencilTables.GetControlIndices());
@@ -124,7 +123,6 @@ OsdCudaComputeContext::OsdCudaComputeContext(
             _numControlVertices = varyingStencilTables->GetNumControlVertices();
         }
     }
-    
 }
 
 OsdCudaComputeContext::~OsdCudaComputeContext() {
