@@ -38,26 +38,26 @@ extern "C" {
                                 int start, int end);
 
 }
- 
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-void 
+void
 OsdCudaComputeController::ApplyStencilTableKernel(
     FarKernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
-    
+
     if (context->HasVertexStencilTables()) {
-    
+
         int length = _currentBindState.vertexDesc.length,
             stride = _currentBindState.vertexDesc.stride;
-    
+
         float const * src = _currentBindState.GetVertexBufferAtOffset();
-        
+
         float * dst = const_cast<float *>(src) +
             context->GetNumControlVertices() * stride;
-        
+
         OsdCudaComputeStencils(src, dst, length, stride,
                                (unsigned char const *)context->GetVertexStencilTablesSizes(),
                                (int const *)context->GetVertexStencilTablesOffsets(),
@@ -67,6 +67,24 @@ OsdCudaComputeController::ApplyStencilTableKernel(
                                batch.end);
     }
 
+    if (context->HasVaryingStencilTables()) {
+
+        int length = _currentBindState.varyingDesc.length,
+            stride = _currentBindState.varyingDesc.stride;
+
+        float const * src = _currentBindState.GetVaryingBufferAtOffset();
+
+        float * dst = const_cast<float *>(src) +
+            context->GetNumControlVertices() * stride;
+
+        OsdCudaComputeStencils(src, dst, length, stride,
+                               (unsigned char const *)context->GetVaryingStencilTablesSizes(),
+                               (int const *)context->GetVaryingStencilTablesOffsets(),
+                               (int const *)context->GetVaryingStencilTablesIndices(),
+                               (float const *)context->GetVaryingStencilTablesWeights(),
+                               batch.start,
+                               batch.end);
+    }
 }
 
 OsdCudaComputeController::OsdCudaComputeController() {
