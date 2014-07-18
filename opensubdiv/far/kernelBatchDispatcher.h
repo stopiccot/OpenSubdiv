@@ -28,6 +28,9 @@
 #include "../version.h"
 
 #include "../far/kernelBatch.h"
+#include "../far/stencilTables.h"
+
+#include <cassert>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {

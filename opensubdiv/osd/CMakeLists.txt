@@ -207,6 +207,50 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${GL_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+# CUDA code & dependencies
+set(CUDA_PUBLIC_HEADERS
+    cudaComputeContext.h
+    cudaComputeController.h
+    cudaVertexBuffer.h
+)
+
+if( CUDA_FOUND )
+    list(APPEND GPU_SOURCE_FILES
+        cudaComputeController.cpp
+        cudaComputeContext.cpp
+        cudaVertexBuffer.cpp
+    )
+    list(APPEND PUBLIC_HEADER_FILES ${CUDA_PUBLIC_HEADERS})
+    list(APPEND CUDA_KERNEL_FILES
+        osd/cudaKernel.cu
+    )
+    set (CUDA_KERNEL_FILES ${CUDA_KERNEL_FILES} PARENT_SCOPE)
+    if ( OPENGL_FOUND )
+        list(APPEND GPU_SOURCE_FILES
+            cudaGLVertexBuffer.cpp
+        )
+        list(APPEND PUBLIC_HEADER_FILES
+            cudaGLVertexBuffer.h
+        )
+    endif()
+
+    if( DXSDK_FOUND )
+        list(APPEND GPU_SOURCE_FILES
+            cudaD3D11VertexBuffer.cpp
+        )
+        list(APPEND PUBLIC_HEADER_FILES
+            cudaD3D11VertexBuffer.h
+        )
+    endif()
+
+    if (UNIX)
+        list( APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC --gpu-architecture compute_11 )
+    endif()
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${CUDA_PUBLIC_HEADERS})
+
+#-------------------------------------------------------------------------------
 
 _stringify("${KERNEL_FILES}" INC_FILES)
 

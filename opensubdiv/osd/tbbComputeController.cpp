@@ -24,6 +24,7 @@
 
 #include <cassert>
 
+#include "../far/stencilTables.h"
 #include "../osd/cpuComputeContext.h"
 #include "../osd/tbbComputeController.h"
 #include "../osd/tbbKernel.h"

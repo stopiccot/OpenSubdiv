@@ -27,8 +27,6 @@
 
 #include "../version.h"
 
-#include "../far/stencilTables.h"
-#include "../osd/vertexDescriptor.h"
 #include "../osd/nonCopyable.h"
 
 #include <stdlib.h>
@@ -36,8 +34,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-struct OsdVertexDescriptor;
-
+class FarStencilTables;
 
 ///
 /// \brief CPU Compute Context

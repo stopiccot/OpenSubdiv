@@ -22,6 +22,8 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+#include "../far/stencilTables.h"
+
 #include "../osd/cpuComputeContext.h"
 #include "../osd/cpuKernel.h"
 #include "../osd/error.h"
@@ -35,7 +37,8 @@ namespace OPENSUBDIV_VERSION {
 
 OsdCpuComputeContext::OsdCpuComputeContext(
     FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) {
+        FarStencilTables const * varyingStencilTables) :
+            _vertexStencilTables(0), _varyingStencilTables(0) {
 
     // XXXX manuelk we do not own the tables, so use copy-constructor for now
     //              smart pointers eventually
@@ -50,7 +53,11 @@ OsdCpuComputeContext::OsdCpuComputeContext(
 
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext::~OsdCpuComputeContext() { }
+OsdCpuComputeContext::~OsdCpuComputeContext() { 
+
+    delete _vertexStencilTables;
+    delete _varyingStencilTables;
+}
 
 // ----------------------------------------------------------------------------
 
