@@ -585,6 +585,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVaryingElements,
                                                 level, bits, g_clContext, g_clQueue);
 #endif
+*/
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if(kernel == kCUDA) {
         if (not g_cudaComputeController) {
@@ -599,6 +600,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVaryingElements,
                                                 level, bits);
 #endif
+/*
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     } else if(kernel == kGLSL) {
         if (not g_glslTransformFeedbackComputeController) {
