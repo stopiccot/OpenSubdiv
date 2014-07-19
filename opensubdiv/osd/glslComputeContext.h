@@ -27,11 +27,6 @@
 
 #include "../version.h"
 
-#include "../far/subdivisionTables.h"
-#include "../far/vertexEditTables.h"
-#include "../far/vertexEditTables.h"
-#include "../osd/vertex.h"
-#include "../osd/vertexDescriptor.h"
 #include "../osd/nonCopyable.h"
 
 #include "../osd/opengl.h"
@@ -41,61 +36,15 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class OsdGLSLComputeKernelBundle;
-
-
-class OsdGLSLComputeTable : OsdNonCopyable<OsdGLSLComputeTable> {
-public:
-    template<typename T>
-    explicit OsdGLSLComputeTable(const std::vector<T> &table) {
-        createBuffer(table.size() * sizeof(unsigned int), table.empty() ? NULL : &table[0]);
-    }
-
-    virtual ~OsdGLSLComputeTable();
-
-    GLuint GetBuffer() const;
-
-private:
-    void createBuffer(size_t size, const void *ptr);
-
-    GLuint _devicePtr;
-};
-
-
-class OsdGLSLComputeHEditTable : OsdNonCopyable<OsdGLSLComputeHEditTable> {
-public:
-    OsdGLSLComputeHEditTable(const FarVertexEditTables::
-                      VertexEditBatch &batch);
-
-    virtual ~OsdGLSLComputeHEditTable();
-
-    const OsdGLSLComputeTable * GetPrimvarIndices() const;
-
-    const OsdGLSLComputeTable * GetEditValues() const;
-
-    int GetOperation() const;
-
-    int GetPrimvarOffset() const;
-
-    int GetPrimvarWidth() const;
-
-private:
-    OsdGLSLComputeTable *_primvarIndicesTable;
-    OsdGLSLComputeTable *_editValuesTable;
-
-    int _operation;
-    int _primvarOffset;
-    int _primvarWidth;
-};
-
+class FarStencilTables;
 
 ///
 /// \brief GLSL-Compute Refine Context
 ///
-/// The GLSL-Compute implementation of the Refine module contextual functionality. 
+/// The GLSL-Compute implementation of the Refine module contextual functionality.
 ///
-/// Contexts interface the serialized topological data pertaining to the 
-/// geometric primitives with the capabilities of the selected discrete 
+/// Contexts interface the serialized topological data pertaining to the
+/// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
 class OsdGLSLComputeContext {
@@ -103,46 +52,57 @@ class OsdGLSLComputeContext {
 public:
     /// Creates an OsdGLSLComputeContext instance
     ///
-    /// @param subdivisionTables the FarSubdivisionTables used for this Context.
+    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    ///                              interpolation
     ///
-    /// @param vertexEditTables the FarVertexEditTables used for this Context.
+    /// @param varyingStencilTables  The FarStencilTables used for varying
+    ///                              interpolation
     ///
-    static OsdGLSLComputeContext * Create(FarSubdivisionTables const *subdivisionTables,
-                                          FarVertexEditTables const *vertexEditTables);
+    static OsdGLSLComputeContext * Create(FarStencilTables const * vertexStencilTables,
+                                          FarStencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdGLSLComputeContext();
 
-    /// Returns one of the vertex refinement tables.
-    ///
-    /// @param tableIndex the type of table
-    ///
-    const OsdGLSLComputeTable * GetTable(int tableIndex) const;
+    /// Returns true if the Context has a 'vertex' interpolation stencil table
+    bool HasVertexStencilTables() const;
 
-    /// Returns the number of hierarchical edit tables
-    int GetNumEditTables() const;
+    /// Returns true if the Context has a 'varying' interpolation stencil table
+    bool HasVaryingStencilTables() const;
 
-    /// Returns a specific hierarchical edit table
-    ///
-    /// @param tableIndex the index of the table
-    ///
-    const OsdGLSLComputeHEditTable * GetEditTable(int tableIndex) const;
+    /// Returns the number of control vertices
+    int GetNumControlVertices() const {
+        return _numControlVertices;
+    }
 
-    void BindShaderStorageBuffers() const;
+    /// Returns the Cuda buffer containing vertex-stencil stencil sizes
+    GLuint GetVertexStencilTablesSizes() const;
 
-    void UnbindShaderStorageBuffers() const;
+    /// Returns the Cuda buffer containing vertex-stencil stencil offsets
+    GLuint GetVertexStencilTablesOffsets() const;
 
-    void BindEditShaderStorageBuffers(int editIndex) const;
+    /// Binds GL buffers containing stencils for 'vertex' interpolation
+    void BindVertexStencilTables() const;
 
-    void UnbindEditShaderStorageBuffers() const;
+    /// Binds GL buffers containing stencils for 'varying' interpolation
+    void BindVaryingStencilTables() const;
+
+    /// Unbinds GL stencil buffers
+    void UnbindVertexStencilTables() const;
 
 protected:
-    explicit OsdGLSLComputeContext(FarSubdivisionTables const *subdivisionTables,
-                                   FarVertexEditTables const *vertexEditTables);
+
+    explicit OsdGLSLComputeContext(FarStencilTables const * vertexStencilTables,
+                                   FarStencilTables const * varyingStencilTables);
 
 private:
-    std::vector<OsdGLSLComputeTable*> _tables;
-    std::vector<OsdGLSLComputeHEditTable*> _editTables;
+
+    class GLSLStencilTables;
+
+    GLSLStencilTables * _vertexStencilTables,
+                      * _varyingStencilTables;
+
+    int _numControlVertices;
 };
 
 }  // end namespace OPENSUBDIV_VERSION

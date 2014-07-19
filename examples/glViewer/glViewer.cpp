@@ -103,6 +103,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
     #include <osd/glVertexBuffer.h>
     OpenSubdiv::OsdGLSLTransformFeedbackComputeController *g_glslTransformFeedbackComputeController = NULL;
 #endif
+*/
 
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     #include <osd/glslComputeContext.h>
@@ -110,7 +111,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
     #include <osd/glVertexBuffer.h>
     OpenSubdiv::OsdGLSLComputeController *g_glslComputeController = NULL;
 #endif
-*/
+
 #include <osd/glMesh.h>
 OpenSubdiv::OsdGLMeshInterface *g_mesh;
 
@@ -594,11 +595,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
         g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCudaGLVertexBuffer,
                                          OpenSubdiv::OsdCudaComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
-                                                g_cudaComputeController,
-                                                refTables,
-                                                numVertexElements,
-                                                numVaryingElements,
-                                                level, bits);
+                                         g_cudaComputeController,
+                                         refTables,
+                                         numVertexElements,
+                                         numVaryingElements,
+                                         level, bits);
 #endif
 /*
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
@@ -615,6 +616,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVaryingElements,
                                                 level, bits);
 #endif
+*/
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     } else if(kernel == kGLSLCompute) {
         if (not g_glslComputeController) {
@@ -623,13 +625,12 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
         g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdGLVertexBuffer,
                                          OpenSubdiv::OsdGLSLComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
-                                                g_glslComputeController,
-                                                refTables,
-                                                numVertexElements,
-                                                numVaryingElements,
-                                                level, bits);
+                                         g_glslComputeController,
+                                         refTables,
+                                         numVertexElements,
+                                         numVaryingElements,
+                                         level, bits);
 #endif
-*/
     } else {
         printf("Unsupported kernel %s\n", getKernelName(kernel));
     }
@@ -1390,11 +1391,11 @@ uninitGL() {
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     delete g_glslTransformFeedbackComputeController;
 #endif
+*/
 
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     delete g_glslComputeController;
 #endif
-*/
 }
 
 //------------------------------------------------------------------------------

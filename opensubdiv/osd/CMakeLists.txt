@@ -207,6 +207,30 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${GL_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+# OpenGL 4.3 dependencies
+# note : (GLSL compute shader kernels require GL 4.3)
+set(GL_4_3_PUBLIC_HEADERS
+        glslComputeContext.h
+        glslComputeController.h
+)
+
+if( OPENGL_4_3_FOUND )
+    list(APPEND GPU_SOURCE_FILES
+        glslComputeContext.cpp
+        glslComputeController.cpp
+    )
+    list(APPEND PUBLIC_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
+    list(APPEND KERNEL_FILES
+        glslComputeKernel.glsl
+    )
+    list(APPEND PLATFORM_GPU_LIBRARIES
+        ${GLEW_LIBRARY}
+    )
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
+
+#-------------------------------------------------------------------------------
 # CUDA code & dependencies
 set(CUDA_PUBLIC_HEADERS
     cudaComputeContext.h
