@@ -96,14 +96,13 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
     bool g_cudaInitialized = false;
     OpenSubdiv::OsdCudaComputeController *g_cudaComputeController = NULL;
 #endif
-/*
+
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     #include <osd/glslTransformFeedbackComputeContext.h>
     #include <osd/glslTransformFeedbackComputeController.h>
     #include <osd/glVertexBuffer.h>
     OpenSubdiv::OsdGLSLTransformFeedbackComputeController *g_glslTransformFeedbackComputeController = NULL;
 #endif
-*/
 
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     #include <osd/glslComputeContext.h>
@@ -599,7 +598,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          numVaryingElements,
                                          level, bits);
 #endif
-/*
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     } else if(kernel == kGLSL) {
         if (not g_glslTransformFeedbackComputeController) {
@@ -614,7 +612,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVaryingElements,
                                                 level, bits);
 #endif
-*/
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     } else if(kernel == kGLSLCompute) {
         if (not g_glslComputeController) {
@@ -1383,13 +1380,9 @@ uninitGL() {
     delete g_cudaComputeController;
     cudaDeviceReset();
 #endif
-
-/*
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     delete g_glslTransformFeedbackComputeController;
 #endif
-*/
-
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     delete g_glslComputeController;
 #endif

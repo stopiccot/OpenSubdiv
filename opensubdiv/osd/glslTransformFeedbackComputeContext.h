@@ -27,12 +27,7 @@
 
 #include "../version.h"
 
-#include "../far/subdivisionTables.h"
-#include "../far/vertexEditTables.h"
-#include "../osd/vertex.h"
-#include "../osd/vertexDescriptor.h"
 #include "../osd/nonCopyable.h"
-
 #include "../osd/opengl.h"
 
 #include <vector>
@@ -40,111 +35,83 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class OsdGLSLTransformFeedbackKernelBundle;
-
-class OsdGLSLTransformFeedbackTable : OsdNonCopyable<OsdGLSLTransformFeedbackTable> {
-public:
-    template<typename T>
-    OsdGLSLTransformFeedbackTable(const std::vector<T> &table, GLenum type) {
-        createTextureBuffer(table.size() * sizeof(unsigned int), table.empty() ? NULL : &table[0], type);
-    }
-
-    virtual ~OsdGLSLTransformFeedbackTable();
-
-    GLuint GetTexture() const;
-
-private:
-    void createTextureBuffer(size_t size, const void *ptr, GLenum type);
-
-    GLuint _texture;
-};
-
-class OsdGLSLTransformFeedbackHEditTable : OsdNonCopyable<OsdGLSLTransformFeedbackHEditTable> {
-public:
-    OsdGLSLTransformFeedbackHEditTable(
-        const FarVertexEditTables::VertexEditBatch &batch);
-
-    virtual ~OsdGLSLTransformFeedbackHEditTable();
-
-    const OsdGLSLTransformFeedbackTable * GetPrimvarIndices() const;
-
-    const OsdGLSLTransformFeedbackTable * GetEditValues() const;
-
-    int GetOperation() const;
-
-    int GetPrimvarOffset() const;
-
-    int GetPrimvarWidth() const;
-
-private:
-    OsdGLSLTransformFeedbackTable *_primvarIndicesTable;
-    OsdGLSLTransformFeedbackTable *_editValuesTable;
-
-    int _operation;
-    int _primvarOffset;
-    int _primvarWidth;
-};
+class FarStencilTables;
 
 ///
-/// \brief GLSL (transform-feedback) Refine Context
+/// \brief GLSL-Compute(transform-feedback) Refine Context
 ///
-/// The GLSL (transform-feedback) implementation of the Refine module contextual functionality. 
+/// The GLSL (transform-feedback) implementation of the Refine module contextual functionality.
 ///
-/// Contexts interface the serialized topological data pertaining to the 
-/// geometric primitives with the capabilities of the selected discrete 
+/// Contexts interface the serialized topological data pertaining to the
+/// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
 class OsdGLSLTransformFeedbackComputeContext {
 public:
     /// Creates an OsdGLSLTransformFeedbackComputeContext instance
     ///
-    /// @param subdivisionTables the FarSubdivisionTables used for this Context.
+    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    ///                              interpolation
     ///
-    /// @param vertexEditTables the FarVertexEditTables used for this Context.
+    /// @param varyingStencilTables  The FarStencilTables used for varying
+    ///                              interpolation
     ///
-    static OsdGLSLTransformFeedbackComputeContext * Create(FarSubdivisionTables const *subdivisionTables,
-                                                           FarVertexEditTables const *vertexEditTables);
+    static OsdGLSLTransformFeedbackComputeContext * Create(FarStencilTables const * vertexStencilTables,
+                                                           FarStencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdGLSLTransformFeedbackComputeContext();
 
-    /// Returns one of the vertex refinement tables.
-    ///
-    /// @param tableIndex the type of table
-    ///
-    const OsdGLSLTransformFeedbackTable * GetTable(int tableIndex) const;
+    /// Returns true if the Context has a 'vertex' interpolation stencil table
+    bool HasVertexStencilTables() const;
 
-    /// Returns the number of hierarchical edit tables
-    int GetNumEditTables() const;
+    /// Returns true if the Context has a 'varying' interpolation stencil table
+    bool HasVaryingStencilTables() const;
 
-    /// Returns a specific hierarchical edit table
-    ///
-    /// @param tableIndex the index of the table
-    ///
-    const OsdGLSLTransformFeedbackHEditTable * GetEditTable(int tableIndex) const;
+    /// Returns the number of control vertices
+    int GetNumControlVertices() const {
+        return _numControlVertices;
+    }
 
-    void BindTableTextures(
-        OsdGLSLTransformFeedbackKernelBundle const *kernelBundle) const;
+    /// Returns the GL texture buffer containing vertex-stencil stencil sizes
+    GLuint GetVertexStencilTablesSizes() const;
 
-    void UnbindTableTextures() const;
+    /// Returns the GL texture buffer containing vertex-stencil stencil offsets
+    GLuint GetVertexStencilTablesOffsets() const;
 
-    void BindEditTextures(
-        int editIndex,
-        OsdGLSLTransformFeedbackKernelBundle const *kernelBundle) const;
+    /// Returns the GL texture buffer containing vertex-stencil stencil indices
+    GLuint GetVertexStencilTablesIndices() const;
 
-    void UnbindEditTextures() const;
+    /// Returns the GL texture buffer containing vertex-stencil stencil weights
+    GLuint GetVertexStencilTablesWeights() const;
+
+
+    /// Returns the GL texture buffer containing Varying-stencil stencil sizes
+    GLuint GetVaryingStencilTablesSizes() const;
+
+    /// Returns the GL texture buffer containing Varying-stencil stencil offsets
+    GLuint GetVaryingStencilTablesOffsets() const;
+
+    /// Returns the GL texture buffer containing Varying-stencil stencil indices
+    GLuint GetVaryingStencilTablesIndices() const;
+
+    /// Returns the GL texture buffer containing Varying-stencil stencil weights
+    GLuint GetVaryingStencilTablesWeights() const;
+
 
 protected:
-    explicit OsdGLSLTransformFeedbackComputeContext(FarSubdivisionTables const *subdivisionTables,
-                                                    FarVertexEditTables const *vertexEditTabes);
 
-    void bindTexture(GLint samplerUniform, GLuint texture, int unit) const;
-
-    void unbindTexture(GLuint unit) const;
+    explicit OsdGLSLTransformFeedbackComputeContext(FarStencilTables const * vertexStencilTables,
+                                                    FarStencilTables const * varyingStencilTables);
 
 private:
-    std::vector<OsdGLSLTransformFeedbackTable*> _tables;
-    std::vector<OsdGLSLTransformFeedbackHEditTable*> _editTables;
+
+    class GLStencilTables;
+
+    GLStencilTables * _vertexStencilTables,
+                      * _varyingStencilTables;
+
+    int _numControlVertices;
 };
 
 }  // end namespace OPENSUBDIV_VERSION

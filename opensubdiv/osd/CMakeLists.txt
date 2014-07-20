@@ -207,6 +207,31 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${GL_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+# OpenGL 4.2 dependencies
+# note : (GLSL transform feedback kernels require GL 4.2)
+set(GL_4_2_PUBLIC_HEADERS
+    glslTransformFeedbackComputeContext.h
+    glslTransformFeedbackComputeController.h
+)
+
+if( OPENGL_4_2_FOUND )
+    list(APPEND GPU_SOURCE_FILES
+        glslTransformFeedbackComputeContext.cpp
+        glslTransformFeedbackComputeController.cpp
+    )
+    list(APPEND PUBLIC_HEADER_FILES ${GL_4_2_PUBLIC_HEADERS})
+    list(APPEND KERNEL_FILES
+        glslTransformFeedbackKernel.glsl
+    )
+    list(APPEND PLATFORM_GPU_LIBRARIES
+        ${GLEW_LIBRARY}
+    )
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${GL_4_2_PUBLIC_HEADERS})
+
+
+#-------------------------------------------------------------------------------
 # OpenGL 4.3 dependencies
 # note : (GLSL compute shader kernels require GL 4.3)
 set(GL_4_3_PUBLIC_HEADERS
