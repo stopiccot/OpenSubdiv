@@ -184,6 +184,7 @@ private:
         void Reset() {
             buffer = 0;
             desc.Reset();
+            kernelBundle = 0;
         }
 
         GLuint buffer;

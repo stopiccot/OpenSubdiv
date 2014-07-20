@@ -57,7 +57,7 @@ void clear(out Vertex v) {
 
 Vertex readVertex(int index) {
     Vertex v;
-    int vertexIndex = primvarOffset + primvarOffset + index * STRIDE;
+    int vertexIndex = primvarOffset + index * STRIDE;
     for (int i = 0; i < LENGTH; ++i) {
         v.vertexData[i] = vertexBuffer[vertexIndex + i];
     }
@@ -65,7 +65,7 @@ Vertex readVertex(int index) {
 }
 
 void writeVertex(int index, Vertex v) {
-    int vertexIndex = primvarOffset + primvarOffset + index * STRIDE;
+    int vertexIndex = primvarOffset + index * STRIDE;
     for (int i = 0; i < LENGTH; ++i) {
         vertexBuffer[vertexIndex + i] = v.vertexData[i];
     }

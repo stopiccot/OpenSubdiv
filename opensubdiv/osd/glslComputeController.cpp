@@ -24,7 +24,6 @@
 
 #include "../osd/glslComputeController.h"
 #include "../osd/vertexDescriptor.h"
-
 //#include "../osd/debug.h"
 #include "../osd/error.h"
 #include "../osd/opengl.h"

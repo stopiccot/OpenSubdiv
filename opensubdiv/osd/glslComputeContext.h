@@ -28,7 +28,6 @@
 #include "../version.h"
 
 #include "../osd/nonCopyable.h"
-
 #include "../osd/opengl.h"
 
 #include <vector>
