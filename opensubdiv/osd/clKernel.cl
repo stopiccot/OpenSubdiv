@@ -23,15 +23,15 @@
 //
 
 struct Vertex {
-    float v[STRIDE];
+    float v[LENGTH];
 };
 
 static void clear(struct Vertex *vertex) {
-
     for (int i = 0; i < LENGTH; i++) {
-        vertex->v[i] = 0;
+        vertex->v[i] = 0.0f;
     }
 }
+
 static void addWithWeight(struct Vertex *dst,
                           __global float *srcOrigin,
                           int index, float weight) {
@@ -54,8 +54,8 @@ static void writeVertex(__global float *dstOrigin,
 
 
 __kernel void computeStencils( __global float * vertexBuffer,
-                               __global unsigned char * offsets,
-                               __global int * sizes,
+                               __global unsigned char * sizes,
+                               __global int * offsets,
                                __global int * indices,
                                __global float * weights,
                                int batchStart,
@@ -63,7 +63,7 @@ __kernel void computeStencils( __global float * vertexBuffer,
                                int primvarOffset,
                                int numCVs ) {
 
-    int current = (int)get_global_id(0) + batchStart;
+    int current = get_global_id(0) + batchStart;
 
     struct Vertex dst;
     clear(&dst);

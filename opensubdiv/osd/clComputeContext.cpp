@@ -63,7 +63,7 @@ public:
 
     ~CLStencilTables() {
         if (_sizes) clReleaseMemObject(_sizes);
-        if (_offsets) clReleaseMemObject(_sizes);
+        if (_offsets) clReleaseMemObject(_offsets);
         if (_indices) clReleaseMemObject(_indices);
         if (_weights) clReleaseMemObject(_weights);
     }
@@ -201,4 +201,3 @@ OsdCLComputeContext::Create(cl_context clContext,
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv
-
