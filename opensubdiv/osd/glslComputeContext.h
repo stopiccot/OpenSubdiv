@@ -87,7 +87,7 @@ public:
     void BindVaryingStencilTables() const;
 
     /// Unbinds GL stencil buffers
-    void UnbindVertexStencilTables() const;
+    void UnbindStencilTables() const;
 
 protected:
 

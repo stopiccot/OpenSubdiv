@@ -102,7 +102,7 @@ public:
             FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
 
-        context->UnbindVertexStencilTables();
+        context->UnbindStencilTables();
 
         unbind();
     }

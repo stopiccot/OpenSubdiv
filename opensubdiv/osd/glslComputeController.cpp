@@ -69,7 +69,7 @@ public:
         glUseProgram(_program);
         glUniform1i(_uniformOffset, primvarOffset);
 
-        //OSD_DEBUG_CHECK_GL_ERROR("Compile");
+        //OSD_DEBUG_CHECK_GL_ERROR("UseProgram");
     }
 
     bool Compile(OsdVertexBufferDescriptor const & desc) {

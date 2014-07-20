@@ -182,7 +182,7 @@ OsdGLSLComputeContext::BindVaryingStencilTables() const {
 }
 
 void
-OsdGLSLComputeContext::UnbindVertexStencilTables() const {
+OsdGLSLComputeContext::UnbindStencilTables() const {
     GLSLStencilTables::Unbind();
 }
 
