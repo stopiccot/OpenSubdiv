@@ -26,8 +26,7 @@
 
 #include "../osd/error.h"
 #include "../osd/clComputeContext.h"
-#include "../osd/clKernelBundle.h"
-#include <cstdio>
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
