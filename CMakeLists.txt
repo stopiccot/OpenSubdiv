@@ -300,9 +300,8 @@ if(NOT NO_OPENCL)
     if(NOT NO_CLEW)
         find_package(CLEW)
     endif()
-    if(NOT CLEW_FOUND)
-        find_package(OpenCL 1.1)
-    else()
+    find_package(OpenCL 1.1)
+    if(CLEW_FOUND OR CL_FOUND)
         set(OPENCL_FOUND TRUE)
     endif()
 endif()
@@ -431,9 +430,9 @@ if(OPENCL_FOUND)
     else()
         if (NOT NO_CLEW)
             message(WARNING
-                "OpenCL was not found, but CLEW was not. "
-                "Building with OpenCL support enabled, but the build "
-                "wouldn't be portable on systems without OpenCL installed.")
+                "OpenCL was found, but CLEW was not. "
+                "Building with OpenCL support enabled, but the built binary "
+                "will not be portable to systems without OpenCL installed.")
         endif()
     endif()
 else()

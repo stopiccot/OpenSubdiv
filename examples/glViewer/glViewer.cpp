@@ -571,7 +571,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVaryingElements,
                                                 level, bits);
 #endif
-/*
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if(kernel == kCL) {
         if (not g_clComputeController) {
@@ -581,12 +580,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdCLComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_clComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_clContext, g_clQueue);
 #endif
-*/
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if(kernel == kCUDA) {
         if (not g_cudaComputeController) {
@@ -1377,17 +1375,16 @@ uninitGL() {
 #ifdef OPENSUBDIV_HAS_GCD
     delete g_gcdComputeController;
 #endif
-/*
 #ifdef OPENSUBDIV_HAS_OPENCL
     delete g_clComputeController;
     uninitCL(g_clContext, g_clQueue);
 #endif
-
 #ifdef OPENSUBDIV_HAS_CUDA
     delete g_cudaComputeController;
     cudaDeviceReset();
 #endif
 
+/*
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     delete g_glslTransformFeedbackComputeController;
 #endif

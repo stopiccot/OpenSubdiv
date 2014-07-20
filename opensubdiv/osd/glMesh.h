@@ -257,6 +257,8 @@ public:
     {
         assert(_refTables);
 
+        OsdGLMeshInterface::refineMesh(*_refTables, level, bits.test(MeshAdaptive));
+
         initializeVertexBuffers(numVertexElements, numVaryingElements);
 
         initializeComputeContext(numVertexElements, numVaryingElements);
@@ -293,7 +295,7 @@ public:
         delete _drawContext;
     }
 
-    virtual int GetNumVertices() const { return _farMesh->GetNumVertices(); }
+    virtual int GetNumVertices() const { return _refTables->GetNumVerticesTotal(); }
 
     virtual void UpdateVertexBuffer(float const *vertexData, int startVertex, int numVerts) {
         _vertexBuffer->UpdateData(vertexData, startVertex, numVerts, _clQueue);
@@ -311,9 +313,9 @@ public:
                         OsdVertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
         assert(0);
-        _computeController->Refine(_computeContext, _farMesh->GetKernelBatches(),
-                                   _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
-                                   vertexDesc, varyingDesc);
+        _computeController->Compute(_computeContext, _kernelBatches,
+                                    _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
+                                    vertexDesc, varyingDesc);
     }
 
     virtual void Synchronize() {
@@ -371,7 +373,7 @@ private:
             varyingStencils = FarStencilTablesFactory::Create(*_refTables, options);
         }
 
-        _computeContext = ComputeContext::Create(vertexStencils, varyingStencils);
+        _computeContext = ComputeContext::Create(_clContext, vertexStencils, varyingStencils);
 
         delete vertexStencils;
         delete varyingStencils;
@@ -398,10 +400,10 @@ private:
         int numVertices = OsdGLMeshInterface::getNumVertices(*_refTables);
 
         if (numVertexElements)
-            _vertexBuffer = VertexBuffer::Create(numVertexElements, numVertices);
+            _vertexBuffer = VertexBuffer::Create(numVertexElements, numVertices, _clContext);
 
         if (numVaryingElements)
-            _varyingBuffer = VertexBuffer::Create(numVaryingElements, numVertices);
+            _varyingBuffer = VertexBuffer::Create(numVaryingElements, numVertices, _clContext);
    }
 
     FarRefineTables * _refTables;

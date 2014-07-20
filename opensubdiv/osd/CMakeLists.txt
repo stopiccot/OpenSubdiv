@@ -231,6 +231,47 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+# OpenCL code & dependencies
+set(OPENCL_PUBLIC_HEADERS
+    clComputeContext.h
+    clComputeController.h
+    clVertexBuffer.h
+    opencl.h
+)
+
+if ( OPENCL_FOUND )
+    list(APPEND GPU_SOURCE_FILES
+        clComputeContext.cpp
+        clComputeController.cpp
+        clVertexBuffer.cpp
+    )
+    list(APPEND PUBLIC_HEADER_FILES ${OPENCL_PUBLIC_HEADERS})
+    list(APPEND KERNEL_FILES
+        clKernel.cl
+    )
+    list(APPEND PLATFORM_GPU_LIBRARIES
+        ${OPENCL_LIBRARIES}
+    )
+    include_directories( "${OPENCL_INCLUDE_DIRS}" )
+    if ( OPENGL_FOUND )
+        list(APPEND GPU_SOURCE_FILES clGLVertexBuffer.cpp)
+        list(APPEND PUBLIC_HEADER_FILES clGLVertexBuffer.h)
+    endif()
+
+    # OpenCL D3D11 interop needs work...
+    #if ( DXSDK_FOUND )
+    #    list(APPEND GPU_SOURCE_FILES
+    #         clD3D11VertexBuffer.cpp
+    #    )
+    #    list(APPEND PUBLIC_HEADER_FILES
+    #         clD3D11VertexBuffer.h)
+    #    )
+    #endif()
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${OPENCL_PUBLIC_HEADERS})
+
+#-------------------------------------------------------------------------------
 # CUDA code & dependencies
 set(CUDA_PUBLIC_HEADERS
     cudaComputeContext.h
