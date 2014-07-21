@@ -92,16 +92,16 @@ public:
 
         if (vertexBuffer) {
 
-            bind(vertexBuffer, vertexDesc);
-            
+            bind(vertexBuffer, vertexDesc, _vertexTexture);
+
             bindContextStencilTables(context, false);
 
             FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
-        
+
         if (varyingBuffer) {
 
-            bind(varyingBuffer, varyingDesc);
+            bind(varyingBuffer, varyingDesc, _varyingTexture);
 
             bindContextStencilTables(context, true);
 
@@ -139,8 +139,8 @@ protected:
         ComputeContext const *context) const;
 
     template<class BUFFER>
-        void bind( BUFFER * buffer,
-                   OsdVertexBufferDescriptor const * desc ) {
+        void bind( BUFFER * buffer, OsdVertexBufferDescriptor const * desc,
+            GLuint feedbackTexture ) {
 
         assert(buffer);
 
@@ -155,10 +155,10 @@ protected:
         }
 
         _currentBindState.buffer = buffer->BindVBO();
-        
-        _currentBindState.kernelBundle = getKernel(_currentBindState.desc);        
 
-        bindBufferAndProgram();
+        _currentBindState.kernelBundle = getKernel(_currentBindState.desc);
+
+        bindBufferAndProgram(feedbackTexture);
     }
 
     // Unbinds any previously bound vertex and varying data buffers.
@@ -168,12 +168,12 @@ protected:
     }
 
     // binds the primvar data buffer and compute program
-    void bindBufferAndProgram();
-    
+    void bindBufferAndProgram(GLuint & texture);
+
     // binds the stencil tables for 'vertex' interpolation
     void bindContextStencilTables(ComputeContext const *context, bool varying=false);
 
-    // unbinds the primvar data buffer and compute program    
+    // unbinds the primvar data buffer and compute program
     void unbindResources();
 
 private:
@@ -191,7 +191,7 @@ private:
             desc.Reset();
             kernelBundle = 0;
         }
-        
+
         GLuint buffer;
 
         OsdVertexBufferDescriptor desc;
@@ -207,7 +207,8 @@ private:
 
     KernelRegistry _kernelRegistry;
 
-    GLuint _texture,
+    GLuint _vertexTexture,
+           _varyingTexture,
            _vao;
 };
 

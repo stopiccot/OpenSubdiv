@@ -22,8 +22,9 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#include "../osd/debug.h"
 #include "../osd/error.h"
+//#define OSD_DEBUG_BUILD
+#include "../osd/debug.h"
 #include "../osd/glslTransformFeedbackComputeController.h"
 #include "../osd/glslTransformFeedbackComputeContext.h"
 #include "../osd/opengl.h"
@@ -91,8 +92,6 @@ public:
     void UseProgram(int primvarOffset) const {
         glUseProgram(_program);
         glUniform1i(_uniformOffset, primvarOffset);
-
-        //OSD_DEBUG_CHECK_GL_ERROR("UseProgram");
     }
 
     bool Compile(OsdVertexBufferDescriptor const & desc) {
@@ -121,7 +120,6 @@ public:
         glCompileShader(shader);
         glAttachShader(_program, shader);
 
-
         std::vector<std::string> outputs;
         std::vector<const char *> pOutputs;
         {
@@ -139,7 +137,7 @@ public:
                 outputs.push_back("gl_SkipComponents1");
             }
             for (int i = 0; i < _desc.length; ++i) {
-                snprintf(attrName, 32, "outVertexData[%d]", i);
+                snprintf(attrName, 32, "outVertexBuffer[%d]", i);
                 outputs.push_back(attrName);
             }
             for (int i = _desc.offset + _desc.length; i < _desc.stride; ++i) {
@@ -154,8 +152,6 @@ public:
 
         glTransformFeedbackVaryings(_program, (GLsizei)outputs.size(),
                                     &pOutputs[0], GL_INTERLEAVED_ATTRIBS);
-
-        OSD_DEBUG_CHECK_GL_ERROR("Transform feedback initialize\n");
 
         GLint linked = 0;
         glLinkProgram(_program);
@@ -176,20 +172,23 @@ public:
 
         glDeleteShader(shader);
 
-        _subStencilKernel = glGetSubroutineIndex(_program, GL_VERTEX_SHADER, "computeStencil");;
+        _subStencilKernel = glGetSubroutineIndex(
+            _program, GL_VERTEX_SHADER, "computeStencil");
 
         // set uniform locations for compute kernels
-        _primvarBuffer  = glGetUniformLocation(_program, "primvarBuffer");
+        _primvarBuffer  = glGetUniformLocation(_program, "vertexBuffer");
 
-        _uniformSizes   = glGetUniformLocation(_program, "sterncilSizes");
-        _uniformOffsets = glGetUniformLocation(_program, "sterncilOffsets");
-        _uniformIndices = glGetUniformLocation(_program, "sterncilIndices");
-        _uniformWeights = glGetUniformLocation(_program, "sterncilIWeights");
+        _uniformSizes   = glGetUniformLocation(_program, "sizes");
+        _uniformOffsets = glGetUniformLocation(_program, "offsets");
+        _uniformIndices = glGetUniformLocation(_program, "indices");
+        _uniformWeights = glGetUniformLocation(_program, "weights");
 
         _uniformStart   = glGetUniformLocation(_program, "batchStart");
         _uniformEnd     = glGetUniformLocation(_program, "batchEnd");
 
         _uniformOffset  = glGetUniformLocation(_program, "primvarOffset");
+
+        OSD_DEBUG_CHECK_GL_ERROR("KernelBundle::Compile");
 
         return true;
     }
@@ -197,7 +196,7 @@ public:
     GLint GetPrimvarBufferLocation() const {
         return _primvarBuffer;
     }
-    
+
     GLint GetSizesLocation() const {
         return _uniformSizes;
     }
@@ -212,33 +211,40 @@ public:
         return _uniformWeights;
     }
 
-    void TransformPrimvarBuffer(int offset, int numCVs, int start, int end) const {
+    void TransformPrimvarBuffer(GLuint primvarBuffer,
+        int offset, int numCVs, int start, int end) const {
 
         assert(end >= start);
-        
+
         // set batch range
         glUniform1i(_uniformStart,  start);
         glUniform1i(_uniformEnd,    end);
         glUniform1i(_uniformOffset, offset);
 
-        int count = end - start;
-        if (not count) {
-            return;
-        }
+        int count = end - start,
+            stride = _desc.stride*sizeof(float);
 
-        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, _primvarBuffer,
-            (start + numCVs)*_desc.stride*sizeof(float), count*_desc.stride);
+        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
+            0, primvarBuffer, (start + numCVs)*stride, count*stride);
+
+        glBeginTransformFeedback(GL_POINTS);
 
         glDrawArrays(GL_POINTS, 0, count);
 
         glEndTransformFeedback();
+
         glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
+
+        //OSD_DEBUG_CHECK_GL_ERROR("TransformPrimvarBuffer\n");
     }
 
-    void ApplyStencilTableKernel(FarKernelBatch const &batch, int offset, int numCVs) const {
+    void ApplyStencilTableKernel(FarKernelBatch const &batch,
+        GLuint primvarBuffer, int offset, int numCVs) const {
 
         glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &_subStencilKernel);
-        TransformPrimvarBuffer(offset, numCVs, batch.start, batch.end);
+
+        TransformPrimvarBuffer(primvarBuffer,
+            offset, numCVs, batch.start, batch.end);
     }
 
     struct Match {
@@ -276,27 +282,30 @@ private:
 
 // ----------------------------------------------------------------------------
 void
-OsdGLSLTransformFeedbackComputeController::bindBufferAndProgram() {
+OsdGLSLTransformFeedbackComputeController::bindBufferAndProgram(
+    GLuint & feedbackTexture) {
 
     glEnable(GL_RASTERIZER_DISCARD);
     _currentBindState.kernelBundle->UseProgram(/*primvarOffset*/0);
 
-    if (not _texture) {
-        glGenTextures(1, &_texture);
+    if (not feedbackTexture) {
+        glGenTextures(1, &feedbackTexture);
 #if defined(GL_EXT_direct_state_access)
         if (glTextureBufferEXT) {
-            glTextureBufferEXT(_texture, GL_TEXTURE_BUFFER, GL_R32F, _currentBindState.buffer);
+            glTextureBufferEXT(feedbackTexture, GL_TEXTURE_BUFFER, GL_R32F,
+                _currentBindState.buffer);
         } else {
 #else
         {
 #endif
-            glBindTexture(GL_TEXTURE_BUFFER, _texture);
+            glBindTexture(GL_TEXTURE_BUFFER, feedbackTexture);
             glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, _currentBindState.buffer);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
         }
     }
 
-    bindTexture(_currentBindState.kernelBundle->GetPrimvarBufferLocation(), _texture, 0);
+    bindTexture(
+        _currentBindState.kernelBundle->GetPrimvarBufferLocation(), feedbackTexture, 0);
 
     // bind vertex array
     // always create new one, to be safe with multiple contexts.
@@ -334,8 +343,6 @@ void
 OsdGLSLTransformFeedbackComputeController::unbindResources() {
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_BUFFER, 0);
-    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 
     glDisable(GL_RASTERIZER_DISCARD);
@@ -376,14 +383,15 @@ OsdGLSLTransformFeedbackComputeController::ApplyStencilTableKernel(
     assert(context);
 
     _currentBindState.kernelBundle->ApplyStencilTableKernel(batch,
-        _currentBindState.desc.offset, context->GetNumControlVertices());
+        _currentBindState.buffer, _currentBindState.desc.offset,
+            context->GetNumControlVertices());
 }
 
 
 // ----------------------------------------------------------------------------
 
 OsdGLSLTransformFeedbackComputeController::OsdGLSLTransformFeedbackComputeController() :
-    _texture(0), _vao(0) {
+    _vertexTexture(0), _varyingTexture(0), _vao(0) {
 }
 
 OsdGLSLTransformFeedbackComputeController::~OsdGLSLTransformFeedbackComputeController() {
@@ -392,8 +400,11 @@ OsdGLSLTransformFeedbackComputeController::~OsdGLSLTransformFeedbackComputeContr
         it != _kernelRegistry.end(); ++it) {
         delete *it;
     }
-    if (_texture) {
-        glDeleteTextures(1, &_texture);
+    if (_vertexTexture) {
+        glDeleteTextures(1, &_vertexTexture);
+    }
+    if (_varyingTexture) {
+        glDeleteTextures(1, &_varyingTexture);
     }
 }
 

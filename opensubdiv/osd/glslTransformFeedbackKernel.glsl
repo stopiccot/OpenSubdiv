@@ -30,12 +30,13 @@ subroutine uniform computeKernelType computeKernel;
 //------------------------------------------------------------------------------
 
 uniform samplerBuffer vertexBuffer;
-out float outVertexBuffer[STRIDE];
 
-uniform isamplerBuffer _sizes;
-uniform isamplerBuffer _offsets;
-uniform isamplerBuffer _indices;
-uniform samplerBuffer  _weights;
+out float outVertexBuffer[LENGTH];
+
+uniform isamplerBuffer sizes;
+uniform isamplerBuffer offsets;
+uniform isamplerBuffer indices;
+uniform samplerBuffer  weights;
 
 uniform int batchStart = 0;
 uniform int batchEnd = 0;
@@ -48,12 +49,15 @@ struct Vertex {
     float vertexData[LENGTH];
 };
 
-// output feedback (mapped as a subrange of vertices)
-out float outVertexData[LENGTH];
-
 void clear(out Vertex v) {
     for (int i = 0; i < LENGTH; i++) {
         v.vertexData[i] = 0;
+    }
+}
+
+void addWithWeight(inout Vertex v, Vertex src, float weight) {
+    for(int i = 0; i < LENGTH; i++) {
+        v.vertexData[i] += weight * src.vertexData[i];
     }
 }
 
@@ -66,16 +70,15 @@ Vertex readVertex(int index) {
     return v;
 }
 
-
-void writeVertex(Vertex v) {
+void copyVertex(out Vertex dst, int index) {
     for(int i = 0; i < LENGTH; i++) {
-        outVertexData[i] = v.vertexData[i];
+        dst.vertexData[i] = texelFetch(vertexBuffer, index*STRIDE+i).x;
     }
 }
 
-void addWithWeight(inout Vertex v, Vertex src, float weight) {
+void writeVertex(Vertex v) {
     for(int i = 0; i < LENGTH; i++) {
-        v.vertexData[i] += weight * src.vertexData[i];
+        outVertexBuffer[i] = v.vertexData[i];
     }
 }
 
@@ -92,12 +95,12 @@ void computeStencil() {
     Vertex dst;
     clear(dst);
 
-    int offset = texelFetch(_offsets, current).x,
-        size = texelFetch(_sizes, current).x;
-    
+    int offset = texelFetch(offsets, current).x,
+        size = texelFetch(sizes, current).x;
+
     for (int i=0; i<size; ++i) {
-        int index = texelFetch(_indices, offset+i).x;
-        float weight = texelFetch(_weights, offset+i).x;
+        int index = texelFetch(indices, offset+i).x;
+        float weight = texelFetch(weights, offset+i).x;
         addWithWeight(dst, readVertex( index ), weight);
     }
 

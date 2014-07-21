@@ -25,6 +25,7 @@
 #include "../far/stencilTables.h"
 
 #include "../osd/error.h"
+//#define OSD_DEBUG_BUILD
 //#include "../osd/debug.h"
 #include "../osd/glslTransformFeedbackComputeContext.h"
 #include "../osd/opengl.h"
@@ -69,6 +70,7 @@ createGLTextureBuffer(std::vector<T> const & src, GLenum type) {
 
     glDeleteBuffers(1, &buffer);
 
+    //OSD_DEBUG_CHECK_GL_ERROR("createGLTextureBuffer end\n");
     return devicePtr;
 }
 
@@ -79,7 +81,7 @@ class OsdGLSLTransformFeedbackComputeContext::GLStencilTables {
 public:
 
     GLStencilTables(FarStencilTables const & stencilTables) {
-        _sizes = createGLTextureBuffer(stencilTables.GetSizes(), GL_R8);
+        _sizes = createGLTextureBuffer(stencilTables.GetSizes(), GL_R8UI);
         _offsets = createGLTextureBuffer(stencilTables.GetOffsets(), GL_R32I);
         _indices = createGLTextureBuffer(stencilTables.GetControlIndices(), GL_R32I);
         _weights = createGLTextureBuffer(stencilTables.GetWeights(), GL_R32F);
