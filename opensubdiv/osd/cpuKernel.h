@@ -71,9 +71,8 @@ ComputeStencilKernel(float const * vertexSrc,
 
     float const * src;
     float * dst, weight;
-    int nstencils = end-start;
 
-    for (int i=0; i<nstencils; ++i) {
+    for (int i=start; i<end; ++i) {
 
         // Clear
 #if defined ( __INTEL_COMPILER ) or defined ( __ICC )

@@ -106,7 +106,8 @@ public:
     }
 
     void operator() (tbb::blocked_range<int> const &r) const {
-
+#define USE_SIMD
+#ifdef USE_SIMD
         if (_vertexDesc.length==4) {
 
             // SIMD fast path for aligned primvar data (4 floats)
@@ -122,7 +123,9 @@ public:
                 _sizes, _indices+offset, _weights+offset, r.begin(), r.end());
 
         } else {
-
+#else
+        {
+#endif                
             unsigned char const * sizes = _sizes;
             int const * indices = _indices;
             float const * weights = _weights;
