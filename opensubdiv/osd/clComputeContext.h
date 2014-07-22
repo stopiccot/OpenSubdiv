@@ -51,6 +51,8 @@ class OsdCLComputeContext : public OsdNonCopyable<OsdCLComputeContext> {
 public:
     /// Creates an OsdCLComputeContext instance
     ///
+    /// @param clContext             An active OpenCL compute context
+    ///
     /// @param vertexStencilTables   The FarStencilTables used for vertex
     ///                              interpolation
     ///
