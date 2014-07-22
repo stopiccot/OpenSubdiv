@@ -502,6 +502,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 
     delete shape;
 
+    delete g_mesh;
     g_mesh = NULL;
 
     g_scheme = scheme;
