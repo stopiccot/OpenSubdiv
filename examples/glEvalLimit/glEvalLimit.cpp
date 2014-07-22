@@ -149,10 +149,10 @@ createRandomSamples( int nfaces, int nsamples, std::vector<OsdEvalCoords> & coor
     coords.resize(nfaces * nsamples);
 
     OsdEvalCoords * coord = &coords[0];
-    
+
     // large Pell prime number
     srand( static_cast<int>(2147483647) );
-    
+
     for (int i=0; i<nfaces; ++i) {
         for (int j=0; j<nsamples; ++j) {
             coord->face = i;
@@ -161,7 +161,7 @@ createRandomSamples( int nfaces, int nsamples, std::vector<OsdEvalCoords> & coor
             ++coord;
         }
     }
-        
+
     return (int)coords.size();
 }
 
@@ -173,13 +173,13 @@ createRandomVaryingColors(int nverts, std::vector<float> & colors) {
 
     // large Pell prime number
     srand( static_cast<int>(2147483647) );
-    
+
     for (int i=0; i<nverts; ++i) {
         colors[i*3+0] = (float)rand()/(float)RAND_MAX;
         colors[i*3+1] = (float)rand()/(float)RAND_MAX;
         colors[i*3+2] = (float)rand()/(float)RAND_MAX;
     }
-        
+
     return (int)colors.size();
 }
 
@@ -207,7 +207,7 @@ createCoarseMesh(OpenSubdiv::FarRefineTables const & refTables) {
     for(int i=0; i<nverts; ++i) {
         g_coarseVertexSharpness[i]=refTables.GetVertexSharpness(0, i);
     }
-    
+
     // assign a randomly generated color for each vertex ofthe mesh
     createRandomVaryingColors(nverts, g_varyingColors);
 }
@@ -239,7 +239,7 @@ OsdCpuEvalLimitContext * g_evalCtx = 0;
 
 OsdCpuEvalLimitController g_evalCtrl;
 
-OsdVertexBufferDescriptor g_idesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 3 ), 
+OsdVertexBufferDescriptor g_idesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 3 ),
                           g_odesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 6 ),
                           g_vdesc( /*offset*/ 3, /*legnth*/ 3, /*stride*/ 6 ),
                           g_fvidesc( /*offset*/ 0, /*legnth*/ 2, /*stride*/ 2 ),
@@ -274,10 +274,10 @@ updateGeom() {
     // Run Compute pass to pose the control vertices ---------------------------
     Stopwatch s;
     s.Start();
-    
+
     g_vertexData->UpdateData( &g_positions[0], 0, nverts);
-    
-    g_computeCtrl.Compute(g_computeCtx, g_kernelBatches, g_vertexData);
+
+    g_computeCtrl.Compute(g_computeCtx, g_kernelBatches, g_vertexData, g_varyingData);
 
     s.Stop();
     g_computeTime = float(s.GetElapsed() * 1000.0f);
@@ -286,34 +286,34 @@ updateGeom() {
     // Run Eval pass to get the samples locations ------------------------------
 
     s.Start();
-    
+
     // Reset the output buffer
 
     g_nsamplesFound=0;
-/*
+
     // The varying data ends-up interleaved in the same g_Q output buffer because
     // g_Q has a stride of 6 and g_vdesc sets the offset to 3, while g_odesc sets
     // the offset to 0
     switch (g_drawMode) {
         case kVARYING     : g_evalCtrl.BindVaryingBuffers( g_idesc, g_varyingData, g_vdesc, g_Q ); break;
 
-        case kFACEVARYING : g_evalCtrl.BindFacevaryingBuffers( g_fvidesc, g_fvodesc, g_Q ); break;
+        case kFACEVARYING : //g_evalCtrl.BindFacevaryingBuffers( g_fvidesc, g_fvodesc, g_Q ); break;
 
         case kUV :
 
         default : g_evalCtrl.Unbind(); break;
     }
-*/
-    // Bind/Unbind of the vertex buffers to the context needs to happen 
+
+    // Bind/Unbind of the vertex buffers to the context needs to happen
     // outside of the parallel loop
     g_evalCtrl.BindVertexBuffers( g_idesc, g_vertexData, g_odesc, g_Q, g_dQu, g_dQv );
 
-//#define USE_OPENMP
+#define USE_OPENMP
 #if defined(OPENSUBDIV_HAS_OPENMP) and defined(USE_OPENMP)
     #pragma omp parallel for
 #endif
     for (int i=0; i<(int)g_coords.size(); ++i) {
-    
+
         int n = g_evalCtrl.EvalLimitSample( g_coords[i], g_evalCtx, i );
 
         if (n) {
@@ -327,7 +327,7 @@ updateGeom() {
                 case kVARYING : break;
 
                 case kFACEVARYING : break;
-                
+
                 default : break;
            }
 #if defined(OPENSUBDIV_HAS_OPENMP) and defined(USE_OPENMP)
@@ -340,13 +340,13 @@ updateGeom() {
             memset(sample, 0, g_Q->GetNumElements() * sizeof(float));
         }
     }
-    
+
     g_evalCtrl.Unbind();
 
     g_Q->BindVBO();
 
     s.Stop();
-    
+
     g_evalTime = float(s.GetElapsed() * 1000.0f);
 }
 
@@ -377,7 +377,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
     {
         refTables->RefineAdaptive(level);
-        
+
         nverts = refTables->GetNumVerticesTotal();
 
         FarStencilTablesFactory::Options options;
@@ -385,11 +385,16 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
         options.generateAllLevels=true;
 
         // Generate stencil tables
-        FarStencilTables const * stencilTables =
+        FarStencilTables const * vertexStencils =
+            FarStencilTablesFactory::Create(*refTables, options);
+
+        options.interpolationMode = FarStencilTablesFactory::INTERPOLATE_VARYING;
+        FarStencilTables const * varyingStencils =
             FarStencilTablesFactory::Create(*refTables, options);
 
         g_kernelBatches.clear();
-        g_kernelBatches.push_back(FarStencilTablesFactory::Create(*stencilTables));
+        g_kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+
 
         // Generate adaptive patch tables
         FarPatchTables const * patchTables =
@@ -397,7 +402,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         // Create a Compute context, used to "pose" the vertices
         delete g_computeCtx;
-        g_computeCtx = OsdCpuComputeContext::Create(stencilTables);
+        g_computeCtx = OsdCpuComputeContext::Create(vertexStencils, varyingStencils);
 
         // Create a limit Eval context
         delete g_evalCtx;
@@ -405,7 +410,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
     }
 
     delete refTables;
-    
+
     {   // Create vertex data buffer & populate w/ positions
         delete g_vertexData;
         g_vertexData = OsdCpuVertexBuffer::Create(3, nverts);
@@ -436,7 +441,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
     // Bind g_Q as a GL_POINTS VBO
     glBindVertexArray(g_samplesVAO);
-    
+
     glBindBuffer(GL_ARRAY_BUFFER, g_Q->BindVBO());
 
     glEnableVertexAttribArray(0);
@@ -489,7 +494,7 @@ linkDefaultProgram()
 #else
     #define GLSL_VERSION_DEFINE "#version 150\n"
 #endif
-    
+
     static const char *vsSrc =
         GLSL_VERSION_DEFINE
         "in vec3 position;\n"
@@ -536,7 +541,7 @@ linkDefaultProgram()
     }
 
     g_defaultProgram.program = program;
-    g_defaultProgram.uniformModelViewProjectionMatrix = 
+    g_defaultProgram.uniformModelViewProjectionMatrix =
         glGetUniformLocation(program, "ModelViewProjectionMatrix");
     g_defaultProgram.attrPosition = glGetAttribLocation(program, "position");
     g_defaultProgram.attrColor = glGetAttribLocation(program, "color");
@@ -595,7 +600,7 @@ drawCageEdges() {
 
     glBindVertexArray(0);
     glUseProgram(0);
-} 
+}
 
 //------------------------------------------------------------------------------
 static void
@@ -615,7 +620,7 @@ drawCageVertices() {
 
             case kVARYING : { r=g_varyingColors[i*3+0];
                               g=g_varyingColors[i*3+1];
-                              b=g_varyingColors[i*3+2]; 
+                              b=g_varyingColors[i*3+2];
                             } break;
 
             case kUV      : { setSharpnessColor(g_coarseVertexSharpness[i], &r, &g, &b);
@@ -623,7 +628,7 @@ drawCageVertices() {
 
             default : break;
         }
-        
+
         vbo.push_back(g_positions[i*3+0]);
         vbo.push_back(g_positions[i*3+1]);
         vbo.push_back(g_positions[i*3+2]);
@@ -709,7 +714,7 @@ display() {
 
     if (g_drawCageEdges)
         drawCageEdges();
-    
+
     if (g_drawCageVertices)
         drawCageVertices();
 
@@ -724,12 +729,12 @@ display() {
         g_hud.DrawString(10, -60,  "GPU Draw   : %.3f ms", drawGpuTime);
         g_hud.DrawString(10, -40,  "CPU Draw   : %.3f ms", drawCpuTime);
         g_hud.DrawString(10, -20,  "FPS        : %3.1f", fps);
-        
+
         if (g_drawMode==kFACEVARYING and g_evalCtx->GetFVarData().empty()) {
             static char msg[21] = "No Face-Varying Data";
             g_hud.DrawString(g_width/2-20/2*8, g_height/2, msg);
         }
-        
+
         g_hud.Flush();
     }
 
@@ -805,7 +810,7 @@ reshape(int width, int height) {
 
     g_width = width;
     g_height = height;
-    
+
     int windowWidth = g_width, windowHeight = g_height;
 #if GLFW_VERSION_MAJOR>=3
     // window size might not match framebuffer size on a high DPI display
@@ -833,7 +838,7 @@ setSamples(bool add)
     g_nsamples += add ? 1000 : -1000;
 
     g_nsamples = std::max(0, g_nsamples);
-    
+
     createOsdMesh(g_defaultShapes[g_currentShape], g_level);
 }
 
@@ -851,11 +856,11 @@ keyboard(int key, int event) {
 
     switch (key) {
         case 'Q': g_running = 0; break;
-        
+
         case '=': setSamples(true); break;
-        
+
         case '-': setSamples(false); break;
-        
+
         case GLFW_KEY_ESCAPE: g_hud.SetVisible(!g_hud.IsVisible()); break;
     }
 }
@@ -942,7 +947,7 @@ initHUD()
     g_hud.AddCheckBox("Cage Verts (J)", true, 10, 30, callbackDisplayCageVertices, 0, 'j');
     g_hud.AddCheckBox("Animate vertices (M)", g_moveScale != 0, 10, 50, callbackAnimate, 0, 'm');
     g_hud.AddCheckBox("Freeze (spc)", false, 10, 70, callbackFreeze, 0, ' ');
-    
+
     int shading_pulldown = g_hud.AddPullDown("Shading (W)", 250, 10, 250, callbackDisplayVaryingColors, 'w');
     g_hud.AddPullDownButton(shading_pulldown, "(u,v)", kUV, g_drawMode==kUV);
     g_hud.AddPullDownButton(shading_pulldown, "Varying", kVARYING, g_drawMode==kVARYING);
@@ -957,7 +962,7 @@ initHUD()
     int pulldown_handle = g_hud.AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
     for (int i = 0; i < (int)g_defaultShapes.size(); ++i) {
         g_hud.AddPullDownButton(pulldown_handle, g_defaultShapes[i].name.c_str(),i);
-    }   
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1029,9 +1034,9 @@ int main(int argc, char **argv) {
             }
         }
     }
-    
+
     OsdSetErrorCallback(callbackError);
-    
+
 
     initShapes();
 
@@ -1041,19 +1046,19 @@ int main(int argc, char **argv) {
     }
 
     static const char windowTitle[] = "OpenSubdiv evalViewer";
-    
+
 #define CORE_PROFILE
 #ifdef CORE_PROFILE
     setGLCoreProfile();
 #endif
-    
+
 #if GLFW_VERSION_MAJOR>=3
     if (fullscreen) {
-    
+
         g_primary = glfwGetPrimaryMonitor();
 
         // apparently glfwGetPrimaryMonitor fails under linux : if no primary,
-        // settle for the first one in the list    
+        // settle for the first one in the list
         if (not g_primary) {
             int count=0;
             GLFWmonitor ** monitors = glfwGetMonitors(&count);
@@ -1061,7 +1066,7 @@ int main(int argc, char **argv) {
             if (count)
                 g_primary = monitors[0];
         }
-        
+
         if (g_primary) {
             GLFWvidmode const * vidmode = glfwGetVideoMode(g_primary);
             g_width = vidmode->width;
@@ -1069,7 +1074,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (not (g_window=glfwCreateWindow(g_width, g_height, windowTitle, 
+    if (not (g_window=glfwCreateWindow(g_width, g_height, windowTitle,
                                        fullscreen and g_primary ? g_primary : NULL, NULL))) {
         printf("Failed to open window.\n");
         glfwTerminate();
@@ -1099,7 +1104,7 @@ int main(int argc, char **argv) {
     glfwSetWindowSizeCallback(reshape);
     glfwSetWindowCloseCallback(windowClose);
 #endif
-    
+
 #if defined(OSD_USES_GLEW)
 #ifdef CORE_PROFILE
     // this is the only way to initialize glew correctly under core profile context.
@@ -1122,7 +1127,7 @@ int main(int argc, char **argv) {
 
     initGL();
     linkDefaultProgram();
-    
+
     glfwSwapInterval(0);
 
     initHUD();
@@ -1131,14 +1136,14 @@ int main(int argc, char **argv) {
     while (g_running) {
         idle();
         display();
-        
+
 #if GLFW_VERSION_MAJOR>=3
         glfwPollEvents();
         glfwSwapBuffers(g_window);
 #else
         glfwSwapBuffers();
 #endif
-        
+
         glFinish();
     }
 
