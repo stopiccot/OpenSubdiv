@@ -137,6 +137,7 @@ OpenSubdiv::OsdGLMeshInterface *g_mesh;
 #include "Ptexture.h"
 #include "PtexUtils.h"
 
+#include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"
@@ -231,7 +232,7 @@ int   g_fullscreen = 0,
       g_drawNormals = 0,
       g_drawCageEdges = 0,
       g_mbutton[3] = {0, 0, 0},
-      g_level = 2,
+      g_level = 1,
       g_tessLevel = 2,
       g_kernel = kCPU,
       g_scheme = 0,
@@ -316,6 +317,8 @@ GLuint g_numCageEdges = 0;
 GLuint g_diffuseEnvironmentMap = 0;
 GLuint g_specularEnvironmentMap = 0;
 
+//------------------------------------------------------------------------------
+
 struct Sky {
     int numIndices;
     GLuint vertexBuffer;
@@ -326,6 +329,8 @@ struct Sky {
     Sky() : numIndices(0), vertexBuffer(0), elementBuffer(0), mvpMatrix(0),
             program(0) {}
 } g_sky;
+
+//------------------------------------------------------------------------------
 
 struct ImageShader {
     GLuint blurProgram;
@@ -351,6 +356,8 @@ struct ImageShader {
     }
 } g_imageShader;
 
+//------------------------------------------------------------------------------
+
 OpenSubdiv::OsdGLPtexMipmapTexture * g_osdPTexImage = 0;
 OpenSubdiv::OsdGLPtexMipmapTexture * g_osdPTexDisplacement = 0;
 OpenSubdiv::OsdGLPtexMipmapTexture * g_osdPTexOcclusion = 0;
@@ -360,8 +367,7 @@ size_t g_ptexMemoryUsage = 0;
 
 
 static void
-checkGLErrors(std::string const & where = "")
-{
+checkGLErrors(std::string const & where = "") {
     GLuint err;
     while ((err = glGetError()) != GL_NO_ERROR) {
         std::cerr << "GL error: "
@@ -372,24 +378,28 @@ checkGLErrors(std::string const & where = "")
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OsdHbrMesh * mesh, std::vector<float> const & pos, std::vector<float> & result )
-{
+calcNormals(OpenSubdiv::FarRefineTables * refTables,
+    std::vector<float> const & pos, std::vector<float> & result ) {
+
+    typedef OpenSubdiv::FarIndexArray IndexArray;
+
     // calc normal vectors
-    int nverts = (int)pos.size()/3;
+    int nverts = refTables->GetNumVertices(0),
+        nfaces = refTables->GetNumFaces(0);
 
-    int nfaces = mesh->GetNumCoarseFaces();
-    for (int i = 0; i < nfaces; ++i) {
-        OsdHbrFace * f = mesh->GetFace(i);
+    for (int face = 0; face < nfaces; ++face) {
 
-        float const * p0 = &pos[f->GetVertex(0)->GetID()*3],
-                    * p1 = &pos[f->GetVertex(1)->GetID()*3],
-                    * p2 = &pos[f->GetVertex(2)->GetID()*3];
+        IndexArray fverts = refTables->GetFaceVertices(0, face);
+
+        float const * p0 = &pos[fverts[0]*3],
+                    * p1 = &pos[fverts[1]*3],
+                    * p2 = &pos[fverts[2]*3];
 
         float n[3];
         cross(n, p0, p1, p2);
 
-        for (int j = 0; j < f->GetNumVertices(); j++) {
-            int idx = f->GetVertex(j)->GetID() * 3;
+        for (int vert = 0; vert < fverts.size(); ++vert) {
+            int idx = fverts[vert] * 3;
             result[idx  ] += n[0];
             result[idx+1] += n[1];
             result[idx+2] += n[2];
@@ -401,8 +411,8 @@ calcNormals(OsdHbrMesh * mesh, std::vector<float> const & pos, std::vector<float
 
 //------------------------------------------------------------------------------
 void
-updateGeom()
-{
+updateGeom() {
+
     int nverts = (int)g_positions.size() / 3;
 
     if (g_moveScale and g_adaptive and not g_animPositions.empty()) {
@@ -465,94 +475,86 @@ updateGeom()
 
 //-------------------------------------------------------------------------------
 void
-fitFrame()
-{
+fitFrame() {
     g_pan[0] = g_pan[1] = 0;
     g_dolly = g_size;
 }
 
 //-------------------------------------------------------------------------------
-template <class T>
-OpenSubdiv::HbrMesh<T> * createPTexGeo(PtexTexture * r)
-{
-  PtexMetaData* meta = r->getMetaData();
-  if (meta->numKeys() < 3) return NULL;
+Shape *
+createPTexGeo(PtexTexture * r) {
 
-  const float* vp;
-  const int *vi, *vc;
-  int nvp, nvi, nvc;
+    PtexMetaData* meta = r->getMetaData();
 
-  meta->getValue("PtexFaceVertCounts", vc, nvc);
-  if (nvc == 0)
-      return NULL;
+    if (meta->numKeys() < 3) {
+        return NULL;
+    }
 
-  meta->getValue("PtexVertPositions", vp, nvp);
-  if (nvp == 0)
-      return NULL;
+    float const * vp;
+    int const *vi, *vc;
+    int nvp, nvi, nvc;
 
-  meta->getValue("PtexFaceVertIndices", vi, nvi);
-  if (nvi == 0)
-      return NULL;
+    meta->getValue("PtexFaceVertCounts", vc, nvc);
+    if (nvc == 0) {
+        return NULL;
+    }
+    meta->getValue("PtexVertPositions", vp, nvp);
+    if (nvp == 0) {
+        return NULL;
+    }
+    meta->getValue("PtexFaceVertIndices", vi, nvi);
+    if (nvi == 0) {
+        return NULL;
+    }
 
-  static OpenSubdiv::HbrCatmarkSubdivision<T>  _catmark;
-  static OpenSubdiv::HbrBilinearSubdivision<T>  _bilinear;
-  OpenSubdiv::HbrMesh<T> * mesh;
-  if (g_scheme == 0)
-      mesh = new OpenSubdiv::HbrMesh<T>(&_catmark);
-  else
-      mesh = new OpenSubdiv::HbrMesh<T>(&_bilinear);
+    Shape * shape = new Shape;
 
-  g_positions.clear();
-  g_positions.reserve(nvp);
+    shape->scheme = kCatmark;
 
-  // compute model bounding
-  float min[3] = {vp[0], vp[1], vp[2]};
-  float max[3] = {vp[0], vp[1], vp[2]};
-  for (int i = 0; i < nvp/3; ++i) {
-      for (int j = 0; j < 3; ++j) {
-          float v = vp[i*3+j];
-          g_positions.push_back(v);
-          min[j] = std::min(min[j], v);
-          max[j] = std::max(max[j], v);
-      }
-      mesh->NewVertex(i, T());
-  }
-  for (int j = 0; j < 3; ++j) {
-      g_center[j] = (min[j] + max[j]) * 0.5f;
-      g_size += (max[j]-min[j])*(max[j]-min[j]);
-  }
-  g_size = sqrtf(g_size);
+    shape->verts.resize(nvp);
+    for (int i=0; i<nvp; ++i) {
+        shape->verts[i] = vp[i];
+    }
 
-  const int *fv = vi;
-  for (int i = 0, ptxidx = 0; i < nvc; ++i) {
-      int nv = vc[i];
-      OpenSubdiv::HbrFace<T> * face = mesh->NewFace(nv, (int *)fv, 0);
+    shape->nvertsPerFace.resize(nvc);
+    for (int i=0; i<nvc; ++i) {
+        shape->nvertsPerFace[i] = vc[i];
+    }
 
-      face->SetPtexIndex(ptxidx);
-      if (nv != 4)
-          ptxidx += nv;
-      else
-          ptxidx++;
+    shape->faceverts.resize(nvi);
+    for (int i=0; i<nvi; ++i) {
+        shape->faceverts[i] = vi[i];
+    }
 
-      fv += nv;
-  }
-  mesh->SetInterpolateBoundaryMethod(OpenSubdiv::HbrMesh<T>::k_InterpolateBoundaryEdgeOnly);
-//  set creases here
-//  applyTags<T>( mesh, sh );
-  mesh->Finish();
+    // compute model bounding
+    float min[3] = {vp[0], vp[1], vp[2]};
+    float max[3] = {vp[0], vp[1], vp[2]};
+    for (int i = 0; i < nvp/3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            float v = vp[i*3+j];
+            min[j] = std::min(min[j], v);
+            max[j] = std::max(max[j], v);
+        }
+    }
 
-  return mesh;
+    for (int j = 0; j < 3; ++j) {
+        g_center[j] = (min[j] + max[j]) * 0.5f;
+        g_size += (max[j]-min[j])*(max[j]-min[j]);
+    }
+    g_size = sqrtf(g_size);
+
+    return shape;
 }
 
-
 //------------------------------------------------------------------------------
+
 void
 #if GLFW_VERSION_MAJOR >= 3
-reshape(GLFWwindow *, int width, int height)
+reshape(GLFWwindow *, int width, int height) {
 #else
-reshape(int width, int height)
+reshape(int width, int height) {
 #endif
-{
+
     g_width = width;
     g_height = height;
 
@@ -621,8 +623,8 @@ int windowClose() {
 #endif
 
 //------------------------------------------------------------------------------
-const char *getKernelName(int kernel)
-{
+const char *getKernelName(int kernel) {
+
          if (kernel == kCPU)
         return "CPU";
     else if (kernel == kOPENMP)
@@ -639,8 +641,8 @@ const char *getKernelName(int kernel)
 //------------------------------------------------------------------------------
 static GLuint compileShader(GLenum shaderType,
                             OpenSubdiv::OsdDrawShaderSource const & common,
-                            OpenSubdiv::OsdDrawShaderSource const & source)
-{
+                            OpenSubdiv::OsdDrawShaderSource const & source) {
+
     const char *sources[4];
     std::stringstream definitions;
     for (int i = 0; i < (int)common.defines.size(); ++i) {
@@ -677,9 +679,11 @@ static GLuint compileShader(GLenum shaderType,
     return shader;
 }
 
+//------------------------------------------------------------------------------
+
 int bindPTexture(GLint program, OpenSubdiv::OsdGLPtexMipmapTexture *osdPTex,
-                 GLuint data, GLuint packing, int samplerUnit)
-{
+                 GLuint data, GLuint packing, int samplerUnit) {
+
 #if defined(GL_ARB_separate_shader_objects) || defined(GL_VERSION_4_1)
     glProgramUniform1i(program, data, samplerUnit + 0);
     glProgramUniform1i(program, packing, samplerUnit + 1);
@@ -735,9 +739,11 @@ protected:
     _CreateDrawSourceConfig(DescType const & desc);
 };
 
+//------------------------------------------------------------------------------
+
 EffectDrawRegistry::SourceConfigType *
-EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
-{
+EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc) {
+
     Effect effect = desc.second;
 
     SetPtexEnabled(true);
@@ -888,8 +894,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
 EffectDrawRegistry::ConfigType *
 EffectDrawRegistry::_CreateDrawConfig(
         DescType const & desc,
-        SourceConfigType const * sconfig)
-{
+        SourceConfigType const * sconfig) {
+
     ConfigType * config = BaseRegistry::_CreateDrawConfig(desc.first, sconfig);
     assert(config);
 
@@ -948,8 +954,9 @@ EffectDrawRegistry::_CreateDrawConfig(
 EffectDrawRegistry effectRegistry;
 
 EffectDrawRegistry::ConfigType *
-getInstance(Effect effect, OpenSubdiv::OsdDrawContext::PatchDescriptor const & patchDesc)
-{
+getInstance(Effect effect,
+    OpenSubdiv::OsdDrawContext::PatchDescriptor const & patchDesc) {
+
     EffectDesc desc(patchDesc, effect);
 
     EffectDrawRegistry::ConfigType * config =
@@ -961,8 +968,8 @@ getInstance(Effect effect, OpenSubdiv::OsdDrawContext::PatchDescriptor const & p
 
 //------------------------------------------------------------------------------
 OpenSubdiv::OsdGLPtexMipmapTexture *
-createPtex(const char *filename, int memLimit)
-{
+createPtex(const char *filename, int memLimit) {
+
     Ptex::String ptexError;
     printf("Loading ptex : %s\n", filename);
 
@@ -1006,9 +1013,11 @@ createPtex(const char *filename, int memLimit)
     return osdPtex;
 }
 
+//------------------------------------------------------------------------------
+
 void
-createOsdMesh(int level, int kernel)
-{
+createOsdMesh(int level, int kernel) {
+
     checkGLErrors("createOsdMesh");
 
     Ptex::String ptexError;
@@ -1019,24 +1028,37 @@ createOsdMesh(int level, int kernel)
     }
 
     // generate Hbr representation from ptex
-    OsdHbrMesh * hmesh = createPTexGeo<OpenSubdiv::OsdVertex>(ptexColor);
-    if (hmesh == NULL) return;
-
-    // create cage edge index
-    std::vector<int> edgeIndices;
-    int numFaces = hmesh->GetNumFaces();
-    for (int i = 0; i < numFaces; ++i) {
-        OsdHbrFace *face = hmesh->GetFace(i);
-        int numVerts = face->GetNumVertices();
-        for (int j = 0; j < numVerts; ++j) {
-            OsdHbrHalfedge *edge = face->GetEdge(j);
-            edgeIndices.push_back(edge->GetVertexID());
-            edgeIndices.push_back(edge->GetDestVertexID());
-        }
+    Shape * shape = createPTexGeo(ptexColor);
+    if (not shape) {
+        return;
     }
 
+    g_positions=shape->verts;
+
+    typedef OpenSubdiv::FarIndexArray IndexArray;
+
+    // create Vtr mesh (topology)
+    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
+    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+
+    OpenSubdiv::FarRefineTables * refTables =
+        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+
+    // save coarse topology (used for coarse mesh drawing)
+
+    // create cage edge index
+    int nedges = refTables->GetNumEdges(0);
+    std::vector<int> edgeIndices(nedges*2);
+    for(int i=0; i<nedges; ++i) {
+        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        edgeIndices[i*2  ]=verts[0];
+        edgeIndices[i*2+1]=verts[1];
+    }
+
+    delete shape;
+
     g_normals.resize(g_positions.size(), 0.0f);
-    calcNormals(hmesh, g_positions, g_normals);
+    calcNormals(refTables, g_positions, g_normals);
 
     delete g_mesh;
     g_mesh = NULL;
@@ -1059,7 +1081,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdCpuComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_cpuComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1072,7 +1094,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdOmpComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_ompComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1086,7 +1108,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdTbbComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_tbbComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1100,7 +1122,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdGcdComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_gcdComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1114,7 +1136,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdCLComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_clComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_clContext, g_clQueue);
@@ -1128,7 +1150,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdCudaComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_cudaComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1143,7 +1165,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdGLSLTransformFeedbackComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_glslTransformFeedbackComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1157,7 +1179,7 @@ createOsdMesh(int level, int kernel)
                                          OpenSubdiv::OsdGLSLComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_glslComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1165,8 +1187,6 @@ createOsdMesh(int level, int kernel)
     } else {
         printf("Unsupported kernel %s\n", getKernelName(kernel));
     }
-
-    delete hmesh;
 
     if (glGetError() != GL_NO_ERROR) {
         printf("GLERROR\n");
@@ -1211,9 +1231,11 @@ createOsdMesh(int level, int kernel)
     glBindVertexArray(0);
 }
 
+//------------------------------------------------------------------------------
+
 void
-createSky()
-{
+createSky() {
+
     const int U_DIV = 20;
     const int V_DIV = 20;
 
@@ -1290,8 +1312,8 @@ createSky()
 }
 
 GLuint
-compileImageShader(const char *define)
-{
+compileImageShader(const char *define) {
+
     GLuint program = glCreateProgram();
 
     OpenSubdiv::OsdDrawShaderSource common, vertexShader, fragmentShader;
@@ -1335,9 +1357,11 @@ compileImageShader(const char *define)
     return program;
 }
 
+//------------------------------------------------------------------------------
+
 void
-createImageShader()
-{
+createImageShader() {
+
     g_imageShader.blurProgram = compileImageShader("BLUR");
     g_imageShader.hipassProgram = compileImageShader("HIPASS");
     g_imageShader.compositeProgram = compileImageShader("COMPOSITE");
@@ -1359,9 +1383,11 @@ createImageShader()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+//------------------------------------------------------------------------------
+
 void
-applyImageShader()
-{
+applyImageShader() {
+
     int w = g_imageShader.smallWidth, h = g_imageShader.smallHeight;
     const float hoffsets[10] = {
         -2.0f / w, 0,
@@ -1448,9 +1474,10 @@ applyImageShader()
 }
 
 //------------------------------------------------------------------------------
+
 static void
-updateUniformBlocks()
-{
+updateUniformBlocks() {
+
     if (g_transformUB == 0) {
         glGenBuffers(1, &g_transformUB);
         glBindBuffer(GL_UNIFORM_BUFFER, g_transformUB);
@@ -1519,8 +1546,8 @@ updateUniformBlocks()
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchDescriptor const &desc)
-{
+bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchDescriptor const &desc) {
+
     EffectDrawRegistry::ConfigType *
         config = getInstance(effect, desc);
 
@@ -1585,8 +1612,8 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchDescriptor const &de
 
 //------------------------------------------------------------------------------
 void
-drawModel()
-{
+drawModel() {
+
 #if defined(GL_ARB_tessellation_shader) || defined(GL_VERSION_4_0)
     GLuint bVertex = g_mesh->BindVertexBuffer();
 #else
@@ -1719,9 +1746,10 @@ drawModel()
     glBindVertexArray(0);
 }
 
+//------------------------------------------------------------------------------
+
 void
-drawSky()
-{
+drawSky() {
     glUseProgram(g_sky.program);
 
     glDisable(GL_DEPTH_TEST);
@@ -1761,9 +1789,11 @@ drawSky()
     checkGLErrors("draw model");
 }
 
+//------------------------------------------------------------------------------
+
 void
-drawCageEdges()
-{
+drawCageEdges() {
+
     g_mesh->BindVertexBuffer();
 
     glBindVertexArray(g_cageEdgeVAO);
@@ -1771,9 +1801,8 @@ drawCageEdges()
     Effect effect;
     effect.value = 0;
     OpenSubdiv::OsdDrawContext::PatchDescriptor desc(
-                    OpenSubdiv::FarPatchTables::Descriptor(OpenSubdiv::FarPatchTables::LINES,
-                                                   OpenSubdiv::FarPatchTables::NON_TRANSITION,
-                                                   0),
+        OpenSubdiv::FarPatchTables::Descriptor(OpenSubdiv::FarPatchTables::LINES,
+            OpenSubdiv::FarPatchTables::NON_TRANSITION, 0),
                     0, 0, 0);
     EffectDrawRegistry::ConfigType *config = getInstance(effect, desc);
     glUseProgram(config->program);
@@ -1786,9 +1815,11 @@ drawCageEdges()
     checkGLErrors("draw cage edges");
 }
 
+//------------------------------------------------------------------------------
+
 void
-display()
-{
+display() {
+
     glBindFramebuffer(GL_FRAMEBUFFER, g_imageShader.frameBuffer);
 
     Stopwatch s;
@@ -1995,11 +2026,10 @@ screenshot(int multiplier=4) {
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-mouse(GLFWwindow *, int button, int state, int /* mods */)
+mouse(GLFWwindow *, int button, int state, int /* mods */) {
 #else
-mouse(int button, int state)
+mouse(int button, int state) {
 #endif
-{
     if (state == GLFW_RELEASE)
         g_hud.MouseRelease();
 
@@ -2011,12 +2041,10 @@ mouse(int button, int state)
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-motion(GLFWwindow *, double dx, double dy)
-{
+motion(GLFWwindow *, double dx, double dy) {
     int x = (int)dx, y = (int)dy;
 #else
-motion(int x, int y)
-{
+motion(int x, int y) {
 #endif
     if (g_hud.MouseCapture()) {
         // check gui
@@ -2041,8 +2069,7 @@ motion(int x, int y)
 }
 
 //------------------------------------------------------------------------------
-void uninitGL()
-{
+void uninitGL() {
     if (g_osdPTexImage) delete g_osdPTexImage;
     if (g_osdPTexDisplacement) delete g_osdPTexDisplacement;
     if (g_osdPTexOcclusion) delete g_osdPTexOcclusion;
@@ -2110,13 +2137,11 @@ void uninitGL()
 
 //------------------------------------------------------------------------------
 static void
-callbackWireframe(int b)
-{
+callbackWireframe(int b) {
     g_wire = b;
 }
 static void
-callbackKernel(int k)
-{
+callbackKernel(int k) {
     g_kernel = k;
 
 #ifdef OPENSUBDIV_HAS_OPENCL
@@ -2128,40 +2153,33 @@ callbackKernel(int k)
         }
     }
 #endif
-
     createOsdMesh(g_level, g_kernel);
 }
 
 static void
-callbackScheme(int s)
-{
+callbackScheme(int s) {
     g_scheme = s;
     createOsdMesh(g_level, g_kernel);
 }
 static void
-callbackLevel(int l)
-{
+callbackLevel(int l) {
     g_level = l;
     createOsdMesh(g_level, g_kernel);
 }
 static void
-callbackColor(int c)
-{
+callbackColor(int c) {
     g_color = c;
 }
 static void
-callbackDisplacement(int d)
-{
+callbackDisplacement(int d) {
     g_displacement = d;
 }
 static void
-callbackNormal(int n)
-{
+callbackNormal(int n) {
     g_normal = n;
 }
 static void
-callbackCheckBox(bool checked, int button)
-{
+callbackCheckBox(bool checked, int button) {
     bool rebuild = false;
 
     switch (button) {
@@ -2212,8 +2230,7 @@ callbackCheckBox(bool checked, int button)
 }
 
 static void
-callbackSlider(float value, int data)
-{
+callbackSlider(float value, int data) {
     switch (data) {
     case 0:
         g_mipmapBias = value;
@@ -2225,8 +2242,7 @@ callbackSlider(float value, int data)
 }
 //-------------------------------------------------------------------------------
 void
-reloadShaderFile()
-{
+reloadShaderFile() {
     if (not g_shaderFilename) return;
 
     std::ifstream ifs(g_shaderFilename);
@@ -2244,20 +2260,18 @@ reloadShaderFile()
 
 //------------------------------------------------------------------------------
 static void
-toggleFullScreen()
-{
+toggleFullScreen() {
     // XXXX manuelk : to re-implement from glut
 }
 
 //------------------------------------------------------------------------------
 void
 #if GLFW_VERSION_MAJOR >= 3
-keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */)
+keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
 #else
 #define GLFW_KEY_ESCAPE GLFW_KEY_ESC
-keyboard(int key, int event)
+keyboard(int key, int event) {
 #endif
-{
     if (event == GLFW_RELEASE) return;
     if (g_hud.KeyDown(tolower(key))) return;
 
@@ -2277,8 +2291,7 @@ keyboard(int key, int event)
 
 //------------------------------------------------------------------------------
 void
-idle()
-{
+idle() {
     if (not g_freeze)
         g_frame++;
 
@@ -2290,8 +2303,7 @@ idle()
 
 //------------------------------------------------------------------------------
 void
-initGL()
-{
+initGL() {
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -2333,8 +2345,7 @@ initGL()
 }
 
 //------------------------------------------------------------------------------
-void usage(const char *program)
-{
+void usage(const char *program) {
     printf("Usage: %s [options] <color.ptx> [<displacement.ptx>] [occlusion.ptx>] "
            "[specular.ptx] [pose.obj]...\n", program);
     printf("Options:  -l level                : subdivision level\n");
@@ -2350,16 +2361,15 @@ void usage(const char *program)
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
-{
+callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
     printf("OsdError: %d\n", err);
     printf("%s", message);
 }
 
 //------------------------------------------------------------------------------
 static void
-setGLCoreProfile()
-{
+setGLCoreProfile() {
+
 #if GLFW_VERSION_MAJOR >= 3
     #define glfwOpenWindowHint glfwWindowHint
     #define GLFW_OPENGL_VERSION_MAJOR GLFW_CONTEXT_VERSION_MAJOR
@@ -2374,7 +2384,7 @@ setGLCoreProfile()
 #else
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
 #endif
-    
+
 #else
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
@@ -2383,8 +2393,8 @@ setGLCoreProfile()
 }
 
 //------------------------------------------------------------------------------
-int main(int argc, char ** argv)
-{
+int main(int argc, char ** argv) {
+
     std::vector<std::string> animobjs;
     const char *diffuseEnvironmentMap = NULL, *specularEnvironmentMap = NULL;
     const char *colorFilename = NULL, *displacementFilename = NULL,
@@ -2451,7 +2461,7 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    static const char windowTitle[] = "OpenSubdiv ptexViewer";
+    static const char windowTitle[] = "OpenSubdiv glPtexViewer";
 
 #define CORE_PROFILE
 #ifdef CORE_PROFILE

@@ -71,16 +71,16 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         dxviewer.rst
         far_overview.rst
         getting_started.rst
-        glviewer.rst
-        glstencilviewer.rst
         glbatchviewer.rst
+        glptexviewer.rst
+        glstencilviewer.rst
+        glviewer.rst
         hbr_overview.rst
         intro.rst 
         limiteval.rst
         maya_osdpolysmooth.rst
         osd_overview.rst
         painttest.rst
-        ptexviewer.rst
         release_notes.rst 
         subdivision_surfaces.rst 
         tutorials.rst 

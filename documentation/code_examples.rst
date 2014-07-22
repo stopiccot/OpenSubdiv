@@ -42,7 +42,7 @@ of the software.
        | `glStencilViewer <glstencilviewer.html>`_
      - | `limitEval <limiteval.html>`_
        | `paintTest <painttest.html>`_
-       | `ptexViewer <ptexviewer.html>`_
+       | `glPtexViewer <glptexviewer.html>`_
        | `uvViewer <uvviewer.html>`_
 
 .. list-table:: **DirectX examples**

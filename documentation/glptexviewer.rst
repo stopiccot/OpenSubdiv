@@ -22,8 +22,8 @@
      language governing permissions and limitations under the Apache License.
   
 
-ptexViewer
-----------
+glPtexViewer
+------------
 
 .. contents::
    :local:
@@ -35,7 +35,7 @@ SYNOPSIS
 .. parsed-literal:: 
    :class: codefhead
 
-   **ptexViewer** 
+   **glPtexViewer** 
    [**-e** *environment map*]
    [**-d** *HDR diffuse map*]
    [**-s** *HDR specular map*]
@@ -54,7 +54,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-``ptexViewer`` is a stand-alone application that showcases advanced HDR shading
+``glPtexViewer`` is a stand-alone application that showcases advanced HDR shading
 with color, displacement, occlusion and specular ptex maps. Multiple controls 
 are available to experiment with the algorithms.
 

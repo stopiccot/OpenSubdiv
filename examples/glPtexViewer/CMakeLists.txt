@@ -73,16 +73,16 @@ _stringify("${SHADER_FILES}" INC_FILES)
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #-------------------------------------------------------------------------------
-_add_glfw_executable(ptexViewer
-    viewer.cpp
+_add_glfw_executable(glPtexViewer
+    glPtexViewer.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
 
-target_link_libraries(ptexViewer
+target_link_libraries(glPtexViewer
     ${PLATFORM_LIBRARIES}
 )
 
-install(TARGETS ptexViewer DESTINATION "${CMAKE_BINDIR_BASE}")
+install(TARGETS glPtexViewer DESTINATION "${CMAKE_BINDIR_BASE}")

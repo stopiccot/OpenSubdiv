@@ -51,7 +51,7 @@ if (OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
     endif()
 
     if (PTEX_FOUND)
-#        add_subdirectory(ptexViewer)
+        add_subdirectory(glPtexViewer)
     endif()
 
 else()
