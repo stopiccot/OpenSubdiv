@@ -44,8 +44,14 @@ of a vertex class. It supports these subdivision schemes:
 Factories & Tables
 ==================
 
-Subdivision Tables
-==================
+.. container:: notebox
+
+    Content under development....
+    
+    .. image:: images/construction.png
+       :align: center
+       :height: 100
+
 
 Patch Tables
 ============
@@ -61,6 +67,11 @@ cage.
 
 .. image:: images/far_stencil0.png
    :align: center
+
+
+Limit Stencils
+**************
+
 
 Sample Location
 ***************
@@ -119,7 +130,7 @@ API Architecture
 
 The base container for stencil data is the FarStencilTables class. As with most
 other Far entities, it has an associated FarStencilTablesFactory that requires
-an HbrMesh:
+a FarRefineTables:
 
 .. image:: images/far_stencil5.png
    :align: center
@@ -128,11 +139,15 @@ Assuming a properly qualified HbrMesh:
 
 .. code:: c++
 
-    HMesh<OpenSubdiv::FarStencilFactoryVertex> * mesh;
+    //OpenSubdiv::FarRefineTables * refTables = ...;
 
     FarStencilTables controlStencils;
 
-    OpenSubdiv::FarStencilTablesFactory<> factory(mesh);
+    FarStencilTablesFactory::Options options;
+    options.generateOffsets=true;
+    options.generateAllLevels=false;
+
+    OpenSubdiv::FarStencilTablesFactory<> factory(*refTables, options);
     
     for (int i=0; i<nfaces; ++i) {
 

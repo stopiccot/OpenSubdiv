@@ -54,27 +54,22 @@
             <li><a href="using_osd.html">OpenSubdiv</a>
                 <ul>
                     <li><a href="api_overview.html">API Overview</a>
+                        <li><a href="far_overview.html">Far Layer</a></li>
                         <ul>
-                            <li><a href="far_overview.html">Far Layer</a></li>
-                            <ul>
-                                <li><a href="far_overview.html#stencil-tables">Stencil Tables</a></li>
-                                <li><a href="far_overview.html#patch-tables">Patch Tables</a></li>
-                            </ul>
-                            <li><a href="osd_overview.html">Osd Layer</a></li>
-                            <li><a href="hbr_overview.html">(Hbr)</a></li>
+                            <li><a href="far_overview.html#stencil-tables">Stencil Tables</a></li>
+                            <li><a href="far_overview.html#patch-tables">Patch Tables</a></li>
                         </ul>
+                        <li><a href="osd_overview.html">Osd Layer</a></li>
                     </li>
+                    <p></p>
                     <li><a href="tutorials.html">Tutorials</a>
-                    <ul>
-                        <li><a href="tutorials.html#Far">Far</a>
-                        <li><a href="tutorials.html#Osd">Osd</a>
-                        <li><a href="tutorials.html#Hbr">(Hbr)</a>
-                    </ul>
                     <li><a href="using_osd_compile.html#compiling-linking">Compiling & Linking</a></li>
-                    <li><a href="using_osd.html">Writing Shaders</a></li>
+                    <li><a href="">Writing Shaders</a></li>
                     <li><a href="using_osd_textures.html">Textures</a></li>
-                    <li><a href="using_osd.html">Primitive Batching</a></li>
-                    <li><a href="using_osd_hbr.html">Using Hbr</a></li>
+                    <li><a href="hbr_overview.html">(Hbr)</a></li>
+                    <ul>
+                        <li><a href="using_osd_hbr.html">(Using Hbr)</a></li>
+                    </ul>
                 </ul>
             </li>
             <p></p>

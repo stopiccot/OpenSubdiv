@@ -581,6 +581,8 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
         if (options.generateOffsets) {
             for (int i=0, ofs=0; i<nstencils; ++i ) {
                 result->_offsets[i]=ofs;
+                assert(result->_sizes[i]!=0 and
+                    result->_sizes[i]<(int)result->_weights.size());
                 ofs+=result->_sizes[i];
             }
         }
