@@ -84,13 +84,13 @@ OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
         weights += offsets[start];
     }
 
-    if (vertexDesc==OsdVertexBufferDescriptor(0, 4, 4)) {
+    if (vertexDesc.length==4 and vertexDesc.stride==4) {
 
         // SIMD fast path for aligned primvar data (8 floats)
         ComputeStencilKernel<4>(vertexSrc, vertexDst,
             sizes, indices, weights, start,  end);
 
-    } else if(vertexDesc==OsdVertexBufferDescriptor(0, 8, 8)) {
+    } else if(vertexDesc.length==8 and vertexDesc.stride==8) {
 
         // SIMD fast path for aligned primvar data (8 floats)
         ComputeStencilKernel<8>(vertexSrc, vertexDst,

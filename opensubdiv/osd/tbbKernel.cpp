@@ -108,14 +108,14 @@ public:
     void operator() (tbb::blocked_range<int> const &r) const {
 #define USE_SIMD
 #ifdef USE_SIMD
-        if (_vertexDesc.length==4) {
+        if (_vertexDesc.length==4 and _vertexDesc.stride==4) {
 
             // SIMD fast path for aligned primvar data (4 floats)
             int offset = _offsets[r.begin()];
             ComputeStencilKernel<4>(_vertexSrc, _vertexDst,
                 _sizes, _indices+offset, _weights+offset, r.begin(), r.end());
 
-        } else if (_vertexDesc.length==8) {
+        } else if (_vertexDesc.length==8 and _vertexDesc.stride==4) {
 
             // SIMD fast path for aligned primvar data (8 floats)
             int offset = _offsets[r.begin()];

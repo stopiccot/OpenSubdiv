@@ -47,12 +47,15 @@ OsdOmpComputeController::ApplyStencilTableKernel(
 
     if (vertexStencils and _currentBindState.vertexBuffer) {
 
-        float * destBuffer = _currentBindState.vertexBuffer +
-            vertexStencils->GetNumControlVertices() * _currentBindState.vertexDesc.stride;
+        OsdVertexBufferDescriptor const & desc = _currentBindState.vertexDesc;
+
+        float const * srcBuffer = _currentBindState.vertexBuffer + desc.offset;
+
+        float * destBuffer = _currentBindState.vertexBuffer + desc.offset +
+            vertexStencils->GetNumControlVertices() * desc.stride;
 
         OsdOmpComputeStencils(_currentBindState.vertexDesc,
-                              _currentBindState.vertexBuffer,
-                              destBuffer,
+                              srcBuffer, destBuffer,
                               &vertexStencils->GetSizes().at(0),
                               &vertexStencils->GetOffsets().at(0),
                               &vertexStencils->GetControlIndices().at(0),
@@ -65,12 +68,15 @@ OsdOmpComputeController::ApplyStencilTableKernel(
 
     if (varyingStencils and _currentBindState.varyingBuffer) {
 
-        float * destBuffer = _currentBindState.varyingBuffer +
-            varyingStencils->GetNumControlVertices() * _currentBindState.varyingDesc.stride;
+        OsdVertexBufferDescriptor const & desc = _currentBindState.varyingDesc;
+
+        float const * srcBuffer = _currentBindState.varyingBuffer + desc.offset;
+
+        float * destBuffer = _currentBindState.varyingBuffer + desc.offset +
+            varyingStencils->GetNumControlVertices() * desc.stride;
 
         OsdOmpComputeStencils(_currentBindState.varyingDesc,
-                              _currentBindState.varyingBuffer,
-                              destBuffer,
+                              srcBuffer, destBuffer,
                               &varyingStencils->GetSizes().at(0),
                               &varyingStencils->GetOffsets().at(0),
                               &varyingStencils->GetControlIndices().at(0),

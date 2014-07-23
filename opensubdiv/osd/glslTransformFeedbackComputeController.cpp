@@ -107,9 +107,8 @@ public:
         GLuint shader = glCreateShader(GL_VERTEX_SHADER);
 
         std::ostringstream defines;
-        defines << "#define OFFSET " << _desc.offset << "\n"
-                << "#define LENGTH " << _desc.length << "\n"
-                << "#define STRIDE " << _desc.stride << "\n";
+        defines << "#define LENGTH " << desc.length << "\n"
+                << "#define STRIDE " << desc.stride << "\n";
         std::string defineStr = defines.str();
 
         const char *shaderSources[3];
@@ -133,14 +132,14 @@ public:
             // (gl_SkipComponents1)
             //
             char attrName[32];
-            for (int i = 0; i < _desc.offset; ++i) {
+            for (int i = 0; i < desc.offset; ++i) {
                 outputs.push_back("gl_SkipComponents1");
             }
-            for (int i = 0; i < _desc.length; ++i) {
+            for (int i = 0; i < desc.length; ++i) {
                 snprintf(attrName, 32, "outVertexBuffer[%d]", i);
                 outputs.push_back(attrName);
             }
-            for (int i = _desc.offset + _desc.length; i < _desc.stride; ++i) {
+            for (int i = desc.offset + desc.length; i < desc.stride; ++i) {
                 outputs.push_back("gl_SkipComponents1");
             }
 

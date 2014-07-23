@@ -400,7 +400,7 @@ updateGeom() {
             vertex.push_back(p[1]);
             vertex.push_back(p[2]);
             vertex.push_back(p[0]);
-            vertex.push_back(1);
+            vertex.push_back(1.0f);
             p += 3;
         }
         if (g_displayStyle == kVaryingColor) {
@@ -508,14 +508,17 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     g_scheme = scheme;
 
     // Adaptive refinement currently supported only for catmull-clark scheme
-    bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark);
+    bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark),
+         interleaveVarying = g_displayStyle == kInterleavedVaryingColor;
 
     OpenSubdiv::OsdMeshBitset bits;
     bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
+    bits.set(OpenSubdiv::MeshInterleaveVarying, interleaveVarying);
     bits.set(OpenSubdiv::MeshFVarData, 1);
 
-    int numVertexElements = (g_displayStyle == kInterleavedVaryingColor) ? 7 : 3;
-    int numVaryingElements = (g_displayStyle == kVaryingColor) ? 4 : 0;
+    int numVertexElements = 3;
+    int numVaryingElements =
+        (g_displayStyle == kVaryingColor or interleaveVarying) ? 4 : 0;
 
     if (kernel == kCPU) {
         if (not g_cpuComputeController) {
@@ -660,19 +663,19 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     glBindBuffer(GL_ARRAY_BUFFER, g_mesh->BindVertexBuffer());
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          /*stride=*/sizeof (GLfloat) * numVertexElements, 0);
+
 
     if (g_displayStyle == kVaryingColor) {
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 3, 0);
         glBindBuffer(GL_ARRAY_BUFFER, g_mesh->BindVaryingBuffer());
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 4, 0);
     } else if (g_displayStyle == kInterleavedVaryingColor) {
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 7, 0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE,
-                              /*stride=*/sizeof (GLfloat) * numVertexElements,
-                              /*offset=*/(void*)(sizeof (GLfloat) * 3));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 7, (void*)(sizeof (GLfloat) * 3));
     } else {
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 3, 0);
         glDisableVertexAttribArray(1);
     }
 

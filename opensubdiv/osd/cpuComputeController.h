@@ -146,13 +146,11 @@ protected:
                 OsdVertexBufferDescriptor(0, numElements, numElements);
         }
 
-        // apply vertex offset here
         _currentBindState.vertexBuffer = vertexBuffer ?
-            vertexBuffer->BindCpuBuffer() + _currentBindState.vertexDesc.offset : 0;
+            vertexBuffer->BindCpuBuffer() : 0;
 
-        // apply vertex offset here
         _currentBindState.varyingBuffer = varyingBuffer ?
-            varyingBuffer->BindCpuBuffer() + _currentBindState.varyingDesc.offset : 0;
+            varyingBuffer->BindCpuBuffer() : 0;
     }
 
     void unbind() {

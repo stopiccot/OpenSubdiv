@@ -67,11 +67,12 @@ public:
 
         OsdGLMeshInterface::refineMesh(*_refTables, level, bits.test(MeshAdaptive));
 
-        initializeVertexBuffers(numVertexElements, numVaryingElements);
+        int numElements = 
+            initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
 
         initializeComputeContext(numVertexElements, numVaryingElements);
 
-        initializeDrawContext(numVertexElements, bits);
+        initializeDrawContext(numElements, bits);
     }
 
     OsdMesh(ComputeController * computeController,
@@ -120,7 +121,6 @@ public:
     virtual void Refine(OsdVertexBufferDescriptor const * vertexDesc,
                         OsdVertexBufferDescriptor const * varyingDesc,
                         bool interleaved) {
-        assert(0);
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
                                     vertexDesc, varyingDesc);
@@ -163,7 +163,7 @@ private:
 
         FarStencilTablesFactory::Options options;
         options.generateOffsets=true;
-        options.generateAllLevels = _refTables->IsUniform() ? false : true;
+        options.generateAllLevels=_refTables->IsUniform() ? false : true;
 
         FarStencilTables const * vertexStencils=0, * varyingStencils=0;
 
@@ -187,7 +187,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numVertexElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
 
         assert(_refTables and _vertexBuffer);
 
@@ -195,23 +195,30 @@ private:
             FarPatchTablesFactory::Create(*_refTables);
 
         _drawContext = DrawContext::Create(
-            patchTables, numVertexElements, bits.test(MeshFVarData));
+            patchTables, numElements, bits.test(MeshFVarData));
 
         _drawContext->UpdateVertexTexture(_vertexBuffer);
 
         delete patchTables;
     }
 
-    void initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements) {
+    int initializeVertexBuffers(int numVertexElements,
+        int numVaryingElements, OsdMeshBitset bits) {
 
         int numVertices = OsdGLMeshInterface::getNumVertices(*_refTables);
 
-        if (numVertexElements)
-            _vertexBuffer = VertexBuffer::Create(numVertexElements, numVertices);
+        int numElements = numVertexElements +
+            (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
 
-        if (numVaryingElements)
+        if (numVertexElements) {
+
+            _vertexBuffer = VertexBuffer::Create(numElements, numVertices);
+        }
+
+        if (numVaryingElements>0 and (not bits.test(MeshInterleaveVarying))) {
             _varyingBuffer = VertexBuffer::Create(numVaryingElements, numVertices);
+        }
+        return numElements;
    }
 
     FarRefineTables * _refTables;
@@ -259,11 +266,12 @@ public:
 
         OsdGLMeshInterface::refineMesh(*_refTables, level, bits.test(MeshAdaptive));
 
-        initializeVertexBuffers(numVertexElements, numVaryingElements);
+        int numElements = 
+            initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
 
         initializeComputeContext(numVertexElements, numVaryingElements);
 
-        initializeDrawContext(numVertexElements, bits);
+        initializeDrawContext(numElements, bits);
     }
 
     OsdMesh(ComputeController * computeController,
@@ -312,7 +320,6 @@ public:
     virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc,
                         OsdVertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
-        assert(0);
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
                                     vertexDesc, varyingDesc);
@@ -355,7 +362,7 @@ private:
 
         FarStencilTablesFactory::Options options;
         options.generateOffsets=true;
-        options.generateAllLevels = _refTables->IsUniform() ? false : true;
+        options.generateAllLevels=_refTables->IsUniform() ? false : true;
 
         FarStencilTables const * vertexStencils=0, * varyingStencils=0;
 
@@ -379,7 +386,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numVertexElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
 
         assert(_refTables and _vertexBuffer);
 
@@ -387,23 +394,30 @@ private:
             FarPatchTablesFactory::Create(*_refTables);
 
         _drawContext = DrawContext::Create(
-            patchTables, numVertexElements, bits.test(MeshFVarData));
+            patchTables, numElements, bits.test(MeshFVarData));
 
         _drawContext->UpdateVertexTexture(_vertexBuffer);
 
         delete patchTables;
     }
 
-    void initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements) {
+    int initializeVertexBuffers(int numVertexElements,
+        int numVaryingElements, OsdMeshBitset bits) {
 
         int numVertices = OsdGLMeshInterface::getNumVertices(*_refTables);
 
-        if (numVertexElements)
-            _vertexBuffer = VertexBuffer::Create(numVertexElements, numVertices, _clContext);
+        int numElements = numVertexElements +
+            (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
 
-        if (numVaryingElements)
+        if (numVertexElements) {
+
+            _vertexBuffer = VertexBuffer::Create(numElements, numVertices, _clContext);
+        }
+
+        if (numVaryingElements>0 and (not bits.test(MeshInterleaveVarying))) {
             _varyingBuffer = VertexBuffer::Create(numVaryingElements, numVertices, _clContext);
+        }
+        return numElements;
    }
 
     FarRefineTables * _refTables;
