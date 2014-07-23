@@ -71,7 +71,6 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         dxviewer.rst
         far_overview.rst
         getting_started.rst
-        glbatchviewer.rst
         glevallimit.rst
         glpainttest.rst
         glptexviewer.rst

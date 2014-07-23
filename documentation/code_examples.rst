@@ -38,27 +38,24 @@ of the software.
    :widths: 50 50
 
    * - | `glViewer <glviewer.html>`_
-       | `glBatchViewer <glbatchviewer.html>`_
-       | `glStencilViewer <glstencilviewer.html>`_
-     - | `glEvalLimit <glevallimit.html>`_
-       | `glPaintTest <glpainttest.html>`_
        | `glPtexViewer <glptexviewer.html>`_
+       | `glEvalLimit <glevallimit.html>`_
+     - | `glStencilViewer <glstencilviewer.html>`_
+       | `glPaintTest <glpainttest.html>`_
        | `uvViewer <uvviewer.html>`_
 
 .. list-table:: **DirectX examples**
    :class: quickref
-   :widths: 50 50
+   :widths: 50
 
    * - | `dxViewer <dxviewer.html>`_
-     - |
 
 .. list-table:: **Plugin examples**
    :class: quickref
-   :widths: 50 50
+   :widths: 50
 
    * - | `osdPolySmooth <maya_osdpolysmooth.html>`_
-       | `mayaViewer <mayaviewer.html>`_
-     - | `mayaPtexViewer <mayaptexviewer.html>`_
+
 
 |
 

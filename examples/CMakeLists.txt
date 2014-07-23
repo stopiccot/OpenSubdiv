@@ -37,7 +37,6 @@ if (OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
     add_subdirectory(common)
     
     add_subdirectory(glViewer)
-#    add_subdirectory(glBatchViewer)
 #    add_subdirectory(glStencilViewer)
     add_subdirectory(glEvalLimit)
 #    add_subdirectory(tessellateObjFile)
