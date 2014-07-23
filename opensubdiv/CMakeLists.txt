@@ -173,14 +173,6 @@ if (NOT NO_LIB)
     # Build dynamic libs  ----------------------------------
     if (NOT WIN32 AND NOT IOS)
 
-        # Evaluate 'soname' from OSD version
-
-            # replace '_' with '.'
-            string(REGEX REPLACE "(_)" "." OSD_SONAME ${OpenSubdiv_VERSION})
-
-            # remove starting 'v' character
-            string(REGEX REPLACE "^v" "" OSD_SONAME ${OSD_SONAME})
-
         # generate dynamic-link targets
 
         #---------------------------------------------------

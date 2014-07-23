@@ -1191,7 +1191,7 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    static const char windowTitle[] = "OpenSubdiv painting test";
+    static const char windowTitle[] = "OpenSubdiv glPaintTest " OPENSUBDIV_VERSION_STRING;
 
 #define CORE_PROFILE
 #ifdef CORE_PROFILE

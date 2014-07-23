@@ -36,6 +36,18 @@ else()
     message(FATAL_ERROR, "Cannot locate opensubdiv/version.h in CMAKE_SOURCE_DIR")
 endif()
 
+# Evaluate 'soname' from OSD version
+
+    # replace '_' with '.'
+    string(REGEX REPLACE "(_)" "." OSD_SONAME ${OpenSubdiv_VERSION})
+
+    # remove starting 'v' character
+    string(REGEX REPLACE "^v" "" OSD_SONAME ${OSD_SONAME})
+
+    add_definitions(
+        -DOPENSUBDIV_VERSION_STRING="${OSD_SONAME}"
+    )
+
 #-------------------------------------------------------------------------------
 
 message(STATUS "Compiling ${CMAKE_PROJECT_NAME} version ${OpenSubdiv_VERSION}")

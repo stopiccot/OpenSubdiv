@@ -1045,7 +1045,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    static const char windowTitle[] = "OpenSubdiv evalViewer";
+    static const char windowTitle[] = "OpenSubdiv glEvalLimit " OPENSUBDIV_VERSION_STRING;
 
 #define CORE_PROFILE
 #ifdef CORE_PROFILE
