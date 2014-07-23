@@ -22,8 +22,8 @@
      language governing permissions and limitations under the Apache License.
   
 
-limitEval
----------
+glEvalLimit
+-----------
 
 .. contents::
    :local:
@@ -40,7 +40,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-``limitEval`` is a stand-alone application that showcases the limit surface
+``glEvalLimit`` is a stand-alone application that showcases the limit surface
 Eval module. On the given shape, random samples are generated in local u,v space.
 Vertex, varying and face-varying data is then computed on the surface limit and
 displayed as colors. Multiple controls are available to experiment with the algorithms.
@@ -57,14 +57,4 @@ OPTIONS
   Launches the application in full-screen mode (if is supported by GLFW on the
   OS)
 
-SEE ALSO
-========
-
-`Code Examples <code_examples.html>`__, \
-`glViewer <glviewer.html>`__, \
-`glBatchViewer <glbatchviewer.html>`__, \
-`ptexViewer <ptexviewer.html>`__, \
-`paintTest <painttest.html>`__, \
-`limitEval <limiteval.html>`__, \
-`dxViewer <dxviewer.html>`__, \
-
+.. include:: examples_see_also.rst

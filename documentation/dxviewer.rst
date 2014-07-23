@@ -62,16 +62,5 @@ OPTIONS
   Number of repetitions of the animtion loop (default=0 is infinite)
 
 
-SEE ALSO
-========
 
-`Code Examples <code_examples.html>`__, \
-`glViewer <glviewer.html>`__, \
-`glBatchViewer <glbatchviewer.html>`__, \
-`glStencilViewer <glstencilviewer.html>`__, \
-`ptexViewer <ptexviewer.html>`__, \
-`paintTest <painttest.html>`__, \
-`limitEval <limiteval.html>`__, \
-`dxViewer <dxviewer.html>`__, \
-`uvViewer <uvviewer.html>`__, \
-
+.. include:: examples_see_also.rst

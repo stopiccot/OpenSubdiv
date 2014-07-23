@@ -22,8 +22,8 @@
      language governing permissions and limitations under the Apache License.
   
 
-paintTest
----------
+glPaintTest
+-----------
 
 .. contents::
    :local:
@@ -35,16 +35,15 @@ SYNOPSIS
 .. parsed-literal:: 
    :class: codefhead
 
-   **paintTest** 
+   **glPaintTest** 
    [**-f**] 
    *objfile(s)*
    
 DESCRIPTION
 ===========
 
-``ptexViewer`` is a stand-alone application that showcases advanced HDR shading
-with color, displacement, occlusion and specular ptex maps. Multiple controls 
-are available to experiment with the algorithms.
+``glPaintTest`` is a small stand-alone application showing the potential of
+using GPU limit tessellation for painting and sculpting applications.
 
 .. image:: images/painttest.jpg
    :width: 400px
@@ -72,15 +71,4 @@ Keyboard Controls
       d      : use texture as displacement
 
 
-SEE ALSO
-========
-
-`Code Examples <code_examples.html>`__, \
-`glViewer <glviewer.html>`__, \
-`glBatchViewer <glbatchviewer.html>`__, \
-`glStencilViewer <glstencilviewer.html>`__, \
-`ptexViewer <ptexviewer.html>`__, \
-`limitEval <limiteval.html>`__, \
-`dxViewer <dxviewer.html>`__, \
-
-
+.. include:: examples_see_also.rst

@@ -40,8 +40,8 @@ of the software.
    * - | `glViewer <glviewer.html>`_
        | `glBatchViewer <glbatchviewer.html>`_
        | `glStencilViewer <glstencilviewer.html>`_
-     - | `limitEval <limiteval.html>`_
-       | `paintTest <painttest.html>`_
+     - | `glEvalLimit <glevallimit.html>`_
+       | `glPaintTest <glpainttest.html>`_
        | `glPtexViewer <glptexviewer.html>`_
        | `uvViewer <uvviewer.html>`_
 

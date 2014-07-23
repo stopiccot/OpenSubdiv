@@ -65,14 +65,5 @@ OPTIONS
   Launches the application in full-screen mode (if is supported by GLFW on the
   OS)
 
-SEE ALSO
-========
 
-`Code Examples <code_examples.html>`__, \
-`glBatchViewer <glbatchviewer.html>`__, \
-`glStencilViewer <glstencilviewer.html>`__, \
-`ptexViewer <ptexviewer.html>`__, \
-`paintTest <painttest.html>`__, \
-`limitEval <limiteval.html>`__, \
-`dxViewer <dxviewer.html>`__, \
-
+.. include:: examples_see_also.rst
