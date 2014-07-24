@@ -22,20 +22,20 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#ifndef _OsdPolySmooth
-#define _OsdPolySmooth
+#ifndef _MayaPolySmooth
+#define _MayaPolySmooth
 
 #include <maya/MPxNode.h>
 #include <maya/MTypeId.h>
 
 
-class OsdPolySmooth : public MPxNode {
+class MayaPolySmooth : public MPxNode {
 
 public:
 
-    OsdPolySmooth();
+    MayaPolySmooth();
 
-    virtual  ~OsdPolySmooth();
+    virtual  ~MayaPolySmooth();
 
     virtual MStatus compute( const MPlug& plug, MDataBlock& data );
 
@@ -61,4 +61,4 @@ public:
     static const MString typeNameStr;
 };
 
-#endif // _OsdPolySmooth
+#endif // _MayaPolySmooth

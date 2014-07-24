@@ -22,13 +22,13 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-# *** osdPolySmooth ***
+# *** mayaPolySmooth ***
 
 set(MAYA_FIND_QUIETLY TRUE)
 
 if(NOT MAYA_FOUND)
     message(STATUS
-        "Maya could not be found, so the OpenSubdiv osdPolySmooth plugin "
+        "Maya could not be found, so the OpenSubdiv mayaPolySmooth plugin "
         "will not be available. If you do have Maya installed and see this message, "
         "please add your Maya path to cmake/FindMaya.cmake or set it in "
         "the MAYA_LOCATION environment variable."
@@ -46,11 +46,11 @@ include_directories(
 )
 
 set(SOURCE_FILES
-    osdPolySmooth.cpp
+    mayaPolySmooth.cpp
 )
 
 set(HEADER_FILES
-    osdPolySmooth.h
+    mayaPolySmooth.h
 )
 
 if(UNIX)
@@ -85,11 +85,14 @@ add_definitions(
 add_library(maya_polySmoothNode SHARED
     ${SOURCE_FILES}
     ${HEADER_FILES}
+    $<TARGET_OBJECTS:sdc_obj>
+    $<TARGET_OBJECTS:vtr_obj>
+    $<TARGET_OBJECTS:far_obj>
 )
 
 set_target_properties(maya_polySmoothNode
     PROPERTIES
-    OUTPUT_NAME "osdPolySmooth"
+    OUTPUT_NAME "mayaPolySmooth"
     PREFIX ""
     SUFFIX ${PLATFORM_PLUGIN_EXTENSION}
     LINK_FLAGS "${PLATFORM_LINK_FLAGS}"
@@ -100,27 +103,26 @@ target_link_libraries(maya_polySmoothNode
     "${MAYA_OpenMaya_LIBRARY}"
     "${MAYA_OpenMayaRender_LIBRARY}"
     "${MAYA_OpenMayaUI_LIBRARY}"
-    ${PLATFORM_LIBRARIES}
 )
 
 install(TARGETS maya_polySmoothNode DESTINATION "${CMAKE_PLUGINDIR_BASE}")
 
 add_custom_target(maya_polySmoothNode_melScripts
         COMMAND
-            ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/osdPolySmooth.mel" "${CMAKE_BINARY_DIR}/${CMAKE_LIBDIR_BASE}"
+            ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/mayaPolySmooth.mel" "${CMAKE_BINARY_DIR}/${CMAKE_LIBDIR_BASE}"
         DEPENDS
-            "${CMAKE_CURRENT_SOURCE_DIR}/osdPolySmooth.mel"
+            "${CMAKE_CURRENT_SOURCE_DIR}/mayaPolySmooth.mel"
 )
 
 install(
-    FILES 
-        "${CMAKE_BINARY_DIR}/${CMAKE_LIBDIR_BASE}/osdPolySmooth.mel"
-    DESTINATION 
+    FILES
+        "${CMAKE_BINARY_DIR}/${CMAKE_LIBDIR_BASE}/mayaPolySmooth.mel"
+    DESTINATION
         "${CMAKE_PLUGINDIR_BASE}"
 )
 
-add_custom_target(osdPolySmoothNode 
-    ALL 
-    DEPENDS 
+add_custom_target(mayaPolySmooth
+    ALL
+    DEPENDS
         maya_polySmoothNode maya_polySmoothNode_melScripts
 )

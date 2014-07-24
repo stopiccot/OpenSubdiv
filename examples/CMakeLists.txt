@@ -37,8 +37,8 @@ if (OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
     add_subdirectory(common)
     
     add_subdirectory(glViewer)
-#    add_subdirectory(glStencilViewer)
     add_subdirectory(glEvalLimit)
+#    add_subdirectory(glStencilViewer)
 #    add_subdirectory(tessellateObjFile)
 #    add_subdirectory(uvViewer)
 #    add_subdirectory(facePartition)
@@ -90,7 +90,7 @@ endif()
 
 
 if (MAYA_FOUND AND (NOT NO_MAYA))
-    add_subdirectory(osdPolySmooth)
+    add_subdirectory(mayaPolySmooth)
 
     # manuelk: the following plugins are disabled until further notice
 

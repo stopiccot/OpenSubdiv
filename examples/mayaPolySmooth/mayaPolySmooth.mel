@@ -27,11 +27,11 @@
 // ===========================
 
 //
-// Add the UI for the osdPolySmooth plugin
+// Add the UI for the mayaPolySmooth plugin
 //
-global proc osdPolySmooth_addUI() {
+global proc mayaPolySmooth_addUI() {
 
-    osdPolySmooth_removeUI();
+    mayaPolySmooth_removeUI();
 
     // Make sure the "Edit Mesh" menu has been built
     global string $gPolygonsEditMeshMenu;
@@ -41,21 +41,21 @@ global proc osdPolySmooth_addUI() {
     // Add to the menu
     setParent -m $gPolygonsEditMeshMenu;
     menuItem -label "+ OSD Subdivide Meshes"
-             -command "osdPolySmooth({})"
-             "osdPolySmooth_menuItem";
+             -command "mayaPolySmooth({})"
+             "mayaPolySmooth_menuItem";
 }
 
 //
-// Remove the UI for the osdPolySmooth plugin
+// Remove the UI for the mayaPolySmooth plugin
 //
-global proc osdPolySmooth_removeUI() {
+global proc mayaPolySmooth_removeUI() {
 
-    if (`menuItem -ex "osdPolySmooth_menuItem"`) {
-        deleteUI -mi "osdPolySmooth_menuItem";
+    if (`menuItem -ex "mayaPolySmooth_menuItem"`) {
+        deleteUI -mi "mayaPolySmooth_menuItem";
     }
 }
 
-global proc AEosdPolySmoothTemplate( string $nodeName ) {
+global proc AEmayaPolySmoothTemplate( string $nodeName ) {
 
     editorTemplate -beginScrollLayout;
 
@@ -84,12 +84,12 @@ global proc AEosdPolySmoothTemplate( string $nodeName ) {
 //
 // Command to OSD Subdivide the selected or specified meshes
 //
-global proc string[] osdPolySmooth(string $meshes[]) {
+global proc string[] mayaPolySmooth(string $meshes[]) {
 
-    string $osdPolySmoothNodes[];
+    string $mayaPolySmoothNodes[];
 
     // parameter to conditionally insert an intermediate mesh node before the
-    // osdPolySmooth node to allow editing the base mesh
+    // mayaPolySmooth node to allow editing the base mesh
     int $showBaseMesh = 1;
 
     // Store off the original selection so can restore it below
@@ -100,7 +100,7 @@ global proc string[] osdPolySmooth(string $meshes[]) {
         $meshes = `ls -sl -dag -type mesh`;
     }
 
-    // Loop over each specified mesh and add osdPolySmooth mesh operator
+    // Loop over each specified mesh and add mayaPolySmooth mesh operator
     for ($mesh in $meshes) {
         // Create a temp mesh operation that will guarantee we have construction history
         string $tmpMeshOp[] = `polyTriangulate -name "dummyMeshOperation#" -ch true -nodeState 1 $mesh`;
@@ -118,17 +118,17 @@ global proc string[] osdPolySmooth(string $meshes[]) {
             $inMeshAttr[0] = ($baseMeshShape+".outMesh");
         }
 
-        // Create and connect the osdPolySmooth node
-        string $osdPolySmooth = `createNode osdPolySmooth`;
-        connectAttr ($inMeshAttr[0]) ($osdPolySmooth+".inputPolymesh");
-        connectAttr -force ($osdPolySmooth+".output") ($outMeshAttr[0]);
+        // Create and connect the mayaPolySmooth node
+        string $mayaPolySmooth = `createNode mayaPolySmooth`;
+        connectAttr ($inMeshAttr[0]) ($mayaPolySmooth+".inputPolymesh");
+        connectAttr -force ($mayaPolySmooth+".output") ($outMeshAttr[0]);
         
         polyMergeUV -d 0.01 -ch 1 $mesh;
 
         if ($showBaseMesh) {
-            addAttr -ln "displayMesh"  -at "enum" -en "Cage:Smooth:Cage+Smooth" -defaultValue 2 $osdPolySmooth;
-            setAttr -e-keyable true ($osdPolySmooth+".displayMesh");
-            expression -name ($osdPolySmooth+"_expr") -string ($mesh+".visibility = ("+$osdPolySmooth+".displayMesh != 0);\nif ("+$osdPolySmooth+".displayMesh == 1)\n\t"+$mesh+".overrideDisplayType = 0;\nelse\n\t"+$mesh+".overrideDisplayType = 2;\n"+$baseMeshShape+".intermediateObject = ("+$osdPolySmooth+".displayMesh == 1);") -alwaysEvaluate 0 -unitConversion "none";
+            addAttr -ln "displayMesh"  -at "enum" -en "Cage:Smooth:Cage+Smooth" -defaultValue 2 $mayaPolySmooth;
+            setAttr -e-keyable true ($mayaPolySmooth+".displayMesh");
+            expression -name ($mayaPolySmooth+"_expr") -string ($mesh+".visibility = ("+$mayaPolySmooth+".displayMesh != 0);\nif ("+$mayaPolySmooth+".displayMesh == 1)\n\t"+$mesh+".overrideDisplayType = 0;\nelse\n\t"+$mesh+".overrideDisplayType = 2;\n"+$baseMeshShape+".intermediateObject = ("+$mayaPolySmooth+".displayMesh == 1);") -alwaysEvaluate 0 -unitConversion "none";
             setAttr ($mesh+".overrideEnabled") 1;
         }
 
@@ -136,22 +136,22 @@ global proc string[] osdPolySmooth(string $meshes[]) {
         delete $tmpMeshOp[0];
 
         // Append to the list of nodes that were created
-        $osdPolySmoothNodes[`size $osdPolySmoothNodes`] = $osdPolySmooth;
+        $mayaPolySmoothNodes[`size $mayaPolySmoothNodes`] = $mayaPolySmooth;
     }
 
     // Restore original selection
     select $origSel;
 
-    // Return created osdPolySmooth nodes
-    return $osdPolySmoothNodes;
+    // Return created mayaPolySmooth nodes
+    return $mayaPolySmoothNodes;
 }
 
 //
-// Clearnup the DAG from nodes created with osdPolySmooth
+// Clearnup the DAG from nodes created with mayaPolySmooth
 //
-global proc osdPolySmoothCleanup() {
+global proc mayaPolySmoothCleanup() {
 
-    string $nodes[] = `ls -type osdPolySmooth`;
+    string $nodes[] = `ls -type mayaPolySmooth`;
 
     for ($node in $nodes) {
 
