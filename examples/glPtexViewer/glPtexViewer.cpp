@@ -2561,15 +2561,15 @@ int main(int argc, char ** argv) {
 
     if (occlusionFilename != NULL) {
         g_hud.AddCheckBox("Ambient Occlusion (A)", g_occlusion,
-                          250, 10, callbackCheckBox, HUD_CB_DISPLAY_OCCLUSION, 'a');
+                          -200, 570, callbackCheckBox, HUD_CB_DISPLAY_OCCLUSION, 'a');
     }
     if (specularFilename != NULL)
         g_hud.AddCheckBox("Specular (S)", g_specular,
-                          250, 30, callbackCheckBox, HUD_CB_DISPLAY_SPECULAR, 's');
+                          -200, 590, callbackCheckBox, HUD_CB_DISPLAY_SPECULAR, 's');
 
-    if (diffuseEnvironmentMap || specularEnvironmentMap) {
+    if (diffuseEnvironmentMap or specularEnvironmentMap) {
         g_hud.AddCheckBox("IBL (I)", g_ibl,
-                          250, 50, callbackCheckBox, HUD_CB_IBL, 'i');
+                          -200, 610, callbackCheckBox, HUD_CB_IBL, 'i');
     }
 
     g_hud.AddCheckBox("Cage Edges (H)", g_drawCageEdges != 0,
