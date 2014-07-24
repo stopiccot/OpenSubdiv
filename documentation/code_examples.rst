@@ -57,18 +57,6 @@ of the software.
    * - | `osdPolySmooth <maya_osdpolysmooth.html>`_
 
 
-|
-
-.. container:: notebox
-
-   **Note:**
-   the mayaViewer and mayaPtexViewer plugins are currently unsupported and they
-   may fail to compile or work with current versions of OpenSubdiv. These were
-   originally written for the sole purpose of live demonstrations and the code
-   is provided only as an implementation example.
-
-|
-
 ----
 
 Common Keyboard Controls

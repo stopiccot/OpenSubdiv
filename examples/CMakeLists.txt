@@ -91,11 +91,4 @@ endif()
 
 if (MAYA_FOUND AND (NOT NO_MAYA))
     add_subdirectory(mayaPolySmooth)
-
-    # manuelk: the following plugins are disabled until further notice
-
-    #add_subdirectory(mayaViewer)
-    #if(PTEX_FOUND)
-        #add_subdirectory(mayaPtexViewer)
-    #endif()
 endif()
