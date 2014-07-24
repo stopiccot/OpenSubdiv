@@ -351,10 +351,8 @@ FarRefineTablesFactory<Converter>::assignComponentTags(
 //
 struct Vertex {
 
-    // Hbr minimal required interface ----------------------
+    // Minimal required interface ----------------------
     Vertex() { }
-
-    Vertex(int /*i*/) { }
 
     Vertex(Vertex const & src) {
         _position[0] = src._position[0];
