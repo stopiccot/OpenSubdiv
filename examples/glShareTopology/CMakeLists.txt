@@ -55,16 +55,16 @@ _stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_glfw_executable(topologySharing
-    viewer.cpp
+_add_glfw_executable(glShareTopology
+    glShareTopology.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
 
-target_link_libraries(topologySharing
+target_link_libraries(glShareTopology
     ${PLATFORM_LIBRARIES}
 )
 
-install(TARGETS topologySharing DESTINATION "${CMAKE_BINDIR_BASE}")
+install(TARGETS glShareTopology DESTINATION "${CMAKE_BINDIR_BASE}")

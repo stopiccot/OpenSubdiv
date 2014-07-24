@@ -46,9 +46,6 @@
     #include <GL/glfw.h>
 #endif
 
-#include <far/mesh.h>
-#include <far/meshFactory.h>
-
 #include <osd/error.h>
 #include <osd/vertex.h>
 #include <osd/glDrawContext.h>
@@ -107,7 +104,7 @@
 #endif
 
 
-#include <common/hbr_utils.h>
+#include <common/vtr_utils.h>
 #include <shapes/catmark_cube.h>
 #include <shapes/catmark_bishop.h>
 #include <shapes/catmark_pawn.h>
@@ -123,13 +120,11 @@ static const char *shaderSource =
 
 #include <cfloat>
 #include <vector>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 
-typedef OpenSubdiv::HbrMesh<OpenSubdiv::OsdVertex>     OsdHbrMesh;
-typedef OpenSubdiv::HbrVertex<OpenSubdiv::OsdVertex>   OsdHbrVertex;
-typedef OpenSubdiv::HbrFace<OpenSubdiv::OsdVertex>     OsdHbrFace;
-typedef OpenSubdiv::HbrHalfedge<OpenSubdiv::OsdVertex> OsdHbrHalfedge;
+using namespace OpenSubdiv;
 
 // ---------------------------------------------------------------------------
 
@@ -143,16 +138,16 @@ public:
     virtual GLuint BindVertexBuffer() = 0;
     virtual GLuint BindVaryingBuffer() = 0;
 
-    OpenSubdiv::OsdVertexBufferDescriptor const &GetVertexDesc() const {
+    OsdVertexBufferDescriptor const &GetVertexDesc() const {
         return _vertexDesc;
     }
-    OpenSubdiv::OsdVertexBufferDescriptor const &GetVaryingDesc() const {
+    OsdVertexBufferDescriptor const &GetVaryingDesc() const {
         return _varyingDesc;
     }
 
 protected:
-    InstancesBase(OpenSubdiv::OsdVertexBufferDescriptor const &vertexDesc,
-                  OpenSubdiv::OsdVertexBufferDescriptor const &varyingDesc,
+    InstancesBase(OsdVertexBufferDescriptor const &vertexDesc,
+                  OsdVertexBufferDescriptor const &varyingDesc,
                   int numVertices) :
         _vertexDesc(vertexDesc),
         _varyingDesc(varyingDesc),
@@ -162,8 +157,8 @@ protected:
     int getNumVertices() const { return _numVertices; }
 
 private:
-    OpenSubdiv::OsdVertexBufferDescriptor _vertexDesc;
-    OpenSubdiv::OsdVertexBufferDescriptor _varyingDesc;
+    OsdVertexBufferDescriptor _vertexDesc;
+    OsdVertexBufferDescriptor _varyingDesc;
     int _numVertices;                // # of vertices of single instance
 };
 
@@ -171,8 +166,8 @@ template <class VERTEX_BUFFER>
 class Instances : public InstancesBase {
 public:
     Instances(int numInstances,
-              OpenSubdiv::OsdVertexBufferDescriptor const &vertexDesc,
-              OpenSubdiv::OsdVertexBufferDescriptor const &varyingDesc,
+              OsdVertexBufferDescriptor const &vertexDesc,
+              OsdVertexBufferDescriptor const &varyingDesc,
               bool interleaved,
               int numVertices) :
         InstancesBase(vertexDesc, varyingDesc, numVertices),
@@ -246,15 +241,15 @@ public:
 
     virtual InstancesBase *CreateInstances(
         int numInstances,
-        OpenSubdiv::OsdVertexBufferDescriptor const &vertexDesc,
-        OpenSubdiv::OsdVertexBufferDescriptor const &varyingDesc,
+        OsdVertexBufferDescriptor const &vertexDesc,
+        OsdVertexBufferDescriptor const &varyingDesc,
         bool interleaved) = 0;
 
     virtual void UpdateVertexTexture(InstancesBase *instances) = 0;
 
     virtual void Synchronize() = 0;
 
-    OpenSubdiv::OsdGLDrawContext *GetDrawContext() const {
+    OsdGLDrawContext *GetDrawContext() const {
         return _drawContext;
     }
 
@@ -271,43 +266,46 @@ public:
     }
 
 protected:
-    TopologyBase(OpenSubdiv::FarMesh<OpenSubdiv::OsdVertex> *farMesh) {
-        _drawContext = OpenSubdiv::OsdGLDrawContext::Create(
-            farMesh->GetPatchTables(), 7, false);
-        _kernelBatches = farMesh->GetKernelBatches();
-        _numVertices = farMesh->GetNumVertices();
+
+    TopologyBase(FarPatchTables const * patchTables) {
+
+        _drawContext = OsdGLDrawContext::Create(patchTables, 7, false);
     }
 
     void updateVertexBufferStride(int stride) {
         for (int i = 0; i < (int)_drawContext->patchArrays.size(); ++i) {
-            OpenSubdiv::OsdDrawContext::PatchDescriptor desc =
+            OsdDrawContext::PatchDescriptor desc =
                 _drawContext->patchArrays[i].GetDescriptor();
             desc.SetNumElements(stride);
             _drawContext->patchArrays[i].SetDescriptor(desc);
         }
     }
 
-    OpenSubdiv::FarKernelBatchVector const &getKernelBatches() const {
-        return _kernelBatches;
-    }
+    int _numVertices;
 
 private:
-    OpenSubdiv::OsdGLDrawContext *_drawContext;
-    OpenSubdiv::FarKernelBatchVector _kernelBatches;
-    int _numVertices;
+    OsdGLDrawContext *_drawContext;
     std::vector<float> _restPosition;
 };
 
 template <class COMPUTE_CONTROLLER, class VERTEX_BUFFER>
 class Topology : public TopologyBase {
-public:
-    typedef typename COMPUTE_CONTROLLER::ComputeContext ComputeContext;
-    Topology(OpenSubdiv::FarMesh<OpenSubdiv::OsdVertex> *farMesh) :
-        TopologyBase(farMesh) {
 
-        _computeContext = ComputeContext::Create(
-            farMesh->GetSubdivisionTables(),
-            farMesh->GetVertexEditTables());
+public:
+
+    typedef typename COMPUTE_CONTROLLER::ComputeContext ComputeContext;
+
+    Topology(FarPatchTables const * patchTables,
+        FarStencilTables const * vertexStencils,
+            FarStencilTables const * varyingStencils)
+                : TopologyBase(patchTables) {
+
+        _computeContext = ComputeContext::Create(vertexStencils, varyingStencils);
+
+        _kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+
+        _numVertices = vertexStencils->GetNumStencils() +
+            vertexStencils->GetNumControlVertices();
     }
 
     ~Topology() {
@@ -316,26 +314,28 @@ public:
 
     void Refine(InstancesBase *instance, int numInstances) {
 
-        OpenSubdiv::OsdVertexBufferDescriptor const &globalVertexDesc = 
+        OsdVertexBufferDescriptor const &globalVertexDesc =
             instance->GetVertexDesc();
-        OpenSubdiv::OsdVertexBufferDescriptor const &globalVaryingDesc = 
+        OsdVertexBufferDescriptor const &globalVaryingDesc =
             instance->GetVaryingDesc();
 
         Instances<VERTEX_BUFFER> *typedInstance =
             static_cast<Instances<VERTEX_BUFFER> *>(instance);
 
         for (int i = 0; i < numInstances; ++i) {
-            OpenSubdiv::OsdVertexBufferDescriptor vertexDesc(
-                globalVertexDesc.offset + GetNumVertices()*globalVertexDesc.stride * i,
+
+            OsdVertexBufferDescriptor vertexDesc(
+                globalVertexDesc.offset + _numVertices*globalVertexDesc.stride*i,
                 globalVertexDesc.length,
                 globalVertexDesc.stride);
-            OpenSubdiv::OsdVertexBufferDescriptor varyingDesc(
-                globalVaryingDesc.offset + GetNumVertices()*globalVaryingDesc.stride * i,
+
+            OsdVertexBufferDescriptor varyingDesc(
+                globalVaryingDesc.offset + _numVertices*globalVaryingDesc.stride*i,
                 globalVaryingDesc.length,
                 globalVaryingDesc.stride);
 
-            _computeController.Refine(_computeContext,
-                                      getKernelBatches(),
+            _computeController.Compute(_computeContext,
+                                      _kernelBatches,
                                       typedInstance->GetVertexBuffer(),
                                       typedInstance->GetVaryingBuffer(),
                                       &vertexDesc,
@@ -345,15 +345,15 @@ public:
 
     virtual InstancesBase *CreateInstances(
         int numInstances,
-        OpenSubdiv::OsdVertexBufferDescriptor const &vertexDesc,
-        OpenSubdiv::OsdVertexBufferDescriptor const &varyingDesc,
+        OsdVertexBufferDescriptor const &vertexDesc,
+        OsdVertexBufferDescriptor const &varyingDesc,
         bool interleaved) {
 
         return new Instances<VERTEX_BUFFER>(numInstances,
                                             vertexDesc,
                                             varyingDesc,
                                             interleaved,
-                                            GetNumVertices());
+                                            _numVertices);
     }
 
     virtual void Synchronize() {
@@ -371,6 +371,7 @@ public:
 private:
     COMPUTE_CONTROLLER _computeController;
     ComputeContext *_computeContext;
+    FarKernelBatchVector _kernelBatches;
 };
 
 // ---------------------------------------------------------------------------
@@ -378,29 +379,32 @@ private:
 // CL specializations
 #ifdef OPENSUBDIV_HAS_OPENCL
 
-template<> OpenSubdiv::OsdCLGLVertexBuffer *
-Instances<OpenSubdiv::OsdCLGLVertexBuffer>::createVertexBuffer(
+template<> OsdCLGLVertexBuffer *
+Instances<OsdCLGLVertexBuffer>::createVertexBuffer(
     int numElements, int numVertices) {
-    return OpenSubdiv::OsdCLGLVertexBuffer::Create(
+    return OsdCLGLVertexBuffer::Create(
         numElements, numVertices, g_clContext);
 }
 
 template<> void
-Instances<OpenSubdiv::OsdCLGLVertexBuffer>::updateVertexBuffer(
-    OpenSubdiv::OsdCLGLVertexBuffer *vertexBuffer,
+Instances<OsdCLGLVertexBuffer>::updateVertexBuffer(
+    OsdCLGLVertexBuffer *vertexBuffer,
     const float *src, int startVertex, int numVertices) {
     vertexBuffer->UpdateData(src, startVertex, numVertices, g_clQueue);
 }
 
 template<>
-Topology<OpenSubdiv::OsdCLComputeController, OpenSubdiv::OsdCLGLVertexBuffer>::
-Topology(OpenSubdiv::FarMesh<OpenSubdiv::OsdVertex> *farMesh) :
-    TopologyBase(farMesh),
-    _computeController(g_clContext, g_clQueue) {
+Topology<OsdCLComputeController, OsdCLGLVertexBuffer>::
+Topology(FarPatchTables const * patchTables,
+    FarStencilTables const * vertexStencils, FarStencilTables const * varyingStencils) :
+        TopologyBase(patchTables), _computeController(g_clContext, g_clQueue) {
 
-    _computeContext = ComputeContext::Create(
-        farMesh->GetSubdivisionTables(),
-        farMesh->GetVertexEditTables(), g_clContext);
+    _computeContext = ComputeContext::Create(g_clContext, vertexStencils, varyingStencils);
+
+    _kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+
+    _numVertices = vertexStencils->GetNumStencils() +
+        vertexStencils->GetNumControlVertices();
 }
 #endif
 
@@ -510,7 +514,7 @@ updateGeom() {
 
     std::vector<float> vertex(numVertexElements * nverts);
     std::vector<float> varying(numVaryingElements * nverts);
-    
+
     int column = (int)ceil(sqrt((float)g_numInstances));
     for (int i = 0; i < g_numInstances; ++i) {
         float *d = &vertex[0];
@@ -567,18 +571,28 @@ refine() {
 
 //------------------------------------------------------------------------------
 static TopologyBase *
-createOsdMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
+createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) {
 
     checkGLErrors("create osd enter");
-    // generate Hbr representation from "obj" description
-    std::vector<float> restPosition;
-    OsdHbrMesh * hmesh = simpleHbr<OpenSubdiv::OsdVertex>(shape.c_str(), scheme,
-                                                          restPosition);
+
+    Shape * shape = Shape::parseObj(shapeStr.c_str(), scheme);
+
+    std::vector<float> restPosition(shape->verts);
+
+    FarRefineTables * refTables = 0;
+    {
+        SdcType type = GetSdcType(*shape);
+        SdcOptions options = GetSdcOptions(*shape);
+
+        refTables = FarRefineTablesFactory<Shape>::Create(type, options, *shape);
+
+        assert(refTables);
+    }
 
     // material assignment
     std::vector<int> idsOnPtexFaces;
     {
-        int numFaces = hmesh->GetNumCoarseFaces();
+        int numFaces = refTables->GetNumFaces(0);
 
         // first, assign material ID to each coarse face
         std::vector<int> idsOnCoarseFaces;
@@ -588,25 +602,21 @@ createOsdMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
         }
 
         // create ptex index to coarse face index mapping
-        OsdHbrFace *lastFace = hmesh->GetFace(numFaces-1);
-        int numPtexFaces = lastFace->GetPtexIndex();
-        numPtexFaces += (hmesh->GetSubdivision()->FaceIsExtraordinary(hmesh, lastFace) ?
-                         lastFace->GetNumVertices() : 1);
+        int numPtexFaces = refTables->GetNumPtexFaces();
 
         // XXX: duped logic to simpleHbr
         std::vector<int> ptexIndexToFaceMapping(numPtexFaces);
         int ptexIndex = 0;
-        for (int i = 0; i < numFaces; ++i) {
-            OsdHbrFace * f = hmesh->GetFace(i);
-            ptexIndexToFaceMapping[ptexIndex++] = i;
-            int numVerts = f->GetNumVertices();
-            if ( (scheme==kCatmark or scheme==kBilinear) and numVerts != 4 ) {
-                for (int j = 0; j < numVerts-1; ++j) {
-                    ptexIndexToFaceMapping[ptexIndex++] = i;
+        for (int face=0; face < numFaces; ++face) {
+
+            ptexIndexToFaceMapping[ptexIndex++] = face;
+            FarIndexArray fverts = refTables->GetFaceVertices(0, face);
+            if ( (scheme==kCatmark or scheme==kBilinear) and fverts.size() != 4 ) {
+                for (int j = 0; j < (fverts.size()-1); ++j) {
+                    ptexIndexToFaceMapping[ptexIndex++] = face;
                 }
             }
         }
-        assert((int)ptexIndexToFaceMapping.size() == numPtexFaces);
 
         // convert ID array from coarse face index space to ptex index space
         for (int i = 0; i < numPtexFaces; ++i) {
@@ -617,57 +627,79 @@ createOsdMesh( const std::string &shape, int level, Scheme scheme=kCatmark ) {
     // Adaptive refinement currently supported only for catmull-clark scheme
     bool doAdaptive = (g_adaptive!=0 and scheme==kCatmark);
 
-    // create farmesh
-    OpenSubdiv::FarMeshFactory<OpenSubdiv::OsdVertex> meshFactory(hmesh, level, doAdaptive);
-    OpenSubdiv::FarMesh<OpenSubdiv::OsdVertex> *farMesh = meshFactory.Create();
+    if (doAdaptive) {
+        refTables->RefineAdaptive(level);
+    } else {
+        refTables->RefineUniform(level);
+    }
+
+    FarStencilTables const * vertexStencils=0, * varyingStencils=0;
+    {
+        FarStencilTablesFactory::Options options;
+        options.generateOffsets = true;
+        options.generateAllLevels = doAdaptive ? true : false;
+
+        vertexStencils = FarStencilTablesFactory::Create(*refTables, options);
+
+        if (g_displayStyle==kVarying or g_displayStyle==kVaryingInterleaved) {
+            varyingStencils = FarStencilTablesFactory::Create(*refTables, options);
+        }
+
+        assert(vertexStencils);
+    }
+
+    FarPatchTables const * patchTables =
+        FarPatchTablesFactory::Create(*refTables);
+
 
     // create partitioned patcharray
     TopologyBase *topology = NULL;
 
     if (g_kernel == kCPU) {
-        topology = new Topology<OpenSubdiv::OsdCpuComputeController,
-            OpenSubdiv::OsdCpuGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdCpuComputeController,
+            OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #ifdef OPENSUBDIV_HAS_OPENMP
     } else if (g_kernel == kOPENMP) {
-        topology = new Topology<OpenSubdiv::OsdOmpComputeController,
-            OpenSubdiv::OsdCpuGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdOmpComputeController,
+            OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_TBB
     } else if (g_kernel == kTBB) {
-        topology = new Topology<OpenSubdiv::OsdTbbComputeController,
-            OpenSubdiv::OsdCpuGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdTbbComputeController,
+            OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_GCD
     } else if (g_kernel == kGCD) {
-        topology = new Topology<OpenSubdiv::OsdGcdComputeController,
-            OpenSubdiv::OsdCpuGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdGcdComputeController,
+            OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if (g_kernel == kCUDA) {
-        topology = new Topology<OpenSubdiv::OsdCudaComputeController,
-            OpenSubdiv::OsdCudaGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdCudaComputeController,
+            OsdCudaGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if (g_kernel == kCL) {
-        topology = new Topology<OpenSubdiv::OsdCLComputeController,
-            OpenSubdiv::OsdCLGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdCLComputeController,
+            OsdCLGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     } else if (g_kernel == kGLSL) {
-        topology = new Topology<OpenSubdiv::OsdGLSLTransformFeedbackComputeController,
-            OpenSubdiv::OsdGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdGLSLTransformFeedbackComputeController,
+            OsdGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     } else if (g_kernel == kGLSLCompute) {
-        topology = new Topology<OpenSubdiv::OsdGLSLComputeController,
-            OpenSubdiv::OsdGLVertexBuffer>(farMesh);
+        topology = new Topology<OsdGLSLComputeController,
+            OsdGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
     } else {
     }
 
-    // Hbr mesh can be deleted
-    delete hmesh;
-    delete farMesh;
+    delete refTables;
+    delete vertexStencils;
+    delete varyingStencils;
+    delete patchTables;
 
     // centering rest position
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -718,9 +750,9 @@ union Effect {
     }
 };
 
-typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
+typedef std::pair<OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc> {
+class EffectDrawRegistry : public OsdGLDrawRegistry<EffectDesc> {
 
 protected:
     virtual ConfigType *
@@ -746,8 +778,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     const char *glslVersion = "#version 330\n";
 #endif
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS or
-        desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == FarPatchTables::QUADS or
+        desc.first.GetType() == FarPatchTables::TRIANGLES) {
         sconfig->vertexShader.source = shaderSource;
         sconfig->vertexShader.version = glslVersion;
         sconfig->vertexShader.AddDefine("VERTEX_SHADER");
@@ -763,12 +795,12 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     sconfig->fragmentShader.version = glslVersion;
     sconfig->fragmentShader.AddDefine("FRAGMENT_SHADER");
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS) {
+    if (desc.first.GetType() == FarPatchTables::QUADS) {
         // uniform catmark, bilinear
         sconfig->geometryShader.AddDefine("PRIM_QUAD");
         sconfig->fragmentShader.AddDefine("PRIM_QUAD");
         sconfig->commonShader.AddDefine("UNIFORM_SUBDIVISION");
-    } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    } else if (desc.first.GetType() == FarPatchTables::TRIANGLES) {
         // uniform loop
         sconfig->geometryShader.AddDefine("PRIM_TRI");
         sconfig->fragmentShader.AddDefine("PRIM_TRI");
@@ -785,23 +817,23 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     }
 
     switch (effect.displayStyle) {
-    case kWire:
-        sconfig->commonShader.AddDefine("GEOMETRY_OUT_WIRE");
-        break;
-    case kWireShaded:
-        sconfig->commonShader.AddDefine("GEOMETRY_OUT_LINE");
-        break;
-    case kShaded:
-        sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
-        break;
-    case kVarying:
-        sconfig->commonShader.AddDefine("VARYING_COLOR");
-        sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
-        break;
-    case kVaryingInterleaved:
-        sconfig->commonShader.AddDefine("VARYING_COLOR");
-        sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
-        break;
+        case kWire:
+            sconfig->commonShader.AddDefine("GEOMETRY_OUT_WIRE");
+            break;
+        case kWireShaded:
+            sconfig->commonShader.AddDefine("GEOMETRY_OUT_LINE");
+            break;
+        case kShaded:
+            sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
+            break;
+        case kVarying:
+            sconfig->commonShader.AddDefine("VARYING_COLOR");
+            sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
+            break;
+        case kVaryingInterleaved:
+            sconfig->commonShader.AddDefine("VARYING_COLOR");
+            sconfig->commonShader.AddDefine("GEOMETRY_OUT_FILL");
+            break;
     }
 
     return sconfig;
@@ -882,7 +914,7 @@ GetEffect()
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
+bindProgram(Effect effect, OsdDrawContext::PatchArray const & patch)
 {
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
     EffectDrawRegistry::ConfigType *
@@ -904,7 +936,7 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, g_transformBinding, g_transformUB);
-    
+
     // Update and bind tessellation state
     struct Tessellation {
         float TessLevel;
@@ -957,7 +989,7 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
 
     glBindBufferBase(GL_UNIFORM_BUFFER, g_lightingBinding, g_lightingUB);
 
-    OpenSubdiv::OsdGLDrawContext *drawContext = g_topology->GetDrawContext();
+    OsdGLDrawContext *drawContext = g_topology->GetDrawContext();
 
     if (drawContext->GetVertexTextureBuffer()) {
         glActiveTexture(GL_TEXTURE0);
@@ -992,24 +1024,24 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
 
 //------------------------------------------------------------------------------
 static int
-drawPatches(OpenSubdiv::OsdDrawContext::PatchArrayVector const &patches,
+drawPatches(OsdDrawContext::PatchArrayVector const &patches,
             int instanceIndex,
             GLfloat const *color)
 {
     int numDrawCalls = 0;
     for (int i=0; i<(int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+        OsdDrawContext::PatchArray const & patch = patches[i];
 
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        OpenSubdiv::FarPatchTables::Type patchType = desc.GetType();
+        OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        FarPatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
 
         switch(patchType) {
-        case OpenSubdiv::FarPatchTables::QUADS:
+        case FarPatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case OpenSubdiv::FarPatchTables::TRIANGLES:
+        case FarPatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:
@@ -1121,12 +1153,12 @@ display() {
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (GLfloat) * 3, 0);
         glDisableVertexAttribArray(1);
     }
-    
+
 
     // update vertex buffer to texture for gregory patch drawing.
     g_topology->UpdateVertexTexture(g_instances);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+    OsdDrawContext::PatchArrayVector const & patches =
         g_topology->GetDrawContext()->patchArrays;
     int numDrawCalls = 0;
     // primitive counting
@@ -1283,20 +1315,20 @@ rebuildInstances()
     if (g_displayStyle == kVaryingInterleaved) {
         g_instances = g_topology->CreateInstances(
             g_numInstances,
-            OpenSubdiv::OsdVertexBufferDescriptor(0, 3, 7),
-            OpenSubdiv::OsdVertexBufferDescriptor(3, 4, 7),
+            OsdVertexBufferDescriptor(0, 3, 7),
+            OsdVertexBufferDescriptor(3, 4, 7),
             true);
     } else if (g_displayStyle == kVarying) {
         g_instances = g_topology->CreateInstances(
             g_numInstances,
-            OpenSubdiv::OsdVertexBufferDescriptor(0, 3, 3),
-            OpenSubdiv::OsdVertexBufferDescriptor(0, 4, 4),
+            OsdVertexBufferDescriptor(0, 3, 3),
+            OsdVertexBufferDescriptor(0, 4, 4),
             false);
     } else {
         g_instances = g_topology->CreateInstances(
             g_numInstances,
-            OpenSubdiv::OsdVertexBufferDescriptor(0, 3, 3),
-            OpenSubdiv::OsdVertexBufferDescriptor(0, 0, 0),
+            OsdVertexBufferDescriptor(0, 3, 3),
+            OsdVertexBufferDescriptor(0, 0, 0),
             false);
     }
 
@@ -1403,7 +1435,7 @@ callbackDisplayStyle(int b)
 static void
 callbackAdaptive(bool checked, int /* a */)
 {
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation()) {
+    if (OsdGLDrawContext::SupportsAdaptiveTessellation()) {
         g_adaptive = checked;
         rebuildOsdMesh();
     }
@@ -1471,7 +1503,7 @@ initHUD()
     g_hud.AddSlider("Prim counts", 1, 100, 25,
                     -200, 20, 20, false, callbackSlider, 0);
 
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation())
+    if (OsdGLDrawContext::SupportsAdaptiveTessellation())
         g_hud.AddCheckBox("Adaptive (`)", g_adaptive!=0, 10, 190, callbackAdaptive, 0, '`');
 
     for (int i = 1; i < 11; ++i) {
@@ -1508,7 +1540,7 @@ idle() {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
+callbackError(OsdErrorType err, const char *message)
 {
     printf("OsdError: %d\n", err);
     printf("%s", message);
@@ -1532,7 +1564,7 @@ setGLCoreProfile()
 #else
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
 #endif
-    
+
 #else
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
     glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
@@ -1610,7 +1642,7 @@ int main(int argc, char ** argv)
 #endif
 
     // activate feature adaptive tessellation if OSD supports it
-    g_adaptive = OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation();
+    g_adaptive = OsdGLDrawContext::SupportsAdaptiveTessellation();
 
     initGL();
 

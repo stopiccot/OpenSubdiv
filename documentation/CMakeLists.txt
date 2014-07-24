@@ -74,6 +74,7 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         glevallimit.rst
         glpainttest.rst
         glptexviewer.rst
+        glsharetopology.rst
         glstencilviewer.rst
         glviewer.rst
         hbr_overview.rst

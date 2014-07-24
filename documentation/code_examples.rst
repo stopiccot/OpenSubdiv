@@ -42,6 +42,7 @@ of the software.
        | `glEvalLimit <glevallimit.html>`_
      - | `glStencilViewer <glstencilviewer.html>`_
        | `glPaintTest <glpainttest.html>`_
+       | `glShareTopology <glsharetopology.html>`_
        | `uvViewer <uvviewer.html>`_
 
 .. list-table:: **DirectX examples**
