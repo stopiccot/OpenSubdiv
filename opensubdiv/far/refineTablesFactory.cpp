@@ -277,12 +277,36 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
             }
         }
     }
+
+    if (desc.numFVarChannels>0) {
+
+        for (int channel=0; channel<desc.numFVarChannels; ++channel) {
+
+            int        channelSize    = desc.fvarChannels[channel].numValues;
+            int const* channelIndices = desc.fvarChannels[channel].valueIndices;
+
+            int channelIndex = refTables.createFVarChannel(channelSize);
+            assert(channelIndex == channel);
+
+            for (int face=0, idx=0; face<desc.numFaces; ++face) {
+
+                FarIndexArray dstFaceValues = refTables.getBaseFVarFaceValues(face, channel);
+
+                for (int vert=0; vert<dstFaceValues.size(); ++vert) {
+
+                    dstFaceValues[vert] = channelIndices[idx++];
+                }
+            }
+            refTables.completeFVarChannelTopology(channel);
+        }
+    }
 }
 
 FarRefineTablesFactoryBase::TopologyDescriptor::TopologyDescriptor() :
     numVertices(0), numFaces(0), vertsPerFace(0), vertIndices(0),
         numCreases(0), creaseVertexIndexPairs(0), creaseWeights(0),
-            numCorners(0), cornerVertexIndices(0), cornerWeights(0) {
+            numCorners(0), cornerVertexIndices(0), cornerWeights(0),
+                numFVarChannels(0), fvarChannels(0) {
 }
 
 } // end namespace OPENSUBDIV_VERSION

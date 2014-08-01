@@ -100,6 +100,15 @@ FarRefineTables::GetNumFaceVerticesTotal() const {
     }
     return sum;
 }
+int
+FarRefineTables::GetNumFVarValuesTotal(int channel) const {
+    int sum = 0;
+    for (int i = 0; i < (int)_levels.size(); ++i) {
+        sum += _levels[i].getNumFVarValues(channel);
+    }
+    return sum;
+}
+
 
 template <SdcType SCHEME_TYPE> void
 computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices) {

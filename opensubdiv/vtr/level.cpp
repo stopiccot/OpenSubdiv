@@ -26,6 +26,7 @@
 #include "../vtr/array.h"
 #include "../vtr/level.h"
 #include "../vtr/refinement.h"
+#include "../vtr/fvarLevel.h"
 
 #include <cassert>
 #include <cstdio>
@@ -61,6 +62,9 @@ VtrLevel::VtrLevel() :
 
 VtrLevel::~VtrLevel()
 {
+    for (int i = 0; i < (int)_fvarChannels.size(); ++i) {
+        delete _fvarChannels[i];
+    }
 }
 
 
@@ -474,7 +478,7 @@ namespace {
 //  the last face.
 //
 int
-VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, VtrIndex vOffset, int ringVerts[]) const
+VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int vOffset, int ringVerts[]) const
 {
     VtrLevel const& level = *this;
 
@@ -1100,7 +1104,7 @@ VtrLevel::populateLocalIndices()
         for (int i = 0; i < vFaces.size(); ++i) {
             VtrIndexArray fVerts = this->getFaceVertices(vFaces[i]);
 
-            int vInFaceIndex = std::find(fVerts.begin(), fVerts.end(), vIndex) - fVerts.begin();
+            int vInFaceIndex = (int)(std::find(fVerts.begin(), fVerts.end(), vIndex) - fVerts.begin());
             vInFaces[i] = (VtrLocalIndex) vInFaceIndex;
         }
     }
@@ -1137,7 +1141,7 @@ namespace {
     inline int
     findInArray(VtrIndexArray const& array, VtrIndex value)
     {
-        return std::find(array.begin(), array.end(), value) - array.begin();
+        return (int)(std::find(array.begin(), array.end(), value) - array.begin());
     }
 }
 
@@ -1246,6 +1250,53 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
 
     return true;
 }
+
+//
+//  In development -- methods for accessing face-varying data channels...
+//
+int
+VtrLevel::createFVarChannel(int fvarValueCount)
+{
+    VtrFVarLevel* fvarLevel = new VtrFVarLevel(*this);
+
+    fvarLevel->resizeValues(fvarValueCount);
+    fvarLevel->resizeComponents();
+
+    _fvarChannels.push_back(fvarLevel);
+    return (int)_fvarChannels.size() - 1;
+}
+
+void
+VtrLevel::destroyFVarChannel(int channel)
+{
+    delete _fvarChannels[channel];
+    _fvarChannels.erase(_fvarChannels.begin() + channel);
+}
+
+int
+VtrLevel::getNumFVarValues(int channel) const
+{
+    return _fvarChannels[channel]->getNumValues();
+}
+
+VtrIndexArray const
+VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel) const
+{
+    return _fvarChannels[channel]->getFaceValues(faceIndex);
+}
+
+VtrIndexArray
+VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel)
+{
+    return _fvarChannels[channel]->getFaceValues(faceIndex);
+}
+
+void
+VtrLevel::completeFVarChannelTopology(int channel)
+{
+    return _fvarChannels[channel]->completeTopologyFromFaceValues();
+}
+
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

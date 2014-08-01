@@ -43,6 +43,8 @@ template <class MESH> class FarRefineTablesFactory;
 class FarRefineTablesFactoryBase;
 class FarRefineTables;
 class VtrRefinement;
+class VtrFVarRefinement;
+class VtrFVarLevel;
 
 //
 //  VtrLevel:
@@ -225,7 +227,7 @@ public:
     int gatherQuadRegularBoundaryPatchVertices(VtrIndex fIndex, unsigned int patchVerts[], int boundaryEdgeInFace) const;
     int gatherQuadRegularCornerPatchVertices(  VtrIndex fIndex, unsigned int patchVerts[], int cornerVertInFace) const;
 
-    int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, VtrIndex vOffset, int ringVerts[]) const;
+    int gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int vOffset, int ringVerts[]) const;
 
 protected:
     template <class MESH>
@@ -234,6 +236,8 @@ protected:
     friend class FarRefineTables;
     friend class FarPatchTablesFactory;
     friend class VtrRefinement;
+    friend class VtrFVarRefinement;
+    friend class VtrFVarLevel;
 
     //  Sizing methods used to construct a level to populate:
     void resizeFaces(       int numFaces);
@@ -261,6 +265,18 @@ protected:
     //  Replace these with access to sharpness buffers/arrays rather than elements:
     VtrSharpness& getEdgeSharpness(VtrIndex edgeIndex);
     VtrSharpness& getVertexSharpness(VtrIndex vertIndex);
+
+    //  Create, destroy and populate face-varying channels:
+    int  createFVarChannel(int fvarValueCount);
+    void destroyFVarChannel(int channel = 0);
+
+    int getNumFVarChannels() const { return (int) _fvarChannels.size(); }
+    int getNumFVarValues(int channel = 0) const;
+
+    VtrIndexArray const getFVarFaceValues(VtrIndex faceIndex, int channel = 0) const;
+    VtrIndexArray       getFVarFaceValues(VtrIndex faceIndex, int channel = 0);
+
+    void completeFVarChannelTopology(int channel = 0);
 
     //  Counts and offsets for all relation types:
     //      - these may be unwarranted if we let VtrRefinement access members directly...
@@ -382,6 +398,9 @@ protected:
 
     std::vector<VtrSharpness>  _vertSharpness;             // 1 per vertex
     std::vector<VTag>          _vertTags;                  // 1 per vertex:  manifold, SdcRule, etc.
+
+    //  Face-varying channels:
+    std::vector<VtrFVarLevel*> _fvarChannels;
 };
 
 //

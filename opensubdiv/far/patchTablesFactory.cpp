@@ -424,9 +424,9 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
             // If the root face is not a quad, we need to offset the ptex index
             // CCW to match the correct child face
             VtrIndexArray children = refinement.getFaceChildFaces(parentFaceIndex);
-            for (int i=0; i<children.size(); ++i) {
-                if (children[i]==faceIndex) {
-                    childIndexInParent = i;
+            for (int j=0; j<children.size(); ++j) {
+                if (children[j]==faceIndex) {
+                    childIndexInParent = j;
                     break;
                 }
             }

@@ -74,7 +74,21 @@ public:
         int           numCorners;
         int const   * cornerVertexIndices;
         float const * cornerWeights;
+
+        //  Face-varying data channel -- value indices correspond to vertex indices,
+        //  i.e. one for every vertex of every face:
+        //
+        struct FVarChannel {
+
+            int         numValues;
+            int const * valueIndices;
+
+            FVarChannel() : numValues(0), valueIndices(0) { }
+        };
         
+        int                 numFVarChannels;
+        FVarChannel const * fvarChannels;
+
         TopologyDescriptor();
     };
 

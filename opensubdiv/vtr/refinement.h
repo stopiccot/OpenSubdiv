@@ -40,6 +40,8 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 class VtrSparseSelector;
+class VtrFVarRefinement;
+class FarRefineTables;
 class FarPatchTablesFactory;
 
 //
@@ -131,12 +133,19 @@ public:
     VtrIndex getChildFaceParentFace(VtrIndex f) const     { return _childFaceParentIndex[f]; }
     int      getChildFaceInParentFace(VtrIndex f) const   { return _childFaceTag[f]._indexInParent; }
 
+    VtrIndex getChildEdgeParentIndex(VtrIndex e) const    { return _childEdgeParentIndex[e]; }
+
+    VtrIndex getChildVertexParentIndex(VtrIndex v) const  { return _childVertexParentIndex[v]; }
+
 //
 //  Non-public methods:
 //
 protected:
+    friend class VtrFVarRefinement;
     friend class VtrSparseSelector;
+    friend class FarRefineTables;
     friend class FarPatchTablesFactory;
+
 
     VtrIndexArray getFaceChildFaces(VtrIndex parentFace);
     VtrIndexArray getFaceChildEdges(VtrIndex parentFace);
@@ -216,6 +225,11 @@ private:
     void subdivideVertexSharpness();
     void subdivideEdgeSharpness();
     void reclassifySemisharpVertices();
+
+    //
+    //  Methods involved in subdividing face-varying topology:
+    //
+    void subdivideFVarChannels();
 
     //
     //  Methods (and types) involved in subdividing the topology:
@@ -360,6 +374,9 @@ private:
 
     //  References to components in the base level (top-most ancestor) may be useful
     //  to copy non-interpolatible properties to all descendant components.
+
+    //  Refinement data for face-varying channels:
+    std::vector<VtrFVarRefinement*> _fvarChannels;
 
 public:
     //  TEMPORARY -- FOR ILLUSTRATIVE PURPOSES ONLY...

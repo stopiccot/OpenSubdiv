@@ -27,6 +27,8 @@
 #include "../vtr/types.h"
 #include "../vtr/level.h"
 #include "../vtr/refinement.h"
+#include "../vtr/fvarLevel.h"
+#include "../vtr/fvarRefinement.h"
 #include "../vtr/maskInterfaces.h"
 
 #include <cassert>
@@ -71,7 +73,11 @@ VtrRefinement::VtrRefinement() :
 
 VtrRefinement::~VtrRefinement()
 {
+    for (int i = 0; i < (int)_fvarChannels.size(); ++i) {
+        delete _fvarChannels[i];
+    }
 }
+
 
 void
 VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
@@ -1117,6 +1123,15 @@ VtrRefinement::refine(Options refineOptions)
     //  to call a post-process to adjust the semisharp and rule tags:
     //
     reclassifySemisharpVertices();
+
+    //
+    //  Refine the topology for any face-varying channels:
+    //
+    bool refineOptions_faceVaryingChannels = true;
+
+    if (refineOptions_faceVaryingChannels) {
+        subdivideFVarChannels();
+    }
 }
 
 
@@ -1535,6 +1550,28 @@ VtrRefinement::reclassifySemisharpVertices()
 
         cVertTag._semiSharp = (semiSharpEdgeCount > 0);
         cVertTag._rule      = (VTagSize)(creasing.DetermineVertexVertexRule(0.0, sharpEdgeCount));
+    }
+}
+
+void
+VtrRefinement::subdivideFVarChannels()
+{
+//printf("VtrRefinement::subdivideFVarChannels() -- level %d...\n", _child->_depth);
+    assert(_child->_fvarChannels.size() == 0);
+    assert(this->_fvarChannels.size() == 0);
+
+    int channelCount = _parent->getNumFVarChannels();
+
+    for (int channel = 0; channel < channelCount; ++channel) {
+        VtrFVarLevel* parentFVar = _parent->_fvarChannels[channel];
+
+        VtrFVarLevel*      childFVar  = new VtrFVarLevel(*_child);
+        VtrFVarRefinement* refineFVar = new VtrFVarRefinement(*this, *parentFVar, *childFVar);
+
+        refineFVar->applyRefinement();
+
+        _child->_fvarChannels.push_back(childFVar);
+        this->_fvarChannels.push_back(refineFVar);
     }
 }
 

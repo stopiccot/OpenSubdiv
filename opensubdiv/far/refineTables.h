@@ -30,7 +30,9 @@
 #include "../sdc/options.h"
 #include "../sdc/catmarkScheme.h"
 #include "../vtr/level.h"
+#include "../vtr/fvarLevel.h"
 #include "../vtr/refinement.h"
+#include "../vtr/fvarRefinement.h"
 #include "../vtr/maskInterfaces.h"
 
 #include <vector>
@@ -204,6 +206,14 @@ public:
     ///
     template <class T, class U> void InterpolateVarying(int level, T const * src, U * dst) const;
 
+    /// \brief Apply face-varying interpolation weights to a primvar buffer
+    //         associated with a particular face-varying channel
+    ///
+    template <class T, class U> void InterpolateFaceVarying(T const * src, U * dst, int channel = 0) const;
+
+    template <class T, class U> void InterpolateFaceVarying(int level, T const * src, U * dst, int channel = 0) const;
+
+
     //
     //  Inspection of components per level:
     //
@@ -294,6 +304,30 @@ public:
     ///  not connected)
     Index FindEdge(int level, Index v0, Index v1) const {
         return _levels[level].findEdge(v0, v1);
+    }
+
+
+    //
+    //  Inspection of face-varying channels and their contents:
+    //
+
+
+    /// \brief Returns the number of face-varying channels in the tables
+    int GetNumFVarChannels() const {
+        return _levels[0].getNumFVarChannels();
+    }
+
+    /// \brief Returns the total number of face-varying values in all levels
+    int GetNumFVarValuesTotal(int channel = 0) const;
+
+    /// \brief Returns the number of face-varying values at a given level of refinement
+    int GetNumFVarValues(int level, int channel = 0) const {
+        return _levels[level].getNumFVarValues(channel);
+    }
+
+    /// \brief Returns the face-varying values of a 'face' at 'level'
+    IndexArray const GetFVarFaceValues(int level, Index face, int channel = 0) const {
+        return _levels[level].getFVarFaceValues(face, channel);
     }
 
 
@@ -407,6 +441,13 @@ protected:
     float& baseEdgeSharpness(Index e)   { return _levels[0].getEdgeSharpness(e); }
     float& baseVertexSharpness(Index v) { return _levels[0].getVertexSharpness(v); }
 
+    //  Face-varying modifiers for constructing face-varying channels:
+    int  createFVarChannel(int numValues) { return _levels[0].createFVarChannel(numValues); }
+    void completeFVarChannelTopology(int channel = 0) { _levels[0].completeFVarChannelTopology(channel); }
+
+    IndexArray getBaseFVarFaceValues(Index face, int channel = 0) { return _levels[0].getFVarFaceValues(face, channel); }
+
+
 private:
     //  Prototype -- mainly for illustrative purposes right now...
     void catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector);
@@ -419,6 +460,11 @@ private:
     template <class T, class U> void varyingInterpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
     template <class T, class U> void varyingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
     template <class T, class U> void varyingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
+
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst, int channel) const;
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst, int channel) const;
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst, int channel) const;
+
 
     void initializePtexIndices() const;
 
@@ -740,7 +786,322 @@ FarRefineTables::varyingInterpolateChildVertsFromVerts(
 }
 
 
+//
+// Face-varying only interpolation
+//
 
+template <class T, class U>
+inline void
+FarRefineTables::InterpolateFaceVarying(T const * src, U * dst, int channel) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+
+    for (int level=1; level<=GetMaxLevel(); ++level) {
+
+        InterpolateFaceVarying(level, src, dst, channel);
+        
+        src = dst;
+        dst += _levels[level].getNumFVarValues();
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::InterpolateFaceVarying(int level, T const * src, U * dst, int channel) const {
+
+    assert(level>0 and level<=(int)_refinements.size());
+
+    VtrRefinement const & refinement = _refinements[level-1];
+
+    faceVaryingInterpolateChildVertsFromFaces(refinement, src, dst, channel);
+    faceVaryingInterpolateChildVertsFromEdges(refinement, src, dst, channel);
+    faceVaryingInterpolateChildVertsFromVerts(refinement, src, dst, channel);
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::faceVaryingInterpolateChildVertsFromFaces(
+    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
+    const VtrLevel& parent = refinement.parent();
+
+    for (int face = 0; face < parent.getNumFaces(); ++face) {
+
+        VtrIndex cVert = refinement.getFaceChildVertex(face);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        //  The only difference for face-varying here is that we get the values associated
+        //  with each face-vertex directly from the FVarLevel, rather than using the parent
+        //  face-vertices directly.  If any face-vertex has any sibling values, then we may
+        //  get the wrong one using the face-vertex index directly.
+
+        //  Declare and compute mask weights for this vertex relative to its parent face:
+        VtrIndexArray const fValues = parent.getFVarFaceValues(face, channel);
+
+        float fValueWeights[fValues.size()];
+
+        VtrMaskInterface fMask(fValueWeights, 0, 0);
+        VtrFaceInterface fHood(fValues.size());
+
+        scheme.ComputeFaceVertexMask(fHood, fMask);
+
+        //  Apply the weights to the parent face's vertices:
+        U & vdst = dst[cVert];
+
+        vdst.Clear();
+
+        for (int i = 0; i < fValues.size(); ++i) {
+            vdst.AddWithWeight(src[fValues[i]], fValueWeights[i]);
+        }
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
+    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
+    const VtrLevel& parent = refinement.parent();
+    const VtrLevel& child  = refinement.child();
+
+    const VtrFVarRefinement& refineFVar = *refinement._fvarChannels[channel];
+    const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
+    const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
+
+    VtrEdgeInterface eHood(parent);
+
+    for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
+
+        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        bool fvarEdgeVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
+        if (fvarEdgeVertMatchesVertex) {
+            //
+            //  Declare and compute mask weights for this vertex relative to its parent edge:
+            //
+            //  (We really need to encapsulate this somewhere else for use here and in the
+            //  general case)
+            //
+            VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
+
+            float eVertWeights[2];
+            float eFaceWeights[eFaces.size()];
+
+            VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
+
+            eHood.SetIndex(edge);
+
+            SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+            SdcRule cRule = child.getVertexRule(cVert);
+
+            scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
+
+            //  Apply the weights to the parent edges's vertices and (if applicable) to
+            //  the child vertices of its incident faces:
+            //
+            //  Even though the face-varying topology matches the vertex topology, we need
+            //  to be careful here when getting values corresponding to the two end-vertices.
+            //  While the edge may be continuous, the vertices at their ends may have
+            //  discontinuities elsewhere in their neighborhood (i.e. on the "other side"
+            //  of the end-vertex) and so have sibling values associated with them.  In most
+            //  cases the topology for an end-vertex will match and we can use it directly,
+            //  but we must still check and retrieve as needed.
+            //
+            //  Indices for values corresponding to face-vertices are guaranteed to match,
+            //  so we can use the child-vertex indices directly.
+            //
+            //  And by "directly", we always use getVertexValue(vertexIndex) to reference
+            //  values in the "src" to account for the possible indirection that may exist at
+            //  level 0 -- where there may be fewer values than vertices and an additional
+            //  indirection is necessary.  We can use a vertex index directly for "dst" when
+            //  it matches.
+            //
+            VtrIndex eVertValues[2];
+
+            //  WORK-IN-PROGRESS -- using this switch for comparative purposes only...
+            bool assumeMatchingNeighborhood = false;
+            if (assumeMatchingNeighborhood) {
+                VtrIndexArray eVerts = parent.getEdgeVertices(edge);
+                eVertValues[0] = eVerts[0];
+                eVertValues[1] = eVerts[1];
+            } else {
+                parentFVar.getEdgeFaceValues(edge, 0, eVertValues);
+            }
+
+            U & vdst = dst[cVert];
+
+            vdst.Clear();
+            vdst.AddWithWeight(src[eVertValues[0]], eVertWeights[0]);
+            vdst.AddWithWeight(src[eVertValues[1]], eVertWeights[1]);
+
+            if (eMask.GetNumFaceWeights() > 0) {
+
+                for (int i = 0; i < eFaces.size(); ++i) {
+
+                    VtrIndex cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
+                    assert(VtrIndexIsValid(cVertOfFace));
+                    vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
+                }
+            }
+        } else {
+            //
+            //  Mismatched edge-verts should just be linearly interpolated between the pairs of
+            //  values for each sibling of the child edge-vertex -- the question is:  which face
+            //  holds that pair of values for a given sibling?
+            //
+            //  In the manifold case, the sibling and edge-face indices will correspond.  We
+            //  will eventually need to update this to account for > 3 incident faces.
+            //
+            for (int i = 0; i < childFVar.getNumVertexValues(cVert); ++i) {
+                VtrIndex eVertValues[2];
+                int      eFaceIndex = refineFVar.getChildValueParentSource(cVert, i);
+                assert(eFaceIndex == i);
+
+                parentFVar.getEdgeFaceValues(edge, eFaceIndex, eVertValues);
+
+                U & vdst = dst[childFVar.getVertexValue(cVert, i)];
+
+                vdst.Clear();
+                vdst.AddWithWeight(src[eVertValues[0]], 0.5);
+                vdst.AddWithWeight(src[eVertValues[1]], 0.5);
+            }
+        }
+    }
+}
+
+template <class T, class U>
+inline void
+FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
+    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+
+    assert(_subdivType == TYPE_CATMARK);
+    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+
+    const VtrLevel& parent = refinement.parent();
+    const VtrLevel& child  = refinement.child();
+
+    const VtrFVarRefinement& refineFVar = *refinement._fvarChannels[channel];
+    const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
+    const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
+
+    VtrVertexInterface vHood(parent, child);
+
+    for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
+
+        VtrIndex cVert = refinement.getVertexChildVertex(vert);
+        if (!VtrIndexIsValid(cVert))
+            continue;
+
+        bool fvarVertVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
+        if (fvarVertVertMatchesVertex) {
+            //
+            //  Declare and compute mask weights for this vertex relative to its parent edge:
+            //
+            //  (We really need to encapsulate this somewhere else for use here and in the
+            //  general case)
+            //
+            VtrIndexArray const vEdges = parent.getVertexEdges(vert);
+            VtrIndexArray const vFaces = parent.getVertexFaces(vert);
+
+            float  vVertWeight;
+            float  vEdgeWeights[2 * vEdges.size()];
+            float* vFaceWeights = vEdgeWeights + vEdges.size();
+
+            VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
+
+            vHood.SetIndex(vert, cVert);
+
+            SdcRule pRule = parent.getVertexRule(vert);
+            SdcRule cRule = child.getVertexRule(cVert);
+
+            scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
+
+            //  Apply the weights to the parent vertex, the vertices opposite its incident
+            //  edges, and the child vertices of its incident faces:
+            //
+            //  Even though the face-varying topology matches the vertex topology, we need
+            //  to be careful here when getting values corresponding to vertices at the
+            //  ends of edges.  While the edge may be continuous, the end vertex may have
+            //  discontinuities elsewhere in their neighborhood (i.e. on the "other side"
+            //  of the end-vertex) and so have sibling values associated with them.  In most
+            //  cases the topology for an end-vertex will match and we can use it directly,
+            //  but we must still check and retrieve as needed.
+            //
+            //  Indices for values corresponding to face-vertices are guaranteed to match,
+            //  so we can use the child-vertex indices directly.
+            //
+            //  And by "directly", we always use getVertexValue(vertexIndex) to reference
+            //  values in the "src" to account for the possible indirection that may exist at
+            //  level 0 -- where there may be fewer values than vertices and an additional
+            //  indirection is necessary.  We can use a vertex index directly for "dst" when
+            //  it matches.
+            //
+            VtrIndex pVertValue = parentFVar.getVertexValue(vert);
+            VtrIndex cVertValue = cVert;
+
+            U & vdst = dst[cVertValue];
+
+            vdst.Clear();
+            vdst.AddWithWeight(src[pVertValue], vVertWeight);
+
+            if (vMask.GetNumEdgeWeights() > 0) {
+
+                //  WORK-IN-PROGRESS -- using this switch for comparative purposes only...
+                bool assumeMatchingNeighborhood = false;
+                if (assumeMatchingNeighborhood) {
+                    for (int i = 0; i < vEdges.size(); ++i) {
+                        VtrIndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
+                        VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+
+                        vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
+                    }
+                } else {
+                    VtrIndex vEdgeValues[vEdges.size()];
+                    parentFVar.getVertexEdgeValues(vert, vEdgeValues);
+
+                    for (int i = 0; i < vEdges.size(); ++i) {
+                        vdst.AddWithWeight(src[vEdgeValues[i]], vEdgeWeights[i]);
+                    }
+                }
+
+            }
+            if (vMask.GetNumFaceWeights() > 0) {
+
+                for (int i = 0; i < vFaces.size(); ++i) {
+
+                    VtrIndex cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
+                    assert(VtrIndexIsValid(cVertOfFace));
+                    vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
+                }
+            }
+        } else {
+            //
+            //  Mismatched vert-verts may be either on corners or creases -- for now we
+            //  are presuming the hard-corner case (and so need to revisit this...)
+            //
+            for (int cSibling = 0; cSibling < childFVar.getNumVertexValues(cVert); ++cSibling) {
+                int pSibling = refineFVar.getChildValueParentSource(cVert, cSibling);
+                assert(pSibling == cSibling);
+
+                VtrIndex pVertValue = parentFVar.getVertexValue(vert, pSibling);
+                VtrIndex cVertValue = childFVar.getVertexValue(cVert, cSibling);
+
+                U & vdst = dst[cVertValue];
+
+                vdst.Clear();
+                vdst.AddWithWeight(src[pVertValue], 1.0);
+            }
+        }
+    }
+}
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

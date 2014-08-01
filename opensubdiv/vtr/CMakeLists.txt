@@ -27,6 +27,8 @@
 #-------------------------------------------------------------------------------
 # source & headers
 set(SOURCE_FILES
+     fvarLevel.cpp
+     fvarRefinement.cpp
      level.cpp
      refinement.cpp
      sparseSelector.cpp
@@ -34,6 +36,8 @@ set(SOURCE_FILES
 
 set(PUBLIC_HEADER_FILES
      array.h
+     fvarLevel.h
+     fvarRefinement.h
      level.h
      maskInterfaces.h
      refinement.h
