@@ -256,6 +256,42 @@ endif()
 list(APPEND DOXY_HEADER_FILES ${GL_4_3_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
+# DX11 code & dependencies
+set(DXSDK_PUBLIC_HEADERS
+    cpuD3D11VertexBuffer.h
+    d3d11ComputeContext.h
+    d3d11ComputeController.h
+    d3d11DrawContext.h
+    d3d11DrawRegistry.h
+    d3d11VertexBuffer.h
+    d3d11Mesh.h
+)
+if( DXSDK_FOUND )
+    list(APPEND GPU_SOURCE_FILES
+        cpuD3D11VertexBuffer.cpp
+        d3d11ComputeContext.cpp
+        d3d11ComputeController.cpp
+        d3d11DrawContext.cpp
+        d3d11DrawRegistry.cpp
+        d3d11VertexBuffer.cpp
+    )
+    list(APPEND PUBLIC_HEADER_FILES ${DXSDK_PUBLIC_HEADERS})
+    list(APPEND KERNEL_FILES
+        hlslComputeKernel.hlsl
+        hlslPatchCommon.hlsl
+        hlslPatchBSpline.hlsl
+        hlslPatchGregory.hlsl
+        hlslPatchTransition.hlsl
+        hlslPtexCommon.hlsl
+    )
+    list(APPEND PLATFORM_GPU_LIBRARIES
+        ${DXSDK_LIBRARIES}
+    )
+endif()
+
+list(APPEND DOXY_HEADER_FILES ${DXSDK_PUBLIC_HEADERS})
+
+#-------------------------------------------------------------------------------
 # OpenCL code & dependencies
 set(OPENCL_PUBLIC_HEADERS
     clComputeContext.h

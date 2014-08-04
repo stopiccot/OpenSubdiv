@@ -22,7 +22,6 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#include "../far/dispatcher.h"
 #include "../osd/d3d11DrawContext.h"
 
 #include <D3D11.h>

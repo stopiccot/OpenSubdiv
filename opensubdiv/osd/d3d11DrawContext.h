@@ -54,8 +54,8 @@ namespace OPENSUBDIV_VERSION {
 /// Some functionality may be disabled depending on compile and run-time driver
 /// support.
 ///
-/// Contexts interface the serialized topological data pertaining to the 
-/// geometric primitives with the capabilities of the selected discrete 
+/// Contexts interface the serialized topological data pertaining to the
+/// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
 class OsdD3D11DrawContext : public OsdDrawContext {
@@ -72,7 +72,7 @@ public:
     ///
     /// @param numVertexElements    the number of vertex elements
     ///
-    /// @param requireFVarData      set to true to enable face-varying data to be 
+    /// @param requireFVarData      set to true to enable face-varying data to be
     ///                             carried over from the Far data structures.
     ///
     ///
