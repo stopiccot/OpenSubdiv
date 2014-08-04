@@ -31,6 +31,7 @@
 #include "../sdc/crease.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <vector>
 
 namespace OpenSubdiv {
