@@ -230,6 +230,9 @@ elseif(MSVC)
                     /W3     # Use warning level recommended for production purposes.
                     /WX     # Treat all compiler warnings as errors.
 
+                    # warning C4005: macro redefinition
+                    /wd4005
+
                     # these warnings are being triggered from inside VC's header files
                     # warning C4350: behavior change: 'member1' called instead of 'member2'
                     /wd4350
@@ -297,7 +300,8 @@ option(NO_TBB "Disable TBB backend" OFF)
 option(NO_CUDA "Disable CUDA backend" OFF)
 option(NO_OPENCL "Disable OpenCL backend" OFF)
 option(NO_CLEW "Disable CLEW wrapper library" OFF)
-option(NO_NO_GCD "Disable GrandCentralDispatch backend" OFF)
+option(NO_GCD "Disable GrandCentralDispatch backend" OFF)
+option(NO_OPENGL "Disable OpenGL support")
 
 # Check for dependencies
 if(NOT NO_OMP)
@@ -306,7 +310,9 @@ endif()
 if(NOT NO_TBB)
     find_package(TBB 4.0)
 endif()
-find_package(OpenGL)
+if (NOT NO_OPENGL)
+    find_package(OpenGL)
+endif()
 find_package(OpenGLES)
 if(NOT NO_OPENCL)
     if(NOT NO_CLEW)
@@ -404,11 +410,13 @@ if(GLEW_FOUND AND OPENGL_4_2_FOUND)
         -DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     )
 else()
-    message(WARNING
-        "OpenGL 4.2 was not found : support for GLSL transform feedback kernels "
-        "will be disabled in Osd.  If you have an OpenGL SDK installed "
-        "(version 4.2 or above), please refer to the FindOpenGL.cmake "
-        "shared module in your cmake installation.")
+    if (NOT NO_OPENGL)
+        message(WARNING
+            "OpenGL 4.2 was not found : support for GLSL transform feedback kernels "
+            "will be disabled in Osd.  If you have an OpenGL SDK installed "
+            "(version 4.2 or above), please refer to the FindOpenGL.cmake "
+            "shared module in your cmake installation.")
+    endif()
 endif()
 
 # note : (GLSL compute shader kernels require GL 4.3)
@@ -417,11 +425,13 @@ if(GLEW_FOUND AND OPENGL_4_3_FOUND)
         -DOPENSUBDIV_HAS_GLSL_COMPUTE
     )
 else()
-    message(WARNING
-        "OpenGL 4.3 was not found : support for GLSL compute shader kernels "
-        "will be disabled in Osd.  If you have an OpenGL SDK installed "
-        "(version 4.3 or above), please refer to the FindOpenGL.cmake "
-        "shared module in your cmake installation.")
+    if (NOT NO_OPENGL)
+        message(WARNING
+            "OpenGL 4.3 was not found : support for GLSL compute shader kernels "
+            "will be disabled in Osd.  If you have an OpenGL SDK installed "
+            "(version 4.3 or above), please refer to the FindOpenGL.cmake "
+            "shared module in your cmake installation.")
+    endif()
 endif()
 
 if(OPENGLES_FOUND)
@@ -668,7 +678,7 @@ endmacro()
 
 add_subdirectory(opensubdiv)
 
-if (NOT NO_REGRESSION AND NOT ANDROID AND NOT IOS) # XXXdyu
+if (NOT ANDROID AND NOT IOS) # XXXdyu
     add_subdirectory(regression)
 endif()
 

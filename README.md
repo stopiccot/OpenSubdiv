@@ -66,6 +66,7 @@ Optional:
 -DNO_TBB=1        // disable TBB
 -DNO_CUDA=1       // disable CUDA
 -DNO_OPENCL=1     // disable OpenCL
+-DNO_OPENGL=1     // disable OpenGL
 -DNO_CLEW=1       // disable CLEW wrapper library
 -DNO_GCD=1        // disable GrandCentralDispatch on OSX
 ````
