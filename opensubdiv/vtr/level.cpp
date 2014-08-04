@@ -1195,8 +1195,8 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
     //  this vertex is really locally manifold, we will end up back at the
     //  starting edge or at the other singular edge of a boundary:
     //
-    VtrIndex vFacesOrdered[fCount];
-    VtrIndex vEdgesOrdered[eCount];
+    VtrIndex * vFacesOrdered = (VtrIndex *)alloca(fCount*sizeof(VtrIndex)),
+             * vEdgesOrdered = (VtrIndex *)alloca(eCount*sizeof(VtrIndex));
 
     int orderedEdgesCount = 1;
     int orderedFacesCount = 1;

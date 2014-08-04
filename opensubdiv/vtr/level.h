@@ -30,6 +30,7 @@
 #include "../sdc/crease.h"
 #include "../vtr/types.h"
 
+#include <algorithm>
 #include <vector>
 #include <cassert>
 #include <cstring>

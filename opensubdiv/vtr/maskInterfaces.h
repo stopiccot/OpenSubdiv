@@ -170,7 +170,7 @@ public:  //  Generic interface expected of <typename VERT>:
     float  GetChildSharpness(SdcCrease const&) const { return _child->getVertexSharpness(_cIndex); }
     float* GetChildSharpnessPerEdge(SdcCrease const& crease, float cSharpness[]) const
     {
-        float pSharpness[_eCount];
+        float * pSharpness = (float *)alloca(_eCount*sizeof(float));
         GetSharpnessPerEdge(pSharpness);
         crease.SubdivideEdgeSharpnessesAroundVertex(_eCount, pSharpness, cSharpness);
         return cSharpness;

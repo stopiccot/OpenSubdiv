@@ -210,8 +210,8 @@ VtrFVarLevel::completeTopologyFromFaceValues()
 
         //  Store the value for each vert-face locally -- we will identify the index
         //  of its sibling as we inspect them:
-        VtrIndex vValues[vFaces.size()];
-        Sibling  vSiblings[vFaces.size()];
+        VtrIndex * vValues = (VtrIndex *)alloca(vFaces.size()*sizeof(VtrIndex));
+        Sibling * vSiblings = (Sibling *)alloca(vFaces.size()*sizeof(Sibling));
         for (int i = 0; i < vFaces.size(); ++i) {
             vValues[i] = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[i]) + vInFace[i]];
         }
@@ -372,7 +372,7 @@ VtrFVarLevel::completeTopologyFromFaceValues()
         //  as we go...
         //
         int vvCount = 1 + vSiblingCount;
-        int vvIndices[vvCount];
+        int * vvIndices = (int *)alloca(vvCount*sizeof(int));
         //int vvSrcFaces[vvCount];
 
         VtrIndex lastValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[0]) + vInFace[0]];

@@ -568,7 +568,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
         FarStencil dst(&result->_sizes.at(0),
             &result->_indices.at(0), &result->_weights.at(0));
 
-        bool doSort = options.sortBySize;
+        bool doSort = options.sortBySize!=0;
 
         if (options.generateAllLevels) {
             for (int level=0; level<maxlevel; ++level) {

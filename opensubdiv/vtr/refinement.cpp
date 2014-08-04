@@ -1406,7 +1406,7 @@ VtrRefinement::subdivideEdgeSharpness()
                 VtrIndex            pVert      = pEdgeVerts[_childEdgeTag[cEdge]._indexInParent];
                 VtrIndexArray const pVertEdges = _parent->getVertexEdges(pVert);
 
-                float pVertEdgeSharpness[pVertEdges.size() + 1];
+                float * pVertEdgeSharpness = (float *)alloca((pVertEdges.size() + 1)*sizeof(float));
                 for (int i = 0; i < pVertEdges.size(); ++i) {
                     pVertEdgeSharpness[i] = _parent->_edgeSharpness[pVertEdges[i]];
                 }

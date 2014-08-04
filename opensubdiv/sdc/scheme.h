@@ -31,6 +31,7 @@
 #include "../sdc/crease.h"
 
 #include <cassert>
+#include <vector>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -480,9 +481,9 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
     //  Determine if we need the parent edge sharpness values -- identify/gather if so
     //  and use it to compute the parent rule if unspecified:
     //
-    float  pEdgeSharpnessBuffer[valence];
-    float* pEdgeSharpness   = 0;
-    float  pVertexSharpness = 0.0f;
+    float * pEdgeSharpnessBuffer = (float *)alloca(valence*sizeof(float)),
+          * pEdgeSharpness   = 0,
+            pVertexSharpness = 0.0f;
 
     bool requireParentSharpness = (pRule == SdcCrease::RULE_UNKNOWN) ||
                                   (pRule == SdcCrease::RULE_CREASE) ||
@@ -511,9 +512,9 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
     //
     SdcCrease crease(_options);
 
-    float  cEdgeSharpnessBuffer[valence];
-    float* cEdgeSharpness   = vertex.GetChildSharpnessPerEdge(crease, cEdgeSharpnessBuffer);
-    float  cVertexSharpness = vertex.GetChildSharpness(crease);
+    float * cEdgeSharpnessBuffer = (float *)alloca(valence*sizeof(float)),
+          * cEdgeSharpness = vertex.GetChildSharpnessPerEdge(crease, cEdgeSharpnessBuffer),
+            cVertexSharpness = vertex.GetChildSharpness(crease);
 
     if (cRule == SdcCrease::RULE_UNKNOWN) {
         cRule = crease.DetermineVertexVertexRule(cVertexSharpness, valence, cEdgeSharpness);
@@ -526,7 +527,7 @@ SdcScheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
     //
     typedef typename MASK::Weight Weight;
 
-    Weight            cMaskWeights[1 + 2 * valence];
+    Weight * cMaskWeights = (Weight *)alloca((1 + 2 * valence)*sizeof(Weight));
     LocalMask<Weight> cMask(cMaskWeights, cMaskWeights + 1, cMaskWeights + 1 + valence);
 
     if ((cRule == SdcCrease::RULE_SMOOTH) || (cRule == SdcCrease::RULE_DART)) {
