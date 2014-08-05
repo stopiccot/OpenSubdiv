@@ -234,6 +234,10 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
     applyComponentTagsAndBoundarySharpness(refTables);
 }
 
+// XXXX manuelk MSVC specializes these templated functions which creates duplicated symbols
+//              recommend changing API to not use template specialization
+#if (not defined(_MSC_VER))
+
 template <class MESH>
 void
 FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
@@ -331,6 +335,8 @@ FarRefineTablesFactory<MESH>::assignComponentTags(FarRefineTables& /* refTables 
     //  each component type are introduced and propogated through the refinement hierarchy.
     //
 }
+
+#endif
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
