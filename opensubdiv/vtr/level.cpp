@@ -950,7 +950,7 @@ VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Ed
     } else {
         for (int j = 0; j < v0Edges.size(); ++j) {
             VtrIndexArray eVerts = this->getEdgeVertices(v0Edges[j]);
-            if ((eVerts[0] == eVerts[1])) {
+            if (eVerts[0] == eVerts[1]) {
                 return v0Edges[j];
             }
         }

@@ -148,7 +148,7 @@ FarDefaultController::ApplyStencilTableKernel(
     assert(stencilTables);
 
     typename CONTEXT::VertexType *vsrc = &context->GetVertices().at(0),
-                                 *vdst = vsrc + batch.start + stencilTables->GetNumControlVertices;
+                                 *vdst = vsrc + batch.start + stencilTables->GetNumControlVertices();
 
     stencilTables->UpdateValues(vsrc, vdst, batch.start, batch.end);
 }
