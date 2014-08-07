@@ -34,7 +34,7 @@
 inline OpenSubdiv::SdcType
 GetSdcType(Shape const & shape) {
 
-    OpenSubdiv::SdcType type;
+    OpenSubdiv::SdcType type=OpenSubdiv::TYPE_CATMARK;
 
     switch (shape.scheme) {
         case kBilinear: type = OpenSubdiv::TYPE_BILINEAR; break;

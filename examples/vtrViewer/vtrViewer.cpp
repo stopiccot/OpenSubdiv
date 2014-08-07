@@ -819,7 +819,7 @@ display() {
     // Hbr mesh
     if (g_HbrDrawMode!=kDRAW_NONE) {
 
-        GLMesh::Component comp;
+        GLMesh::Component comp=GLMesh::COMP_VERT;
         switch (g_HbrDrawMode) {
             case kDRAW_VERTICES  : comp=GLMesh::COMP_VERT; break;
             case kDRAW_WIREFRAME : comp=GLMesh::COMP_EDGE; break;
@@ -833,7 +833,7 @@ display() {
     // Vtr mesh
     if (g_VtrDrawMode!=kDRAW_NONE) {
 
-        GLMesh::Component comp;
+        GLMesh::Component comp=GLMesh::COMP_VERT;
         switch (g_VtrDrawMode) {
             case kDRAW_VERTICES  : comp=GLMesh::COMP_VERT; break;
             case kDRAW_WIREFRAME : comp=GLMesh::COMP_EDGE; break;
