@@ -22,8 +22,8 @@
      language governing permissions and limitations under the Apache License.
   
 
-uvViewer
---------
+glFVarViewer
+------------
 
 .. contents::
    :local:
@@ -32,12 +32,12 @@ uvViewer
 SYNOPSIS
 ========
 
-   **uvViewer** [**-d** *isolation level*] [**-c** *animation loops*] [**-f**] *objfile(s)*
+   **glFVarViewer** [**-d** *isolation level*] [**-c** *animation loops*] [**-f**] *objfile(s)*
 
 DESCRIPTION
 ===========
 
-``uvViewer`` is a stand-alone application that allows the inspection of
+``glFVarViewer`` is a stand-alone application that allows the inspection of
 face-varying data interpolation. The window displays 2 views:
 
     * left side: regular 3D view of the model, with a procedural (u,v) texture

@@ -59,7 +59,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 #include <osd/glMesh.h>
 OpenSubdiv::OsdGLMeshInterface *g_mesh = NULL;
 
-#include <common/hbr_utils.h>
+#include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"
@@ -80,32 +80,18 @@ static const char *shaderSource =
 #include <string>
 #include <algorithm>
 
-typedef OpenSubdiv::HbrMesh<OpenSubdiv::OsdVertex>     OsdHbrMesh;
-typedef OpenSubdiv::HbrVertex<OpenSubdiv::OsdVertex>   OsdHbrVertex;
-typedef OpenSubdiv::HbrFace<OpenSubdiv::OsdVertex>     OsdHbrFace;
-typedef OpenSubdiv::HbrHalfedge<OpenSubdiv::OsdVertex> OsdHbrHalfedge;
-
 enum DisplayStyle { kWire = 0,
                     kShaded,
                     kWireShaded };
-
-struct SimpleShape {
-    std::string  name;
-    Scheme       scheme;
-    std::string  data;
-
-    SimpleShape() { }
-    SimpleShape(std::string const & idata, char const * iname, Scheme ischeme)
-        : name(iname), scheme(ischeme), data(idata) { }
-};
-
-std::vector<SimpleShape> g_defaultShapes;
 
 int g_currentShape = 0;
 
 int   g_frame = 0,
       g_repeatCount = 0;
-int   g_fvarBoundary = OsdHbrMesh::k_InterpolateBoundaryEdgeOnly;
+
+OpenSubdiv::SdcOptions::FVarBoundaryInterpolation  g_fvarBoundary =
+    OpenSubdiv::SdcOptions::FVAR_BOUNDARY_BILINEAR;
+
 int   g_fvarPropagateCorners = 0;
 
 // GUI variables
@@ -169,8 +155,7 @@ std::vector<int> g_coarseEdges;
 std::vector<float> g_coarseEdgeSharpness;
 std::vector<float> g_coarseVertexSharpness;
 
-struct Program
-{
+struct Program {
     GLuint program;
     GLuint uniformModelViewProjectionMatrix;
     GLuint attrPosition;
@@ -179,8 +164,8 @@ struct Program
 
 //------------------------------------------------------------------------------
 static GLuint
-compileShader(GLenum shaderType, const char *source)
-{
+compileShader(GLenum shaderType, const char *source) {
+
     GLuint shader = glCreateShader(shaderType);
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
@@ -188,8 +173,8 @@ compileShader(GLenum shaderType, const char *source)
 }
 
 static bool
-linkDefaultProgram()
-{
+linkDefaultProgram() {
+
 #if defined(GL_ARB_tessellation_shader) || defined(GL_VERSION_4_0)
     #define GLSL_VERSION_DEFINE "#version 400\n"
 #else
@@ -247,179 +232,50 @@ linkDefaultProgram()
 }
 
 //------------------------------------------------------------------------------
-static void
-initializeShapes()
-{
-#include <shapes/catmark_cube_corner0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner0, "catmark_cube_corner0", kCatmark));
 
-#include <shapes/catmark_cube_corner1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner1, "catmark_cube_corner1", kCatmark));
+#include "init_shapes.h"
 
-#include <shapes/catmark_cube_corner2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner2, "catmark_cube_corner2", kCatmark));
-
-#include <shapes/catmark_cube_corner3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner3, "catmark_cube_corner3", kCatmark));
-
-#include <shapes/catmark_cube_corner4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner4, "catmark_cube_corner4", kCatmark));
-
-#include <shapes/catmark_cube_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases0, "catmark_cube_creases0", kCatmark));
-
-#include <shapes/catmark_cube_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases1, "catmark_cube_creases1", kCatmark));
-
-#include <shapes/catmark_cube.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube, "catmark_cube", kCatmark));
-
-#include <shapes/catmark_dart_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgecorner, "catmark_dart_edgecorner", kCatmark));
-
-#include <shapes/catmark_dart_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgeonly, "catmark_dart_edgeonly", kCatmark));
-
-#include <shapes/catmark_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgecorner, "catmark_edgecorner", kCatmark));
-
-#include <shapes/catmark_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgeonly, "catmark_edgeonly", kCatmark));
-
-#include <shapes/catmark_gregory_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test1, "catmark_gregory_test1", kCatmark));
-
-#include <shapes/catmark_gregory_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test2, "catmark_gregory_test2", kCatmark));
-
-#include <shapes/catmark_gregory_test3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test3, "catmark_gregory_test3", kCatmark));
-
-#include <shapes/catmark_gregory_test4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test4, "catmark_gregory_test4", kCatmark));
-
-#include <shapes/catmark_hole_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test1, "catmark_hole_test1", kCatmark));
-
-#include <shapes/catmark_hole_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test2, "catmark_hole_test2", kCatmark));
-
-#include <shapes/catmark_pyramid_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases0, "catmark_pyramid_creases0", kCatmark));
-
-#include <shapes/catmark_pyramid_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases1, "catmark_pyramid_creases1", kCatmark));
-
-#include <shapes/catmark_pyramid.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid, "catmark_pyramid", kCatmark));
-
-#include <shapes/catmark_tent_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases0, "catmark_tent_creases0", kCatmark));
-
-#include <shapes/catmark_tent_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases1, "catmark_tent_creases1", kCatmark));
-
-#include <shapes/catmark_tent.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent, "catmark_tent", kCatmark));
-
-#include <shapes/catmark_torus.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus, "catmark_torus", kCatmark));
-
-#include <shapes/catmark_torus_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus_creases0, "catmark_torus_creases0", kCatmark));
-
-#include <shapes/catmark_square_hedit0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit0, "catmark_square_hedit0", kCatmark));
-
-#include <shapes/catmark_square_hedit1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit1, "catmark_square_hedit1", kCatmark));
-
-#include <shapes/catmark_square_hedit2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit2, "catmark_square_hedit2", kCatmark));
-
-#include <shapes/catmark_square_hedit3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit3, "catmark_square_hedit3", kCatmark));
-
-#include <shapes/catmark_square_hedit4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit4, "catmark_square_hedit4", kCatmark));
-
-#include <shapes/catmark_bishop.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_bishop, "catmark_bishop", kCatmark));
-
-#include <shapes/catmark_car.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_car, "catmark_car", kCatmark));
-
-#include <shapes/catmark_helmet.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_helmet, "catmark_helmet", kCatmark));
-
-#include <shapes/catmark_pawn.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pawn, "catmark_pawn", kCatmark));
-
-#include <shapes/catmark_rook.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_rook, "catmark_rook", kCatmark));
-
-#include <shapes/bilinear_cube.h>
-    g_defaultShapes.push_back(SimpleShape(bilinear_cube, "bilinear_cube", kBilinear));
-
-
-#include <shapes/loop_cube_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube_creases0, "loop_cube_creases0", kLoop));
-
-#include <shapes/loop_cube_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube_creases1, "loop_cube_creases1", kLoop));
-
-#include <shapes/loop_cube.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube, "loop_cube", kLoop));
-
-#include <shapes/loop_icosahedron.h>
-    g_defaultShapes.push_back(SimpleShape(loop_icosahedron, "loop_icosahedron", kLoop));
-
-#include <shapes/loop_saddle_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(loop_saddle_edgecorner, "loop_saddle_edgecorner", kLoop));
-
-#include <shapes/loop_saddle_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(loop_saddle_edgeonly, "loop_saddle_edgeonly", kLoop));
-
-#include <shapes/loop_triangle_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(loop_triangle_edgecorner, "loop_triangle_edgecorner", kLoop));
-
-#include <shapes/loop_triangle_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(loop_triangle_edgeonly, "loop_triangle_edgeonly", kLoop));
-}
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OsdHbrMesh * mesh, std::vector<float> const & pos, std::vector<float> & result)
-{
+calcNormals(OpenSubdiv::FarRefineTables const & refTables,
+    std::vector<float> const & pos, std::vector<float> & normals) {
+
+    typedef OpenSubdiv::FarIndexArray IndexArray;
+
     // calc normal vectors
     int nverts = (int)pos.size()/3;
 
-    int nfaces = mesh->GetNumCoarseFaces();
-    for (int i = 0; i < nfaces; ++i) {
-        OsdHbrFace * f = mesh->GetFace(i);
+    int nfaces = refTables.GetNumFaces(0);
+    for (int face = 0; face < nfaces; ++face) {
 
-        float const * p0 = &pos[f->GetVertex(0)->GetID()*3],
-                    * p1 = &pos[f->GetVertex(1)->GetID()*3],
-                    * p2 = &pos[f->GetVertex(2)->GetID()*3];
+        IndexArray fverts = refTables.GetFaceVertices(0, face);
+
+        assert(fverts.size()>=2);
+
+        float const * p0 = &pos[fverts[0]*3],
+                    * p1 = &pos[fverts[1]*3],
+                    * p2 = &pos[fverts[2]*3];
 
         float n[3];
         cross(n, p0, p1, p2);
 
-        for (int j = 0; j < f->GetNumVertices(); j++) {
-            int idx = f->GetVertex(j)->GetID() * 3;
-            result[idx  ] += n[0];
-            result[idx+1] += n[1];
-            result[idx+2] += n[2];
+        for (int j = 0; j < fverts.size(); j++) {
+            int idx = fverts[j] * 3;
+            normals[idx  ] += n[0];
+            normals[idx+1] += n[1];
+            normals[idx+2] += n[2];
         }
     }
+
     for (int i = 0; i < nverts; ++i)
-        normalize(&result[i*3]);
+        normalize(&normals[i*3]);
 }
 
 //------------------------------------------------------------------------------
 static void
-updateGeom()
-{
+updateGeom() {
+
     int nverts = (int)g_orgPositions.size() / 3;
 
     std::vector<float> vertex;
@@ -456,47 +312,52 @@ updateGeom()
 
 //------------------------------------------------------------------------------
 static void
-createOsdMesh(const std::string &shape, int level, Scheme scheme = kCatmark)
-{
-    // generate Hbr representation from "obj" description
-    OsdHbrMesh * hmesh = simpleHbr<OpenSubdiv::OsdVertex>(shape.c_str(),
-                                                          scheme,
-                                                          g_orgPositions,
-                                                          /*fvar*/ true);
+createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) {
 
-    g_normals.resize(g_orgPositions.size(), 0.0f);
-    g_positions.resize(g_orgPositions.size(), 0.0f);
-    calcNormals(hmesh, g_orgPositions, g_normals);
+    typedef OpenSubdiv::FarIndexArray IndexArray;
+
+    Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
+
+    // create Vtr mesh (topology)
+    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
+    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+
+    sdcoptions.SetFVarBoundaryInterpolation(g_fvarBoundary);
+
+    OpenSubdiv::FarRefineTables * refTables =
+        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
-    g_coarseEdges.clear();
-    g_coarseEdgeSharpness.clear();
-    g_coarseVertexSharpness.clear();
-    int nf = hmesh->GetNumFaces();
-    for (int i = 0; i < nf; ++i) {
-        OsdHbrFace *face = hmesh->GetFace(i);
-        int nv = face->GetNumVertices();
-        for (int j = 0; j < nv; ++j) {
-            g_coarseEdges.push_back(face->GetVertex(j)->GetID());
-            g_coarseEdges.push_back(face->GetVertex((j+1)%nv)->GetID());
-            g_coarseEdgeSharpness.push_back(face->GetEdge(j)->GetSharpness());
-        }
-    }
-    int nv = hmesh->GetNumVertices();
-    for (int i = 0; i < nv; ++i) {
-        g_coarseVertexSharpness.push_back(hmesh->GetVertex(i)->GetSharpness());
+    int nedges = refTables->GetNumEdges(0),
+        nverts = refTables->GetNumVertices(0);
+
+    g_coarseEdges.resize(nedges*2);
+    g_coarseEdgeSharpness.resize(nedges);
+    g_coarseVertexSharpness.resize(nverts);
+
+    for(int i=0; i<nedges; ++i) {
+        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        g_coarseEdges[i*2  ]=verts[0];
+        g_coarseEdges[i*2+1]=verts[1];
+        g_coarseEdgeSharpness[i]=refTables->GetEdgeSharpness(0, i);
     }
 
-    hmesh->SetFVarInterpolateBoundaryMethod((OsdHbrMesh::InterpolateBoundaryMethod)g_fvarBoundary);
-    hmesh->SetFVarPropagateCorners(g_fvarPropagateCorners != 0);
+    for(int i=0; i<nverts; ++i) {
+        g_coarseVertexSharpness[i]=refTables->GetVertexSharpness(0, i);
+    }
 
-    delete g_mesh;
-    g_mesh = NULL;
+    g_orgPositions=shape->verts;
+    g_normals.resize(g_orgPositions.size(), 0.0f);
+    calcNormals(*refTables, g_orgPositions, g_normals);
+
+    g_positions.resize(g_orgPositions.size(),0.0f);
+
+    delete shape;
 
     g_scheme = scheme;
 
     // Adaptive refinement currently supported only for catmull-clark scheme
-    bool doAdaptive = (g_adaptive != 0 and g_scheme == kCatmark);
+    bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark);
 
     OpenSubdiv::OsdMeshBitset bits;
     bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
@@ -508,17 +369,17 @@ createOsdMesh(const std::string &shape, int level, Scheme scheme = kCatmark)
     if (not g_cpuComputeController) {
         g_cpuComputeController = new OpenSubdiv::OsdCpuComputeController();
     }
+
+    delete g_mesh;
+
     g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
         OpenSubdiv::OsdCpuComputeController,
         OpenSubdiv::OsdGLDrawContext>(
             g_cpuComputeController,
-            hmesh,
+            refTables,
             numVertexElements,
             numVaryingElements,
             level, bits);
-
-    // Hbr mesh can be deleted
-    delete hmesh;
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -553,8 +414,8 @@ createOsdMesh(const std::string &shape, int level, Scheme scheme = kCatmark)
 
 //------------------------------------------------------------------------------
 static void
-fitFrame()
-{
+fitFrame() {
+
     g_pan[0] = g_pan[1] = 0;
     g_dolly = g_size;
     g_uvPan[0] = g_uvPan[1] = 0;
@@ -563,8 +424,8 @@ fitFrame()
 
 //------------------------------------------------------------------------------
 static inline void
-setSharpnessColor(float s, float *r, float *g, float *b)
-{
+setSharpnessColor(float s, float *r, float *g, float *b) {
+
     //  0.0       2.0       4.0
     // green --- yellow --- red
     *r = std::min(1.0f, s * 0.5f);
@@ -573,8 +434,8 @@ setSharpnessColor(float s, float *r, float *g, float *b)
 }
 
 static void
-drawCageEdges()
-{
+drawCageEdges() {
+
     glUseProgram(g_defaultProgram.program);
     glUniformMatrix4fv(g_defaultProgram.uniformModelViewProjectionMatrix,
                        1, GL_FALSE, g_transformData.ModelViewProjectionMatrix);
@@ -614,8 +475,8 @@ drawCageEdges()
 }
 
 static void
-drawCageVertices()
-{
+drawCageVertices() {
+
     glUseProgram(g_defaultProgram.program);
     glUniformMatrix4fv(g_defaultProgram.uniformModelViewProjectionMatrix,
                        1, GL_FALSE, g_transformData.ModelViewProjectionMatrix);
@@ -657,8 +518,8 @@ drawCageVertices()
 
 //------------------------------------------------------------------------------
 
-union Effect
-{
+union Effect {
+
     Effect(int displayStyle_, int uvDraw_) : value(0) {
         displayStyle = displayStyle_;
         uvDraw = uvDraw_;
@@ -677,8 +538,8 @@ union Effect
 
 typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc>
-{
+class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc> {
+
   protected:
     virtual ConfigType *
     _CreateDrawConfig(DescType const & desc, SourceConfigType const * sconfig);
@@ -688,8 +549,8 @@ class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc>
 };
 
 EffectDrawRegistry::SourceConfigType *
-EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
-{
+EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc) {
+
     Effect effect = desc.second;
 
     SourceConfigType * sconfig =
@@ -767,8 +628,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
 EffectDrawRegistry::ConfigType *
 EffectDrawRegistry::_CreateDrawConfig(
         DescType const & desc,
-        SourceConfigType const * sconfig)
-{
+        SourceConfigType const * sconfig) {
+
     ConfigType * config = BaseRegistry::_CreateDrawConfig(desc.first, sconfig);
     assert(config);
 
@@ -827,15 +688,15 @@ EffectDrawRegistry::_CreateDrawConfig(
 EffectDrawRegistry effectRegistry;
 
 static Effect
-GetEffect(bool uvDraw = false)
-{
+GetEffect(bool uvDraw = false) {
+
     return Effect(g_displayStyle, uvDraw);
 }
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
-{
+bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch) {
+
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
     EffectDrawRegistry::ConfigType *
         config = effectRegistry.GetDrawConfig(effectDesc);
@@ -910,8 +771,8 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
 
 //------------------------------------------------------------------------------
 static void
-display()
-{
+display() {
+
     Stopwatch s;
     s.Start();
 
@@ -1079,12 +940,10 @@ display()
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-motion(GLFWwindow *, double dx, double dy)
-{
+motion(GLFWwindow *, double dx, double dy) {
     int x=(int)dx, y=(int)dy;
 #else
-motion(int x, int y)
-{
+motion(int x, int y) {
 #endif
     if (g_mouseUvView) {
         if (!g_mbutton[0] && !g_mbutton[1] && g_mbutton[2]) {
@@ -1121,11 +980,11 @@ motion(int x, int y)
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-mouse(GLFWwindow *, int button, int state, int /* mods */)
+mouse(GLFWwindow *, int button, int state, int /* mods */) {
 #else
-mouse(int button, int state)
+mouse(int button, int state) {
 #endif
-{
+
     if (button == 0 && state == GLFW_PRESS && g_hud.MouseClick(g_prev_x, g_prev_y))
         return;
 
@@ -1138,8 +997,8 @@ mouse(int button, int state)
 
 //------------------------------------------------------------------------------
 static void
-uninitGL()
-{
+uninitGL() {
+
     glDeleteBuffers(1, &g_cageVertexVBO);
     glDeleteBuffers(1, &g_cageEdgeVBO);
     glDeleteVertexArrays(1, &g_vao);
@@ -1155,11 +1014,11 @@ uninitGL()
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-reshape(GLFWwindow *, int width, int height)
+reshape(GLFWwindow *, int width, int height) {
 #else
-reshape(int width, int height)
+reshape(int width, int height) {
 #endif
-{
+
     g_width = width;
     g_height = height;
 
@@ -1173,13 +1032,13 @@ reshape(int width, int height)
 
 //------------------------------------------------------------------------------
 #if GLFW_VERSION_MAJOR >= 3
-void windowClose(GLFWwindow*)
-{
+void windowClose(GLFWwindow*) {
+
     g_running = false;
 }
 #else
-int windowClose()
-{
+int windowClose() {
+
     g_running = false;
     return GL_TRUE;
 }
@@ -1194,12 +1053,11 @@ toggleFullScreen() {
 //------------------------------------------------------------------------------
 static void
 #if GLFW_VERSION_MAJOR >= 3
-keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */)
+keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
 #else
 #define GLFW_KEY_ESCAPE GLFW_KEY_ESC
-keyboard(int key, int event)
+keyboard(int key, int event) {
 #endif
-{
     if (event == GLFW_RELEASE) return;
     if (g_hud.KeyDown(tolower(key))) return;
 
@@ -1216,37 +1074,37 @@ keyboard(int key, int event)
 
 //------------------------------------------------------------------------------
 static void
-rebuildOsdMesh()
-{
-    createOsdMesh(g_defaultShapes[g_currentShape].data,
+rebuildOsdMesh() {
+
+    createOsdMesh(g_defaultShapes[g_currentShape],
                   g_level,
                   g_defaultShapes[g_currentShape].scheme);
 }
 
 static void
-callbackDisplayStyle(int b)
-{
+callbackDisplayStyle(int b) {
+
     g_displayStyle = b;
 }
 
 static void
-callbackLevel(int l)
-{
+callbackLevel(int l) {
+
     g_level = l;
     rebuildOsdMesh();
 }
 
 static void
-callbackModel(int m)
-{
+callbackModel(int m) {
+
     int maxShapes = static_cast<int>(g_defaultShapes.size());
     g_currentShape = std::max(0, std::min(m, maxShapes-1));
     rebuildOsdMesh();
 }
 
 static void
-callbackAdaptive(bool checked, int /* a */)
-{
+callbackAdaptive(bool checked, int /* a */) {
+
     if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation()) {
         g_adaptive = checked;
         rebuildOsdMesh();
@@ -1254,22 +1112,29 @@ callbackAdaptive(bool checked, int /* a */)
 }
 
 static void
-callbackBoundary(int b)
-{
-    g_fvarBoundary = b;
+callbackBoundary(int b) {
+
+    typedef OpenSubdiv::SdcOptions SdcOptions;
+
+    switch (b) {
+        case 0 : g_fvarBoundary = SdcOptions::FVAR_BOUNDARY_BILINEAR; break;
+        case 1 : g_fvarBoundary = SdcOptions::FVAR_BOUNDARY_EDGE_ONLY; break;
+        case 2 : g_fvarBoundary = SdcOptions::FVAR_BOUNDARY_EDGE_AND_CORNER; break;
+        case 3 : g_fvarBoundary = SdcOptions::FVAR_BOUNDARY_ALWAYS_SHARP; break;
+    }
     rebuildOsdMesh();
 }
 
 static void
-callbackPropagateCorners(bool b, int /* button */)
-{
+callbackPropagateCorners(bool b, int /* button */) {
+
     g_fvarPropagateCorners = b;
     rebuildOsdMesh();
 }
 
 static void
-initHUD()
-{
+initHUD() {
+
     int windowWidth = g_width, windowHeight = g_height;
 #if GLFW_VERSION_MAJOR>=3
     // window size might not match framebuffer size on a high DPI display
@@ -1291,18 +1156,20 @@ initHUD()
         g_hud.AddRadioButton(3, level, i == 2, 10, 270 + i*20, callbackLevel, i, '0'+(i%10));
     }
 
+    typedef OpenSubdiv::SdcOptions SdcOptions;
+
     g_hud.AddRadioButton(2, "Boundary none (B)",
-                         g_fvarBoundary == OsdHbrMesh::k_InterpolateBoundaryNone,
-                         10, 10, callbackBoundary, OsdHbrMesh::k_InterpolateBoundaryNone, 'b');
+                         g_fvarBoundary == SdcOptions::FVAR_BOUNDARY_BILINEAR,
+                         10, 10, callbackBoundary, SdcOptions::FVAR_BOUNDARY_BILINEAR, 'b');
     g_hud.AddRadioButton(2, "Boundary edge only",
-                         g_fvarBoundary == OsdHbrMesh::k_InterpolateBoundaryEdgeOnly,
-                         10, 30, callbackBoundary, OsdHbrMesh::k_InterpolateBoundaryEdgeOnly, 'b');
+                         g_fvarBoundary == SdcOptions::FVAR_BOUNDARY_EDGE_ONLY,
+                         10, 30, callbackBoundary, SdcOptions::FVAR_BOUNDARY_EDGE_ONLY, 'b');
     g_hud.AddRadioButton(2, "Boundary edge and corners",
-                         g_fvarBoundary == OsdHbrMesh::k_InterpolateBoundaryEdgeAndCorner,
-                         10, 50, callbackBoundary, OsdHbrMesh::k_InterpolateBoundaryEdgeAndCorner, 'b');
+                         g_fvarBoundary == SdcOptions::FVAR_BOUNDARY_EDGE_AND_CORNER,
+                         10, 50, callbackBoundary, SdcOptions::FVAR_BOUNDARY_EDGE_AND_CORNER, 'b');
     g_hud.AddRadioButton(2, "Boundary always sharp",
-                         g_fvarBoundary == OsdHbrMesh::k_InterpolateBoundaryAlwaysSharp,
-                         10, 70, callbackBoundary, OsdHbrMesh::k_InterpolateBoundaryAlwaysSharp, 'b');
+                         g_fvarBoundary == SdcOptions::FVAR_BOUNDARY_ALWAYS_SHARP,
+                         10, 70, callbackBoundary, SdcOptions::FVAR_BOUNDARY_ALWAYS_SHARP, 'b');
 
     g_hud.AddCheckBox("Propagate corners (C)", g_fvarPropagateCorners != 0,
                       10, 110, callbackPropagateCorners, 0, 'c');
@@ -1310,13 +1177,13 @@ initHUD()
     int pulldown_handle = g_hud.AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
     for (int i = 0; i < (int)g_defaultShapes.size(); ++i) {
         g_hud.AddPullDownButton(pulldown_handle, g_defaultShapes[i].name.c_str(),i);
-    }   
+    }
 }
 
 //------------------------------------------------------------------------------
 static void
-initGL()
-{
+initGL() {
+
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -1332,8 +1199,8 @@ initGL()
 
 //------------------------------------------------------------------------------
 static void
-idle()
-{
+idle() {
+
     if (not g_freeze)
         g_frame++;
 
@@ -1345,16 +1212,16 @@ idle()
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
-{
+callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
+
     printf("OsdError: %d\n", err);
     printf("%s", message);
 }
 
 //------------------------------------------------------------------------------
 static void
-setGLCoreProfile()
-{
+setGLCoreProfile() {
+
 #if GLFW_VERSION_MAJOR >= 3
     #define glfwOpenWindowHint glfwWindowHint
     #define GLFW_OPENGL_VERSION_MAJOR GLFW_CONTEXT_VERSION_MAJOR
@@ -1373,8 +1240,8 @@ setGLCoreProfile()
 }
 
 //------------------------------------------------------------------------------
-int main(int argc, char ** argv)
-{
+int main(int argc, char ** argv) {
+
     bool fullscreen = false;
     std::string str;
     for (int i = 1; i < argc; ++i) {
@@ -1391,11 +1258,13 @@ int main(int argc, char ** argv)
                 ss << ifs.rdbuf();
                 ifs.close();
                 str = ss.str();
-                g_defaultShapes.push_back(SimpleShape(str.c_str(), argv[1], kCatmark));
+                g_defaultShapes.push_back(ShapeDesc(argv[1], str.c_str(), kCatmark));
             }
         }
     }
-    initializeShapes();
+
+    initShapes();
+
     OsdSetErrorCallback(callbackError);
 
     if (not glfwInit()) {

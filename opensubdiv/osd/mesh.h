@@ -30,6 +30,7 @@
 #include "../far/kernelBatch.h"
 #include "../far/refineTables.h"
 #include "../far/patchTablesFactory.h"
+#include "../far/stencilTables.h"
 #include "../far/stencilTablesFactory.h"
 
 #include "../osd/vertex.h"
@@ -90,10 +91,13 @@ protected:
     }
 
     static inline void refineMesh(FarRefineTables & refTables, int level, bool adaptive) {
+
+        bool fullTopologyInLastLevel = refTables.GetNumFVarChannels()>0;
+
         if (adaptive) {
-            refTables.RefineAdaptive(level);
+            refTables.RefineAdaptive(level, fullTopologyInLastLevel);
         } else {
-            refTables.RefineUniform(level);
+            refTables.RefineUniform(level, fullTopologyInLastLevel);
         }
     }
 };
@@ -263,8 +267,8 @@ private:
     FarRefineTables * _refTables;
     FarKernelBatchVector _kernelBatches;
 
-    VertexBuffer * _vertexBuffer;
-    VertexBuffer * _varyingBuffer;
+    VertexBuffer * _vertexBuffer,
+                 * _varyingBuffer;
 
     ComputeContext    * _computeContext;
     ComputeController * _computeController;

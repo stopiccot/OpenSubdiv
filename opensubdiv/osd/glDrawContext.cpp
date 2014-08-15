@@ -112,7 +112,7 @@ OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElemen
 }
 
 bool
-OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElements, bool requireFVarData) {
+OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElements, bool /* requireFVarData */) {
 
     _isAdaptive = patchTables.IsFeatureAdaptive();
     
@@ -170,11 +170,13 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
 
 
     // create fvar data buffer if requested
+/* XXXX do fvar data stuff here
     std::vector<float> const &
         fvarData = patchTables.GetFVarData().GetAllData();
 
     if (requireFVarData and not fvarData.empty())
         _fvarDataTextureBuffer = createTextureBuffer(fvarData, GL_R32F);
+*/
 
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
 #endif

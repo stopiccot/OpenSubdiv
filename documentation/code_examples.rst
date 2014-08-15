@@ -43,7 +43,7 @@ of the software.
      - | `glStencilViewer <glstencilviewer.html>`_
        | `glPaintTest <glpainttest.html>`_
        | `glShareTopology <glsharetopology.html>`_
-       | `uvViewer <uvviewer.html>`_
+       | `glFVarViewer <glfvarviewer.html>`_
 
 .. list-table:: **DirectX examples**
    :class: quickref

@@ -584,6 +584,36 @@ FarPatchTablesFactory::getNumPatches( FarPatchTables::PatchArrayVector const & p
 }
 
 //------------------------------------------------------------------------------
+void
+FarPatchTablesFactory::allocateTables( FarPatchTables * tables, int /* nlevels */, int fvarwidth ) {
+
+    int nverts = tables->GetNumControlVertices(),
+        npatches = getNumPatches(tables->GetPatchArrayVector());
+
+    if (nverts==0 or npatches==0)
+        return;
+
+    tables->_patches.resize( nverts );
+
+    tables->_paramTable.resize( npatches );
+
+    if (fvarwidth>0) {
+        FarPatchTables::PatchArrayVector const & parrays = tables->GetPatchArrayVector();
+        int nfvarverts = 0;
+        for (int i=0; i<(int)parrays.size(); ++i) {
+            nfvarverts += parrays[i].GetNumPatches() *
+                          (parrays[i].GetDescriptor().GetType() == FarPatchTables::TRIANGLES ? 3 : 4);
+        }
+
+        //tables->_fvarData._data.resize( nfvarverts * fvarwidth );
+
+        //if (nlevels >1) {
+        //    tables->_fvarData._offsets.resize( nlevels );
+        //}
+    }
+}
+
+//------------------------------------------------------------------------------
 FarPatchTables const *
 FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
 
@@ -808,7 +838,7 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
         pushPatchArray( *it, parray, patchCtr.getValue(*it), &voffset, &poffset, &qoffset );
     }
 
-    result->_fvarData._fvarWidth = fvarwidth;
+    //result->_fvarData._fvarWidth = fvarwidth;
     result->_numPtexFaces = 0;
 
     // Allocate various tables
@@ -835,8 +865,8 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
         iptrs.getValue( *it ) = &result->_patches[pa->GetVertIndex()];
         pptrs.getValue( *it ) = &result->_paramTable[pa->GetPatchIndex()];
 
-        if (fvarwidth>0)
-            fptrs.getValue( *it ) = &result->_fvarData._data[pa->GetPatchIndex() * 4 * fvarwidth];
+        //if (fvarwidth>0)
+        //    fptrs.getValue( *it ) = &result->_fvarData._data[pa->GetPatchIndex() * 4 * fvarwidth];
     }
 
     FarPatchTables::QuadOffsetTable::value_type *quad_G_C0_P = patchCtr.G>0 ? &result->_quadOffsetTable[0] : 0;

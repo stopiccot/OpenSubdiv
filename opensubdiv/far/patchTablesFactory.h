@@ -50,12 +50,10 @@ public:
 
     struct Options {
 
-        Options() : fvarWidth(0),
-                    generateAllLevels(false),
+        Options() : generateAllLevels(false),
                     triangulateQuads(false) { }
 
-        int fvarWidth         : 16, ///< Width of face-varying primvar data
-            generateAllLevels : 1,  ///< Include levels from 'firstLevel' to 'maxLevel' (Uniform mode only)
+        int generateAllLevels : 1,  ///< Include levels from 'firstLevel' to 'maxLevel' (Uniform mode only)
             triangulateQuads  : 1;  ///< Triangulate 'QUADS' primitives (Uniform mode only)
     };
 
@@ -88,14 +86,11 @@ private:
                                          FarPatchTables *                  tables);
 
     //  Methods for allocating and managing the patch table data arrays:
-    static void allocateTables( FarPatchTables * tables, int nlevels, int fvarwidth );
+    static void allocateTables( FarPatchTables * tables, int nlevels );
 
     static void pushPatchArray( FarPatchTables::Descriptor desc,
                                 FarPatchTables::PatchArrayVector & parray,
                                 int npatches, int * voffset, int * poffset, int * qoffset );
-
-    //  Low-level methods for populating patch properties:
-    static float * computeFVarData(int face, const int width, float *coord, bool isAdaptive);
 
     static FarPatchParam * computePatchParam( FarRefineTables const & refTables, int level,
                                               int face, int rotation, FarPatchParam * coord );

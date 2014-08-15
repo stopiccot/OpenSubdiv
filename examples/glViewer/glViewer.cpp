@@ -266,8 +266,8 @@ compileShader(GLenum shaderType, const char *source)
 }
 
 static bool
-linkDefaultProgram()
-{
+linkDefaultProgram() {
+
 #if defined(GL_ARB_tessellation_shader) || defined(GL_VERSION_4_0)
     #define GLSL_VERSION_DEFINE "#version 400\n"
 #else
@@ -327,38 +327,6 @@ linkDefaultProgram()
 //------------------------------------------------------------------------------
 
 #include "init_shapes.h"
-
-//------------------------------------------------------------------------------
-#ifdef calcNormals
-static void
-calcNormals(OsdHbrMesh * mesh, std::vector<float> const & pos, std::vector<float> & result ) {
-
-    // calc normal vectors
-    int nverts = (int)pos.size()/3;
-
-    int nfaces = mesh->GetNumCoarseFaces();
-    for (int i = 0; i < nfaces; ++i) {
-
-        OsdHbrFace * f = mesh->GetFace(i);
-
-        float const * p0 = &pos[f->GetVertex(0)->GetID()*3],
-                    * p1 = &pos[f->GetVertex(1)->GetID()*3],
-                    * p2 = &pos[f->GetVertex(2)->GetID()*3];
-
-        float n[3];
-        cross( n, p0, p1, p2 );
-
-        for (int j = 0; j < f->GetNumVertices(); j++) {
-            int idx = f->GetVertex(j)->GetID() * 3;
-            result[idx  ] += n[0];
-            result[idx+1] += n[1];
-            result[idx+2] += n[2];
-        }
-    }
-    for (int i = 0; i < nverts; ++i)
-        normalize( &result[i*3] );
-}
-#endif
 
 //------------------------------------------------------------------------------
 static void

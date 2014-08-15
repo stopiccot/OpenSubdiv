@@ -304,10 +304,6 @@ public:
     ///
     /// @param patchParams      Local patch parameterization
     ///
-    /// @param fvarData         Face varying data table
-    ///
-    /// @param fvarWidth        Primvar data width (number of floats)
-    ///
     /// @param maxValence       Highest vertex valence allowed in the mesh
     ///
     FarPatchTables(PatchArrayVector const & patchArrays,
@@ -315,8 +311,6 @@ public:
                    VertexValenceTable const * vertexValences,
                    QuadOffsetTable const * quadOffsets,
                    PatchParamTable const * patchParams,
-                   std::vector<float> const * fvarData,
-                   int fvarWidth,
                    int maxValence);
 
     /// \brief Get the table of patch control vertices
@@ -402,61 +396,6 @@ public:
     /// \brief Returns the total number of vertices in the mesh across across all depths
     int GetNumPtexFaces() const { return _numPtexFaces; }
 
-    
-    /// \brief Container for static face-varying primvar data
-    class FVarData {
-
-    public:
-
-        /// \brief Returns a vector of floats containing the face-varying data attached
-        /// to each patch.
-        ///
-        /// The data is stored as a run of FVarWidth floats per-vertex per-face
-        /// e.g.: for UV data it has the structure of float[p][4][2] where
-        /// p=primitiveID and FVarWidth=2:
-        ///      [ [ uv uv uv uv ] [ uv uv uv uv ] [ ... ] ]
-        ///            prim 0           prim 1
-        ///
-        /// In uniform mode the FarPatchTablesFactory can be set to generate either a
-        /// patch array containing the faces at the highest level of subdivision, or
-        /// a range of arrays, corresponding to multiple successive levels of subdivision.
-        ///
-        /// Note : level '0' is not the coarse mesh. Currently there is no path in the
-        /// factories to convert the coarse mesh to FarPatchTables.
-        ///
-        /// @param level  the level of subdivision of the faces (returns the highest
-        ///               level by default) **Uniform subdivision only**
-        ///
-        float const * GetData(int level=0) const;
-
-        /// \brief Returns a vector of floats containing the face-varying data attached
-        std::vector<float> const & GetAllData() const {
-            return _data;
-        }
-
-        /// \brief Returns the width of the interleaved face-varying data
-        int GetFVarWidth() const {
-            return _fvarWidth;
-        }
-
-    private:
-
-        friend class FarPatchTablesFactory;
-        friend class FarPatchTables;
-
-        FVarData() : _fvarWidth(0) { }
-        
-        inline FVarData( std::vector<float> const * data, int fvarWidth );
-
-        std::vector<float> _data;      // face-varying data stored per-face-per-vertex
-        std::vector<int>   _offsets;   // a vector of offsets if multiple leves of
-                                       // subdivision are stored in _data
-        int                _fvarWidth; // width of the face-varying data
-    };
-    
-    /// \brief Returns a container for face-varying data
-    FVarData const & GetFVarData() const { return _fvarData; }
-
 private:
 
     friend class FarPatchTablesFactory;
@@ -477,8 +416,6 @@ private:
     QuadOffsetTable     _quadOffsetTable;    // quad offsets table (for Gregory patches)
 
     PatchParamTable     _paramTable;
-
-    FVarData            _fvarData;           // face-varying data
 
     // highest vertex valence allowed in the mesh (used for Gregory
     // vertexValance & quadOffset tables)
@@ -631,12 +568,9 @@ FarPatchTables::FarPatchTables(PatchArrayVector const & patchArrays,
                                VertexValenceTable const * vertexValences,
                                QuadOffsetTable const * quadOffsets,
                                PatchParamTable const * patchParams,
-                               std::vector<float> const * fvarData,
-                               int fvarWidth,
                                int maxValence) :
     _patchArrays(patchArrays),
     _patches(patches),
-    _fvarData(fvarData, fvarWidth),
     _maxValence(maxValence),
     _numPtexFaces(0) {
 
@@ -775,36 +709,6 @@ FarPatchTables::GetNumControlVertices() const {
 
     return result;
 }
-
-// Constructor
-inline
-FarPatchTables::FVarData::FVarData( std::vector<float> const * data, int fvarWidth ) : 
-    _fvarWidth(fvarWidth) {
-
-    if (data) {
-        _data = *data;
-    }    
-}
-
-// Returns a vector of float containing the face-varying data attached
-inline float const *
-FarPatchTables::FVarData::GetData(int level) const {
-
-    if ( (level-1)<(int)_offsets.size()) {
-
-        int offset = 0;
-
-        if ((level>0) and (not _offsets.empty()) ) {
-
-            offset = _offsets[level -1];
-        }
-
-        return &_data[offset];
-    }
-
-    return NULL;
-}
-
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

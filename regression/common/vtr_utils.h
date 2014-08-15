@@ -86,6 +86,7 @@ GetSdcOptions(Shape const & shape) {
         } else if (t->name=="facevaryingpropagatecorners") {
             if ((int)t->intargs.size()==1) {
                 // XXXX no propagate corners in SdcOptions
+                assert(0);
             } else
                 printf( "expecting single int argument for \"facevaryingpropagatecorners\"\n" );
         } else if (t->name=="smoothtriangles") {
@@ -163,6 +164,27 @@ template <>
 inline void
 FarRefineTablesFactory<Shape>::assignComponentTags(
     FarRefineTables & refTables, Shape const & shape) {
+
+    typedef FarRefineTables::IndexArray IndexArray;
+
+    { // UV layyout (we only parse 1 channel)
+        if (not shape.faceuvs.empty()) {
+
+            int nfaces = refTables.getNumBaseFaces(),
+               channel = refTables.createFVarChannel( (int)shape.faceuvs.size() );
+            
+            for (int i=0, ofs=0; i < nfaces; ++i) {
+            
+                IndexArray dstFaceUVs = refTables.getBaseFVarFaceValues(i, channel);
+                
+                for (int j=0; j<dstFaceUVs.size(); ++j) {
+                    dstFaceUVs[j] = shape.faceuvs[ofs++];
+                }
+            }
+
+            refTables.completeFVarChannelTopology(channel);
+        }
+    }
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 

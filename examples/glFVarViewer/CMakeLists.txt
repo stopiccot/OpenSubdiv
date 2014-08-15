@@ -55,16 +55,16 @@ _stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_glfw_executable(uvViewer
-    viewer.cpp
+_add_glfw_executable(glFVarViewer
+    glFVarViewer.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
 
-target_link_libraries(uvViewer
+target_link_libraries(glFVarViewer
     ${PLATFORM_LIBRARIES}
 )
 
-install(TARGETS uvViewer DESTINATION "${CMAKE_BINDIR_BASE}")
+install(TARGETS glFVarViewer DESTINATION "${CMAKE_BINDIR_BASE}")
