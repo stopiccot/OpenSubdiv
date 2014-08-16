@@ -73,7 +73,7 @@ OpenSubdiv::OsdD3D11ComputeController * g_d3d11ComputeController = NULL;
 #include <osd/d3d11Mesh.h>
 OpenSubdiv::OsdD3D11MeshInterface *g_mesh;
 
-#include "../../regression/common/hbr_utils.h"
+#include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/d3d11_hud.h"
@@ -91,28 +91,11 @@ static const char *shaderSource =
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
-typedef OpenSubdiv::HbrMesh<OpenSubdiv::OsdVertex>     OsdHbrMesh;
-typedef OpenSubdiv::HbrVertex<OpenSubdiv::OsdVertex>   OsdHbrVertex;
-typedef OpenSubdiv::HbrFace<OpenSubdiv::OsdVertex>     OsdHbrFace;
-typedef OpenSubdiv::HbrHalfedge<OpenSubdiv::OsdVertex> OsdHbrHalfedge;
-
 enum KernelType { kCPU = 0,
                   kOPENMP = 1,
                   kCUDA = 2,
                   kCL = 3,
                   kDirectCompute = 4 };
-
-struct SimpleShape {
-    std::string  name;
-    Scheme       scheme;
-    std::string  data;
-
-    SimpleShape() { }
-    SimpleShape( std::string const & idata, char const * iname, Scheme ischeme )
-        : name(iname), scheme(ischeme), data(idata) { }
-};
-
-std::vector<SimpleShape> g_defaultShapes;
 
 int g_currentShape = 0;
 
@@ -151,8 +134,7 @@ Stopwatch g_fpsTimer;
 
 // geometry
 std::vector<float> g_orgPositions,
-                   g_positions,
-                   g_normals;
+                   g_positions;
 
 Scheme             g_scheme;
 
@@ -183,175 +165,8 @@ ID3D11DepthStencilView* g_pDepthStencilView = NULL;
 bool g_bDone;
 
 //------------------------------------------------------------------------------
-static void
-initializeShapes( ) {
 
-#include <shapes/catmark_cube_corner0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner0, "catmark_cube_corner0", kCatmark));
-
-#include <shapes/catmark_cube_corner1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner1, "catmark_cube_corner1", kCatmark));
-
-#include <shapes/catmark_cube_corner2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner2, "catmark_cube_corner2", kCatmark));
-
-#include <shapes/catmark_cube_corner3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner3, "catmark_cube_corner3", kCatmark));
-
-#include <shapes/catmark_cube_corner4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_corner4, "catmark_cube_corner4", kCatmark));
-
-#include <shapes/catmark_cube_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases0, "catmark_cube_creases0", kCatmark));
-
-#include <shapes/catmark_cube_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube_creases1, "catmark_cube_creases1", kCatmark));
-
-#include <shapes/catmark_cube.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_cube, "catmark_cube", kCatmark));
-
-#include <shapes/catmark_dart_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgecorner, "catmark_dart_edgecorner", kCatmark));
-
-#include <shapes/catmark_dart_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_dart_edgeonly, "catmark_dart_edgeonly", kCatmark));
-
-#include <shapes/catmark_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgecorner ,"catmark_edgecorner", kCatmark));
-
-#include <shapes/catmark_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_edgeonly, "catmark_edgeonly", kCatmark));
-
-#include <shapes/catmark_gregory_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test1, "catmark_gregory_test1", kCatmark));
-
-#include <shapes/catmark_gregory_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test2, "catmark_gregory_test2", kCatmark));
-
-#include <shapes/catmark_gregory_test3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test3, "catmark_gregory_test3", kCatmark));
-
-#include <shapes/catmark_gregory_test4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_gregory_test4, "catmark_gregory_test4", kCatmark));
-
-#include <shapes/catmark_hole_test1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test1, "catmark_hole_test1", kCatmark));
-
-#include <shapes/catmark_hole_test2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_hole_test2, "catmark_hole_test2", kCatmark));
-
-#include <shapes/catmark_pyramid_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases0, "catmark_pyramid_creases0", kCatmark));
-
-#include <shapes/catmark_pyramid_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid_creases1, "catmark_pyramid_creases1", kCatmark));
-
-#include <shapes/catmark_pyramid.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pyramid, "catmark_pyramid", kCatmark));
-
-#include <shapes/catmark_tent_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases0, "catmark_tent_creases0", kCatmark));
-
-#include <shapes/catmark_tent_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent_creases1, "catmark_tent_creases1", kCatmark));
-
-#include <shapes/catmark_tent.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_tent, "catmark_tent", kCatmark));
-
-#include <shapes/catmark_torus.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus, "catmark_torus", kCatmark));
-
-#include <shapes/catmark_torus_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_torus_creases0, "catmark_torus_creases0", kCatmark));
-
-#include <shapes/catmark_square_hedit0.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit0, "catmark_square_hedit0", kCatmark));
-
-#include <shapes/catmark_square_hedit1.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit1, "catmark_square_hedit1", kCatmark));
-
-#include <shapes/catmark_square_hedit2.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit2, "catmark_square_hedit2", kCatmark));
-
-#include <shapes/catmark_square_hedit3.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit3, "catmark_square_hedit3", kCatmark));
-
-#include <shapes/catmark_square_hedit4.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_square_hedit4, "catmark_square_hedit4", kCatmark));
-
-#include <shapes/catmark_bishop.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_bishop, "catmark_bishop", kCatmark));
-
-#include <shapes/catmark_car.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_car, "catmark_car", kCatmark));
-
-#include <shapes/catmark_helmet.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_helmet, "catmark_helmet", kCatmark));
-
-#include <shapes/catmark_pawn.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_pawn, "catmark_pawn", kCatmark));
-
-#include <shapes/catmark_rook.h>
-    g_defaultShapes.push_back(SimpleShape(catmark_rook, "catmark_rook", kCatmark));
-
-#include <shapes/bilinear_cube.h>
-    g_defaultShapes.push_back(SimpleShape(bilinear_cube, "bilinear_cube", kBilinear));
-
-
-#include <shapes/loop_cube_creases0.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube_creases0, "loop_cube_creases0", kLoop));
-
-#include <shapes/loop_cube_creases1.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube_creases1, "loop_cube_creases1", kLoop));
-
-#include <shapes/loop_cube.h>
-    g_defaultShapes.push_back(SimpleShape(loop_cube, "loop_cube", kLoop));
-
-#include <shapes/loop_icosahedron.h>
-    g_defaultShapes.push_back(SimpleShape(loop_icosahedron, "loop_icosahedron", kLoop));
-
-#include <shapes/loop_saddle_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(loop_saddle_edgecorner, "loop_saddle_edgecorner", kLoop));
-
-#include <shapes/loop_saddle_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(loop_saddle_edgeonly, "loop_saddle_edgeonly", kLoop));
-
-#include <shapes/loop_triangle_edgecorner.h>
-    g_defaultShapes.push_back(SimpleShape(loop_triangle_edgecorner, "loop_triangle_edgecorner", kLoop));
-
-#include <shapes/loop_triangle_edgeonly.h>
-    g_defaultShapes.push_back(SimpleShape(loop_triangle_edgeonly, "loop_triangle_edgeonly", kLoop));
-}
-
-//------------------------------------------------------------------------------
-static void
-calcNormals(OsdHbrMesh * mesh, std::vector<float> const & pos, std::vector<float> & result ) {
-
-    // calc normal vectors
-    int nverts = (int)pos.size()/3;
-
-    int nfaces = mesh->GetNumCoarseFaces();
-    for (int i = 0; i < nfaces; ++i) {
-
-        OsdHbrFace * f = mesh->GetFace(i);
-
-        float const * p0 = &pos[f->GetVertex(0)->GetID()*3],
-                    * p1 = &pos[f->GetVertex(1)->GetID()*3],
-                    * p2 = &pos[f->GetVertex(2)->GetID()*3];
-
-        float n[3];
-        cross( n, p0, p1, p2 );
-
-        for (int j = 0; j < f->GetNumVertices(); j++) {
-            int idx = f->GetVertex(j)->GetID() * 3;
-            result[idx  ] += n[0];
-            result[idx+1] += n[1];
-            result[idx+2] += n[2];
-        }
-    }
-    for (int i = 0; i < nverts; ++i)
-        normalize( &result[i*3] );
-}
+#include "init_shapes.h"
 
 //------------------------------------------------------------------------------
 static void
@@ -363,7 +178,6 @@ updateGeom() {
     vertex.reserve(nverts*6);
 
     const float *p = &g_orgPositions[0];
-    const float *n = &g_normals[0];
 
     float r = sin(g_frame*0.001f) * g_moveScale;
     for (int i = 0; i < nverts; ++i) {
@@ -373,7 +187,7 @@ updateGeom() {
         g_positions[i*3+0] = p[0]*ct + p[1]*st;
         g_positions[i*3+1] = -p[0]*st + p[1]*ct;
         g_positions[i*3+2] = p[2];
-        
+
         p += 3;
     }
 
@@ -382,12 +196,10 @@ updateGeom() {
         vertex.push_back(p[0]);
         vertex.push_back(p[1]);
         vertex.push_back(p[2]);
-        vertex.push_back(n[0]);
-        vertex.push_back(n[1]);
-        vertex.push_back(n[2]);
-        
+        vertex.push_back(0.0f); // normal
+        vertex.push_back(0.0f);
+        vertex.push_back(0.0f);
         p += 3;
-        n += 3;
     }
 
     g_mesh->UpdateVertexBuffer(&vertex[0], 0, nverts);
@@ -426,33 +238,41 @@ getKernelName(int kernel) {
 
 //------------------------------------------------------------------------------
 static void
-createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kCatmark ) {
+createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=kCatmark) {
 
-    // generate Hbr representation from "obj" description
-    OsdHbrMesh * hmesh = simpleHbr<OpenSubdiv::OsdVertex>(shape.c_str(), scheme, g_orgPositions);
+    typedef OpenSubdiv::FarIndexArray IndexArray;
 
-    g_normals.resize(g_orgPositions.size(),0.0f);
-    g_positions.resize(g_orgPositions.size(),0.0f);
-    calcNormals( hmesh, g_orgPositions, g_normals );
+    Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
+
+    // create Vtr mesh (topology)
+    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
+    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+
+    OpenSubdiv::FarRefineTables * refTables =
+        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
-    g_coarseEdges.clear();
-    g_coarseEdgeSharpness.clear();
-    g_coarseVertexSharpness.clear();
-    int nf = hmesh->GetNumFaces();
-    for(int i=0; i<nf; ++i) {
-        OsdHbrFace *face = hmesh->GetFace(i);
-        int nv = face->GetNumVertices();
-        for(int j=0; j<nv; ++j) {
-            g_coarseEdges.push_back(face->GetVertex(j)->GetID());
-            g_coarseEdges.push_back(face->GetVertex((j+1)%nv)->GetID());
-            g_coarseEdgeSharpness.push_back(face->GetEdge(j)->GetSharpness());
-        }
+    int nedges = refTables->GetNumEdges(0),
+        nverts = refTables->GetNumVertices(0);
+
+    g_coarseEdges.resize(nedges*2);
+    g_coarseEdgeSharpness.resize(nedges);
+    g_coarseVertexSharpness.resize(nverts);
+
+    for(int i=0; i<nedges; ++i) {
+        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        g_coarseEdges[i*2  ]=verts[0];
+        g_coarseEdges[i*2+1]=verts[1];
+        g_coarseEdgeSharpness[i]=refTables->GetEdgeSharpness(0, i);
     }
-    int nv = hmesh->GetNumVertices();
-    for(int i=0; i<nv; ++i) {
-        g_coarseVertexSharpness.push_back(hmesh->GetVertex(i)->GetSharpness());
+
+    for(int i=0; i<nverts; ++i) {
+        g_coarseVertexSharpness[i]=refTables->GetVertexSharpness(0, i);
     }
+
+    g_orgPositions=shape->verts;
+
+    g_positions.resize(g_orgPositions.size(),0.0f);
 
     delete g_mesh;
     g_mesh = NULL;
@@ -476,7 +296,7 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
                                          OpenSubdiv::OsdCpuComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cpuComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -489,7 +309,7 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
                                          OpenSubdiv::OsdOmpComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_ompComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -503,7 +323,7 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
                                          OpenSubdiv::OsdCLComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_clComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_clContext, g_clQueue, g_pd3dDeviceContext);
@@ -517,7 +337,7 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
                                          OpenSubdiv::OsdCudaComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cudaComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -530,16 +350,13 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
                                          OpenSubdiv::OsdD3D11ComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_d3d11ComputeController,
-                                                hmesh,
+                                                refTables,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
     } else {
         printf("Unsupported kernel %s\n", getKernelName(kernel));
     }
-
-    // Hbr mesh can be deleted
-    delete hmesh;
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -602,8 +419,8 @@ protected:
 
 EffectDrawRegistry::SourceConfigType *
 EffectDrawRegistry::_CreateDrawSourceConfig(
-        DescType const & desc, ID3D11Device * pd3dDevice)
-{
+        DescType const & desc, ID3D11Device * pd3dDevice) {
+
     Effect effect = desc.second;
 
     SourceConfigType * sconfig =
@@ -709,8 +526,8 @@ EffectDrawRegistry::_CreateDrawConfig(
         ID3D11Device * pd3dDevice,
         ID3D11InputLayout ** ppInputLayout,
         D3D11_INPUT_ELEMENT_DESC const * pInputElementDescs,
-        int numInputElements)
-{
+        int numInputElements) {
+
     ConfigType * config = BaseRegistry::_CreateDrawConfig(desc.first, sconfig,
         pd3dDevice, ppInputLayout, pInputElementDescs, numInputElements);
     assert(config);
@@ -721,8 +538,8 @@ EffectDrawRegistry::_CreateDrawConfig(
 EffectDrawRegistry effectRegistry;
 
 static Effect
-GetEffect()
-{
+GetEffect() {
+
     if (g_scheme == kLoop) {
         return (g_wire == 0 ? kTriWire : (g_wire == 1 ? kTriFill : kTriLine));
     } else {
@@ -732,8 +549,8 @@ GetEffect()
 
 //------------------------------------------------------------------------------
 static void
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
-{
+bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch) {
+
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
 
     // input layout
@@ -782,11 +599,11 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
         rotate(pData->ModelViewMatrix, g_rotate[0], 0, 1, 0);
         translate(pData->ModelViewMatrix, -g_center[0], -g_center[2], g_center[1]); // z-up model
         rotate(pData->ModelViewMatrix, -90, 1, 0, 0); // z-up model
-        
+
         identity(pData->ProjectionMatrix);
         perspective(pData->ProjectionMatrix, 45.0, aspect, 0.01f, 500.0);
         multMatrix(pData->ModelViewProjectionMatrix, pData->ModelViewMatrix, pData->ProjectionMatrix);
-        
+
         g_pd3dDeviceContext->Unmap( g_pcbPerFrame, 0 );
     }
 
@@ -854,8 +671,8 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
 
 //------------------------------------------------------------------------------
 static void
-display()
-{
+display() {
+
     float color[4] = {0.006f, 0.006f, 0.006f, 1.0f};
     g_pd3dDeviceContext->ClearRenderTargetView(g_pSwapChainRTV, color);
 
@@ -904,16 +721,16 @@ display()
 
             switch (patch.GetDescriptor().GetNumControlVertices()) {
             case 4:
-                topology = D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST; 
+                topology = D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
                 break;
             case 9:
-                topology = D3D11_PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST; 
+                topology = D3D11_PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST;
                 break;
             case 12:
-                topology = D3D11_PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST; 
+                topology = D3D11_PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST;
                 break;
             case 16:
-                topology = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST; 
+                topology = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
                 break;
             default:
                 assert(false);
@@ -924,7 +741,7 @@ display()
             if (g_scheme == kLoop) {
                 topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
             } else {
-                topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ; 
+                topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
             }
         }
 
@@ -1014,7 +831,7 @@ quit() {
     SAFE_RELEASE(g_pSwapChain);
     SAFE_RELEASE(g_pd3dDeviceContext);
     SAFE_RELEASE(g_pd3dDevice);
-    
+
     delete g_cpuComputeController;
 
 #ifdef OPENSUBDIV_HAS_OPENMP
@@ -1055,14 +872,13 @@ keyboard(char key) {
 
 //------------------------------------------------------------------------------
 static void
-callbackWireframe(int b)
-{
+callbackWireframe(int b) {
     g_wire = b;
 }
 
 static void
-callbackKernel(int k)
-{
+callbackKernel(int k) {
+
     g_kernel = k;
 
 #ifdef OPENSUBDIV_HAS_OPENCL
@@ -1080,83 +896,75 @@ callbackKernel(int k)
     }
 #endif
 
-    createOsdMesh( g_defaultShapes[ g_currentShape ].data, g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme );
+    createOsdMesh(g_defaultShapes[g_currentShape], g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme);
 }
 
 static void
-callbackLevel(int l)
-{
+callbackLevel(int l) {
     g_level = l;
-    createOsdMesh( g_defaultShapes[g_currentShape].data, g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme );
+    createOsdMesh(g_defaultShapes[g_currentShape], g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme);
 }
 
 static void
-callbackModel(int m)
-{
-    if (m < 0)
-        m = 0;
+callbackModel(int m) {
 
-    if (m >= (int)g_defaultShapes.size())
+    if (m < 0) {
+        m = 0;
+    }
+
+    if (m >= (int)g_defaultShapes.size()) {
         m = (int)g_defaultShapes.size() - 1;
+    }
 
     g_currentShape = m;
 
-    createOsdMesh( g_defaultShapes[m].data, g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme );
+    createOsdMesh(g_defaultShapes[g_currentShape], g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme);
 }
 
 static void
-callbackDisplayNormal(bool checked, int n)
-{
+callbackDisplayNormal(bool checked, int n) {
     g_drawNormals = checked;
 }
 
 static void
-callbackAnimate(bool checked, int m)
-{
+callbackAnimate(bool checked, int m) {
     g_moveScale = checked;
 }
 
 static void
-callbackFreeze(bool checked, int f)
-{
+callbackFreeze(bool checked, int f) {
     g_freeze = checked;
 }
 
 static void
-callbackAdaptive(bool checked, int a)
-{
+callbackAdaptive(bool checked, int a) {
     g_adaptive = checked;
-
-    createOsdMesh( g_defaultShapes[g_currentShape].data, g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme );
+    createOsdMesh(g_defaultShapes[g_currentShape], g_level, g_kernel, g_defaultShapes[ g_currentShape ].scheme);
 }
 
 static void
-callbackDisplayCageEdges(bool checked, int d)
-{
+callbackDisplayCageEdges(bool checked, int d) {
     g_drawCageEdges = checked;
 }
 
 static void
-callbackDisplayCageVertices(bool checked, int d)
-{
+callbackDisplayCageVertices(bool checked, int d) {
     g_drawCageVertices = checked;
 }
 
 static void
-callbackDisplayPatchCVs(bool checked, int d)
-{
+callbackDisplayPatchCVs(bool checked, int d) {
     g_drawPatchCVs = checked;
 }
 
 static void
-callbackDisplayPatchColor(bool checked, int p)
-{
+callbackDisplayPatchColor(bool checked, int p) {
     g_displayPatchColor = checked;
 }
 
 static void
-initHUD()
-{
+initHUD() {
+
     g_hud = new D3D11hud(g_pd3dDeviceContext);
     g_hud->Init(g_width, g_height);
 
@@ -1203,8 +1011,8 @@ initHUD()
 
 //------------------------------------------------------------------------------
 static bool
-initD3D11(HWND hWnd)
-{
+initD3D11(HWND hWnd) {
+
     D3D_DRIVER_TYPE driverTypes[] = {
         D3D_DRIVER_TYPE_HARDWARE,
         D3D_DRIVER_TYPE_WARP,
@@ -1212,7 +1020,7 @@ initD3D11(HWND hWnd)
     };
 
     UINT numDriverTypes = ARRAYSIZE(driverTypes);
-    
+
     DXGI_SWAP_CHAIN_DESC hDXGISwapChainDesc;
     hDXGISwapChainDesc.BufferDesc.Width = g_width;
     hDXGISwapChainDesc.BufferDesc.Height = g_height;
@@ -1229,7 +1037,7 @@ initD3D11(HWND hWnd)
     hDXGISwapChainDesc.Windowed = TRUE;
     hDXGISwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
     hDXGISwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-    
+
     // create device and swap chain
     HRESULT hr;
     D3D_DRIVER_TYPE hDriverType = D3D_DRIVER_TYPE_NULL;
@@ -1314,8 +1122,8 @@ initD3D11(HWND hWnd)
 }
 
 static bool
-updateRenderTarget(HWND hWnd)
-{
+updateRenderTarget(HWND hWnd) {
+
     RECT rc;
     GetClientRect(hWnd, &rc);
     UINT width = rc.right - rc.left;
@@ -1339,7 +1147,7 @@ updateRenderTarget(HWND hWnd)
         MessageBoxW(hWnd, L"SwpChain GetBuffer", L"Err", MB_ICONSTOP);
         return false;
     }
-    
+
     // create render target from the back buffer
     if(FAILED(g_pd3dDevice->CreateRenderTargetView(hpBackBuffer, NULL, &g_pSwapChainRTV))){
         MessageBoxW(hWnd, L"CreateRenderTargetView", L"Err", MB_ICONSTOP);
@@ -1386,14 +1194,14 @@ updateRenderTarget(HWND hWnd)
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     g_pd3dDeviceContext->RSSetViewports(1, &vp);
-    
+
     return true;
 }
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
-{
+callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
+
     std::ostringstream s;
     s << "OsdError: " << err << "\n";
     s << message;
@@ -1402,8 +1210,8 @@ callbackError(OpenSubdiv::OsdErrorType err, const char *message)
 
 //------------------------------------------------------------------------------
 static LRESULT WINAPI
-msgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
+msgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+
     switch(msg)
     {
         case WM_KEYDOWN:
@@ -1441,8 +1249,8 @@ msgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 static std::vector<std::string>
-tokenize(std::string const & src)
-{
+tokenize(std::string const & src) {
+
     std::vector<std::string> result;
 
     std::stringstream input(src);
@@ -1454,8 +1262,8 @@ tokenize(std::string const & src)
 }
 
 int WINAPI
-WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
-{
+WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
+
     // register window class
     TCHAR szWindowClass[] = "OPENSUBDIV_EXAMPLE";
     WNDCLASS wcex;
@@ -1495,7 +1303,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmd
             ss << ifs.rdbuf();
             ifs.close();
             std::string str = ss.str();
-            g_defaultShapes.push_back(SimpleShape(str.c_str(), args[i].c_str(), kCatmark));
+            g_defaultShapes.push_back(ShapeDesc(__argv[1], str.c_str(), kCatmark));
         }
     }
 
@@ -1512,11 +1320,12 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmd
                 ss << ifs.rdbuf();
                 ifs.close();
                 str = ss.str();
-                g_defaultShapes.push_back(SimpleShape(str.c_str(), __argv[1], kCatmark));
+                g_defaultShapes.push_back(ShapeDesc(__argv[1], str.c_str(), kCatmark));
             }
         }
     }
-    initializeShapes();
+
+    initShapes();
 
     OsdSetErrorCallback(callbackError);
 

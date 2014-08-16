@@ -95,7 +95,7 @@ public:
         if (vertexBuffer) {
             bind(vertexBuffer, vertexDesc);
 
-            context->BindVertexStencilTables();
+            context->BindVertexStencilTables(_deviceContext);
 
             FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
@@ -103,12 +103,12 @@ public:
         if (varyingBuffer) {
             bind(varyingBuffer, varyingDesc);
 
-            context->BindVaryingStencilTables();
+            context->BindVaryingStencilTables(_deviceContext);
 
             FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
 
-        context->UnbindStencilTables();
+        context->UnbindStencilTables(_deviceContext);
 
         unbind();
     }
@@ -156,7 +156,7 @@ protected:
                 OsdVertexBufferDescriptor(0, numElements, numElements);
         }
 
-        _currentBindState.buffer = buffer->BindVBO();
+        _currentBindState.buffer = buffer->BindD3D11UAV(_deviceContext);
 
         _currentBindState.kernelBundle = getKernel(_currentBindState.desc);
 

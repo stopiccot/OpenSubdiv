@@ -150,7 +150,7 @@ FarRefineTablesFactory<Shape>::assignComponentTopology(
         for (int i=0, ofs=0; i < nfaces; ++i) {
 
             IndexArray dstFaceVerts = refTables.setBaseFaceVertices(i);
-            IndexArray dstFaceEdges = refTables.setBaseFaceEdges(i);
+            //IndexArray dstFaceEdges = refTables.setBaseFaceEdges(i);
 
             for (int j=0; j<dstFaceVerts.size(); ++j) {
                 dstFaceVerts[j] = shape.faceverts[ofs++];
@@ -165,6 +165,8 @@ inline void
 FarRefineTablesFactory<Shape>::assignComponentTags(
     FarRefineTables & refTables, Shape const & shape) {
 
+//#define DO_UVs
+#if defined DO_UVs
     typedef FarRefineTables::IndexArray IndexArray;
 
     { // UV layyout (we only parse 1 channel)
@@ -185,6 +187,7 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
             refTables.completeFVarChannelTopology(channel);
         }
     }
+#endif    
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 
