@@ -1394,7 +1394,7 @@ VtrRefinement::subdivideEdgeSharpness()
         VtrLevel::ETag& cEdgeTag   = _child->_edgeTags[cEdge];
 
         if (cEdgeTag._infSharp) {
-            cSharpness = SdcCrease::INFINITE;
+            cSharpness = SdcCrease::SHARP;
         } else if (cEdgeTag._semiSharp) {
             VtrIndex       pEdge      = _childEdgeParentIndex[cEdge];
             VtrSharpness   pSharpness = _parent->_edgeSharpness[pEdge];
@@ -1439,7 +1439,7 @@ VtrRefinement::subdivideVertexSharpness()
         VtrLevel::VTag& cVertTag   = _child->_vertTags[cVert];
 
         if (cVertTag._infSharp) {
-            cSharpness = SdcCrease::INFINITE;
+            cSharpness = SdcCrease::SHARP;
         } else if (cVertTag._semiSharp) {
             VtrIndex       pVert      = _childVertexParentIndex[cVert];
             VtrSharpness   pSharpness = _parent->_vertSharpness[pVert];

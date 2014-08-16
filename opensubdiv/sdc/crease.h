@@ -62,13 +62,13 @@ public:
     //
     //  Constants and related queries of sharpness values:
     //
-    static float const SMOOTH;    // =  0.0f, do we really need this?
-    static float const INFINITE;  // = 10.0f;
+    static float const SMOOTH; // =  0.0f, do we really need this?
+    static float const SHARP;  // = 10.0f;
 
     static bool IsSmooth(float sharpness)    { return sharpness <= SMOOTH; }
     static bool IsSharp(float sharpness)     { return sharpness > SMOOTH; }
-    static bool IsInfinite(float sharpness)  { return sharpness >= INFINITE; }
-    static bool IsSemiSharp(float sharpness) { return (SMOOTH < sharpness) && (sharpness < INFINITE); }
+    static bool IsInfinite(float sharpness)  { return sharpness >= SHARP; }
+    static bool IsSemiSharp(float sharpness) { return (SMOOTH < sharpness) && (sharpness < SHARP); }
 
     //
     //  Enum for the types of subdivision rules applied based on sharpness values (note these
@@ -196,13 +196,13 @@ inline float
 SdcCrease::SharpenBoundaryEdge(float edgeSharpness) const
 {
     return (_options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE) ?
-            INFINITE : edgeSharpness;
+            SHARP : edgeSharpness;
 }
 inline float
 SdcCrease::SharpenBoundaryVertex(float vertexSharpness) const
 {
     return (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER) ?
-            INFINITE : vertexSharpness;
+            SHARP : vertexSharpness;
 }
 
 inline float
@@ -212,7 +212,7 @@ SdcCrease::SharpenNonManifoldEdge(float edgeSharpness) const
     //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
 
     return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
-            INFINITE : edgeSharpness;
+            SHARP : edgeSharpness;
 }
 inline float
 SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
@@ -221,7 +221,7 @@ SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
     //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
 
     return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
-            INFINITE : vertexSharpness;
+            SHARP : vertexSharpness;
 }
 
 
@@ -229,7 +229,7 @@ inline float
 SdcCrease::decrementSharpness(float sharpness) const
 {
     if (IsSmooth(sharpness)) return SdcCrease::SMOOTH;  // redundant but most common
-    if (IsInfinite(sharpness)) return SdcCrease::INFINITE;
+    if (IsInfinite(sharpness)) return SdcCrease::SHARP;
     if (sharpness > 1.0f) return (sharpness - 1.0f);
     return SdcCrease::SMOOTH;
 }

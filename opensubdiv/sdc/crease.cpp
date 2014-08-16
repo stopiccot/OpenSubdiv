@@ -30,7 +30,7 @@ namespace OPENSUBDIV_VERSION {
 //  Declarations of creasing constants and non-inline methods:
 //
 float const SdcCrease::SMOOTH   =  0.0f;
-float const SdcCrease::INFINITE = 10.0f;
+float const SdcCrease::SHARP = 10.0f;
 
 
 //
@@ -111,7 +111,7 @@ SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
     }
 
     if (IsSmooth(edgeSharpness)) return SdcCrease::SMOOTH;
-    if (IsInfinite(edgeSharpness)) return SdcCrease::INFINITE;
+    if (IsInfinite(edgeSharpness)) return SdcCrease::SHARP;
 
     float sharpSum   = 0.0f;
     int   sharpCount = 0;
@@ -172,7 +172,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
                 if (IsSmooth(pSharp)) {
                     cSharp = SdcCrease::SMOOTH;
                 } else if (IsInfinite(pSharp)) {
-                    cSharp = SdcCrease::INFINITE;
+                    cSharp = SdcCrease::SHARP;
                 } else if (sharpCount == 1) {
                     //  Need special case here anyway to avoid divide by zero below...
                     cSharp = decrementSharpness(pSharp);
