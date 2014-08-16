@@ -432,7 +432,7 @@ getKernelName(int kernel) {
 
 //------------------------------------------------------------------------------
 static void
-createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=kCatmark ) {
+createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=kCatmark) {
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
@@ -661,8 +661,7 @@ fitFrame() {
 
 //------------------------------------------------------------------------------
 static inline void
-setSharpnessColor(float s, float *r, float *g, float *b)
-{
+setSharpnessColor(float s, float *r, float *g, float *b) {
     //  0.0       2.0       4.0
     // green --- yellow --- red
     *r = std::min(1.0f, s * 0.5f);
