@@ -639,7 +639,10 @@ VtrLevel::resizeEdges(int edgeCount)
 
     _edgeSharpness.resize(edgeCount);
     _edgeTags.resize(edgeCount);
-    std::memset(&_edgeTags[0], 0, _edgeCount * sizeof(ETag));
+    
+    if (edgeCount>0) {
+        std::memset(&_edgeTags[0], 0, _edgeCount * sizeof(ETag));
+    }
 }
 inline void
 VtrLevel::resizeEdgeVertices()
