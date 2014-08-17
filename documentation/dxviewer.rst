@@ -44,12 +44,16 @@ DESCRIPTION
 uniform and feature adaptive subdivision schemes to a collection of geometric
 shapes. Multiple controls are available to experiment with the algorithms.
 
+.. image:: images/dxviewer.png 
+   :width: 400px
+   :align: center
+   :target: images/dxviewer.png 
 
 .. container:: impnotip
 
    * **Note:** 
      
-      dxViewer requires Microsoft's DirectX 11 SDK
+      dxViewer requires Microsoft's DirectX D3D11 SDK
 
 OPTIONS
 =======
