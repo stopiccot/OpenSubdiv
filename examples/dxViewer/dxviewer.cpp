@@ -92,11 +92,12 @@ static const char *shaderSource =
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
-enum KernelType { kCPU = 0,
-                  kOPENMP = 1,
-                  kCUDA = 2,
-                  kCL = 3,
-                  kDirectCompute = 4 };
+enum KernelType { kCPU           = 0,
+                  kOPENMP        = 1,
+                  kTBB           = 2,
+                  kCUDA          = 3,
+                  kCL            = 4,
+                  kDirectCompute = 5 };
 
 enum DisplayStyle { kQuadWire = 0,
                     kQuadFill = 1,
@@ -250,6 +251,8 @@ getKernelName(int kernel) {
         return "CPU";
     else if (kernel == kOPENMP)
         return "OpenMP";
+    else if (kernel == kTBB)
+        return "TBB";
     else if (kernel == kCUDA)
         return "Cuda";
     else if (kernel == kCL)
@@ -336,6 +339,20 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
+#endif
+#ifdef OPENSUBDIV_HAS_TBB
+    } else if (kernel == kTBB) {
+        if (not g_tbbComputeController) {
+            g_tbbComputeController = new OpenSubdiv::OsdTbbComputeController();
+        }
+        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
+                                         OpenSubdiv::OsdTbbComputeController,
+                                         OpenSubdiv::OsdGLDrawContext>(
+                                                g_tbbComputeController,
+                                                refTables,
+                                                numVertexElements,
+                                                numVaryingElements,
+                                                level, bits);
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if(kernel == kCL) {
@@ -850,7 +867,7 @@ display() {
         g_fpsTimer.Start();
 
         g_hud->DrawString(10, -120, "Tess level : %d", g_tessLevel);
-        g_hud->DrawString(10, -100, "# of Vertices = %d", g_mesh->GetNumVertices());
+        g_hud->DrawString(10, -100, "Control Vertices = %d", g_mesh->GetNumVertices());
         g_hud->DrawString(10, -80, "Scheme = %s", g_scheme==kBilinear ? "BILINEAR" : (g_scheme == kLoop ? "LOOP" : "CATMARK"));
         g_hud->DrawString(10, -60, "GPU TIME = %.3f ms", g_gpuTime);
         g_hud->DrawString(10, -40, "CPU TIME = %.3f ms", g_cpuTime);
@@ -1074,27 +1091,33 @@ initHUD() {
     g_hud = new D3D11hud(g_pd3dDeviceContext);
     g_hud->Init(g_width, g_height);
 
-    g_hud->AddRadioButton(0, "CPU (K)", true, 475, 10, callbackKernel, kCPU, 'K');
+
+    int compute_pulldown = g_hud->AddPullDown("Compute (K)", 475, 10, 300, callbackKernel, 'K');
+    g_hud->AddPullDownButton(compute_pulldown, "CPU", kCPU);
 #ifdef OPENSUBDIV_HAS_OPENMP
-    g_hud->AddRadioButton(0, "OPENMP", false, 475, 30, callbackKernel, kOPENMP, 'K');
+    g_hud->AddPullDownButton(compute_pulldown, "OpenMP", kOPENMP);
+#endif
+#ifdef OPENSUBDIV_HAS_TBB
+    g_hud->AddPullDownButton(compute_pulldown, "TBB", kTBB);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud->AddRadioButton(0, "CUDA",   false, 475, 50, callbackKernel, kCUDA, 'K');
+    g_hud->AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {
-        g_hud->AddRadioButton(0, "OPENCL", false, 475, 70, callbackKernel, kCL, 'K');
+        g_hud->AddPullDownButton(compute_pulldown, "OpenCL", kCL);
     }
 #endif
-    g_hud->AddRadioButton(0, "DirectCompute", false, 475, 90, callbackKernel, kDirectCompute, 'K');
+    g_hud->AddPullDownButton(compute_pulldown, "HLSL Compute", kDirectCompute);
 
-    g_hud->AddRadioButton(1, "Wire (W)",    g_wire == 0, 275, 10, callbackWireframe, 0, 'W');
-    g_hud->AddRadioButton(1, "Shaded",      g_wire == 1, 275, 30, callbackWireframe, 1, 'W');
-    g_hud->AddRadioButton(1, "Wire+Shaded", g_wire == 2, 275, 50, callbackWireframe, 2, 'W');
+    int shading_pulldown = g_hud->AddPullDown("Shading (W)", 200, 10, 250, callbackWireframe, 'W');
+    g_hud->AddPullDownButton(shading_pulldown, "Wire",        0, g_wire==0);
+    g_hud->AddPullDownButton(shading_pulldown, "Shaded",      1, g_wire==1);
+    g_hud->AddPullDownButton(shading_pulldown, "Wire+Shaded", 2, g_wire==2);
 
-//    g_hud->AddCheckBox("Cage Edges (H)",         true,  350, 10, callbackDisplayCageEdges, 0, 'H');
-//    g_hud->AddCheckBox("Cage Verts (J)",         false, 350, 30, callbackDisplayCageVertices, 0, 'J');
-//    g_hud->AddCheckBox("Show normal vector (E)", false, 350, 10, callbackDisplayNormal, 0, 'E');
+//    g_hud->AddCheckBox("Cage Edges (H)",         true,  10, 10, callbackDisplayCageEdges, 0, 'H');
+//    g_hud->AddCheckBox("Cage Verts (J)",         false, 10, 30, callbackDisplayCageVertices, 0, 'J');
+//    g_hud->AddCheckBox("Show normal vector (E)", false, 10, 10, callbackDisplayNormal, 0, 'E');
 
     g_hud->AddCheckBox("Patch CVs (L)",             false,                    10, 10,  callbackCheckBox, kHUD_CB_DISPLAY_PATCH_CVs, 'L');
     g_hud->AddCheckBox("Patch Color (P)",           true,                     10, 30,  callbackCheckBox, kHUD_CB_DISPLAY_PATCH_COLOR, 'P');
@@ -1109,11 +1132,12 @@ initHUD() {
     for (int i = 1; i < 11; ++i) {
         char level[16];
         sprintf(level, "Lv. %d", i);
-        g_hud->AddRadioButton(3, level, i==2, 10, 220+i*20, callbackLevel, i, '0'+(i%10));
+        g_hud->AddRadioButton(3, level, i==2, 10, 210+i*20, callbackLevel, i, '0'+(i%10));
     }
 
-    for(int i = 0; i < (int)g_defaultShapes.size(); ++i){
-        g_hud->AddRadioButton(4, g_defaultShapes[i].name.c_str(), i==0, -220, 10+i*16, callbackModel, i, 'N');
+    int shapes_pulldown = g_hud->AddPullDown("Shape (N)", -300, 10, 300, callbackModel, 'n');
+    for (int i = 0; i < (int)g_defaultShapes.size(); ++i) {
+        g_hud->AddPullDownButton(shapes_pulldown, g_defaultShapes[i].name.c_str(),i);
     }
 
     callbackModel(g_currentShape);
