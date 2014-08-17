@@ -66,7 +66,7 @@ OsdD3D11DrawContext::Create(FarPatchTables const *patchTables,
                             bool requireFVarData)
 {
     OsdD3D11DrawContext * result = new OsdD3D11DrawContext();
-    if (result->create(patchTables, pd3d11DeviceContext, numVertexElements, requireFVarData))
+    if (result->create(*patchTables, pd3d11DeviceContext, numVertexElements, requireFVarData))
         return result;
 
     delete result;
@@ -74,22 +74,22 @@ OsdD3D11DrawContext::Create(FarPatchTables const *patchTables,
 }
 
 bool
-OsdD3D11DrawContext::create(FarPatchTables const *patchTables,
+OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int numVertexElements,
                             bool requireFVarData)
 {
     // adaptive patches
-    _isAdaptive = true;
+    _isAdaptive = patchTables.IsFeatureAdaptive();
 
     ID3D11Device *pd3d11Device = NULL;
     pd3d11DeviceContext->GetDevice(&pd3d11Device);
     assert(pd3d11Device);
 
-    ConvertPatchArrays(patchTables->GetPatchArrayVector(), patchArrays, patchTables->GetMaxValence(), numVertexElements);
+    ConvertPatchArrays(patchTables.GetPatchArrayVector(), patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
-    FarPatchTables::PTable const & ptables = patchTables->GetPatchTable();
-    FarPatchTables::PatchParamTable const & ptexCoordTables = patchTables->GetPatchParamTable();
+    FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
+    FarPatchTables::PatchParamTable const & ptexCoordTables = patchTables.GetPatchParamTable();
     int totalPatchIndices = (int)ptables.size();
     int totalPatches = (int)ptexCoordTables.size();
 
@@ -149,7 +149,7 @@ OsdD3D11DrawContext::create(FarPatchTables const *patchTables,
 
     // create vertex valence buffer and vertex texture
     FarPatchTables::VertexValenceTable const &
-        valenceTable = patchTables->GetVertexValenceTable();
+        valenceTable = patchTables.GetVertexValenceTable();
 
     if (not valenceTable.empty()) {
         D3D11_BUFFER_DESC bd;
@@ -179,7 +179,7 @@ OsdD3D11DrawContext::create(FarPatchTables const *patchTables,
     }
 
     FarPatchTables::QuadOffsetTable const &
-        quadOffsetTable = patchTables->GetQuadOffsetTable();
+        quadOffsetTable = patchTables.GetQuadOffsetTable();
 
     if (not quadOffsetTable.empty()) {
         D3D11_BUFFER_DESC bd;

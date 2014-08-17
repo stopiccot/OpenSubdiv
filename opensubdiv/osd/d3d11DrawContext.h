@@ -113,7 +113,7 @@ private:
     OsdD3D11DrawContext();
 
     // allocate buffers from patchTables
-    bool create(FarPatchTables const *patchTables,
+    bool create(FarPatchTables const &patchTables,
                 ID3D11DeviceContext *pd3d11DeviceContext,
                 int numVertexElements,
                 bool requireFVarData);

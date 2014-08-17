@@ -77,6 +77,7 @@ OpenSubdiv::OsdD3D11MeshInterface *g_mesh;
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/d3d11_hud.h"
+#include "../common/patchColors.h"
 
 static const char *shaderSource =
 #include "shader.gen.h"
@@ -160,6 +161,7 @@ ID3D11Texture2D * g_pDepthStencilBuffer = NULL;
 ID3D11Buffer* g_pcbPerFrame = NULL;
 ID3D11Buffer* g_pcbTessellation = NULL;
 ID3D11Buffer* g_pcbLighting = NULL;
+ID3D11Buffer* g_pcbMaterial = NULL;
 ID3D11DepthStencilView* g_pDepthStencilView = NULL;
 
 bool g_bDone;
@@ -576,7 +578,7 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
             float ModelViewProjectionMatrix[16];
         };
 
-        if (! g_pcbPerFrame) {
+        if (not g_pcbPerFrame) {
             D3D11_BUFFER_DESC cbDesc;
             ZeroMemory(&cbDesc, sizeof(cbDesc));
             cbDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -616,7 +618,7 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
             int PrimitiveIdBase;
         };
 
-        if (! g_pcbTessellation) {
+        if (not g_pcbTessellation) {
             D3D11_BUFFER_DESC cbDesc;
             ZeroMemory(&cbDesc, sizeof(cbDesc));
             cbDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -639,20 +641,60 @@ bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
         g_pd3dDeviceContext->Unmap( g_pcbTessellation, 0 );
     }
 
+    // Update material state
+    {
+        __declspec(align(16))
+        struct Material {
+            float color[4];
+        };
+
+        if (not g_pcbMaterial) {
+            D3D11_BUFFER_DESC cbDesc;
+            ZeroMemory(&cbDesc, sizeof(cbDesc));
+            cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+            cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+            cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            cbDesc.MiscFlags = 0;
+            cbDesc.ByteWidth = sizeof(Material);
+            g_pd3dDevice->CreateBuffer(&cbDesc, NULL, &g_pcbMaterial);
+        }
+        assert(g_pcbMaterial);
+
+        D3D11_MAPPED_SUBRESOURCE MappedResource;
+        g_pd3dDeviceContext->Map(g_pcbMaterial, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+        Material * pData = ( Material* )MappedResource.pData;
+
+        float const * patchColor;
+        if (g_displayPatchColor and g_mesh->GetDrawContext()->IsAdaptive()) {
+            patchColor = getAdaptivePatchColor( patch.GetDescriptor() );
+        } else {
+            static float const uniformColor[4] = {0.13f, 0.13f, 0.61f, 1.0f};
+            patchColor = uniformColor;
+        }
+        memcpy(pData->color, patchColor, 4*sizeof(float));
+
+        g_pd3dDeviceContext->Unmap( g_pcbMaterial, 0 );
+    }
+
     g_pd3dDeviceContext->IASetInputLayout(g_pInputLayout);
 
     g_pd3dDeviceContext->VSSetShader(config->vertexShader, NULL, 0);
     g_pd3dDeviceContext->VSSetConstantBuffers(0, 1, &g_pcbPerFrame);
+
     g_pd3dDeviceContext->HSSetShader(config->hullShader, NULL, 0);
     g_pd3dDeviceContext->HSSetConstantBuffers(0, 1, &g_pcbPerFrame);
     g_pd3dDeviceContext->HSSetConstantBuffers(1, 1, &g_pcbTessellation);
+
     g_pd3dDeviceContext->DSSetShader(config->domainShader, NULL, 0);
     g_pd3dDeviceContext->DSSetConstantBuffers(0, 1, &g_pcbPerFrame);
+
     g_pd3dDeviceContext->GSSetShader(config->geometryShader, NULL, 0);
     g_pd3dDeviceContext->GSSetConstantBuffers(0, 1, &g_pcbPerFrame);
+
     g_pd3dDeviceContext->PSSetShader(config->pixelShader, NULL, 0);
     g_pd3dDeviceContext->PSSetConstantBuffers(0, 1, &g_pcbPerFrame);
     g_pd3dDeviceContext->PSSetConstantBuffers(2, 1, &g_pcbLighting);
+    g_pd3dDeviceContext->PSSetConstantBuffers(3, 1, &g_pcbMaterial);
 
     if (g_mesh->GetDrawContext()->vertexBufferSRV) {
         g_pd3dDeviceContext->VSSetShaderResources(0, 1, &g_mesh->GetDrawContext()->vertexBufferSRV);
@@ -695,6 +737,7 @@ display() {
 
     // cv drawing
 #if 0
+
     if (g_drawPatchCVs) {
 
         bindProgram(kPoint, OpenSubdiv::OsdDrawContext::PatchArray());
@@ -719,7 +762,9 @@ display() {
 
         if (g_mesh->GetDrawContext()->IsAdaptive()) {
 
-            switch (patch.GetDescriptor().GetNumControlVertices()) {
+            OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+
+            switch (desc.GetNumControlVertices()) {
             case 4:
                 topology = D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
                 break;
@@ -736,8 +781,8 @@ display() {
                 assert(false);
                 break;
             }
-
         } else {
+
             if (g_scheme == kLoop) {
                 topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
             } else {
@@ -749,8 +794,7 @@ display() {
 
         g_pd3dDeviceContext->IASetPrimitiveTopology(topology);
 
-        g_pd3dDeviceContext->DrawIndexed(
-                                    patch.GetNumIndices(), patch.GetVertIndex(), 0);
+        g_pd3dDeviceContext->DrawIndexed(patch.GetNumIndices(), patch.GetVertIndex(), 0);
     }
 
     if (g_hud->IsVisible()) {
@@ -825,6 +869,7 @@ quit() {
     SAFE_RELEASE(g_pcbPerFrame);
     SAFE_RELEASE(g_pcbTessellation);
     SAFE_RELEASE(g_pcbLighting);
+    SAFE_RELEASE(g_pcbMaterial);
     SAFE_RELEASE(g_pDepthStencilView);
 
     SAFE_RELEASE(g_pSwapChainRTV);
@@ -991,7 +1036,7 @@ initHUD() {
 //    g_hud->AddCheckBox("Show normal vector (E)", false, 350, 10, callbackDisplayNormal, 0, 'E');
     g_hud->AddCheckBox("Patch CVs (L)", false, 350, 50, callbackDisplayPatchCVs, 0, 'L');
     g_hud->AddCheckBox("Animate vertices (M)", g_moveScale != 0, 350, 70, callbackAnimate, 0, 'M');
-    g_hud->AddCheckBox("Patch Color (P)",   true, 350, 90, callbackDisplayPatchColor, 0, 'p');
+    g_hud->AddCheckBox("Patch Color (P)",   true, 350, 90, callbackDisplayPatchColor, 0, 'P');
     g_hud->AddCheckBox("Freeze (spc)", false, 350, 130, callbackFreeze, 0, ' ');
 
     g_hud->AddCheckBox("Adaptive (`)", true, 10, 150, callbackAdaptive, 0, '`');
@@ -1076,36 +1121,38 @@ initD3D11(HWND hWnd) {
     g_pd3dDevice->CreateRasterizerState(&rasterDesc, &g_pRasterizerState);
     assert(g_pRasterizerState);
 
-    __declspec(align(16))
-    struct Lighting {
-        struct Light {
-            float position[4];
-            float ambient[4];
-            float diffuse[4];
-            float specular[4];
-        } lightSource[2];
-    } lightingData = {
-        0.5, 0.2f, 1.0f, 0.0f,
-        0.1f, 0.1f, 0.1f, 1.0f,
-        0.7f, 0.7f, 0.7f, 1.0f,
-        0.8f, 0.8f, 0.8f, 1.0f,
+    {   // update the lighting constant buffer
+        __declspec(align(16))
+        struct Lighting {
+            struct Light {
+                float position[4];
+                float ambient[4];
+                float diffuse[4];
+                float specular[4];
+            } lightSource[2];
+        } lightingData = {
+            0.5, 0.2f, 1.0f, 0.0f,
+            0.1f, 0.1f, 0.1f, 1.0f,
+            0.7f, 0.7f, 0.7f, 1.0f,
+            0.8f, 0.8f, 0.8f, 1.0f,
 
-        -0.8f, 0.4f, -1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f,
-        0.8f, 0.8f, 0.8f, 1.0f,
-    };
-    D3D11_BUFFER_DESC cbDesc;
-    ZeroMemory(&cbDesc, sizeof(cbDesc));
-    cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    cbDesc.MiscFlags = 0;
-    cbDesc.ByteWidth = sizeof(lightingData);
-    D3D11_SUBRESOURCE_DATA initData;
-    initData.pSysMem = &lightingData;
-    g_pd3dDevice->CreateBuffer(&cbDesc, &initData, &g_pcbLighting);
-    assert(g_pcbLighting);
+            -0.8f, 0.4f, -1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 1.0f,
+            0.8f, 0.8f, 0.8f, 1.0f,
+        };
+        D3D11_BUFFER_DESC cbDesc;
+        ZeroMemory(&cbDesc, sizeof(cbDesc));
+        cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+        cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        cbDesc.MiscFlags = 0;
+        cbDesc.ByteWidth = sizeof(lightingData);
+        D3D11_SUBRESOURCE_DATA initData;
+        initData.pSysMem = &lightingData;
+        g_pd3dDevice->CreateBuffer(&cbDesc, &initData, &g_pcbLighting);
+        assert(g_pcbLighting);
+    }
 
     // create depth stencil state
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
