@@ -35,55 +35,6 @@ namespace OPENSUBDIV_VERSION {
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
-template <class T> void
-createD3D11Buffer(std::vector<T> const & src, DXGI_FORMAT format,
-    ID3D11DeviceContext *deviceContext,
-        ID3D11Buffer * buffer, ID3D11ShaderResourceView * srv) {
-
-    size_t size = src.size()*sizeof(T);
-
-    if (size==0) {
-        buffer = 0;
-        srv = 0;
-    }
-
-    ID3D11Device *device = 0;
-    deviceContext->GetDevice(&device);
-    assert(device);
-
-    D3D11_BUFFER_DESC bd;
-    bd.ByteWidth = (unsigned int)size;
-    bd.Usage = D3D11_USAGE_IMMUTABLE;
-    bd.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
-    bd.StructureByteStride = 0;
-
-    D3D11_SUBRESOURCE_DATA initData;
-    initData.pSysMem = &src.at(0);
-
-    HRESULT hr = device->CreateBuffer(&bd, &initData, &buffer);
-    if (FAILED(hr)) {
-        OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
-                 "Error creating compute table buffer\n");
-        return;
-    }
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvd;
-    ZeroMemory(&srvd, sizeof(srvd));
-    srvd.Format = format;
-    srvd.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-    srvd.Buffer.FirstElement = 0;
-    srvd.Buffer.NumElements = (unsigned int)src.size();
-
-    hr = device->CreateShaderResourceView(buffer, &srvd, &srv);
-    if (FAILED(hr)) {
-        OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
-                 "Error creating compute table shader resource view\n");
-        return;
-    }
-}
-
 // ----------------------------------------------------------------------------
 
 struct D3D11Table {
@@ -99,9 +50,58 @@ struct D3D11Table {
         return (buffer and srv);
     }
 
+    template <class T> void initialize(std::vector<T> const & src,
+        DXGI_FORMAT format, ID3D11DeviceContext *deviceContext) {
+
+        size_t size = src.size()*sizeof(T);
+
+        if (size==0) {
+            buffer = 0;
+            srv = 0;
+            return;
+        }
+
+        ID3D11Device *device = 0;
+        deviceContext->GetDevice(&device);
+        assert(device);
+
+        D3D11_BUFFER_DESC bd;
+        bd.ByteWidth = (unsigned int)size;
+        bd.Usage = D3D11_USAGE_IMMUTABLE;
+        bd.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        bd.CPUAccessFlags = 0;
+        bd.MiscFlags = 0;
+        bd.StructureByteStride = 0;
+
+        D3D11_SUBRESOURCE_DATA initData;
+        initData.pSysMem = &src.at(0);
+
+        HRESULT hr = device->CreateBuffer(&bd, &initData, &buffer);
+        if (FAILED(hr)) {
+            OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
+                     "Error creating compute table buffer\n");
+            return;
+        }
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvd;
+        ZeroMemory(&srvd, sizeof(srvd));
+        srvd.Format = format;
+        srvd.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+        srvd.Buffer.FirstElement = 0;
+        srvd.Buffer.NumElements = (unsigned int)src.size();
+
+        hr = device->CreateShaderResourceView(buffer, &srvd, &srv);
+        if (FAILED(hr)) {
+            OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
+                     "Error creating compute table shader resource view\n");
+            return;
+        }
+    }
+
     ID3D11Buffer * buffer;
     ID3D11ShaderResourceView * srv;
 };
+
 
 // ----------------------------------------------------------------------------
 
@@ -112,17 +112,17 @@ public:
     D3D11StencilTables(FarStencilTables const & stencilTables,
         ID3D11DeviceContext *deviceContext) {
 
-        createD3D11Buffer(stencilTables.GetSizes(),
-            DXGI_FORMAT_R8_UINT, deviceContext, _sizes.buffer, _sizes.srv);
+        // convert unsigned char sizes buffer to ints (HLSL does not have uint8 type)
+        std::vector<int> const sizes(stencilTables.GetSizes().begin(),
+            stencilTables.GetSizes().end());
 
-        createD3D11Buffer(stencilTables.GetOffsets(),
-            DXGI_FORMAT_R32_SINT, deviceContext, _offsets.buffer, _offsets.srv);
+        _sizes.initialize(sizes, DXGI_FORMAT_R32_SINT, deviceContext);
 
-        createD3D11Buffer(stencilTables.GetControlIndices(),
-            DXGI_FORMAT_R32_SINT, deviceContext, _indices.buffer, _indices.srv);
+        _offsets.initialize(stencilTables.GetOffsets(), DXGI_FORMAT_R32_SINT, deviceContext);
 
-        createD3D11Buffer(stencilTables.GetWeights(),
-            DXGI_FORMAT_R32_SINT, deviceContext, _weights.buffer, _weights.srv);
+        _indices.initialize(stencilTables.GetControlIndices(), DXGI_FORMAT_R32_SINT, deviceContext);
+
+        _weights.initialize(stencilTables.GetWeights(), DXGI_FORMAT_R32_FLOAT, deviceContext);
     }
 
     bool IsValid() const {
@@ -153,12 +153,12 @@ public:
             _indices.srv,
             _weights.srv
         };
-        deviceContext->CSSetShaderResources(2, 4, SRViews); // t4-t8
+        deviceContext->CSSetShaderResources(1, 4, SRViews); // t1-t4
     }
 
     static void Unbind(ID3D11DeviceContext * deviceContext) {
         ID3D11ShaderResourceView *SRViews[] = { 0, 0, 0, 0 };
-        deviceContext->CSSetShaderResources(2, 4, SRViews);
+        deviceContext->CSSetShaderResources(1, 4, SRViews);
     }
 
 

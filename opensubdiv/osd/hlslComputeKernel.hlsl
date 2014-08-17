@@ -35,11 +35,10 @@ cbuffer KernelUniformArgs : register( b0 ) {
 };
 
 RWBuffer<float> vertexBuffer  : register( u0 );
-
-Buffer<unsigned char>  sizes : register( t2 );
-Buffer<int>          offsets : register( t3 );
-Buffer<int>          indices : register( t4 );
-Buffer<float>        weights : register( t5 );
+Buffer<int>    sizes   : register( t1 );
+Buffer<int>    offsets : register( t2 );      
+Buffer<int>    indices : register( t3 );      
+Buffer<float>  weights : register( t4 );      
 
 //--------------------------------------------------------------------------------
 
@@ -77,8 +76,9 @@ void addWithWeight(inout Vertex v, const Vertex src, float weight) {
 
 
 //--------------------------------------------------------------------------------
-// Face-vertices compute Kernel
+// Stencil compute Kernel
 class ComputeStencil : IComputeKernel {
+
     int placeholder;
 
     void runKernel( uint3 ID ) {
@@ -93,7 +93,7 @@ class ComputeStencil : IComputeKernel {
         clear(dst);
 
         int offset = offsets[current],
-            size = int(sizes[current]);
+            size = sizes[current];
 
         for (int i=0; i<size; ++i) {
             addWithWeight(dst, readVertex( indices[offset+i] ), weights[offset+i]);
@@ -102,6 +102,15 @@ class ComputeStencil : IComputeKernel {
         // the vertex buffer contains our control vertices at the beginning: don't
         // stomp on those !
         writeVertex(numCVs+current, dst);
+    }
+};
+
+// Add place-holder stencil kernel or D3D11ShaderReflection::GetInterfaceSlots()
+// returns 0
+class PlaceHolder : IComputeKernel {
+    int placeholder;
+    
+    void runKernel( uint3 ID ) {
     }
 };
 

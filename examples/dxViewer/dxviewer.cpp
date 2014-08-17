@@ -1031,8 +1031,8 @@ initHUD() {
     g_hud->AddRadioButton(1, "Shaded",      g_wire == 1, 200, 30, callbackWireframe, 1, 'W');
     g_hud->AddRadioButton(1, "Wire+Shaded", g_wire == 2, 200, 50, callbackWireframe, 2, 'W');
 
-//    g_hud->AddCheckBox("Cage Edges (H)",    true,  350, 10, callbackDisplayCageEdges, 0, 'H');
-//    g_hud->AddCheckBox("Cage Verts (J)", false, 350, 30, callbackDisplayCageVertices, 0, 'J');
+//    g_hud->AddCheckBox("Cage Edges (H)",         true,  350, 10, callbackDisplayCageEdges, 0, 'H');
+//    g_hud->AddCheckBox("Cage Verts (J)",         false, 350, 30, callbackDisplayCageVertices, 0, 'J');
 //    g_hud->AddCheckBox("Show normal vector (E)", false, 350, 10, callbackDisplayNormal, 0, 'E');
     g_hud->AddCheckBox("Patch CVs (L)", false, 350, 50, callbackDisplayPatchCVs, 0, 'L');
     g_hud->AddCheckBox("Animate vertices (M)", g_moveScale != 0, 350, 70, callbackAnimate, 0, 'M');

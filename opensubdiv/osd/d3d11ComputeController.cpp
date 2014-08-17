@@ -90,10 +90,18 @@ public:
         dwShaderFlags |= D3DCOMPILE_DEBUG;
     #endif
 
+        std::ostringstream ss;
+
+        ss << _desc.offset;   std::string offsetValue(ss.str()); ss.str("");
+        ss << _desc.length;   std::string lengthValue(ss.str()); ss.str("");
+        ss << _desc.stride;   std::string strideValue(ss.str()); ss.str("");
+        ss << _workGroupSize; std::string workgroupSizeValue(ss.str()); ss.str("");
+
         D3D_SHADER_MACRO defines[] =
-            { "OFFSET", std::ostringstream(_desc.offset).str().c_str(),
-              "LENGTH", std::ostringstream(_desc.length).str().c_str(),
-              "STRIDE", std::ostringstream(_desc.stride).str().c_str(),
+            { "OFFSET", offsetValue.c_str(),
+              "LENGTH", lengthValue.c_str(),
+              "STRIDE", strideValue.c_str(),
+              "WORK_GROUP_SIZE", workgroupSizeValue.c_str(),
               0, 0 };
 
         ID3DBlob * computeShaderBuffer = NULL;
@@ -281,8 +289,8 @@ OsdD3D11ComputeController::bindBuffer() {
 void
 OsdD3D11ComputeController::unbindBuffer() {
     assert(_deviceContext);
-    ID3D11UnorderedAccessView *UAViews[] = { 0, 0 };
-    _deviceContext->CSSetUnorderedAccessViews(0, 2, UAViews, 0); // u0-u2
+    ID3D11UnorderedAccessView *UAViews[] = { 0 };
+    _deviceContext->CSSetUnorderedAccessViews(0, 1, UAViews, 0); // u0
 }
 
 // ----------------------------------------------------------------------------
