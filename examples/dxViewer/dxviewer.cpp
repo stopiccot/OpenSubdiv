@@ -98,6 +98,24 @@ enum KernelType { kCPU = 0,
                   kCL = 3,
                   kDirectCompute = 4 };
 
+enum DisplayStyle { kQuadWire = 0,
+                    kQuadFill = 1,
+                    kQuadLine = 2,
+                    kTriWire = 3,
+                    kTriFill = 4,
+                    kTriLine = 5,
+                    kPoint = 6 };
+
+enum HudCheckBox { kHUD_CB_DISPLAY_CAGE_EDGES,
+                   kHUD_CB_DISPLAY_CAGE_VERTS,
+                   kHUD_CB_ANIMATE_VERTICES,
+                   kHUD_CB_DISPLAY_PATCH_COLOR,
+                   kHUD_CB_DISPLAY_PATCH_CVs,
+                   kHUD_CB_VIEW_LOD,
+                   kHUD_CB_FRACTIONAL_SPACING,
+                   kHUD_CB_PATCH_CULL,
+                   kHUD_CB_FREEZE };
+
 int g_currentShape = 0;
 
 int   g_frame = 0,
@@ -113,7 +131,10 @@ int   g_freeze = 0,
       g_drawNormals = 0,
       g_mbutton[3] = {0, 0, 0};
 
-int   g_displayPatchColor = 1;
+int   g_displayPatchColor = 1,
+      g_screenSpaceTess = 0,
+      g_fractionalSpacing = 0,
+      g_patchCull = 0;
 
 float g_rotate[2] = {0, 0},
       g_prev_x = 0,
@@ -392,15 +413,27 @@ fitFrame() {
 }
 
 //------------------------------------------------------------------------------
-enum Effect {
-    kQuadWire = 0,
-    kQuadFill = 1,
-    kQuadLine = 2,
-    kTriWire = 3,
-    kTriFill = 4,
-    kTriLine = 5,
-    kPoint = 6,
+union Effect {
+    Effect(int displayStyle_, int screenSpaceTess_, int fractionalSpacing_, int patchCull_) : value(0) {
+        displayStyle = displayStyle_;
+        screenSpaceTess = screenSpaceTess_;
+        fractionalSpacing = fractionalSpacing_;
+        patchCull = patchCull_;
+    }
+
+    struct {
+        unsigned int displayStyle:3;
+        unsigned int screenSpaceTess:1;
+        unsigned int fractionalSpacing:1;
+        unsigned int patchCull:1;
+    };
+    int value;
+
+    bool operator < (const Effect &e) const {
+        return value < e.value;
+    }
 };
+
 
 typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
 
@@ -438,15 +471,15 @@ EffectDrawRegistry::_CreateDrawSourceConfig(
         sconfig->vertexShader.target = "vs_5_0";
         sconfig->vertexShader.entry = "vs_main";
     } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
-        if (effect == kQuadWire) effect = kTriWire;
-        if (effect == kQuadFill) effect = kTriFill;
-        if (effect == kQuadLine) effect = kTriLine;
+        if (effect.displayStyle == kQuadWire) effect.displayStyle = kTriWire;
+        if (effect.displayStyle == kQuadFill) effect.displayStyle = kTriFill;
+        if (effect.displayStyle == kQuadLine) effect.displayStyle = kTriLine;
         smoothNormals = true;
     } else {
         // adaptive
-        if (effect == kQuadWire) effect = kTriWire;
-        if (effect == kQuadFill) effect = kTriFill;
-        if (effect == kQuadLine) effect = kTriLine;
+        if (effect.displayStyle == kQuadWire) effect.displayStyle = kTriWire;
+        if (effect.displayStyle == kQuadFill) effect.displayStyle = kTriFill;
+        if (effect.displayStyle == kQuadLine) effect.displayStyle = kTriLine;
         smoothNormals = true;
         sconfig->vertexShader.source = shaderSource + sconfig->vertexShader.source;
         sconfig->hullShader.source = shaderSource + sconfig->hullShader.source;
@@ -460,62 +493,73 @@ EffectDrawRegistry::_CreateDrawSourceConfig(
     sconfig->pixelShader.source = shaderSource;
     sconfig->pixelShader.target = "ps_5_0";
 
-    switch (effect) {
-    case kQuadWire:
-        sconfig->geometryShader.entry = "gs_quad_wire";
-        sconfig->geometryShader.AddDefine("PRIM_QUAD");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_WIRE");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_QUAD");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_WIRE");
-        break;
-    case kQuadFill:
-        sconfig->geometryShader.entry = "gs_quad";
-        sconfig->geometryShader.AddDefine("PRIM_QUAD");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_FILL");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_QUAD");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_FILL");
-        break;
-    case kQuadLine:
-        sconfig->geometryShader.entry = "gs_quad_wire";
-        sconfig->geometryShader.AddDefine("PRIM_QUAD");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_LINE");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_QUAD");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_LINE");
-        break;
-    case kTriWire:
-        sconfig->geometryShader.entry =
-            smoothNormals ? "gs_triangle_smooth_wire" : "gs_triangle_wire";
-        sconfig->geometryShader.AddDefine("PRIM_TRI");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_WIRE");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_TRI");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_WIRE");
-        break;
-    case kTriFill:
-        sconfig->geometryShader.entry =
-            smoothNormals ? "gs_triangle_smooth" : "gs_triangle";
-        sconfig->geometryShader.AddDefine("PRIM_TRI");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_FILL");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_TRI");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_FILL");
-        break;
-    case kTriLine:
-        sconfig->geometryShader.entry =
-            smoothNormals ? "gs_triangle_smooth_wire" : "gs_triangle_wire";
-        sconfig->geometryShader.AddDefine("PRIM_TRI");
-        sconfig->geometryShader.AddDefine("GEOMETRY_OUT_LINE");
-        sconfig->pixelShader.entry = "ps_main";
-        sconfig->pixelShader.AddDefine("PRIM_TRI");
-        sconfig->pixelShader.AddDefine("GEOMETRY_OUT_LINE");
-        break;
-    case kPoint:
-        sconfig->geometryShader.entry = "gs_point";
-        sconfig->pixelShader.entry = "ps_main_point";
-        break;
+    if (effect.screenSpaceTess) {
+        sconfig->commonShader.AddDefine("OSD_ENABLE_SCREENSPACE_TESSELLATION");
+    }
+    if (effect.fractionalSpacing) {
+        sconfig->commonShader.AddDefine("OSD_FRACTIONAL_ODD_SPACING");
+    }
+    if (effect.patchCull) {
+        sconfig->commonShader.AddDefine("OSD_ENABLE_PATCH_CULL");
+    }
+
+
+    switch (effect.displayStyle) {
+        case kQuadWire:
+            sconfig->geometryShader.entry = "gs_quad_wire";
+            sconfig->geometryShader.AddDefine("PRIM_QUAD");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_WIRE");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_QUAD");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_WIRE");
+            break;
+        case kQuadFill:
+            sconfig->geometryShader.entry = "gs_quad";
+            sconfig->geometryShader.AddDefine("PRIM_QUAD");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_FILL");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_QUAD");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_FILL");
+            break;
+        case kQuadLine:
+            sconfig->geometryShader.entry = "gs_quad_wire";
+            sconfig->geometryShader.AddDefine("PRIM_QUAD");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_LINE");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_QUAD");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_LINE");
+            break;
+        case kTriWire:
+            sconfig->geometryShader.entry =
+                smoothNormals ? "gs_triangle_smooth_wire" : "gs_triangle_wire";
+            sconfig->geometryShader.AddDefine("PRIM_TRI");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_WIRE");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_TRI");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_WIRE");
+            break;
+        case kTriFill:
+            sconfig->geometryShader.entry =
+                smoothNormals ? "gs_triangle_smooth" : "gs_triangle";
+            sconfig->geometryShader.AddDefine("PRIM_TRI");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_FILL");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_TRI");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_FILL");
+            break;
+        case kTriLine:
+            sconfig->geometryShader.entry =
+                smoothNormals ? "gs_triangle_smooth_wire" : "gs_triangle_wire";
+            sconfig->geometryShader.AddDefine("PRIM_TRI");
+            sconfig->geometryShader.AddDefine("GEOMETRY_OUT_LINE");
+            sconfig->pixelShader.entry = "ps_main";
+            sconfig->pixelShader.AddDefine("PRIM_TRI");
+            sconfig->pixelShader.AddDefine("GEOMETRY_OUT_LINE");
+            break;
+        case kPoint:
+            sconfig->geometryShader.entry = "gs_point";
+            sconfig->pixelShader.entry = "ps_main_point";
+            break;
     }
 
     return sconfig;
@@ -542,11 +586,14 @@ EffectDrawRegistry effectRegistry;
 static Effect
 GetEffect() {
 
+   DisplayStyle style;
+
     if (g_scheme == kLoop) {
-        return (g_wire == 0 ? kTriWire : (g_wire == 1 ? kTriFill : kTriLine));
+        style = (g_wire == 0 ? kTriWire : (g_wire == 1 ? kTriFill : kTriLine));
     } else {
-        return (g_wire == 0 ? kQuadWire : (g_wire == 1 ? kQuadFill : kQuadLine));
+        style = (g_wire == 0 ? style=kQuadWire : (g_wire == 1 ? kQuadFill : kQuadLine));
     }
+    return Effect(style, g_screenSpaceTess, g_fractionalSpacing, g_patchCull);
 }
 
 //------------------------------------------------------------------------------
@@ -802,9 +849,9 @@ display() {
         double fps = 1.0/g_fpsTimer.GetElapsed();
         g_fpsTimer.Start();
 
+        g_hud->DrawString(10, -120, "Tess level : %d", g_tessLevel);
         g_hud->DrawString(10, -100, "# of Vertices = %d", g_mesh->GetNumVertices());
-        g_hud->DrawString(10, -80, "SUBDIVISION = %s",
-                          g_scheme==kBilinear ? "BILINEAR" : (g_scheme == kLoop ? "LOOP" : "CATMARK"));
+        g_hud->DrawString(10, -80, "Scheme = %s", g_scheme==kBilinear ? "BILINEAR" : (g_scheme == kLoop ? "LOOP" : "CATMARK"));
         g_hud->DrawString(10, -60, "GPU TIME = %.3f ms", g_gpuTime);
         g_hud->DrawString(10, -40, "CPU TIME = %.3f ms", g_cpuTime);
         g_hud->DrawString(10, -20, "FPS = %3.1f", fps);
@@ -988,24 +1035,38 @@ callbackAdaptive(bool checked, int a) {
 }
 
 static void
-callbackDisplayCageEdges(bool checked, int d) {
-    g_drawCageEdges = checked;
+callbackCheckBox(bool checked, int button) {
+    switch (button) {
+    case kHUD_CB_DISPLAY_CAGE_EDGES:
+        g_drawCageEdges = checked;
+        break;
+    case kHUD_CB_DISPLAY_CAGE_VERTS:
+        g_drawCageVertices = checked;
+        break;
+    case kHUD_CB_ANIMATE_VERTICES:
+        g_moveScale = checked;
+        break;
+    case kHUD_CB_DISPLAY_PATCH_COLOR:
+        g_displayPatchColor = checked;
+        break;
+    case kHUD_CB_DISPLAY_PATCH_CVs:
+        g_drawPatchCVs = checked;
+        break;
+    case kHUD_CB_VIEW_LOD:
+        g_screenSpaceTess = checked;
+        break;
+    case kHUD_CB_FRACTIONAL_SPACING:
+        g_fractionalSpacing = checked;
+        break;
+    case kHUD_CB_PATCH_CULL:
+        g_patchCull = checked;
+        break;
+    case kHUD_CB_FREEZE:
+        g_freeze = checked;
+        break;
+    }
 }
 
-static void
-callbackDisplayCageVertices(bool checked, int d) {
-    g_drawCageVertices = checked;
-}
-
-static void
-callbackDisplayPatchCVs(bool checked, int d) {
-    g_drawPatchCVs = checked;
-}
-
-static void
-callbackDisplayPatchColor(bool checked, int p) {
-    g_displayPatchColor = checked;
-}
 
 static void
 initHUD() {
@@ -1013,38 +1074,42 @@ initHUD() {
     g_hud = new D3D11hud(g_pd3dDeviceContext);
     g_hud->Init(g_width, g_height);
 
-    g_hud->AddRadioButton(0, "CPU (K)", true, 10, 10, callbackKernel, kCPU, 'K');
+    g_hud->AddRadioButton(0, "CPU (K)", true, 475, 10, callbackKernel, kCPU, 'K');
 #ifdef OPENSUBDIV_HAS_OPENMP
-    g_hud->AddRadioButton(0, "OPENMP", false, 10, 30, callbackKernel, kOPENMP, 'K');
+    g_hud->AddRadioButton(0, "OPENMP", false, 475, 30, callbackKernel, kOPENMP, 'K');
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud->AddRadioButton(0, "CUDA",   false, 10, 50, callbackKernel, kCUDA, 'K');
+    g_hud->AddRadioButton(0, "CUDA",   false, 475, 50, callbackKernel, kCUDA, 'K');
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {
-        g_hud->AddRadioButton(0, "OPENCL", false, 10, 70, callbackKernel, kCL, 'K');
+        g_hud->AddRadioButton(0, "OPENCL", false, 475, 70, callbackKernel, kCL, 'K');
     }
 #endif
-    g_hud->AddRadioButton(0, "DirectCompute", false, 10, 90, callbackKernel, kDirectCompute, 'K');
+    g_hud->AddRadioButton(0, "DirectCompute", false, 475, 90, callbackKernel, kDirectCompute, 'K');
 
-    g_hud->AddRadioButton(1, "Wire (W)",    g_wire == 0, 200, 10, callbackWireframe, 0, 'W');
-    g_hud->AddRadioButton(1, "Shaded",      g_wire == 1, 200, 30, callbackWireframe, 1, 'W');
-    g_hud->AddRadioButton(1, "Wire+Shaded", g_wire == 2, 200, 50, callbackWireframe, 2, 'W');
+    g_hud->AddRadioButton(1, "Wire (W)",    g_wire == 0, 275, 10, callbackWireframe, 0, 'W');
+    g_hud->AddRadioButton(1, "Shaded",      g_wire == 1, 275, 30, callbackWireframe, 1, 'W');
+    g_hud->AddRadioButton(1, "Wire+Shaded", g_wire == 2, 275, 50, callbackWireframe, 2, 'W');
 
 //    g_hud->AddCheckBox("Cage Edges (H)",         true,  350, 10, callbackDisplayCageEdges, 0, 'H');
 //    g_hud->AddCheckBox("Cage Verts (J)",         false, 350, 30, callbackDisplayCageVertices, 0, 'J');
 //    g_hud->AddCheckBox("Show normal vector (E)", false, 350, 10, callbackDisplayNormal, 0, 'E');
-    g_hud->AddCheckBox("Patch CVs (L)", false, 350, 50, callbackDisplayPatchCVs, 0, 'L');
-    g_hud->AddCheckBox("Animate vertices (M)", g_moveScale != 0, 350, 70, callbackAnimate, 0, 'M');
-    g_hud->AddCheckBox("Patch Color (P)",   true, 350, 90, callbackDisplayPatchColor, 0, 'P');
-    g_hud->AddCheckBox("Freeze (spc)", false, 350, 130, callbackFreeze, 0, ' ');
 
-    g_hud->AddCheckBox("Adaptive (`)", true, 10, 150, callbackAdaptive, 0, '`');
+    g_hud->AddCheckBox("Patch CVs (L)",             false,                    10, 10,  callbackCheckBox, kHUD_CB_DISPLAY_PATCH_CVs, 'L');
+    g_hud->AddCheckBox("Patch Color (P)",           true,                     10, 30,  callbackCheckBox, kHUD_CB_DISPLAY_PATCH_COLOR, 'P');
+    g_hud->AddCheckBox("Animate vertices (M)",      g_moveScale != 0,         10, 50,  callbackCheckBox, kHUD_CB_ANIMATE_VERTICES, 'M');
+    g_hud->AddCheckBox("Freeze (spc)",              false,                    10, 70,  callbackCheckBox, kHUD_CB_FREEZE, ' ');
+    g_hud->AddCheckBox("Screen space LOD (V)",      g_screenSpaceTess != 0,   10, 110,  callbackCheckBox, kHUD_CB_VIEW_LOD, 'V');
+    g_hud->AddCheckBox("Fractional spacing (T)",    g_fractionalSpacing != 0, 10, 130, callbackCheckBox, kHUD_CB_FRACTIONAL_SPACING, 'T');
+    g_hud->AddCheckBox("Frustum Patch Culling (B)", g_patchCull != 0,         10, 150, callbackCheckBox, kHUD_CB_PATCH_CULL, 'B');
+
+    g_hud->AddCheckBox("Adaptive (`)", true, 10, 190, callbackAdaptive, 0, '`');
 
     for (int i = 1; i < 11; ++i) {
         char level[16];
         sprintf(level, "Lv. %d", i);
-        g_hud->AddRadioButton(3, level, i==2, 10, 170+i*20, callbackLevel, i, '0'+(i%10));
+        g_hud->AddRadioButton(3, level, i==2, 10, 220+i*20, callbackLevel, i, '0'+(i%10));
     }
 
     for(int i = 0; i < (int)g_defaultShapes.size(); ++i){
