@@ -142,7 +142,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANGCC OR CMAKE_COMPILER_IS_ICC
     else()
         list(APPEND OSD_COMPILER_FLAGS -Wall -Wextra)
     endif()
-    
+
     # HBR uses the offsetof macro on a templated struct, which appears
     # to spurriously set off this warning in both gccc and Clang
     list(APPEND OSD_COMPILER_FLAGS -Wno-invalid-offsetof)
@@ -351,6 +351,13 @@ endif()
 
 if (NOT NO_MAYA)
 find_package(Maya 201200)
+endif()
+
+if (NOT NO_DOC)
+    find_package(Doxygen 1.8.4)
+    find_package(Docutils 0.6)
+else()
+    set(DOXYGEN_EXECUTABLE )
 endif()
 
 # Warn about missing dependencies that will cause parts of OpenSubdiv to be
@@ -599,11 +606,11 @@ function(_stringify src_files varname)
         list(APPEND inc_files "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}")
 
         add_custom_command(
-            OUTPUT 
+            OUTPUT
                 "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
-            COMMAND 
+            COMMAND
                 stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}" "${CMAKE_CURRENT_BINARY_DIR}/${inc_file}"
-            DEPENDS 
+            DEPENDS
                 stringify "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}"
         )
 
@@ -689,7 +696,5 @@ if (NOT NO_TUTORIALS)
 endif()
 
 if (NOT NO_DOC)
-    find_package(Doxygen 1.8.4)
-    find_package(Docutils 0.6)
     add_subdirectory(documentation)
 endif()
