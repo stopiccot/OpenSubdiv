@@ -135,7 +135,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
 
         eTag._boundary = (baseLevel._edgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
         if (eTag._boundary || (eTag._nonManifold && sharpenNonManFeatures)) {
-            eSharpness = SdcCrease::SHARP;
+            eSharpness = SdcCrease::SHARPNESS_INFINITE;
         }
         eTag._infSharp  = SdcCrease::IsInfinite(eSharpness);
         eTag._semiSharp = SdcCrease::IsSharp(eSharpness) && !eTag._infSharp;
@@ -173,11 +173,11 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         //
         bool isCorner = (vFaces.size() == 1) && (vEdges.size() == 2);
         if (isCorner && sharpenCornerVerts) {
-            vSharpness = SdcCrease::SHARP;
+            vSharpness = SdcCrease::SHARPNESS_INFINITE;
         } else if (vTag._nonManifold && sharpenNonManFeatures) {
             //  Don't sharpen the vertex if a non-manifold crease:
             if (nonManifoldEdgeCount != 2) {
-                vSharpness = SdcCrease::SHARP;
+                vSharpness = SdcCrease::SHARPNESS_INFINITE;
             }
         }
 

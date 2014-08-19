@@ -29,8 +29,8 @@ namespace OPENSUBDIV_VERSION {
 //
 //  Declarations of creasing constants and non-inline methods:
 //
-float const SdcCrease::SMOOTH   =  0.0f;
-float const SdcCrease::SHARP = 10.0f;
+float const SdcCrease::SHARPNESS_SMOOTH   =  0.0f;
+float const SdcCrease::SHARPNESS_INFINITE = 10.0f;
 
 
 //
@@ -110,8 +110,8 @@ SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
         return decrementSharpness(edgeSharpness);
     }
 
-    if (IsSmooth(edgeSharpness)) return SdcCrease::SMOOTH;
-    if (IsInfinite(edgeSharpness)) return SdcCrease::SHARP;
+    if (IsSmooth(edgeSharpness)) return SdcCrease::SHARPNESS_SMOOTH;
+    if (IsInfinite(edgeSharpness)) return SdcCrease::SHARPNESS_INFINITE;
 
     float sharpSum   = 0.0f;
     int   sharpCount = 0;
@@ -127,7 +127,7 @@ SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
         edgeSharpness = (0.75f * edgeSharpness) + (0.25f * avgSharpnessAtVertex);
     }
     edgeSharpness -= 1.0f;
-    return IsSharp(edgeSharpness) ? edgeSharpness : SdcCrease::SMOOTH;
+    return IsSharp(edgeSharpness) ? edgeSharpness : SdcCrease::SHARPNESS_SMOOTH;
 }
 
 void
@@ -141,7 +141,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
         }
         return;
     }
-    
+
     //
     //  Chaikin creasing is most efficiently computed for all edges around a vertex at
     //  once as the subdivided value for each creased edge depends on the average of
@@ -162,7 +162,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
         //
         if (sharpCount == 0) {
             for (int i = 0; i < edgeCount; ++i) {
-                childSharpness[i] = SdcCrease::SMOOTH;
+                childSharpness[i] = SdcCrease::SHARPNESS_SMOOTH;
             }
         } else {
             for (int i = 0; i < edgeCount; ++i) {
@@ -170,9 +170,9 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
                 float&       cSharp = childSharpness[i];
 
                 if (IsSmooth(pSharp)) {
-                    cSharp = SdcCrease::SMOOTH;
+                    cSharp = SdcCrease::SHARPNESS_SMOOTH;
                 } else if (IsInfinite(pSharp)) {
-                    cSharp = SdcCrease::SHARP;
+                    cSharp = SdcCrease::SHARPNESS_INFINITE;
                 } else if (sharpCount == 1) {
                     //  Need special case here anyway to avoid divide by zero below...
                     cSharp = decrementSharpness(pSharp);
@@ -181,7 +181,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
 
                     //  Chaikin rule is 3/4 original sharpness + 1/4 average of the others
                     cSharp = ((0.75f * pSharp) + (0.25f * pOtherAverage)) - 1.0f;
-                    if (IsSmooth(cSharp)) cSharp = SdcCrease::SMOOTH;
+                    if (IsSmooth(cSharp)) cSharp = SdcCrease::SHARPNESS_SMOOTH;
                 }
             }
         }

@@ -393,7 +393,7 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
 
         float vertSharpness = level.getVertexSharpness(vert);
         if (vertSharpness > 0.0) {
-            selectVertex = (level.getVertexFaces(vert).size() != 1) || (vertSharpness < SdcCrease::SHARP);
+            selectVertex = (level.getVertexFaces(vert).size() != 1) || (vertSharpness < SdcCrease::SHARPNESS_INFINITE);
         } else if (level.getVertexRule(vert) == SdcCrease::RULE_DART) {
             selectVertex = true;
         } else {
@@ -435,7 +435,7 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
 
         if ((edgeSharpness <= 0.0) || (edgeFaces.size() < 2)) continue;
 
-        if (edgeSharpness < SdcCrease::SHARP) {
+        if (edgeSharpness < SdcCrease::SHARPNESS_INFINITE) {
             //
             //  Semi-sharp -- definitely mark both end vertices (will have been marked above
             //  in future when semi-sharp vertex tag in place):
@@ -459,10 +459,10 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
 
                 bool edgeFaceIsRegular = false;
                 if (faceEdges.size() == 4) {
-                    int singularEdgeSum = (level.getEdgeSharpness(faceEdges[0]) >= SdcCrease::SHARP) +
-                                          (level.getEdgeSharpness(faceEdges[1]) >= SdcCrease::SHARP) +
-                                          (level.getEdgeSharpness(faceEdges[2]) >= SdcCrease::SHARP) +
-                                          (level.getEdgeSharpness(faceEdges[3]) >= SdcCrease::SHARP);
+                    int singularEdgeSum = (level.getEdgeSharpness(faceEdges[0]) >= SdcCrease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[1]) >= SdcCrease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[2]) >= SdcCrease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[3]) >= SdcCrease::SHARPNESS_INFINITE);
                     edgeFaceIsRegular = (singularEdgeSum == 1);
                 } else {
                     edgeFaceIsRegular = false;

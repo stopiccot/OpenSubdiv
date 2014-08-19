@@ -1368,7 +1368,7 @@ VtrRefinement::subdivideEdgeSharpness()
     SdcCrease creasing(_schemeOptions);
 
     _child->_edgeSharpness.clear();
-    _child->_edgeSharpness.resize(_child->getNumEdges(), SdcCrease::SMOOTH);
+    _child->_edgeSharpness.resize(_child->getNumEdges(), SdcCrease::SHARPNESS_SMOOTH);
 
     //
     //  Edge sharpness is passed to child-edges using the parent edge and the
@@ -1394,7 +1394,7 @@ VtrRefinement::subdivideEdgeSharpness()
         VtrLevel::ETag& cEdgeTag   = _child->_edgeTags[cEdge];
 
         if (cEdgeTag._infSharp) {
-            cSharpness = SdcCrease::SHARP;
+            cSharpness = SdcCrease::SHARPNESS_INFINITE;
         } else if (cEdgeTag._semiSharp) {
             VtrIndex       pEdge      = _childEdgeParentIndex[cEdge];
             VtrSharpness   pSharpness = _parent->_edgeSharpness[pEdge];
@@ -1424,7 +1424,7 @@ VtrRefinement::subdivideVertexSharpness()
     SdcCrease creasing(_schemeOptions);
 
     _child->_vertSharpness.clear();
-    _child->_vertSharpness.resize(_child->getNumVertices(), SdcCrease::SMOOTH);
+    _child->_vertSharpness.resize(_child->getNumVertices(), SdcCrease::SHARPNESS_SMOOTH);
 
     //
     //  All child-verts originating from faces or edges are initialized as smooth
@@ -1439,7 +1439,7 @@ VtrRefinement::subdivideVertexSharpness()
         VtrLevel::VTag& cVertTag   = _child->_vertTags[cVert];
 
         if (cVertTag._infSharp) {
-            cSharpness = SdcCrease::SHARP;
+            cSharpness = SdcCrease::SHARPNESS_INFINITE;
         } else if (cVertTag._semiSharp) {
             VtrIndex       pVert      = _childVertexParentIndex[cVert];
             VtrSharpness   pSharpness = _parent->_vertSharpness[pVert];

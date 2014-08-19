@@ -50,7 +50,7 @@ namespace OPENSUBDIV_VERSION {
 //  vertex, when known, avoids the need to inspect them, but unless the rules are well understood,
 //  users will be expected to provided them -- particularly when they expect the mask queries
 //  to do all of the work (just determining if a vertex is smooth will require inspection of
-//  incident edge sharpness). 
+//  incident edge sharpness).
 //      Mask queries will occassionally require the subdivided sharpness values around the
 //  child vertex.  So users will be expected to either provide them up front when known, or to be
 //  gathered on demand.  Any implementation of subdivision with creasing cannot avoid subdividing
@@ -62,13 +62,13 @@ public:
     //
     //  Constants and related queries of sharpness values:
     //
-    static float const SMOOTH; // =  0.0f, do we really need this?
-    static float const SHARP;  // = 10.0f;
+    static float const SHARPNESS_SMOOTH; // =  0.0f, do we really need this?
+    static float const SHARPNESS_INFINITE;  // = 10.0f;
 
-    static bool IsSmooth(float sharpness)    { return sharpness <= SMOOTH; }
-    static bool IsSharp(float sharpness)     { return sharpness > SMOOTH; }
-    static bool IsInfinite(float sharpness)  { return sharpness >= SHARP; }
-    static bool IsSemiSharp(float sharpness) { return (SMOOTH < sharpness) && (sharpness < SHARP); }
+    static bool IsSmooth(float sharpness)    { return sharpness <= SHARPNESS_SMOOTH; }
+    static bool IsSharp(float sharpness)     { return sharpness > SHARPNESS_SMOOTH; }
+    static bool IsInfinite(float sharpness)  { return sharpness >= SHARPNESS_INFINITE; }
+    static bool IsSemiSharp(float sharpness) { return (SHARPNESS_SMOOTH < sharpness) && (sharpness < SHARPNESS_INFINITE); }
 
     //
     //  Enum for the types of subdivision rules applied based on sharpness values (note these
@@ -102,11 +102,11 @@ public:
     //  or nonmanifold features -- sharpness values should be adjust before use.  The following
     //  methods will adjust specific  according to the options applied.
     //
-    float SharpenBoundaryEdge(float edgeSharpness) const; 
-    float SharpenBoundaryVertex(float edgeSharpness) const; 
+    float SharpenBoundaryEdge(float edgeSharpness) const;
+    float SharpenBoundaryVertex(float edgeSharpness) const;
 
-    float SharpenNonManifoldEdge(float edgeSharpness) const; 
-    float SharpenNonManifoldVertex(float edgeSharpness) const; 
+    float SharpenNonManifoldEdge(float edgeSharpness) const;
+    float SharpenNonManifoldVertex(float edgeSharpness) const;
 
     //
     //  Sharpness subdivision:
@@ -148,7 +148,7 @@ public:
     //
     //  Transitional weighting:
     //      When the rules applicable to a parent vertex and its child differ, one or more
-    //  sharpness values has "decayed" to zero.  Both rules are then applicable and blended 
+    //  sharpness values has "decayed" to zero.  Both rules are then applicable and blended
     //  by a weight between 0 and 1 that reflects the transition.  Most often this will be
     //  a single sharpness value that decays from within the interval [0,1] to zero -- and
     //  the weight to apply is exactly that sharpness value -- but more than one may decay,
@@ -196,13 +196,13 @@ inline float
 SdcCrease::SharpenBoundaryEdge(float edgeSharpness) const
 {
     return (_options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE) ?
-            SHARP : edgeSharpness;
+            SHARPNESS_INFINITE : edgeSharpness;
 }
 inline float
 SdcCrease::SharpenBoundaryVertex(float vertexSharpness) const
 {
     return (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER) ?
-            SHARP : vertexSharpness;
+            SHARPNESS_INFINITE : vertexSharpness;
 }
 
 inline float
@@ -212,7 +212,7 @@ SdcCrease::SharpenNonManifoldEdge(float edgeSharpness) const
     //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
 
     return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
-            SHARP : edgeSharpness;
+            SHARPNESS_INFINITE : edgeSharpness;
 }
 inline float
 SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
@@ -221,17 +221,17 @@ SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
     //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
 
     return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
-            SHARP : vertexSharpness;
+            SHARPNESS_INFINITE : vertexSharpness;
 }
 
 
 inline float
 SdcCrease::decrementSharpness(float sharpness) const
 {
-    if (IsSmooth(sharpness)) return SdcCrease::SMOOTH;  // redundant but most common
-    if (IsInfinite(sharpness)) return SdcCrease::SHARP;
+    if (IsSmooth(sharpness)) return SdcCrease::SHARPNESS_SMOOTH;  // redundant but most common
+    if (IsInfinite(sharpness)) return SdcCrease::SHARPNESS_INFINITE;
     if (sharpness > 1.0f) return (sharpness - 1.0f);
-    return SdcCrease::SMOOTH;
+    return SdcCrease::SHARPNESS_SMOOTH;
 }
 
 inline float
