@@ -103,11 +103,19 @@ allow.
 General RoadMap
 ***************
 
-
 Known Issues
 ************
 
 * Maximum vertex valence is still limited (XXXX todo)
+
+.. container:: notebox
+
+    Content under development....
+    
+    .. image:: images/construction.png
+       :align: center
+       :height: 100
+
 
 
 Release 2.x
