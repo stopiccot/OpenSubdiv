@@ -9,5 +9,6 @@ Other `examples <code_examples.html>`__ \ :
 `glEvalLimit <glevallimit.html>`__, \
 `glFVarViewer <glfvarviewer.html>`__, \
 `dxViewer <dxviewer.html>`__, \
+`dxPtexViewer <dxptexviewer.html>`__, \
 `mayaPolySmooth <maya_osdpolysmooth.html>`__, \
 

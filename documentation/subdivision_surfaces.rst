@@ -193,7 +193,7 @@ Unwrapped cube example:
 Propagate Corners
 +++++++++++++++++
 
-Facevarying interpolation mode 2 (*EdgeAndCorner*) can further be modified by the 
+Facevarying interpolation mode 2 (*EdgeAndCorner*) can further be modified by the
 application of the *Propagate Corner* flag.
 
 ----
@@ -329,8 +329,8 @@ and sub-vertices anywhere in the subdivision hierarchy.
    :target: images/hedit_example1.png
 
 The edits are performed using either an "add" or a "set" operator. "set" indicates the primitive
-variable value or sharpness is to be set directly to the values specified. "add" adds a value to the 
-normal result computed via standard subdivision rules. In other words, this operation allows value 
+variable value or sharpness is to be set directly to the values specified. "add" adds a value to the
+normal result computed via standard subdivision rules. In other words, this operation allows value
 offsets to be applied to the mesh at any level of the hierarchy.
 
 .. image:: images/hedit_example2.png
@@ -344,7 +344,7 @@ Edge Edits
 **********
 
 Edge hierarchical edits can only modify the sharpness of primitive variables for edges
-and sub-edges anywhere in the subdivision hierarchy. 
+and sub-edges anywhere in the subdivision hierarchy.
 
 .. image:: images/hedit_example4.png
    :align: center

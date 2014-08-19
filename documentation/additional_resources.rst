@@ -43,8 +43,8 @@ Links
 Videos
 ======
 
-**Feature Adaptive GPU Rendering of Catmull-Clark Subdivision Surfaces (2012)**
-*******************************************************************************
+Feature Adaptive GPU Rendering of Catmull-Clark Subdivision Surfaces (2012)
+***************************************************************************
 
 .. raw:: html
 
@@ -52,8 +52,8 @@ Videos
     <iframe width="640" height="360" src="http://www.youtube.com/embed/uogAzQoVdNU" frameborder="0" allowfullscreen></iframe>
     </center>
 
-**Open Subdivision Technology Review (2012)**
-*********************************************
+Open Subdivision Technology Review (2012)
+*****************************************
 
 .. raw:: html
 
@@ -63,8 +63,8 @@ Videos
 
 First public demonstration of OpenSubdiv at Siggraph 2012.
 
-**Autodesk User Group At Anaheim (2013)**
-*****************************************
+Autodesk User Group At Anaheim (2013)
+*************************************
 
 .. raw:: html
 
@@ -74,8 +74,8 @@ First public demonstration of OpenSubdiv at Siggraph 2012.
 
 Bill Polson, Director of Industry Strategy at Pixar Animation Studios
 
-**Why Model with Subdivisions (2013)**
-**************************************
+Why Model with Subdivisions (2013)
+**********************************
 
 .. raw:: html
 
@@ -85,8 +85,8 @@ Bill Polson, Director of Industry Strategy at Pixar Animation Studios
 
 Ivo Kos, Modelling Technical Director at Pixar Animation Studios
 
-**Meet the Experts: The OpenSubdiv Project (2013)**
-***************************************************
+Meet the Experts: The OpenSubdiv Project (2013)
+***********************************************
 
 .. raw:: html
 

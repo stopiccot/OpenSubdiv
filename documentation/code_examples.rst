@@ -47,9 +47,10 @@ of the software.
 
 .. list-table:: **DirectX examples**
    :class: quickref
-   :widths: 50
+   :widths: 50 50
 
    * - | `dxViewer <dxviewer.html>`_
+     - | `dxPtexViewer <dxptexviewer.html>`_
 
 .. list-table:: **Plugin examples**
    :class: quickref

@@ -22,7 +22,7 @@
      language governing permissions and limitations under the Apache License.
   
 
-glPtexViewer
+dxPtexViewer
 ------------
 
 .. contents::
@@ -35,16 +35,13 @@ SYNOPSIS
 .. parsed-literal:: 
    :class: codefhead
 
-   **glPtexViewer** 
+   **dxPtexViewer** 
    [**-e** *environment map*]
    [**-d** *HDR diffuse map*]
    [**-s** *HDR specular map*]
    [**-y**]
    [**--disp** *displacement scale*]
-   [**--bump** *bump scale*]
    [**-l** *isolation level*] 
-   [**-c** *animation loops*] 
-   [**-f**] 
    *ptex color file*
    *ptex displacement file*
    *ptex occlusion file*
@@ -54,14 +51,17 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-``glPtexViewer`` is a stand-alone application that showcases advanced HDR shading
+``dxPtexViewer`` is a stand-alone application that showcases advanced HDR shading
 with color, displacement, occlusion and specular ptex maps. Multiple controls 
 are available to experiment with the algorithms.
 
-.. image:: images/barb_1.jpg
-   :width: 400px
-   :align: center
-   :target: images/barb_1.jpg
+.. container:: notebox
+
+    Content under development....
+    
+    .. image:: images/construction.png
+       :align: center
+       :height: 100
 
 OPTIONS
 =======
@@ -80,22 +80,12 @@ OPTIONS
 **--disp** *displacement scale*
   A scalar multiplier for the shader displacement values.
 
-**--bump** *displacement scale*
-  A scalar multiplier for the shader bump values.
-
 **-y**
   Swap Z-up geometry to Y-UP.
 
 **-l** *isolation level*
   Select the desired isolation level of adaptive feature isolation. This can be 
   useful when trying to load large pieces of geometry.
-
-**-c** *animation frequency*
-  Number of repetitions of the animtion loop (default=0 is infinite)
-
-**-f**
-  Launches the application in full-screen mode (if is supported by GLFW on the
-  OS)
 
 *ptex color file*
   A ptex file containing RGB channels read as material albedo color.
@@ -124,11 +114,8 @@ Keyboard Controls
    
       q      : quit
       esc    : hide GUI
-      x      : save screenshot
       f      : fit frame
       +/-    : increase / decrese tessellation rate
-      r      : reload and re-compile the shader files
-      e      : draw normals
 
 
 

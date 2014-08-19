@@ -33,6 +33,19 @@ Using OpenSubdiv
    :align: center
    :target: images/osd_splash.png 
 
+OpenSubdiv APIs
+===============
+
+.. list-table:: **APIs Overview**
+   :class: quickref
+   :widths: 50 50
+   
+   * - | `Overview <api_overview.html>`_
+     - | `Far API <far_overview.html>`_
+       | `Osd API <osd_overview.html>`_
+       | 
+
+
 
 Coding With OpenSubdiv
 ======================
@@ -43,6 +56,6 @@ Coding With OpenSubdiv
    
    * - | `Compiling & Linking <using_osd_compile.html>`_
        | `Tutorials <tutorials.html>`_
-     - | `Manipulating Topology With Hbr <using_osd_hbr.html>`_
+     - | Writing Shaders
        | `Textures (UV & Ptex) <using_osd_textures.html>`_
 

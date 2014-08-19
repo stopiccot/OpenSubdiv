@@ -69,6 +69,7 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         cmake_build.rst
         code_examples.rst
         dxviewer.rst
+        dxptexviewer.rst
         far_overview.rst
         getting_started.rst
         glevallimit.rst
@@ -83,6 +84,7 @@ if (DOCUTILS_FOUND AND PYTHONINTERP_FOUND)
         maya_osdpolysmooth.rst
         osd_overview.rst
         release_notes.rst
+        release_notes_2x.rst
         subdivision_surfaces.rst
         tutorials.rst
         using_osd.rst
