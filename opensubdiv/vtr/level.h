@@ -212,6 +212,7 @@ public:
     
     //  Should compute and cache this internally...
     int findMaxValence() const;
+    int getMaxValence() const { return 64; }
 
 public:
     //  Debugging aides -- unclear what will persist...

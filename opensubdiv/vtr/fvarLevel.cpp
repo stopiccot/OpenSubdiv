@@ -190,15 +190,19 @@ VtrFVarLevel::completeTopologyFromFaceValues()
     //  face-verts and the vert-faces.  These are both 0-initialized and only updated when
     //  discontinuities are encountered.
     //
-    _vertFaceSiblings.resize(_level.getNumVertexFacesTotal(), 0);
-
-    int const MaxValence = 32;
-    int uniqueValues[MaxValence];
-
     ValueTag valueTagMatch(false);
     ValueTag valueTagMismatch(true);
 
     _vertValueTags.resize(_level.getNumVertices(), valueTagMatch);
+    _vertFaceSiblings.resize(_level.getNumVertexFacesTotal(), 0);
+
+    int const maxValence = _level.getMaxValence();
+
+    VtrIndex * indexBuffer   = (VtrIndex *)alloca(maxValence*sizeof(VtrIndex));
+    int *      valueBuffer   = (int *)alloca(maxValence*sizeof(int));
+    Sibling  * siblingBuffer = (Sibling *)alloca(maxValence*sizeof(Sibling));
+
+    int * uniqueValues = valueBuffer;
 
     int totalValueCount = _level.getNumVertices();
     for (int vIndex = 0; vIndex < _level.getNumVertices(); ++vIndex) {
@@ -210,8 +214,8 @@ VtrFVarLevel::completeTopologyFromFaceValues()
 
         //  Store the value for each vert-face locally -- we will identify the index
         //  of its sibling as we inspect them:
-        VtrIndex * vValues = (VtrIndex *)alloca(vFaces.size()*sizeof(VtrIndex));
-        Sibling * vSiblings = (Sibling *)alloca(vFaces.size()*sizeof(Sibling));
+        VtrIndex * vValues = indexBuffer;
+        Sibling * vSiblings = siblingBuffer;
         for (int i = 0; i < vFaces.size(); ++i) {
             vValues[i] = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[i]) + vInFace[i]];
         }
@@ -372,7 +376,7 @@ VtrFVarLevel::completeTopologyFromFaceValues()
         //  as we go...
         //
         int vvCount = 1 + vSiblingCount;
-        int * vvIndices = (int *)alloca(vvCount*sizeof(int));
+        int * vvIndices = indexBuffer;
         //int vvSrcFaces[vvCount];
 
         VtrIndex lastValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[0]) + vInFace[0]];

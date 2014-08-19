@@ -1389,6 +1389,11 @@ VtrRefinement::subdivideEdgeSharpness()
     int cEdgeBegin = _childEdgeFromFaceCount;
     int cEdgeEnd   =  _child->getNumEdges();
 
+    float * pVertEdgeSharpness = 0;
+    if (!creasing.IsUniform()) {
+        pVertEdgeSharpness = (float *)alloca(_parent->getMaxValence() * sizeof(float));
+    }
+
     for (VtrIndex cEdge = cEdgeBegin; cEdge < cEdgeEnd; ++cEdge) {
         VtrSharpness&   cSharpness = _child->_edgeSharpness[cEdge];
         VtrLevel::ETag& cEdgeTag   = _child->_edgeTags[cEdge];
@@ -1406,7 +1411,6 @@ VtrRefinement::subdivideEdgeSharpness()
                 VtrIndex            pVert      = pEdgeVerts[_childEdgeTag[cEdge]._indexInParent];
                 VtrIndexArray const pVertEdges = _parent->getVertexEdges(pVert);
 
-                float * pVertEdgeSharpness = (float *)alloca((pVertEdges.size() + 1)*sizeof(float));
                 for (int i = 0; i < pVertEdges.size(); ++i) {
                     pVertEdgeSharpness[i] = _parent->_edgeSharpness[pVertEdges[i]];
                 }

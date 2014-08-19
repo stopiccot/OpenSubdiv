@@ -519,6 +519,8 @@ FarRefineTables::interpolateChildVertsFromFaces(
 
     const VtrLevel& parent = refinement.parent();
 
+    float * fVertWeights = (float *)alloca(parent.getMaxValence()*sizeof(float));
+
     for (int face = 0; face < parent.getNumFaces(); ++face) {
 
         VtrIndex cVert = refinement.getFaceChildVertex(face);
@@ -528,8 +530,7 @@ FarRefineTables::interpolateChildVertsFromFaces(
         //  Declare and compute mask weights for this vertex relative to its parent face:
         VtrIndexArray const fVerts = parent.getFaceVertices(face);
 
-        float * fVertWeights = (float *)alloca(fVerts.size()*sizeof(float)),
-                fVaryingWeight = 1.0f / (float) fVerts.size();
+        float fVaryingWeight = 1.0f / (float) fVerts.size();
 
         VtrMaskInterface fMask(fVertWeights, 0, 0);
         VtrFaceInterface fHood(fVerts.size());
@@ -563,6 +564,10 @@ FarRefineTables::interpolateChildVertsFromEdges(
 
     VtrEdgeInterface eHood(parent);
 
+    //  Use of "max valence" here is not strictly appropriate for max edge faces...
+    float   eVertWeights[2],
+          * eFaceWeights = (float *)alloca(parent.getMaxValence() *sizeof(float));
+
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 
         VtrIndex cVert = refinement.getEdgeChildVertex(edge);
@@ -572,9 +577,6 @@ FarRefineTables::interpolateChildVertsFromEdges(
         //  Declare and compute mask weights for this vertex relative to its parent edge:
         VtrIndexArray const eVerts = parent.getEdgeVertices(edge);
         VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
-
-        float   eVertWeights[2],
-              * eFaceWeights = (float *)alloca(eFaces.size()*sizeof(float));
 
         VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
 
@@ -621,6 +623,8 @@ FarRefineTables::interpolateChildVertsFromVerts(
 
     VtrVertexInterface vHood(parent, child);
 
+    float * weightBuffer = (float *)alloca(2*parent.getMaxValence()*sizeof(float));
+
     for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
 
         VtrIndex cVert = refinement.getVertexChildVertex(vert);
@@ -632,7 +636,7 @@ FarRefineTables::interpolateChildVertsFromVerts(
         VtrIndexArray const vFaces = parent.getVertexFaces(vert);
 
         float   vVertWeight,
-              * vEdgeWeights = (float *)alloca(2*vEdges.size()*sizeof(float)),
+              * vEdgeWeights = weightBuffer,
               * vFaceWeights = vEdgeWeights + vEdges.size();
 
         VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
