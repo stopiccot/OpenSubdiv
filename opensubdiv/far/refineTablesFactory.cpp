@@ -77,7 +77,7 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 }
 
 void
-FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables& refTables) {
+FarRefineTablesFactoryBase::validateVertexComponentTopologyAssignment(FarRefineTables& refTables) {
 
     VtrLevel& baseLevel = refTables.getBaseLevel();
 
@@ -101,6 +101,14 @@ FarRefineTablesFactoryBase::validateComponentTopologyAssignment(FarRefineTables&
             //baseLevel.print();
             assert(false);
         }
+    }
+}
+
+void
+FarRefineTablesFactoryBase::validateFaceVaryingComponentTopologyAssignment(FarRefineTables& refTables) {
+
+    for (int channel=0; channel<refTables.GetNumFVarChannels(); ++channel) {
+        refTables.completeFVarChannelTopology(channel);
     }
 }
 
@@ -229,7 +237,7 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::resizeCo
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTopology(
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignVertexComponentTopology(
     FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
     for (int face=0, idx=0; face<desc.numFaces; ++face) {
@@ -239,6 +247,34 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
         for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
 
             dstFaceVerts[vert] = desc.vertIndices[idx++];
+        }
+    }
+}
+
+template <>
+void
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFaceVaryingComponentTopology(
+    FarRefineTables & refTables, TopologyDescriptor const & desc) {
+
+    if (desc.numFVarChannels>0) {
+
+        for (int channel=0; channel<desc.numFVarChannels; ++channel) {
+
+            int        channelSize    = desc.fvarChannels[channel].numValues;
+            int const* channelIndices = desc.fvarChannels[channel].valueIndices;
+
+            int channelIndex = refTables.createFVarChannel(channelSize);
+            assert(channelIndex == channel);
+
+            for (int face=0, idx=0; face<desc.numFaces; ++face) {
+
+                FarIndexArray dstFaceValues = refTables.getBaseFVarFaceValues(face, channel);
+
+                for (int vert=0; vert<dstFaceValues.size(); ++vert) {
+
+                    dstFaceValues[vert] = channelIndices[idx++];
+                }
+            }
         }
     }
 }
@@ -278,28 +314,6 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
         }
     }
 
-    if (desc.numFVarChannels>0) {
-
-        for (int channel=0; channel<desc.numFVarChannels; ++channel) {
-
-            int        channelSize    = desc.fvarChannels[channel].numValues;
-            int const* channelIndices = desc.fvarChannels[channel].valueIndices;
-
-            int channelIndex = refTables.createFVarChannel(channelSize);
-            assert(channelIndex == channel);
-
-            for (int face=0, idx=0; face<desc.numFaces; ++face) {
-
-                FarIndexArray dstFaceValues = refTables.getBaseFVarFaceValues(face, channel);
-
-                for (int vert=0; vert<dstFaceValues.size(); ++vert) {
-
-                    dstFaceValues[vert] = channelIndices[idx++];
-                }
-            }
-            refTables.completeFVarChannelTopology(channel);
-        }
-    }
 }
 
 FarRefineTablesFactoryBase::TopologyDescriptor::TopologyDescriptor() :

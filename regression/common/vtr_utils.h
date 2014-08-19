@@ -139,7 +139,7 @@ FarRefineTablesFactory<Shape>::resizeComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignComponentTopology(
+FarRefineTablesFactory<Shape>::assignVertexComponentTopology(
     FarRefineTables & refTables, Shape const & shape) {
 
     typedef FarRefineTables::IndexArray IndexArray;
@@ -162,32 +162,34 @@ FarRefineTablesFactory<Shape>::assignComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
+FarRefineTablesFactory<Shape>::assignFaceVaryingComponentTopology(
+    FarRefineTables & refTables, Shape const & shape) {
+
+    typedef FarRefineTables::IndexArray IndexArray;
+
+    // UV layyout (we only parse 1 channel)
+    if (not shape.faceuvs.empty()) {
+
+        int nfaces = refTables.getNumBaseFaces(),
+           channel = refTables.createFVarChannel( (int)shape.faceuvs.size() );
+
+        for (int i=0, ofs=0; i < nfaces; ++i) {
+
+            IndexArray dstFaceUVs = refTables.getBaseFVarFaceValues(i, channel);
+
+            for (int j=0; j<dstFaceUVs.size(); ++j) {
+                dstFaceUVs[j] = shape.faceuvs[ofs++];
+            }
+        }
+    }
+}
+
+//----------------------------------------------------------
+template <>
+inline void
 FarRefineTablesFactory<Shape>::assignComponentTags(
     FarRefineTables & refTables, Shape const & shape) {
 
-//#define DO_UVs
-#if defined DO_UVs
-    typedef FarRefineTables::IndexArray IndexArray;
-
-    { // UV layyout (we only parse 1 channel)
-        if (not shape.faceuvs.empty()) {
-
-            int nfaces = refTables.getNumBaseFaces(),
-               channel = refTables.createFVarChannel( (int)shape.faceuvs.size() );
-            
-            for (int i=0, ofs=0; i < nfaces; ++i) {
-            
-                IndexArray dstFaceUVs = refTables.getBaseFVarFaceValues(i, channel);
-                
-                for (int j=0; j<dstFaceUVs.size(); ++j) {
-                    dstFaceUVs[j] = shape.faceuvs[ofs++];
-                }
-            }
-
-            refTables.completeFVarChannelTopology(channel);
-        }
-    }
-#endif    
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 

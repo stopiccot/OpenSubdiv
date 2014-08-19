@@ -154,10 +154,10 @@ interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV
 
     FaRefineTables * refTables = refFactory.Create( GetSdcType(*shape),
                                                    GetSdcOptions(*shape),
-                                                   *shape,
-                                                   maxlevel,
-                                                   true /*full topology*/ );
+                                                   *shape);
     assert(refTables);
+
+    refTables->RefineUniform(maxlevel, true /*full topology*/ );
 
     // populate coarse mesh positions
     data.resize(refTables->GetNumVerticesTotal());

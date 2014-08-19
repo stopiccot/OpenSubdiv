@@ -95,7 +95,8 @@ public:
 protected:
 
     static void validateComponentTopologySizing(FarRefineTables& refTables);
-    static void validateComponentTopologyAssignment(FarRefineTables& refTables);
+    static void validateVertexComponentTopologyAssignment(FarRefineTables& refTables);
+    static void validateFaceVaryingComponentTopologyAssignment(FarRefineTables& refTables);
 
     static void applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables);
 };
@@ -153,15 +154,9 @@ public:
     ///
     /// @param mesh          Client topological representation (or a converter)
     ///
-    /// @param maxLevel      Number of levels of uniform subdivision applied
-    ///
-    /// @param fullTopology  Generates all the topological relationships at the 
-    ///                      highest level of subdivision if true.
-    ///
     /// return               An instance of FarRefineTables or NULL for failure
     ///
-    static FarRefineTables* Create(SdcType type, SdcOptions options, MESH const& mesh,
-        int maxLevel = 0, bool fullTopology = false);
+    static FarRefineTables* Create(SdcType type, SdcOptions options, MESH const& mesh);
 
 protected:
     //
@@ -175,9 +170,10 @@ protected:
     //
     //  Required:
     static void resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh);
-    static void assignComponentTopology(FarRefineTables& refTables, MESH const& mesh);
+    static void assignVertexComponentTopology(FarRefineTables& refTables, MESH const& mesh);
 
     //  Optional:
+    static void assignFaceVaryingComponentTopology(FarRefineTables& refTables, MESH const& mesh);
     static void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
 
 protected:
@@ -192,15 +188,12 @@ protected:
 //
 template <class MESH>
 FarRefineTables*
-FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh, int maxLevel, bool fullTopology) {
+FarRefineTablesFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh) {
 
     FarRefineTables *refTables = new FarRefineTables(type, options);
 
     populateBaseLevel(*refTables, mesh);
 
-    if (maxLevel > 0) {
-        refTables->RefineUniform(maxLevel, fullTopology);
-    }
     return refTables;
 }
 
@@ -223,20 +216,22 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
     validateComponentTopologySizing(refTables);
 
     //  Required specialization for MESH:
-    assignComponentTopology(refTables, mesh);
-
-    validateComponentTopologyAssignment(refTables);
+    assignVertexComponentTopology(refTables, mesh);
+    validateVertexComponentTopologyAssignment(refTables);
 
     //  Optional specialization for MESH:
     assignComponentTags(refTables, mesh);
 
     //  Finalize the translation of the mesh after its full specification above:
     applyComponentTagsAndBoundarySharpness(refTables);
+
+    //  Optional specialization for MESH:
+    assignFaceVaryingComponentTopology(refTables, mesh);
+    validateFaceVaryingComponentTopologyAssignment(refTables);
 }
 
 // XXXX manuelk MSVC specializes these templated functions which creates duplicated symbols
-//              recommend changing API to not use template specialization
-#if (not defined(_MSC_VER))
+#ifndef _MSC_VER
 
 template <class MESH>
 void
@@ -279,9 +274,9 @@ FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTab
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+FarRefineTablesFactory<MESH>::assignVertexComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
 
-    assert("Missing specialization for FarRefineTablesFactory<MESH>::assignComponentTopology()" == 0);
+    assert("Missing specialization for FarRefineTablesFactory<MESH>::assignVertexComponentTopology()" == 0);
 
     //
     //  Assigning the topology tables:
@@ -314,6 +309,21 @@ FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTab
     //  We also need to tag vertices as manifold or not here.  Failure to do so explicitly
     //  will require the factory analyze the local neighborhood of each component, which
     //  is costly and often unnecessary.
+    //
+}
+
+template <class MESH>
+void
+FarRefineTablesFactory<MESH>::assignFaceVaryingComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+
+    //
+    //  Optional assigning face-varying topology tables:
+    //
+    //  Create independent face-varying primitive variable channels:
+    //      int FarRefineTables::createFVarChannel(int numValues)
+    //
+    //  For each channel, populate the face-vertex values:
+    //      IndexArray FarRefineTables::getBaseFVarFaceValues(Index face, int channel = 0)
     //
 }
 
