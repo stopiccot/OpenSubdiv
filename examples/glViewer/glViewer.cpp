@@ -1099,7 +1099,8 @@ display() {
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->patchArrays;
+    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+        g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
     int patchCount[11][6][4]; // [Type][Pattern][Rotation] (see far/patchTables.h)

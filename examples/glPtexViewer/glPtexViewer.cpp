@@ -1621,7 +1621,7 @@ drawModel() {
 #endif
 
     OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
-        g_mesh->GetDrawContext()->patchArrays;
+        g_mesh->GetDrawContext()->GetPatchArrays();
     glBindVertexArray(g_vao);
 
     // patch drawing

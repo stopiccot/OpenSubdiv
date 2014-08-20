@@ -643,7 +643,8 @@ display() {
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->patchArrays;
+    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+        g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {
@@ -815,7 +816,7 @@ drawStroke(int x, int y)
     glBindVertexArray(g_vao);
 
     OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
-        g_mesh->GetDrawContext()->patchArrays;
+        g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {

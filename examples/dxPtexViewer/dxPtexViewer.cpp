@@ -949,7 +949,7 @@ drawModel() {
     g_pd3dDeviceContext->IASetVertexBuffers(0, 1, &buffer, &hStrides, &hOffsets);
 
     OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
-        g_mesh->GetDrawContext()->patchArrays;
+        g_mesh->GetDrawContext()->GetPatchArrays();
 
     g_pd3dDeviceContext->IASetIndexBuffer(g_mesh->GetDrawContext()->patchIndexBuffer,
                                           DXGI_FORMAT_R32_UINT, 0);
@@ -1113,7 +1113,7 @@ quit() {
     SAFE_RELEASE(g_pSwapChain);
     SAFE_RELEASE(g_pd3dDeviceContext);
     SAFE_RELEASE(g_pd3dDevice);
-    
+
     delete g_cpuComputeController;
 
 #ifdef OPENSUBDIV_HAS_OPENMP
@@ -1390,7 +1390,7 @@ initD3D11(HWND hWnd) {
     };
 
     UINT numDriverTypes = ARRAYSIZE(driverTypes);
-    
+
     DXGI_SWAP_CHAIN_DESC hDXGISwapChainDesc;
     hDXGISwapChainDesc.BufferDesc.Width = g_width;
     hDXGISwapChainDesc.BufferDesc.Height = g_height;
@@ -1407,7 +1407,7 @@ initD3D11(HWND hWnd) {
     hDXGISwapChainDesc.Windowed = TRUE;
     hDXGISwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
     hDXGISwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-    
+
     // create device and swap chain
     HRESULT hr;
     D3D_DRIVER_TYPE hDriverType = D3D_DRIVER_TYPE_NULL;
@@ -1518,7 +1518,7 @@ updateRenderTarget(HWND hWnd) {
         MessageBoxW(hWnd, L"SwpChain GetBuffer", L"Err", MB_ICONSTOP);
         return false;
     }
-    
+
     // create render target from the back buffer
     if(FAILED(g_pd3dDevice->CreateRenderTargetView(hpBackBuffer, NULL, &g_pSwapChainRTV))){
         MessageBoxW(hWnd, L"CreateRenderTargetView", L"Err", MB_ICONSTOP);
@@ -1565,7 +1565,7 @@ updateRenderTarget(HWND hWnd) {
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     g_pd3dDeviceContext->RSSetViewports(1, &vp);
-    
+
     return true;
 }
 

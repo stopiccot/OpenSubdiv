@@ -273,11 +273,12 @@ protected:
     }
 
     void updateVertexBufferStride(int stride) {
-        for (int i = 0; i < (int)_drawContext->patchArrays.size(); ++i) {
-            OsdDrawContext::PatchDescriptor desc =
-                _drawContext->patchArrays[i].GetDescriptor();
+        OsdDrawContext::PatchArrayVector patchArrays =
+            _drawContext->GetPatchArrays();
+        for (int i = 0; i < (int)patchArrays.size(); ++i) {
+            OsdDrawContext::PatchDescriptor desc = patchArrays[i].GetDescriptor();
             desc.SetNumElements(stride);
-            _drawContext->patchArrays[i].SetDescriptor(desc);
+            patchArrays[i].SetDescriptor(desc);
         }
     }
 
@@ -1159,7 +1160,7 @@ display() {
     g_topology->UpdateVertexTexture(g_instances);
 
     OsdDrawContext::PatchArrayVector const & patches =
-        g_topology->GetDrawContext()->patchArrays;
+        g_topology->GetDrawContext()->GetPatchArrays();
     int numDrawCalls = 0;
     // primitive counting
     glBeginQuery(GL_PRIMITIVES_GENERATED, g_queries[0]);

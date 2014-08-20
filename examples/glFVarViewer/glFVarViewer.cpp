@@ -806,7 +806,7 @@ display() {
     glBindVertexArray(g_vao);
 
     OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
-        g_mesh->GetDrawContext()->patchArrays;
+        g_mesh->GetDrawContext()->GetPatchArrays();
 
     if (g_displayStyle == kWire)
         glDisable(GL_CULL_FACE);

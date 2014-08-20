@@ -136,7 +136,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
     }
     
     OsdDrawContext::ConvertPatchArrays(patchTables.GetPatchArrayVector(),
-        patchArrays, patchTables.GetMaxValence(), numVertexElements);
+        _patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
     // allocate and initialize additional buffer data
 

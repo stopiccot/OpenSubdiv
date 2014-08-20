@@ -86,7 +86,7 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
     pd3d11DeviceContext->GetDevice(&pd3d11Device);
     assert(pd3d11Device);
 
-    ConvertPatchArrays(patchTables.GetPatchArrayVector(), patchArrays, patchTables.GetMaxValence(), numVertexElements);
+    ConvertPatchArrays(patchTables.GetPatchArrayVector(), _patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
     FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
     FarPatchTables::PatchParamTable const & ptexCoordTables = patchTables.GetPatchParamTable();
