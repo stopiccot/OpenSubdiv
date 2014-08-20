@@ -564,9 +564,8 @@ FarRefineTables::interpolateChildVertsFromEdges(
 
     VtrEdgeInterface eHood(parent);
 
-    //  Use of "max valence" here is not strictly appropriate for max edge faces...
     float   eVertWeights[2],
-          * eFaceWeights = (float *)alloca(parent.getMaxValence() *sizeof(float));
+          * eFaceWeights = (float *)alloca(parent.getMaxEdgeFaces()*sizeof(float));
 
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 

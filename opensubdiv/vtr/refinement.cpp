@@ -1249,6 +1249,8 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
         childEdgeFaceIndexSizeEstimate = child.getNumEdgeFaces(child.getNumEdges()-1) +
                                          child.getOffsetOfEdgeFaces(child.getNumEdges()-1);
         child._edgeFaceIndices.resize(childEdgeFaceIndexSizeEstimate);
+
+        child._maxEdgeFaces = parent._maxEdgeFaces;
     }
 
     //
@@ -1354,6 +1356,7 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
         child._vertEdgeIndices.resize(     childVertEdgeIndexSizeEstimate);
         child._vertEdgeLocalIndices.resize(childVertEdgeIndexSizeEstimate);
     }
+    child._maxValence = parent._maxValence;
 }
 
 

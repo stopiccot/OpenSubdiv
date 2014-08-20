@@ -488,7 +488,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     bool triangulateQuads = (options.triangulateQuads and
         refineTables.GetSchemeType()==TYPE_LOOP);
 
-    int maxvalence = refineTables.getLevel(0).findMaxValence(),
+    int maxvalence = refineTables.getLevel(0).getMaxValence(),
         maxlevel = refineTables.GetMaxLevel(),
         firstlevel = options.generateAllLevels ? 0 : maxlevel,
         nlevels = maxlevel-firstlevel+1,
@@ -599,7 +599,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
     //  Create the instance of the tables and allocate and initialize its members based on
     //  the inventory of patches determined above:
     //
-    int maxValence = refineTables.getLevel(0).findMaxValence();
+    int maxValence = refineTables.getLevel(0).getMaxValence();
 
     FarPatchTables * tables = new FarPatchTables(maxValence);
 

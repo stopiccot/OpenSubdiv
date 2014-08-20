@@ -56,7 +56,9 @@ VtrLevel::VtrLevel() :
     _faceCount(0),
     _edgeCount(0),
     _vertCount(0),
-    _depth(0)
+    _depth(0),
+    _maxEdgeFaces(0),
+    _maxValence(0)
 {
 }
 
@@ -1039,6 +1041,7 @@ VtrLevel::completeTopologyFromFaceVertices()
 
             fEdges[i] = eIndex;
         }
+        _maxValence = std::max(_maxValence, fVerts.size());
     }
 
     dynEdgeFaces.compressMemberIndices();
@@ -1064,6 +1067,8 @@ VtrLevel::completeTopologyFromFaceVertices()
 
         VtrIndexArray eFaces = this->getEdgeFaces(eIndex);
         VtrIndexArray eVerts = this->getEdgeVertices(eIndex);
+
+        _maxEdgeFaces = std::max(_maxEdgeFaces, eFaces.size());
 
         if ((eFaces.size() < 1) || (eFaces.size() > 2)) {
             eTag._nonManifold = true;
@@ -1118,6 +1123,7 @@ VtrLevel::populateLocalIndices()
 
             vInEdges[i] = (vIndex == eVerts[1]);
         }
+        _maxValence = std::max(_maxValence, vEdges.size());
     }
 }
 

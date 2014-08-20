@@ -184,6 +184,9 @@ public:
     int getNumVertexFacesTotal() const  { return (int) _vertFaceIndices.size(); }
     int getNumVertexEdgesTotal() const  { return (int) _vertEdgeIndices.size(); }
 
+    int getMaxValence() const { return _maxValence; }
+    int getMaxEdgeFaces() const { return _maxEdgeFaces; }
+
     //  Methods to access the relation tables/indices -- note that for some relations
     //  we store an additional "local index", e.g. for the case of vert-faces if one
     //  of the faces F[i] is incident a vertex V, then L[i] is the "local index" in
@@ -209,10 +212,6 @@ public:
     SdcRule      getVertexRule(     VtrIndex vertIndex) const;
 
     VtrIndex findEdge(VtrIndex v0Index, VtrIndex v1Index) const;
-    
-    //  Should compute and cache this internally...
-    int findMaxValence() const;
-    int getMaxValence() const { return 64; }
 
 public:
     //  Debugging aides -- unclear what will persist...
@@ -355,7 +354,9 @@ protected:
     //  stencil queries so could be valuable in both.  As face-vert valence becomes
     //  constant there is no need to store face-vert and face-edge counts so it has
     //  value in VtrLevel, though perhaps specified as something other than "depth"
-    int   _depth;
+    int _depth;
+    int _maxEdgeFaces;
+    int _maxValence;
 
     //
     //  Topology vectors:
@@ -430,6 +431,8 @@ VtrLevel::resizeFaceVertices(VtrIndex faceIndex, int count)
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (faceIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
+
+    _maxValence = std::max(_maxValence, count);
 }
 
 //
@@ -527,6 +530,8 @@ VtrLevel::resizeVertexEdges(VtrIndex vertIndex, int count)
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (vertIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
+
+    _maxValence = std::max(_maxValence, count);
 }
 inline void
 VtrLevel::trimVertexEdges(VtrIndex vertIndex, int count)
@@ -571,6 +576,8 @@ VtrLevel::resizeEdgeFaces(VtrIndex edgeIndex, int count)
 
     countOffsetPair[0] = count;
     countOffsetPair[1] = (edgeIndex == 0) ? 0 : (countOffsetPair[-2] + countOffsetPair[-1]);
+
+    _maxEdgeFaces = std::max(_maxEdgeFaces, count);
 }
 inline void
 VtrLevel::trimEdgeFaces(VtrIndex edgeIndex, int count)
@@ -678,27 +685,6 @@ VtrLevel::resizeVertexEdges(int totalVertEdgeCount)
 {
     _vertEdgeIndices.resize(totalVertEdgeCount);
     _vertEdgeLocalIndices.resize(totalVertEdgeCount);
-}
-
-//
-//  We should really be computing this either on construction (via the factory) or
-//  refinement.  The base level should always provide an upper bound on the max as
-//  long as the face-vertex counts are considered, so there is little point doing
-//  anything for any higher level.
-//
-inline int
-VtrLevel::findMaxValence() const
-{
-    int maxValence = 0;
-    for (int i = 0; i < _vertCount; ++i) {
-        maxValence = std::max(maxValence, _vertEdgeCountsAndOffsets[2*i]);
-    }
-    if (_depth == 0) {
-        for (int i = 0; i < _faceCount; ++i) {
-            maxValence = std::max(maxValence, _faceVertCountsAndOffsets[2*i]);
-        }
-    }
-    return maxValence;
 }
 
 } // end namespace OPENSUBDIV_VERSION
