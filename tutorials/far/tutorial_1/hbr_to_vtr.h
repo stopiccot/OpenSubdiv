@@ -327,7 +327,7 @@ FarRefineTablesFactory<OsdHbrConverter>::resizeComponentTopology(
 
 template <>
 void
-FarRefineTablesFactory<OsdHbrConverter>::assignVertexComponentTopology(
+FarRefineTablesFactory<OsdHbrConverter>::assignComponentTopology(
     FarRefineTables & refTables, OsdHbrConverter const & conv) {
 
     typedef FarRefineTables::Index           Index;

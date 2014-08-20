@@ -139,7 +139,7 @@ FarRefineTablesFactory<Shape>::resizeComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignVertexComponentTopology(
+FarRefineTablesFactory<Shape>::assignComponentTopology(
     FarRefineTables & refTables, Shape const & shape) {
 
     typedef FarRefineTables::IndexArray IndexArray;
@@ -162,7 +162,7 @@ FarRefineTablesFactory<Shape>::assignVertexComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignFaceVaryingComponentTopology(
+FarRefineTablesFactory<Shape>::assignFaceVaryingTopology(
     FarRefineTables & refTables, Shape const & shape) {
 
     typedef FarRefineTables::IndexArray IndexArray;

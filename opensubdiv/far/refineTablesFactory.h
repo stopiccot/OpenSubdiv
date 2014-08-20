@@ -170,10 +170,10 @@ protected:
     //
     //  Required:
     static void resizeComponentTopology(FarRefineTables& refTables, MESH const& mesh);
-    static void assignVertexComponentTopology(FarRefineTables& refTables, MESH const& mesh);
+    static void assignComponentTopology(FarRefineTables& refTables, MESH const& mesh);
 
     //  Optional:
-    static void assignFaceVaryingComponentTopology(FarRefineTables& refTables, MESH const& mesh);
+    static void assignFaceVaryingTopology(FarRefineTables& refTables, MESH const& mesh);
     static void assignComponentTags(FarRefineTables& refTables, MESH const& mesh);
 
 protected:
@@ -216,7 +216,7 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
     validateComponentTopologySizing(refTables);
 
     //  Required specialization for MESH:
-    assignVertexComponentTopology(refTables, mesh);
+    assignComponentTopology(refTables, mesh);
     validateVertexComponentTopologyAssignment(refTables);
 
     //  Optional specialization for MESH:
@@ -226,7 +226,7 @@ FarRefineTablesFactory<MESH>::populateBaseLevel(FarRefineTables& refTables, MESH
     applyComponentTagsAndBoundarySharpness(refTables);
 
     //  Optional specialization for MESH:
-    assignFaceVaryingComponentTopology(refTables, mesh);
+    assignFaceVaryingTopology(refTables, mesh);
     validateFaceVaryingComponentTopologyAssignment(refTables);
 }
 
@@ -274,9 +274,9 @@ FarRefineTablesFactory<MESH>::resizeComponentTopology(FarRefineTables& /* refTab
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignVertexComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+FarRefineTablesFactory<MESH>::assignComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
 
-    assert("Missing specialization for FarRefineTablesFactory<MESH>::assignVertexComponentTopology()" == 0);
+    assert("Missing specialization for FarRefineTablesFactory<MESH>::assignComponentTopology()" == 0);
 
     //
     //  Assigning the topology tables:
@@ -314,7 +314,7 @@ FarRefineTablesFactory<MESH>::assignVertexComponentTopology(FarRefineTables& /* 
 
 template <class MESH>
 void
-FarRefineTablesFactory<MESH>::assignFaceVaryingComponentTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
+FarRefineTablesFactory<MESH>::assignFaceVaryingTopology(FarRefineTables& /* refTables */, MESH const& /* mesh */) {
 
     //
     //  Optional assigning face-varying topology tables:

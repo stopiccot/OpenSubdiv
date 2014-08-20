@@ -237,7 +237,7 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::resizeCo
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignVertexComponentTopology(
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTopology(
     FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
     for (int face=0, idx=0; face<desc.numFaces; ++face) {
@@ -253,7 +253,7 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignVe
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFaceVaryingComponentTopology(
+FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFaceVaryingTopology(
     FarRefineTables & refTables, TopologyDescriptor const & desc) {
 
     if (desc.numFVarChannels>0) {

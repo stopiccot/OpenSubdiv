@@ -262,7 +262,7 @@ FarRefineTablesFactory<Converter>::resizeComponentTopology(
 
 template <>
 void
-FarRefineTablesFactory<Converter>::assignVertexComponentTopology(
+FarRefineTablesFactory<Converter>::assignComponentTopology(
     FarRefineTables & refTables, Converter const & conv) {
 
     typedef FarRefineTables::IndexArray      IndexArray;
