@@ -747,14 +747,16 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
             patchTag._hasPatch  = true;
             patchTag._isRegular = !compFaceVertTag._xordinary;
 
+            int boundaryEdgeMask = 0;
+
             bool hasBoundaryVertex = compFaceVertTag._boundary;
             if (hasBoundaryVertex) {
                 VtrIndexArray const& fEdges = level->getFaceEdges(faceIndex);
 
-                int boundaryEdgeMask = ((level->_edgeTags[fEdges[0]]._boundary) << 0) |
-                                       ((level->_edgeTags[fEdges[1]]._boundary) << 1) |
-                                       ((level->_edgeTags[fEdges[2]]._boundary) << 2) |
-                                       ((level->_edgeTags[fEdges[3]]._boundary) << 3);
+                boundaryEdgeMask = ((level->_edgeTags[fEdges[0]]._boundary) << 0) |
+                                   ((level->_edgeTags[fEdges[1]]._boundary) << 1) |
+                                   ((level->_edgeTags[fEdges[2]]._boundary) << 2) |
+                                   ((level->_edgeTags[fEdges[3]]._boundary) << 3);
 
                 if (boundaryEdgeMask) {
                     patchTag.assignBoundaryPropertiesFromEdgeMask(boundaryEdgeMask);
@@ -768,6 +770,35 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
                 }
             }
             patchTag.assignTransitionPropertiesFromEdgeMask(vtrFaceTag._transitional);
+
+            //
+            //  This treatment may become optional in future -- consider approximating smooth
+            //  corners with regular B-spline patches instead of Gregory.  The smooth corner
+            //  must be properly isolated from any other irregular vertices, otherwise the
+            //  Gregory patch is necessary.
+            //
+            bool approxSmoothCornerWithRegularPatch = true;
+            if (approxSmoothCornerWithRegularPatch) {
+                if (!patchTag._isRegular && (patchTag._boundaryCount == 2)) {
+                    //  We may have a sharp corner opposite/adjacent an xordinary vertex --
+                    //  need to make sure there is only one xordinary vertex and that it
+                    //  is the corner vertex.
+                    int xordCorner = 0;
+                    int xordCount = 0;
+                    if (level->_vertTags[fVerts[0]]._xordinary) { xordCount++; xordCorner = 0; }
+                    if (level->_vertTags[fVerts[1]]._xordinary) { xordCount++; xordCorner = 1; }
+                    if (level->_vertTags[fVerts[2]]._xordinary) { xordCount++; xordCorner = 2; }
+                    if (level->_vertTags[fVerts[3]]._xordinary) { xordCount++; xordCorner = 3; }
+
+                    if (xordCount == 1) {
+                        //  The two boundary edges must be either side of the corner vertex:
+                        int const expectedCornerEdgeMask[4] = { 8+1, 1+2, 2+4, 4+8 };
+                        if (boundaryEdgeMask == expectedCornerEdgeMask[xordCorner]) {
+                            patchTag._isRegular = true;
+                        }
+                    }
+                }
+            }
 
             //
             //  Identify and increment counts for regular patches (both non-transitional and
@@ -787,11 +818,8 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
             } else {
                 if (patchTag._boundaryCount == 0) {
                     patchInventory.G++;
-                } else if (patchTag._boundaryCount == 1) {
-                    patchInventory.GB++;
                 } else {
-                    // XXXX manuelk smooth corners use regular corner patches, not Gregory
-                    patchInventory.C[patchTag._transitionType][patchTag._transitionRot]++;
+                    patchInventory.GB++;
                 }
             }
         }
@@ -924,7 +952,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     quad_G_C0_P += 4;
 
                     pptrs.G = computePatchParam(refineTables, i, faceIndex, 0, pptrs.G);
-                } else if (patchTag._boundaryCount == 1) {
+                } else {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
                     VtrIndexArray const faceVerts = level->getFaceVertices(faceIndex);
                     for (int j = 0; j < 4; ++j) {
@@ -937,20 +965,6 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     quad_G_C1_P += 4;
 
                     pptrs.GB = computePatchParam(refineTables, i, faceIndex, (patchTag._boundaryIndex+1)%4, pptrs.GB);
-                } else {
-                    // XXXX manuelk smooth corners use regular corner patches, not Gregory
-                    unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
-                    unsigned int   patchVerts[9];
-
-                    int tIndex = patchTag._transitionType;
-                    int rIndex = patchTag._transitionRot;
-                    int bIndex = patchTag._boundaryIndex;
-
-                    level->gatherQuadRegularCornerPatchVertices(faceIndex, patchVerts, bIndex);
-                    offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
-
-                    iptrs.C[tIndex][rIndex] += 9;
-                    pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, (bIndex+3)%4, pptrs.C[tIndex][rIndex]);
                 }
             }
         }
