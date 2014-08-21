@@ -54,8 +54,9 @@ VtrFVarRefinement::VtrFVarRefinement(VtrRefinement const& refinement,
                                      VtrFVarLevel&        childFVarLevel) :
     _refinement(refinement),
     _parent(&parentFVarLevel),
-    _child(&childFVarLevel)
-{
+    _child(&childFVarLevel),
+    _childSiblingFromEdgeCount(0),
+    _childSiblingFromVertCount(0) {
 }
 
 VtrFVarRefinement::~VtrFVarRefinement()
@@ -315,7 +316,7 @@ VtrFVarRefinement::propagateValueTags()
     //
     //  Value tags correspond to vertex-values and originate from all three sources:
     //      Face-values:
-    //          - trivially initialized as matching  
+    //          - trivially initialized as matching
     //      Edge-values:
     //          - conditionally initialized based on parent edge continuity
     //          - should be trivial though (unlike edge-tags for the child edges)

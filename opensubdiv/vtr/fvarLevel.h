@@ -179,8 +179,8 @@ public:
     void initializeFaceValuesFromVertexFaceSiblings(int firstVertex = 0);
     void buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>& fvSiblings) const;
 
-    bool validate() const; 
-    void print() const; 
+    bool validate() const;
+    void print() const;
 
 public:
     VtrLevel const & _level;
@@ -200,7 +200,7 @@ public:
     bool                  _cornerPropagate;
     int                   _valueCount;
 
-    //  
+    //
     //  Members that distinguish the face-varying "topology" from the Level to
     //  which the data set is associated.
     //

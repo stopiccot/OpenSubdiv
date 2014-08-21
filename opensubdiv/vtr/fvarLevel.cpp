@@ -48,8 +48,7 @@ namespace OPENSUBDIV_VERSION {
 //  Simple (for now) constructor and destructor:
 //
 VtrFVarLevel::VtrFVarLevel(VtrLevel const& level) :
-    _level(level)
-{
+    _level(level), _valueCount(0) {
 }
 
 VtrFVarLevel::~VtrFVarLevel()
@@ -76,8 +75,8 @@ VtrFVarLevel::resizeComponents()
     std::memset(&_edgeTags[0], 0, _level.getNumEdges() * sizeof(ETag));
 
     //  Per-vertex members:
-    _vertSiblingCounts.resize(_level.getNumVertices(), 0); 
-    _vertSiblingOffsets.resize(_level.getNumVertices()); 
+    _vertSiblingCounts.resize(_level.getNumVertices(), 0);
+    _vertSiblingOffsets.resize(_level.getNumVertices());
 
     _vertFaceSiblings.resize(_level.getNumVertexFacesTotal(), 0);
 }
@@ -758,7 +757,7 @@ printf("    edge[] tag mismatch = %d\n", _edgeTags[eIndex]._mismatch);
             //  we could quickly identify the edge in any adjacent face -- but for now
             //  we would have to do a search in any incident face (e.g. the first).
             //
-            //  We can use the ordering of edges and faces to identify such a face, 
+            //  We can use the ordering of edges and faces to identify such a face,
             //  and use the vert-in-face local-index to then identify the value...
             //  NO WAIT -- we can't right now because refined vert-edges are not oriented
             //  correctly!
