@@ -88,7 +88,7 @@ struct PatchTypes {
 typedef PatchTypes<unsigned int*>   PatchCVPointers;
 typedef PatchTypes<FarPatchParam *> PatchParamPointers;
 typedef PatchTypes<int>             PatchCounters;
-
+typedef PatchTypes<unsigned int **> PatchFVarPointers;
 
 //
 //  A simple struct containing all information gathered about a face that is relevant
@@ -352,14 +352,40 @@ FarPatchTablesFactory::allocateTables(FarPatchTables * tables, int /* nlevels */
     tables->_paramTable.resize( npatches );
 }
 
+FarPatchTables::FVarPatchTables *
+FarPatchTablesFactory::allocateFVarTables( FarRefineTables const & refTables, FarPatchTables const & tables ) {
+
+    assert( refTables.GetNumFVarChannels()>0 );
+
+    FarPatchTables::PatchArrayVector const & parrays = tables.GetPatchArrayVector();
+
+    int nverts = 0;
+    for (int i=0; i<(int)parrays.size(); ++i) {
+        nverts += parrays[i].GetNumPatches() *
+            parrays[i].GetDescriptor().GetNumFVarControlVertices();
+    }
+    
+    if (nverts==0)
+        return 0;
+
+    FVarPatchTables * fvarTables = new FVarPatchTables;
+
+    fvarTables->_channels.resize( refTables.GetNumFVarChannels() );
+    for (int channel=0; channel<refTables.GetNumFVarChannels(); ++channel) {
+        fvarTables->_channels[channel].patchVertIndices.resize(nverts);
+    }
+
+    return fvarTables;
+}
+
 //
 //  Creates a PatchArray and appends it to a vector and keeps track of both
 //  vertex and patch offsets
 //
 void
 FarPatchTablesFactory::pushPatchArray( FarPatchTables::Descriptor desc,
-                                          FarPatchTables::PatchArrayVector & parray,
-                                          int npatches, int * voffset, int * poffset, int * qoffset ) {
+                                       FarPatchTables::PatchArrayVector & parray,
+                                       int npatches, int * voffset, int * poffset, int * qoffset ) {
 
     if (npatches>0) {
         parray.push_back( FarPatchTables::PatchArray(desc, *voffset, *poffset, npatches, *qoffset) );
@@ -582,7 +608,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
 }
 
 FarPatchTables *
-FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Options /* options */ ) {
+FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Options options ) {
 
     assert(not refineTables.IsUniform());
 
@@ -618,6 +644,10 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
 
     // Allocate various tables
     allocateTables( tables, 0 );
+
+    if (options.generateFVarTables) {
+        tables->_fvarPatchTables = allocateFVarTables( refineTables, *tables );
+    }
 
     // Specifics for Gregory patches
     if ((patchInventory.G > 0) or (patchInventory.GB > 0)) {
@@ -827,6 +857,18 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
     }
 }
 
+static void
+gatherFVarPatchVertices(FarRefineTables const & refineTables,
+    int level, int faceIndex, int rotation, int const * levelOffsets, unsigned int ** fptrs) {
+
+    for (int channel=0; channel<refineTables.GetNumFVarChannels(); ++channel) {
+        FarIndexArray const & fverts = refineTables.GetFVarFaceValues(level, faceIndex, channel);
+        for (int vert=0; vert<fverts.size(); ++vert) {
+            fptrs[channel][vert] = levelOffsets[channel] + fverts[(vert+rotation)%4];
+        }
+        fptrs[channel]+=fverts.size();
+    }
+}
 
 //
 //  Populate all adaptive patches now that the tables to hold data for them have been allocated.
@@ -845,6 +887,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
     //
     PatchCVPointers    iptrs;
     PatchParamPointers pptrs;
+    PatchFVarPointers  fptrs;
 
     for (Descriptor::iterator it=Descriptor::begin(Descriptor::FEATURE_ADAPTIVE_CATMARK); it!=Descriptor::end(); ++it) {
         FarPatchTables::PatchArray * pa = tables->findPatchArray(*it);
@@ -853,6 +896,19 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
         iptrs.getValue( *it ) = &tables->_patches[pa->GetVertIndex()];
         pptrs.getValue( *it ) = &tables->_paramTable[pa->GetPatchIndex()];
+
+        if (tables->_fvarPatchTables) {
+            int nchannels = refineTables.GetNumFVarChannels(),
+                ncvs = pa->GetDescriptor().GetNumFVarControlVertices(); // XXXX manuelk this will break with bi-cubic fvar interp !!!
+
+            unsigned int ** fptr = (unsigned int **)alloca(nchannels*sizeof(unsigned int *));
+            for (int channel=0; channel<nchannels; ++channel) {
+
+                fptr[channel] = (unsigned int *)&tables->_fvarPatchTables->
+                    _channels[channel].patchVertIndices[pa->GetPatchIndex()*ncvs];
+            }
+            fptrs.getValue( *it ) = fptr;
+        }
     }
 
     FarPatchTables::QuadOffsetTable::value_type *quad_G_C0_P = patchInventory.G>0 ? &tables->_quadOffsetTable[0] : 0;
@@ -874,6 +930,11 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
     //
     int levelFaceOffset = 0;
     int levelVertOffset = 0;
+    int * levelFVarVertOffsets = 0;
+    if (tables->_fvarPatchTables) {
+         levelFVarVertOffsets = (int *)alloca(refineTables.GetNumFVarChannels());
+         memset(levelFVarVertOffsets, 0, refineTables.GetNumFVarChannels()*sizeof(int));
+    }
 
     for (int i = 0; i < (int)refineTables.getNumLevels(); ++i) {
         VtrLevel const * level = &refineTables.getLevel(i);
@@ -900,6 +961,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
                     iptrs.R[tIndex] += 16;
                     pptrs.R[tIndex] = computePatchParam(refineTables, i, faceIndex, rIndex, pptrs.R[tIndex]);
+
+                    if (tables->_fvarPatchTables) {
+                        gatherFVarPatchVertices(refineTables, i, faceIndex, rIndex, levelFVarVertOffsets, fptrs.R[tIndex]);
+                    }
                 } else {
                     //  For the boundary and corner cases, the Hbr code makes some adjustments to the
                     //  rotations here from the way they were defined earlier.  That raises questions
@@ -928,14 +993,24 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
                         iptrs.B[tIndex][rIndex] += 12;
                         pptrs.B[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
+
+                        if (tables->_fvarPatchTables) {
+                            gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.B[tIndex][rIndex]);
+                        }
                     } else {
                         unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
 
                         level->gatherQuadRegularCornerPatchVertices(faceIndex, patchVerts, bIndex);
                         offsetAndPermuteIndices(patchVerts, 9, levelVertOffset, permuteCorner, iptrs.C[tIndex][rIndex]);
 
+                        bIndex = (bIndex+3)%4;
+
                         iptrs.C[tIndex][rIndex] += 9;
-                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, (bIndex+3)%4, pptrs.C[tIndex][rIndex]);
+                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.C[tIndex][rIndex]);
+
+                        if (tables->_fvarPatchTables) {
+                            gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.C[tIndex][rIndex]);
+                        }
                     }
                 }
             } else {
@@ -952,6 +1027,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     quad_G_C0_P += 4;
 
                     pptrs.G = computePatchParam(refineTables, i, faceIndex, 0, pptrs.G);
+
+                    if (tables->_fvarPatchTables) {
+                        gatherFVarPatchVertices(refineTables, i, faceIndex, 0, levelFVarVertOffsets, fptrs.G);
+                    }
                 } else {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
                     VtrIndexArray const faceVerts = level->getFaceVertices(faceIndex);
@@ -964,12 +1043,24 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     getQuadOffsets(*level, faceIndex, quad_G_C1_P);
                     quad_G_C1_P += 4;
 
-                    pptrs.GB = computePatchParam(refineTables, i, faceIndex, (patchTag._boundaryIndex+1)%4, pptrs.GB);
+                    int bIndex = (patchTag._boundaryIndex+1)%4;
+
+                    pptrs.GB = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.GB);
+
+                    if (tables->_fvarPatchTables) {
+                        gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.GB);
+                    }
                 }
             }
         }
         levelFaceOffset += level->getNumFaces();
         levelVertOffset += level->getNumVertices();
+        if (tables->_fvarPatchTables) {
+            int nchannels = refineTables.GetNumFVarChannels();
+            for (int channel=0; channel<nchannels; ++channel) {
+                levelFVarVertOffsets[channel] += refineTables.GetNumFVarValues(i, channel);
+            }
+        }
     }
 
     //

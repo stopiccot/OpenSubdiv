@@ -28,6 +28,7 @@
 #include "../version.h"
 
 #include "../far/patchParam.h"
+#include "../far/types.h"
 
 #include <cstdlib>
 #include <cassert>
@@ -130,10 +131,18 @@ public:
         /// type described
         static inline short GetNumControlVertices( Type t );
 
+        static inline short GetNumFVarControlVertices( Type t );
+
         /// \brief Returns the number of control vertices expected for a patch of the
         /// type described
         short GetNumControlVertices() const {
             return GetNumControlVertices( this->GetType() );
+        }
+
+        /// \brief Returns the number of control vertices expected for a patch of the
+        /// type described
+        short GetNumFVarControlVertices() const {
+            return GetNumFVarControlVertices( this->GetType() );
         }
 
         /// Returns a vector of all the legal patch descriptors
@@ -292,27 +301,6 @@ public:
 
     typedef std::vector<PatchArray> PatchArrayVector;
 
-    /// \brief Constructor
-    ///
-    /// @param patchArrays      Vector of descriptors and ranges for arrays of patches
-    ///
-    /// @param patches          Indices of the control vertices of the patches
-    ///
-    /// @param vertexValences   Vertex valance table
-    ///
-    /// @param quadOffsets      Quad offset table
-    ///
-    /// @param patchParams      Local patch parameterization
-    ///
-    /// @param maxValence       Highest vertex valence allowed in the mesh
-    ///
-    FarPatchTables(PatchArrayVector const & patchArrays,
-                   PTable const & patches,
-                   VertexValenceTable const * vertexValences,
-                   QuadOffsetTable const * quadOffsets,
-                   PatchParamTable const * patchParams,
-                   int maxValence);
-
     /// \brief Get the table of patch control vertices
     PTable const & GetPatchTable() const { return _patches; }
 
@@ -396,6 +384,70 @@ public:
     /// \brief Returns the total number of vertices in the mesh across across all depths
     int GetNumPtexFaces() const { return _numPtexFaces; }
 
+    /// \brief Face-varying patch vertex indices tables
+    ///
+    /// FarFVarPatchTables contain the topology for face-varying primvar data
+    /// channels. The patch ordering matches that of FarPatchTables PatchArrays.
+    ///
+    class FVarPatchTables {
+
+    public:
+
+        /// \brief Returns the number of face-varying primvar channels
+        int GetNumChannels() const {
+            return (int)_channels.size();
+        }
+
+        /// \brienf Returns the face-varying patches vertex indices
+        ///
+        /// @param channel  Then face-varying primvar channel index
+        ///
+        std::vector<FarIndex> const & GetPatchVertices(int channel) const {
+            return _channels[channel].patchVertIndices;
+        }
+
+    private:
+        friend class FarPatchTablesFactory;
+
+        struct Channel {
+            friend class FarPatchTablesFactory;
+
+            std::vector<FarIndex> patchVertIndices; // face-varying vertex indices
+        };
+
+        std::vector<Channel> _channels; // face-varying primvar channels
+    };
+
+    /// \brief Returns the face-varying patches
+    FVarPatchTables const * GetFVarPatchTables() const { return _fvarPatchTables; }
+
+    /// \brief Public constructor
+    ///
+    /// @param patchArrays       Vector of descriptors and ranges for arrays of patches
+    ///
+    /// @param patches           Indices of the control vertices of the patches
+    ///
+    /// @param vertexValences    Vertex valance table
+    ///
+    /// @param quadOffsets       Quad offset table
+    ///
+    /// @param fvarPatchTables   Indices of the face-varying control vertices of the patches
+    ///
+    /// @param patchParams       Local patch parameterization
+    ///
+    /// @param maxValence        Highest vertex valence allowed in the mesh
+    ///
+    FarPatchTables(PatchArrayVector const & patchArrays,
+                   PTable const & patches,
+                   VertexValenceTable const * vertexValences,
+                   QuadOffsetTable const * quadOffsets,
+                   PatchParamTable const * patchParams,
+                   FVarPatchTables const * fvarPatchTables,
+                   int maxValence);
+
+    /// \brief Destructor
+    ~FarPatchTables() { delete _fvarPatchTables; }
+
 private:
 
     friend class FarPatchTablesFactory;
@@ -404,18 +456,19 @@ private:
     inline PatchArray * findPatchArray( Descriptor desc );
 
     // Private constructor
-    FarPatchTables( int maxvalence ) : _maxValence(maxvalence) { }
+    FarPatchTables( int maxvalence ) : _fvarPatchTables(0), _maxValence(maxvalence) { }
 
+    PatchArrayVector     _patchArrays;        // Vector of descriptors for arrays of patches
 
-    PatchArrayVector    _patchArrays;        // Vector of descriptors for arrays of patches
+    PTable               _patches;            // Indices of the control vertices of the patches
 
-    PTable              _patches;            // Indices of the control vertices of the patches
+    VertexValenceTable   _vertexValenceTable; // vertex valence table (for Gregory patches)
 
-    VertexValenceTable  _vertexValenceTable; // vertex valence table (for Gregory patches)
+    QuadOffsetTable      _quadOffsetTable;    // quad offsets table (for Gregory patches)
 
-    QuadOffsetTable     _quadOffsetTable;    // quad offsets table (for Gregory patches)
+    PatchParamTable      _paramTable;
 
-    PatchParamTable     _paramTable;
+    FVarPatchTables const * _fvarPatchTables; // sparse face-varying patch table
 
     // highest vertex valence allowed in the mesh (used for Gregory
     // vertexValance & quadOffset tables)
@@ -461,7 +514,7 @@ class FarPatchTables::Descriptor::iterator {
 
     private:
         inline Descriptor const * getValue() const;
-        
+
         int _pos;
 };
 
@@ -490,18 +543,18 @@ FarPatchTables::Descriptor::iterator::operator ++ () {
     return *this;
 }
 
-inline FarPatchTables::Descriptor const * 
+inline FarPatchTables::Descriptor const *
 FarPatchTables::Descriptor::iterator::getValue() const {
 
     static Descriptor _nonpatch;
 
-    std::vector<Descriptor> const & descs = 
+    std::vector<Descriptor> const & descs =
         Descriptor::GetAllValidDescriptors();
-    
+
     if (_pos>=0 and _pos<(int)descs.size()) {
         return &descs[_pos];
     }
-    
+
     return &_nonpatch;
 }
 
@@ -568,9 +621,11 @@ FarPatchTables::FarPatchTables(PatchArrayVector const & patchArrays,
                                VertexValenceTable const * vertexValences,
                                QuadOffsetTable const * quadOffsets,
                                PatchParamTable const * patchParams,
+                               FVarPatchTables const * fvarPatchTables,
                                int maxValence) :
     _patchArrays(patchArrays),
     _patches(patches),
+    _fvarPatchTables(fvarPatchTables),
     _maxValence(maxValence),
     _numPtexFaces(0) {
 
@@ -614,6 +669,36 @@ FarPatchTables::Descriptor::GetNumControlVertices( FarPatchTables::Type type ) {
         case GREGORY_BOUNDARY  : return FarPatchTables::GetGregoryPatchRingsize();
         case BOUNDARY          : return FarPatchTables::GetBoundaryPatchRingsize();
         case CORNER            : return FarPatchTables::GetCornerPatchRingsize();
+        case TRIANGLES         : return 3;
+        case LINES             : return 2;
+        case POINTS            : return 1;
+        default : return -1;
+    }
+}
+
+// Returns the total number of control vertex indices in the tables
+inline int
+FarPatchTables::GetNumControlVertices() const {
+
+    int result=0;
+    for (int i=0; i<(int)_patchArrays.size(); ++i) {
+        result += _patchArrays[i].GetDescriptor().GetNumControlVertices() *
+                  _patchArrays[i].GetNumPatches();
+    }
+
+    return result;
+}
+
+// Returns the number of face-varying control vertices expected for a patch of this type
+inline short
+FarPatchTables::Descriptor::GetNumFVarControlVertices( FarPatchTables::Type type ) {
+    switch (type) {
+        case REGULAR           : // We only support bilinear interpolation for now,
+        case QUADS             : // so all these patches only carry 4 CVs.
+        case GREGORY           :
+        case GREGORY_BOUNDARY  :
+        case BOUNDARY          :
+        case CORNER            : return 4;
         case TRIANGLES         : return 3;
         case LINES             : return 2;
         case POINTS            : return 1;
@@ -695,19 +780,6 @@ inline int
 FarPatchTables::GetNumPatches() const {
     // there is one PatchParam record for each patch in the mesh
     return (int)GetPatchParamTable().size();
-}
-
-// Returns the total number of control vertex indices in the tables
-inline int
-FarPatchTables::GetNumControlVertices() const {
-
-    int result=0;
-    for (int i=0; i<(int)_patchArrays.size(); ++i) {
-        result += _patchArrays[i].GetDescriptor().GetNumControlVertices() *
-                  _patchArrays[i].GetNumPatches();
-    }
-
-    return result;
 }
 
 } // end namespace OPENSUBDIV_VERSION

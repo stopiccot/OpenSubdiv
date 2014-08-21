@@ -42,6 +42,7 @@ set(PUBLIC_HEADER_FILES
     refineTablesFactory.h
     stencilTablesFactory.h
     stencilTables.h
+    types.h
 )
 
 set(PRIVATE_HEADER_FILES )

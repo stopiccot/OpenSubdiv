@@ -51,10 +51,12 @@ public:
     struct Options {
 
         Options() : generateAllLevels(false),
-                    triangulateQuads(false) { }
+                    triangulateQuads(false),
+                    generateFVarTables(false) { }
 
         int generateAllLevels : 1,  ///< Include levels from 'firstLevel' to 'maxLevel' (Uniform mode only)
-            triangulateQuads  : 1;  ///< Triangulate 'QUADS' primitives (Uniform mode only)
+            triangulateQuads  : 1,  ///< Triangulate 'QUADS' primitives (Uniform mode only)
+            generateFVarTables : 1; ///< Generate face-varying patch tables
     };
 
     /// \brief Factory constructor for FarPatchTables
@@ -70,6 +72,7 @@ public:
 private:
 
     typedef FarPatchTables::Descriptor Descriptor;
+    typedef FarPatchTables::FVarPatchTables FVarPatchTables;
 
     static FarPatchTables * createUniform( FarRefineTables const & refineTables, Options options );
 
@@ -87,6 +90,9 @@ private:
 
     //  Methods for allocating and managing the patch table data arrays:
     static void allocateTables( FarPatchTables * tables, int nlevels );
+
+    static FVarPatchTables * allocateFVarTables( FarRefineTables const & refTables,
+                                                 FarPatchTables const & tables );
 
     static void pushPatchArray( FarPatchTables::Descriptor desc,
                                 FarPatchTables::PatchArrayVector & parray,
