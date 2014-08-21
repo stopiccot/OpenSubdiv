@@ -34,6 +34,7 @@
 #include "../vtr/refinement.h"
 #include "../vtr/fvarRefinement.h"
 #include "../vtr/maskInterfaces.h"
+#include "../far/types.h"
 
 #include <vector>
 #include <cassert>
@@ -44,16 +45,6 @@ namespace OPENSUBDIV_VERSION {
 
 template <class MESH> class FarRefineTablesFactory;
 class VtrSparseSelector;
-
-
-//
-//  Typedef's for indices we want at the Far level -- need to go elsewhere eventually...
-//
-typedef VtrIndex       FarIndex;
-typedef VtrLocalIndex  FarLocalIndex;
-
-typedef VtrIndexArray      FarIndexArray;
-typedef VtrLocalIndexArray FarLocalIndexArray;
 
 ///
 ///  \brief Stores topology data for a specified set of refinement options.
