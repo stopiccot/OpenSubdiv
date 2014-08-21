@@ -33,11 +33,13 @@
 #include "../far/stencilTables.h"
 #include "../far/stencilTablesFactory.h"
 
+#include "../osd/error.h"
 #include "../osd/vertex.h"
 #include "../osd/vertexDescriptor.h"
 
 #include <bitset>
 #include <cassert>
+#include <cstring>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -81,6 +83,8 @@ public:
     virtual VertexBufferBinding BindVertexBuffer() = 0;
 
     virtual VertexBufferBinding BindVaryingBuffer() = 0;
+
+    virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) = 0;
 
 protected:
 
@@ -197,6 +201,16 @@ public:
         return _drawContext;
     }
 
+    virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) {
+
+        FarPatchTables::FVarPatchTables const * fvarPatchTables =
+            _patchTables->GetFVarPatchTables();
+
+        if (_drawContext and fvarPatchTables) {
+            _drawContext->SetFVarDataTexture(*fvarPatchTables, fvarWidth, fvarData);
+        }
+    }
+
 private:
 
     void initializeComputeContext(int numVertexElements,
@@ -234,15 +248,15 @@ private:
 
         assert(_refTables and _vertexBuffer);
 
-        FarPatchTables const * patchTables =
-            FarPatchTablesFactory::Create(*_refTables);
+        FarPatchTablesFactory::Options options;
+        options.generateFVarTables = bits.test(MeshFVarData);
+
+        _patchTables = FarPatchTablesFactory::Create(*_refTables);
 
         _drawContext = DrawContext::Create(
-            patchTables, numElements, bits.test(MeshFVarData));
+            _patchTables, numElements, bits.test(MeshFVarData));
 
         _drawContext->UpdateVertexTexture(_vertexBuffer);
-
-        delete patchTables;
     }
 
     int initializeVertexBuffers(int numVertexElements,
@@ -265,6 +279,7 @@ private:
    }
 
     FarRefineTables * _refTables;
+    FarPatchTables * _patchTables;
     FarKernelBatchVector _kernelBatches;
 
     VertexBuffer * _vertexBuffer,

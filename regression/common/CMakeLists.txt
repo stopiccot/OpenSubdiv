@@ -42,3 +42,10 @@ add_library(regression_common_obj
         ${REGRESSION_COMMON_SOURCE_FILES}
         ${REGRESSION_COMMON_HEADER_FILES}
 )
+
+add_library(regression_vtr_utils_obj
+    OBJECT
+        vtr_utils.cpp
+        vtr_utils.h
+)
+

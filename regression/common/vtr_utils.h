@@ -114,6 +114,9 @@ GetSdcOptions(Shape const & shape) {
     return result;
 }
 
+//------------------------------------------------------------------------------
+
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
@@ -227,6 +230,11 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
 } // namespace OPENSUBDIV_VERSION
 } // namespace OpenSubdiv
 
+//------------------------------------------------------------------------------
+
+void
+InterpolateFVarData(OpenSubdiv::FarRefineTables & refTables,
+    Shape const & shape, std::vector<float> & fvarData);
 
 //------------------------------------------------------------------------------
 

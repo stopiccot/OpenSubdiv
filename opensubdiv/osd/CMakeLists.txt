@@ -36,10 +36,10 @@ set(CPU_SOURCE_FILES
     cpuSmoothNormalContext.cpp
     cpuSmoothNormalController.cpp
     cpuVertexBuffer.cpp
-    error.cpp
-    evalLimitContext.cpp
     drawContext.cpp
     drawRegistry.cpp
+    error.cpp
+    evalLimitContext.cpp
 )
 
 set(GPU_SOURCE_FILES )

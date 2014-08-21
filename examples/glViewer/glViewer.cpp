@@ -468,8 +468,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 
     g_positions.resize(g_orgPositions.size(),0.0f);
 
-    delete shape;
-
     delete g_mesh;
     g_mesh = NULL;
 
@@ -482,7 +480,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     OpenSubdiv::OsdMeshBitset bits;
     bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
     bits.set(OpenSubdiv::MeshInterleaveVarying, interleaveVarying);
-    bits.set(OpenSubdiv::MeshFVarData, 1);
+    bits.set(OpenSubdiv::MeshFVarData, g_displayStyle == kFaceVaryingColor);
 
     int numVertexElements = 3;
     int numVaryingElements =
@@ -601,6 +599,17 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     } else {
         printf("Unsupported kernel %s\n", getKernelName(kernel));
     }
+
+    if (g_displayStyle == kFaceVaryingColor and shape->HasUV()) {
+
+        std::vector<float> fvarData;
+
+        InterpolateFVarData(*refTables, *shape, fvarData);
+        
+        g_mesh->SetFVarDataChannel(shape->GetFVarWidth(), fvarData);
+    }
+    
+    delete shape;
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};

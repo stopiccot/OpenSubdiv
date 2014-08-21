@@ -216,6 +216,29 @@ public:
                                    OsdDrawContext::PatchArrayVector &osdPatchArrays,
                                    int maxValence, int numElements);
 
+
+    typedef std::vector<float> FVarData;
+
+    typedef FarPatchTables::FVarPatchTables FVarPatchTables;
+
+    /// Sets face-varying data buffer
+    ///
+    /// @param fvarData vector containing the face-varying data
+    ///
+    virtual void SetFVarDataTextureBuffer(FVarData const & fvarData)=0;
+
+    /// Sets face-varying data buffer
+    ///
+    /// @param fvarPatchTables  Face-varying patch tables
+    ///
+    /// @param fvarWidth        Total face-varying primvar data width in fvarData
+    ///
+    /// @param fvarData         Vector containing the face-varying data
+    ///
+    void SetFVarDataTexture(FVarPatchTables const & fvarPatchTables,
+                            int fvarWidth, FVarData const & fvarData);
+
+
 protected:
     // XXXX: move to private member
     PatchArrayVector _patchArrays;

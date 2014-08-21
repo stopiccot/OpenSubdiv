@@ -24,6 +24,8 @@
 
 #include "../osd/drawContext.h"
 
+#include <cstring>
+
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
@@ -61,6 +63,28 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
         }
     }
 }
+
+void
+OsdDrawContext::SetFVarDataTexture(FVarPatchTables const & fvarPatchTables,
+                                   int fvarWidth, FVarData const & fvarData) {
+
+    assert(fvarWidth and (not fvarData.empty()));
+
+    // OsdMesh only accesses channel 0
+    std::vector<FarIndex> const & indices = fvarPatchTables.GetPatchVertices(0); 
+
+    std::vector<float> buffer(indices.size() * fvarWidth);
+    float * dst = &buffer[0];
+
+    for (int fvert=0; fvert<(int)indices.size(); ++fvert, dst+=fvarWidth) {
+        int index = indices[fvert] * fvarWidth;
+
+        memcpy(dst, &fvarData[index], fvarWidth*sizeof(float));
+    }
+
+    this->SetFVarDataTextureBuffer(buffer);
+}
+
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

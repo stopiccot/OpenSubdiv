@@ -58,6 +58,7 @@ public:
             OsdMeshBitset bits) :
 
             _refTables(refTables),
+            _patchTables(0),
             _vertexBuffer(0),
             _varyingBuffer(0),
             _computeContext(0),
@@ -67,7 +68,7 @@ public:
 
         OsdGLMeshInterface::refineMesh(*_refTables, level, bits.test(MeshAdaptive));
 
-        int numElements = 
+        int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
 
         initializeComputeContext(numVertexElements, numVaryingElements);
@@ -94,6 +95,7 @@ public:
 
     virtual ~OsdMesh() {
         delete _refTables;
+        delete _patchTables;
         delete _vertexBuffer;
         delete _varyingBuffer;
         delete _computeContext;
@@ -154,6 +156,16 @@ public:
         return _refTables;
     }
 
+    virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) {
+
+        FarPatchTables::FVarPatchTables const * fvarPatchTables =
+            _patchTables->GetFVarPatchTables();
+
+        if (_drawContext and fvarPatchTables) {
+            _drawContext->SetFVarDataTexture(*fvarPatchTables, fvarWidth, fvarData);
+        }
+    }
+
 private:
 
     void initializeComputeContext(int numVertexElements,
@@ -190,16 +202,15 @@ private:
     void initializeDrawContext(int numElements, OsdMeshBitset bits) {
 
         assert(_refTables and _vertexBuffer);
+        
+        FarPatchTablesFactory::Options options;
+        options.generateFVarTables = bits.test(MeshFVarData);
 
-        FarPatchTables const * patchTables =
-            FarPatchTablesFactory::Create(*_refTables);
+        _patchTables = FarPatchTablesFactory::Create(*_refTables, options);
 
-        _drawContext = DrawContext::Create(
-            patchTables, numElements, bits.test(MeshFVarData));
+        _drawContext = DrawContext::Create(_patchTables, numElements);
 
         _drawContext->UpdateVertexTexture(_vertexBuffer);
-
-        delete patchTables;
     }
 
     int initializeVertexBuffers(int numVertexElements,
@@ -222,6 +233,7 @@ private:
    }
 
     FarRefineTables * _refTables;
+    FarPatchTables * _patchTables;
     FarKernelBatchVector _kernelBatches;
 
     VertexBuffer *_vertexBuffer;
@@ -266,7 +278,7 @@ public:
 
         OsdGLMeshInterface::refineMesh(*_refTables, level, bits.test(MeshAdaptive));
 
-        int numElements = 
+        int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
 
         initializeComputeContext(numVertexElements, numVaryingElements);
@@ -297,6 +309,7 @@ public:
 
     virtual ~OsdMesh() {
         delete _refTables;
+        delete _patchTables;
         delete _vertexBuffer;
         delete _varyingBuffer;
         delete _computeContext;
@@ -353,6 +366,16 @@ public:
         return _refTables;
     }
 
+    virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) {
+
+        FarPatchTables::FVarPatchTables const * fvarPatchTables =
+            _patchTables->GetFVarPatchTables();
+
+        if (_drawContext and fvarPatchTables) {
+            _drawContext->SetFVarDataTexture(*fvarPatchTables, fvarWidth, fvarData);
+        }
+    }
+
 private:
 
     void initializeComputeContext(int numVertexElements,
@@ -390,15 +413,14 @@ private:
 
         assert(_refTables and _vertexBuffer);
 
-        FarPatchTables const * patchTables =
-            FarPatchTablesFactory::Create(*_refTables);
+        FarPatchTablesFactory::Options options;
+        options.generateFVarTables = bits.test(MeshFVarData);
 
-        _drawContext = DrawContext::Create(
-            patchTables, numElements, bits.test(MeshFVarData));
+        _patchTables = FarPatchTablesFactory::Create(*_refTables);
+
+        _drawContext = DrawContext::Create(_patchTables, numElements);
 
         _drawContext->UpdateVertexTexture(_vertexBuffer);
-
-        delete patchTables;
     }
 
     int initializeVertexBuffers(int numVertexElements,
@@ -421,6 +443,7 @@ private:
    }
 
     FarRefineTables * _refTables;
+    FarPatchTables * _patchTables;
     FarKernelBatchVector _kernelBatches;
 
     VertexBuffer *_vertexBuffer;

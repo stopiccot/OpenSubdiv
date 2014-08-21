@@ -269,7 +269,7 @@ protected:
 
     TopologyBase(FarPatchTables const * patchTables) {
 
-        _drawContext = OsdGLDrawContext::Create(patchTables, 7, false);
+        _drawContext = OsdGLDrawContext::Create(patchTables, 7);
     }
 
     void updateVertexBufferStride(int stride) {

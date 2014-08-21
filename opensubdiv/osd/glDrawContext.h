@@ -61,10 +61,7 @@ public:
     ///
     /// @param numVertexElements    the number of vertex elements
     ///
-    /// @param requireFVarData      set to true to enable face-varying data to be
-    ///                             carried over from the Far data structures.
-    ///
-    static OsdGLDrawContext * Create(FarPatchTables const * patchTables, int numVertexElements, bool requireFVarData);
+    static OsdGLDrawContext * Create(FarPatchTables const * patchTables, int numVertexElements);
 
     /// Set vbo as a vertex texture (for gregory patch drawing)
     ///
@@ -112,6 +109,12 @@ public:
         return _fvarDataTextureBuffer;
     }
 
+    /// Sets face-varying data buffer
+    ///
+    /// @param fvarData vector containing the face-varying data
+    ///
+    virtual void SetFVarDataTextureBuffer(FVarData const & fvarData);
+
 protected:
     GLuint _patchIndexBuffer;
 
@@ -125,7 +128,7 @@ protected:
     OsdGLDrawContext();
 
     // allocate buffers from patchTables
-    bool create(FarPatchTables const & patchTables, int numElements, bool requireFVarData);
+    bool create(FarPatchTables const & patchTables, int numElements);
 
     void updateVertexTexture(GLuint vbo);
 };

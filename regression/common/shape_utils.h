@@ -64,8 +64,10 @@ struct Shape {
     int GetNumVertices() const { return (int)verts.size()/3; }
 
     int GetNumFaces() const { return (int)nvertsPerFace.size(); }
-
+    
     bool HasUV() const { return not (uvs.empty() or faceuvs.empty()); }
+    
+    int GetFVarWidth() { return HasUV() ? 2 : 0; }
 
     std::vector<float>  verts;
     std::vector<float>  uvs;
