@@ -352,8 +352,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
 
     g_positions.resize(g_orgPositions.size(),0.0f);
 
-    delete shape;
-
     g_scheme = scheme;
 
     // Adaptive refinement currently supported only for catmull-clark scheme
@@ -380,6 +378,14 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
             numVertexElements,
             numVaryingElements,
             level, bits);
+
+    std::vector<float> fvarData;
+
+    InterpolateFVarData(*refTables, *shape, fvarData);
+
+    g_mesh->SetFVarDataChannel(shape->GetFVarWidth(), fvarData);
+
+    delete shape;
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -1272,7 +1278,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    static const char windowTitle[] = "OpenSubdiv UV Viewer";
+    static const char windowTitle[] = "OpenSubdiv glFVarViewer " OPENSUBDIV_VERSION_STRING;
 
 #define CORE_PROFILE
 #ifdef CORE_PROFILE
