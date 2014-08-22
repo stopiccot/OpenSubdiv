@@ -1107,7 +1107,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     pptrs.GB = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.GB);
 
                     if (tables->_fvarPatchTables) {
-                        gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.GB);
+                        gatherFVarPatchVertices(refineTables, i, faceIndex, 0, levelFVarVertOffsets, fptrs.GB);
                     }
                 }
             }
