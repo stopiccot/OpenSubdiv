@@ -34,8 +34,8 @@ OsdDrawContext::~OsdDrawContext() {}
 void
 OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPatchArrays,
                                    OsdDrawContext::PatchArrayVector &osdPatchArrays,
-                                   int maxValence, int numElements)
-{
+                                   int maxValence, int numElements) {
+
     // create patch arrays for drawing (while duplicating subpatches for transition patch arrays)
     static int subPatchCounts[] = { 1, 3, 4, 4, 4, 2 }; // number of subpatches for patterns
 
@@ -65,18 +65,24 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
 }
 
 void
-OsdDrawContext::SetFVarDataTexture(FVarPatchTables const & fvarPatchTables,
+OsdDrawContext::SetFVarDataTexture(FarPatchTables const & patchTables,
                                    int fvarWidth, FVarData const & fvarData) {
 
     assert(fvarWidth and (not fvarData.empty()));
 
+    FarPatchTables::FVarPatchTables const * fvarPatchTables =
+        patchTables.GetFVarPatchTables();
+
+    assert(fvarPatchTables);
+
     // OsdMesh only accesses channel 0
-    std::vector<FarIndex> const & indices = fvarPatchTables.GetPatchVertices(0); 
+    std::vector<unsigned int> const & indices = fvarPatchTables->GetPatchVertices(0);
 
     std::vector<float> buffer(indices.size() * fvarWidth);
     float * dst = &buffer[0];
 
     for (int fvert=0; fvert<(int)indices.size(); ++fvert, dst+=fvarWidth) {
+
         int index = indices[fvert] * fvarWidth;
 
         memcpy(dst, &fvarData[index], fvarWidth*sizeof(float));
@@ -85,8 +91,5 @@ OsdDrawContext::SetFVarDataTexture(FVarPatchTables const & fvarPatchTables,
     this->SetFVarDataTextureBuffer(buffer);
 }
 
-
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv
-
-

@@ -92,7 +92,8 @@ private:
     static void allocateTables( FarPatchTables * tables, int nlevels );
 
     static FVarPatchTables * allocateFVarTables( FarRefineTables const & refTables,
-                                                 FarPatchTables const & tables );
+                                                 FarPatchTables const & tables,
+                                                 Options options );
 
     static void pushPatchArray( FarPatchTables::Descriptor desc,
                                 FarPatchTables::PatchArrayVector & parray,

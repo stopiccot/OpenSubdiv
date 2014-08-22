@@ -314,6 +314,16 @@ public:
         return _patchArrays;
     }
 
+    /// brief Returns a pointer to the PatchArry of uniformly subdivided faces at 'level'
+    ///
+    /// @param level  the level of subdivision of the faces (returns the highest
+    ///               level by default)
+    ///
+    /// @return       a pointer to the PatchArray or NULL if the mesh is not uniformly
+    ///               subdivided or the level cannot be found.
+    ///
+    PatchArray const * GetPatchArray(int level=0) const;
+
     /// \brief Returns a pointer to the vertex indices of uniformly subdivided faces
     ///
     /// In uniform mode the FarPatchTablesFactory can be set to generate either a
@@ -402,7 +412,7 @@ public:
         ///
         /// @param channel  Then face-varying primvar channel index
         ///
-        std::vector<FarIndex> const & GetPatchVertices(int channel) const {
+        std::vector<unsigned int> const & GetPatchVertices(int channel) const {
             return _channels[channel].patchVertIndices;
         }
 
@@ -412,7 +422,7 @@ public:
         struct Channel {
             friend class FarPatchTablesFactory;
 
-            std::vector<FarIndex> patchVertIndices; // face-varying vertex indices
+            std::vector<unsigned int> patchVertIndices; // face-varying vertex indices
         };
 
         std::vector<Channel> _channels; // face-varying primvar channels
@@ -706,9 +716,9 @@ FarPatchTables::Descriptor::GetNumFVarControlVertices( FarPatchTables::Type type
     }
 }
 
-// Returns a pointer to the vertex indices of uniformly subdivided faces
-inline unsigned int const *
-FarPatchTables::GetFaceVertices(int level) const {
+// Returns a pointer to the PatchArry of uniformly subdivided faces at 'level'
+inline FarPatchTables::PatchArray const *
+FarPatchTables::GetPatchArray(int level) const {
 
     if (IsFeatureAdaptive())
         return NULL;
@@ -719,11 +729,23 @@ FarPatchTables::GetFaceVertices(int level) const {
         return NULL;
 
     if (level < 1) {
-        return &GetPatchTable()[ parrays.rbegin()->GetVertIndex() ];
+        return &(*parrays.rbegin());
     } else if ((level-1) < (int)parrays.size() ) {
-        return &GetPatchTable()[ parrays[level-1].GetVertIndex() ];
+        return &parrays[level-1];
     }
 
+    return NULL;
+}
+
+// Returns a pointer to the vertex indices of uniformly subdivided faces
+inline unsigned int const *
+FarPatchTables::GetFaceVertices(int level) const {
+
+    PatchArray const * parray = GetPatchArray(level);
+
+    if (parray) {
+        return &GetPatchTable()[ parray->GetVertIndex() ];
+    }
     return NULL;
 }
 
@@ -731,20 +753,11 @@ FarPatchTables::GetFaceVertices(int level) const {
 inline int
 FarPatchTables::GetNumFaces(int level) const {
 
-    if (IsFeatureAdaptive())
-        return -1;
+    PatchArray const * parray = GetPatchArray(level);
 
-    PatchArrayVector const & parrays = GetPatchArrayVector();
-
-    if (parrays.empty())
-        return -1;
-
-    if (level < 1) {
-        return parrays.rbegin()->GetNumPatches();
-    } else if ( (level-1) < (int)parrays.size() ) {
-        return parrays[level-1].GetNumPatches();
+    if (parray) {
+        return parray->GetNumPatches();
     }
-
     return -1;
 }
 

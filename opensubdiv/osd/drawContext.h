@@ -219,14 +219,6 @@ public:
 
     typedef std::vector<float> FVarData;
 
-    typedef FarPatchTables::FVarPatchTables FVarPatchTables;
-
-    /// Sets face-varying data buffer
-    ///
-    /// @param fvarData vector containing the face-varying data
-    ///
-    virtual void SetFVarDataTextureBuffer(FVarData const & fvarData)=0;
-
     /// Sets face-varying data buffer
     ///
     /// @param fvarPatchTables  Face-varying patch tables
@@ -235,11 +227,14 @@ public:
     ///
     /// @param fvarData         Vector containing the face-varying data
     ///
-    void SetFVarDataTexture(FVarPatchTables const & fvarPatchTables,
+    void SetFVarDataTexture(FarPatchTables const & patchTables,
                             int fvarWidth, FVarData const & fvarData);
 
-
 protected:
+
+    // Sets face-varying data buffer
+    virtual void SetFVarDataTextureBuffer(FVarData const & fvarData)=0;
+
     // XXXX: move to private member
     PatchArrayVector _patchArrays;
 

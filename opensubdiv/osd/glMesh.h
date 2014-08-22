@@ -157,12 +157,8 @@ public:
     }
 
     virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) {
-
-        FarPatchTables::FVarPatchTables const * fvarPatchTables =
-            _patchTables->GetFVarPatchTables();
-
-        if (_drawContext and fvarPatchTables) {
-            _drawContext->SetFVarDataTexture(*fvarPatchTables, fvarWidth, fvarData);
+        if (_patchTables and _drawContext and fvarWidth and (not fvarData.empty())) {
+            _drawContext->SetFVarDataTexture(*_patchTables, fvarWidth, fvarData);
         }
     }
 
@@ -367,12 +363,8 @@ public:
     }
 
     virtual void SetFVarDataChannel(int fvarWidth, std::vector<float> const & fvarData) {
-
-        FarPatchTables::FVarPatchTables const * fvarPatchTables =
-            _patchTables->GetFVarPatchTables();
-
-        if (_drawContext and fvarPatchTables) {
-            _drawContext->SetFVarDataTexture(*fvarPatchTables, fvarWidth, fvarData);
+        if (_patchTables and _drawContext and fvarWidth and (not fvarData.empty())) {
+            _drawContext->SetFVarDataTexture(*_patchTables, fvarWidth, fvarData);
         }
     }
 

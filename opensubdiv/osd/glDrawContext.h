@@ -109,13 +109,11 @@ public:
         return _fvarDataTextureBuffer;
     }
 
-    /// Sets face-varying data buffer
-    ///
-    /// @param fvarData vector containing the face-varying data
-    ///
+protected:
+
+    // Sets face-varying data buffer
     virtual void SetFVarDataTextureBuffer(FVarData const & fvarData);
 
-protected:
     GLuint _patchIndexBuffer;
 
     GLuint _patchParamTextureBuffer;
