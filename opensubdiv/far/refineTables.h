@@ -398,11 +398,9 @@ protected:
 
     int                   getNumLevels() const { return (int)_levels.size(); }
     VtrLevel            & getBaseLevel() { return _levels.front(); }
-public:
     VtrLevel            & getLevel(int l) { return _levels[l]; }
     VtrLevel const      & getLevel(int l) const { return _levels[l]; }
     VtrRefinement const & getRefinement(int l) const { return _refinements[l]; }
-protected:
 
     int getNumBaseFaces() const    { return GetNumFaces(0); }
     int getNumBaseEdges() const    { return GetNumEdges(0); }
