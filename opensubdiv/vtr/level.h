@@ -28,6 +28,7 @@
 
 #include "../sdc/type.h"
 #include "../sdc/crease.h"
+#include "../sdc/options.h"
 #include "../vtr/types.h"
 
 #include <algorithm>
@@ -268,7 +269,7 @@ protected:
     VtrSharpness& getVertexSharpness(VtrIndex vertIndex);
 
     //  Create, destroy and populate face-varying channels:
-    int  createFVarChannel(int fvarValueCount);
+    int  createFVarChannel(int fvarValueCount, SdcOptions const& options);
     void destroyFVarChannel(int channel = 0);
 
     int getNumFVarChannels() const { return (int) _fvarChannels.size(); }

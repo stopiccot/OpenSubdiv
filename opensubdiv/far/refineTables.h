@@ -398,9 +398,11 @@ protected:
 
     int                   getNumLevels() const { return (int)_levels.size(); }
     VtrLevel            & getBaseLevel() { return _levels.front(); }
+public:
     VtrLevel            & getLevel(int l) { return _levels[l]; }
     VtrLevel const      & getLevel(int l) const { return _levels[l]; }
     VtrRefinement const & getRefinement(int l) const { return _refinements[l]; }
+protected:
 
     int getNumBaseFaces() const    { return GetNumFaces(0); }
     int getNumBaseEdges() const    { return GetNumEdges(0); }
@@ -433,7 +435,12 @@ protected:
     float& baseVertexSharpness(Index v) { return _levels[0].getVertexSharpness(v); }
 
     //  Face-varying modifiers for constructing face-varying channels:
-    int  createFVarChannel(int numValues) { return _levels[0].createFVarChannel(numValues); }
+    int createFVarChannel(int numValues) {
+        return _levels[0].createFVarChannel(numValues, _subdivOptions);
+    }
+    int createFVarChannel(int numValues, SdcOptions const& options) {
+        return _levels[0].createFVarChannel(numValues, options);
+    }
     void completeFVarChannelTopology(int channel = 0) { _levels[0].completeFVarChannelTopology(channel); }
 
     IndexArray getBaseFVarFaceValues(Index face, int channel = 0) { return _levels[0].getFVarFaceValues(face, channel); }
@@ -868,6 +875,25 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
     const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
     const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
 
+    //
+    //  Allocate and intialize (if linearly interpolated) interpolation weights for
+    //  the edge mask:
+    //
+    float   eVertWeights[2],
+          * eFaceWeights = (float *)alloca(parent.getMaxEdgeFaces()*sizeof(float));
+
+    VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
+
+    bool isLinearFVar = parentFVar._isLinear;
+    if (isLinearFVar) {
+        eMask.SetNumVertexWeights(2);
+        eMask.SetNumEdgeWeights(0);
+        eMask.SetNumFaceWeights(0);
+
+        eVertWeights[0] = 0.5f;
+        eVertWeights[1] = 0.5f;
+    }
+
     VtrEdgeInterface eHood(parent);
 
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
@@ -879,24 +905,16 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
         bool fvarEdgeVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
         if (fvarEdgeVertMatchesVertex) {
             //
-            //  Declare and compute mask weights for this vertex relative to its parent edge:
+            //  If smoothly interpolated, compute new weights for the edge mask:
             //
-            //  (We really need to encapsulate this somewhere else for use here and in the
-            //  general case)
-            //
-            VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
+            if (!isLinearFVar) {
+                eHood.SetIndex(edge);
 
-            float eVertWeights[2];
-            float eFaceWeights[eFaces.size()];
+                SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
+                SdcRule cRule = child.getVertexRule(cVert);
 
-            VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
-
-            eHood.SetIndex(edge);
-
-            SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-            SdcRule cRule = child.getVertexRule(cVert);
-
-            scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
+                scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
+            }
 
             //  Apply the weights to the parent edges's vertices and (if applicable) to
             //  the child vertices of its incident faces:
@@ -937,6 +955,8 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
             vdst.AddWithWeight(src[eVertValues[1]], eVertWeights[1]);
 
             if (eMask.GetNumFaceWeights() > 0) {
+
+                VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
 
                 for (int i = 0; i < eFaces.size(); ++i) {
 
@@ -986,6 +1006,10 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
     const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
     const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
 
+    bool isLinearFVar = parentFVar._isLinear;
+
+    float * weightBuffer = (float *)alloca(2*parent.getMaxValence()*sizeof(float));
+
     VtrVertexInterface vHood(parent, child);
 
     for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
@@ -995,6 +1019,17 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
             continue;
 
         bool fvarVertVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
+        if (isLinearFVar && fvarVertVertMatchesVertex) {
+            VtrIndex pVertValue = parentFVar.getVertexValue(vert);
+            VtrIndex cVertValue = cVert;
+
+            U & vdst = dst[cVertValue];
+
+            vdst.Clear();
+            vdst.AddWithWeight(src[pVertValue], 1.0f);
+            continue;
+        }
+
         if (fvarVertVertMatchesVertex) {
             //
             //  Declare and compute mask weights for this vertex relative to its parent edge:
@@ -1003,11 +1038,10 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
             //  general case)
             //
             VtrIndexArray const vEdges = parent.getVertexEdges(vert);
-            VtrIndexArray const vFaces = parent.getVertexFaces(vert);
 
-            float  vVertWeight;
-            float  vEdgeWeights[2 * vEdges.size()];
-            float* vFaceWeights = vEdgeWeights + vEdges.size();
+            float   vVertWeight;
+            float * vEdgeWeights = weightBuffer;
+            float * vFaceWeights = vEdgeWeights + vEdges.size();
 
             VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
 
@@ -1068,6 +1102,8 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
 
             }
             if (vMask.GetNumFaceWeights() > 0) {
+
+                VtrIndexArray const vFaces = parent.getVertexFaces(vert);
 
                 for (int i = 0; i < vFaces.size(); ++i) {
 

@@ -73,6 +73,12 @@ void
 VtrFVarRefinement::applyRefinement()
 {
     //
+    //  Transfer basic properties from the parent to child level:
+    //
+    _child->_options  = _parent->_options;
+    _child->_isLinear = _parent->_isLinear;
+
+    //
     //  It's difficult to know immediately how many child values arise from the
     //  refinement -- particularly when sparse, so we get a close upper bound,
     //  resize for that number and trim when finished:

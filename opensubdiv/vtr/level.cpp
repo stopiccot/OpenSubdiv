@@ -1261,10 +1261,11 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
 //  In development -- methods for accessing face-varying data channels...
 //
 int
-VtrLevel::createFVarChannel(int fvarValueCount)
+VtrLevel::createFVarChannel(int fvarValueCount, SdcOptions const& fvarOptions)
 {
     VtrFVarLevel* fvarLevel = new VtrFVarLevel(*this);
 
+    fvarLevel->setOptions(fvarOptions);
     fvarLevel->resizeValues(fvarValueCount);
     fvarLevel->resizeComponents();
 

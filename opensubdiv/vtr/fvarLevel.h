@@ -28,6 +28,7 @@
 
 #include "../sdc/type.h"
 #include "../sdc/crease.h"
+#include "../sdc/options.h"
 #include "../vtr/types.h"
 #include "../vtr/level.h"
 
@@ -171,6 +172,7 @@ public:
     VtrIndexArray getFaceValues(VtrIndex fIndex);
     SiblingArray  getVertexFaceSiblings(VtrIndex vIndex);
 
+    void setOptions(SdcOptions const& options);
     void resizeValues(int numValues);
     void resizeComponents();
 
@@ -196,9 +198,14 @@ public:
     //  be reduced to two, so some revision to FVarBoundaryInterpolation may also
     //  be considered.
     //
-    BoundaryInterpolation _boundaryInterp;
-    bool                  _cornerPropagate;
-    int                   _valueCount;
+    //  Options are stored locally here and they may vary between channels.  By
+    //  default the options member is initialized from whatever contains it --
+    //  which may apply a common set to all channels or vary them individually.
+    //
+    SdcOptions _options;
+    bool       _isLinear;
+
+    int _valueCount;
 
     //
     //  Members that distinguish the face-varying "topology" from the Level to

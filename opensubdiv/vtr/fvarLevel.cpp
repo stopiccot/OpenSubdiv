@@ -48,7 +48,7 @@ namespace OPENSUBDIV_VERSION {
 //  Simple (for now) constructor and destructor:
 //
 VtrFVarLevel::VtrFVarLevel(VtrLevel const& level) :
-    _level(level), _valueCount(0) {
+    _level(level), _isLinear(false), _valueCount(0) {
 }
 
 VtrFVarLevel::~VtrFVarLevel()
@@ -56,8 +56,13 @@ VtrFVarLevel::~VtrFVarLevel()
 }
 
 //
-//  Sizing methods to allocate space:
+//  Initialization and sizing methods to allocate space:
 //
+void
+VtrFVarLevel::setOptions(SdcOptions const& options)
+{
+    _options = options;
+}
 void
 VtrFVarLevel::resizeValues(int valueCount)
 {
@@ -162,10 +167,10 @@ VtrFVarLevel::completeTopologyFromFaceValues()
     //  Not sure what the precedence is here, particuarly "propagate corner" vs the choice
     //  of "fvar boundary interpolation" -- will need to check with Hbr.
     //
-    SdcOptions options;
+    _isLinear = (_options.GetFVarBoundaryInterpolation() == SdcOptions::FVAR_BOUNDARY_BILINEAR);
 
-    bool geomCornersAreSharp = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
-    bool fvarCornersAreSharp = (options.GetFVarBoundaryInterpolation() != SdcOptions::FVAR_BOUNDARY_EDGE_ONLY);
+    bool geomCornersAreSharp = (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
+    bool fvarCornersAreSharp = (_options.GetFVarBoundaryInterpolation() != SdcOptions::FVAR_BOUNDARY_EDGE_ONLY);
     bool fvarPropagateCorner = false;
 
     fvarCornersAreSharp = fvarPropagateCorner ? geomCornersAreSharp : fvarCornersAreSharp;
