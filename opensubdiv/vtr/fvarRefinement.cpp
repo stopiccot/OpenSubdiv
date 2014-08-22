@@ -177,12 +177,18 @@ VtrFVarRefinement::trimAndFinalizeChildValues()
 inline int
 VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEdge, int siblingOffset)
 {
+    //  If we have a boundary edge with a mismatched end vertex, we only have one
+    //  value and such cases were already initialized on construction, so return:
+    //
     VtrIndexArray const pEdgeFaces = _refinement._parent->getEdgeFaces(pEdge);
-    VtrIndexArray const cVertFaces = _refinement._child->getVertexFaces(cVert);
+
+    if (pEdgeFaces.size() == 1) return 0;
     assert(pEdgeFaces.size() == 2);
 
     //  Determine the number of sibling values for the child vertex:
     //
+    VtrIndexArray const cVertFaces = _refinement._child->getVertexFaces(cVert);
+
     int cSiblingCount = 0;
     if (cVertFaces.size() > 2) {
         cSiblingCount = 1;
