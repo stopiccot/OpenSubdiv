@@ -43,19 +43,41 @@ InterpolateFVarData(OpenSubdiv::FarRefineTables & refTables,
     Shape const & shape, std::vector<float> & fvarData) {
 
     int channel = 0,    // shapes only have 1 UV channel
-        fvarWidth = 2,
-        dstSize = refTables.GetNumFVarValuesTotal(channel);
+        fvarWidth = 2;
 
-    fvarData.resize(dstSize * fvarWidth);
+    int numValuesTotal = refTables.GetNumFVarValuesTotal(channel),
+            numValues0 = refTables.GetNumFVarValues(0, channel);
 
-    if (shape.uvs.empty()) {
+    if (shape.uvs.empty() or numValuesTotal<=0) {
         return;
     }
 
-    std::copy(shape.uvs.begin(), shape.uvs.end(), std::inserter(fvarData, fvarData.begin()));
+    if (refTables.IsUniform()) {
 
-    FVarVertex * src = reinterpret_cast<FVarVertex *>(&fvarData[0]),
-               * dst = src + refTables.GetNumFVarValues(0,channel);
+        std::vector<FVarVertex> buffer(numValuesTotal);
 
-    refTables.InterpolateFaceVarying(src, dst, channel);
+        int maxlevel = refTables.GetMaxLevel(),
+            numValuesM = refTables.GetNumFVarValues(maxlevel, channel);
+
+        memcpy(&buffer[0], &shape.uvs[0], shape.uvs.size()*sizeof(float));
+
+        refTables.InterpolateFaceVarying(
+            &buffer[0], &buffer[numValues0], channel);
+
+        // we only keep the highest level of refinement !
+        fvarData.resize(numValuesM * fvarWidth);
+        memcpy(&fvarData[0],
+            &buffer[numValuesTotal-numValuesM], numValuesM*sizeof(FVarVertex));
+
+    } else {
+
+        fvarData.resize(numValuesTotal * fvarWidth);
+
+        FVarVertex * src = reinterpret_cast<FVarVertex *>(&fvarData[0]),
+                   * dst = src + numValues0;
+
+        memcpy(src, &shape.uvs[0], shape.uvs.size()*sizeof(float));
+
+        refTables.InterpolateFaceVarying(src, dst, channel);
+    }
 }
