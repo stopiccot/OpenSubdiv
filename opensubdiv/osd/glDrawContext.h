@@ -109,10 +109,20 @@ public:
         return _fvarDataTextureBuffer;
     }
 
-protected:
+    /// Sets face-varying data buffer
+    ///
+    /// @param fvarPatchTables  Face-varying patch tables
+    ///
+    /// @param fvarWidth        Total face-varying primvar data width in fvarData
+    ///
+    /// @param fvarData         Vector containing the face-varying data
+    ///
+    /// @return                 True if the operation was successful
+    ///
+    bool SetFVarDataTexture(FarPatchTables const & patchTables,
+                            int fvarWidth, FVarData const & fvarData);
 
-    // Sets face-varying data buffer
-    virtual void SetFVarDataTextureBuffer(FVarData const & fvarData);
+protected:
 
     GLuint _patchIndexBuffer;
 

@@ -55,6 +55,7 @@ public:
             ID3D11DeviceContext *d3d11DeviceContext) :
 
             _refTables(refTables),
+            _patchTables(0),
             _vertexBuffer(0),
             _varyingBuffer(0),
             _computeContext(0),
@@ -93,6 +94,7 @@ public:
 
     virtual ~OsdMesh() {
         delete _refTables;
+        delete _patchTables;
         delete _vertexBuffer;
         delete _varyingBuffer;
         delete _computeContext;
@@ -143,6 +145,14 @@ public:
         return _refTables;
     }
 
+    virtual void SetFVarDataChannel(int fvarWidth,
+                                    std::vector<float> const & fvarData) {
+
+        if (_patchTables and _drawContext and fvarWidth and (not fvarData.empty())) {
+            _drawContext->SetFVarDataTexture(*_patchTables,
+                _d3d11DeviceContext, fvarWidth, fvarData);
+        }
+    }
 
 private:
 
@@ -181,15 +191,15 @@ private:
 
         assert(_refTables and _vertexBuffer);
 
-        FarPatchTables const * patchTables =
-            FarPatchTablesFactory::Create(*_refTables);
+        FarPatchTablesFactory::Options options;
+        options.generateFVarTables = bits.test(MeshFVarData);
+
+        _patchTables = FarPatchTablesFactory::Create(*_refTables, options);
 
         _drawContext = DrawContext::Create(
-            patchTables, _d3d11DeviceContext, numElements, bits.test(MeshFVarData));
+            _patchTables, _d3d11DeviceContext, numElements);
 
         _drawContext->UpdateVertexTexture(_vertexBuffer, _d3d11DeviceContext);
-
-        delete patchTables;
     }
 
     int initializeVertexBuffers(int numVertexElements,
@@ -217,6 +227,7 @@ private:
     }
 
     FarRefineTables * _refTables;
+    FarPatchTables * _patchTables;
     FarKernelBatchVector _kernelBatches;
 
     VertexBuffer *_vertexBuffer;
@@ -247,6 +258,7 @@ public:
             ID3D11DeviceContext *d3d11DeviceContext) :
 
             _refTables(refTables),
+            _patchTables(0),
             _vertexBuffer(0),
             _varyingBuffer(0),
             _computeContext(0),
@@ -285,6 +297,7 @@ public:
 
     virtual ~OsdMesh() {
         delete _refTables;
+        delete _patchTables;
         delete _vertexBuffer;
         delete _varyingBuffer;
         delete _computeContext;
@@ -328,9 +341,17 @@ public:
         return _varyingBuffer;
     }
 
-
     virtual FarRefineTables const * GetRefineTables() const {
         return _refTables;
+    }
+
+    virtual void SetFVarDataChannel(int fvarWidth,
+                                    std::vector<float> const & fvarData) {
+
+        if (_patchTables and _drawContext and fvarWidth and (not fvarData.empty())) {
+            _drawContext->SetFVarDataTexture(*_patchTables,
+                _d3d11DeviceContext, fvarWidth, fvarData);
+        }
     }
 
 private:
@@ -372,15 +393,15 @@ private:
 
         assert(_refTables and _vertexBuffer);
 
-        FarPatchTables const * patchTables =
-            FarPatchTablesFactory::Create(*_refTables);
+        FarPatchTablesFactory::Options options;
+        options.generateFVarTables = bits.test(MeshFVarData);
+
+        _patchTables = FarPatchTablesFactory::Create(*_refTables, options);
 
         _drawContext = DrawContext::Create(
-            patchTables, _d3d11DeviceContext, numElements, bits.test(MeshFVarData));
+            _patchTables, _d3d11DeviceContext, numElements);
 
         _drawContext->UpdateVertexTexture(_vertexBuffer, _d3d11DeviceContext);
-
-        delete patchTables;
     }
 
     int initializeVertexBuffers(int numVertexElements,
@@ -407,6 +428,7 @@ private:
     }
 
     FarRefineTables * _refTables;
+    FarPatchTables * _patchTables;
     FarKernelBatchVector _kernelBatches;
 
     VertexBuffer *_vertexBuffer;

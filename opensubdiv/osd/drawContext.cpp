@@ -65,30 +65,28 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
 }
 
 void
-OsdDrawContext::SetFVarDataTexture(FarPatchTables const & patchTables,
-                                   int fvarWidth, FVarData const & fvarData) {
+OsdDrawContext::packFVarData(FarPatchTables const & patchTables,
+                             int fvarWidth, FVarData const & src, FVarData & dst) {
 
-    assert(fvarWidth and (not fvarData.empty()));
+    assert(fvarWidth and (not src.empty()));
 
     FarPatchTables::FVarPatchTables const * fvarPatchTables =
         patchTables.GetFVarPatchTables();
-
     assert(fvarPatchTables);
 
     // OsdMesh only accesses channel 0
     std::vector<unsigned int> const & indices = fvarPatchTables->GetPatchVertices(0);
 
-    std::vector<float> buffer(indices.size() * fvarWidth);
-    float * dst = &buffer[0];
+    dst.resize(indices.size() * fvarWidth);
+    float * ptr = &dst[0];
 
-    for (int fvert=0; fvert<(int)indices.size(); ++fvert, dst+=fvarWidth) {
+    for (int fvert=0; fvert<(int)indices.size(); ++fvert, ptr+=fvarWidth) {
 
         int index = indices[fvert] * fvarWidth;
+        assert(index<(int)dst.size());
 
-        memcpy(dst, &fvarData[index], fvarWidth*sizeof(float));
+        memcpy(ptr, &src[index], fvarWidth*sizeof(float));
     }
-
-    this->SetFVarDataTextureBuffer(buffer);
 }
 
 } // end namespace OPENSUBDIV_VERSION

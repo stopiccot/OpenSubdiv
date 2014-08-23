@@ -61,7 +61,7 @@ OsdGLDrawContext::SupportsAdaptiveTessellation()
     return false;
 }
 
-template <typename T> static GLuint 
+template <typename T> static GLuint
 createTextureBuffer(T const &data, GLint format, int offset=0)
 {
     GLuint buffer = 0, texture = 0;
@@ -99,9 +99,9 @@ OsdGLDrawContext *
 OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElements) {
 
     if (patchTables) {
-        
+
         OsdGLDrawContext * result = new OsdGLDrawContext();
-        
+
         if (result->create(*patchTables, numVertexElements)) {
             return result;
         } else {
@@ -115,7 +115,7 @@ bool
 OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElements) {
 
     _isAdaptive = patchTables.IsFeatureAdaptive();
-    
+
     // Process PTable
     FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
 
@@ -134,7 +134,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
                      ptables.size() * sizeof(unsigned int), &ptables[0], GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
-    
+
     OsdDrawContext::ConvertPatchArrays(patchTables.GetPatchArrayVector(),
         _patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
@@ -174,11 +174,21 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
     return true;
 }
 
-void 
-OsdGLDrawContext::SetFVarDataTextureBuffer(FVarData const & fvarData) {
+bool
+OsdGLDrawContext::SetFVarDataTexture(
+    FarPatchTables const & patchTables, int fvarWidth, FVarData const & fvarData) {
 
-    if (not fvarData.empty())
-        _fvarDataTextureBuffer = createTextureBuffer(fvarData, GL_R32F);
+    if (not fvarData.empty()) {
+
+        FVarData fvarDataTable;
+
+        packFVarData(patchTables, fvarWidth, fvarData, fvarDataTable);
+
+        _fvarDataTextureBuffer = createTextureBuffer(fvarDataTable, GL_R32F);
+
+        return true;
+    }
+    return false;
 }
 
 void
