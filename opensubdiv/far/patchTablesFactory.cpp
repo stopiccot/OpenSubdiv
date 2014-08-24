@@ -609,7 +609,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     //
     unsigned int   * iptr = &tables->_patches[0];
     FarPatchParam  * pptr = &tables->_paramTable[0];
-    unsigned int  ** fptr;
+    unsigned int  ** fptr=0;
 
     if (tables->_fvarPatchTables) {
         int nchannels = refineTables.GetNumFVarChannels();
