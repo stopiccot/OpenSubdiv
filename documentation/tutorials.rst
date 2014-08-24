@@ -51,6 +51,10 @@ or in your local ``<repository root>/turorials``.
    :width: 100px
    :target: images/far_tutorial_1.0.png
 
+.. |far_tut_3| image:: images/far_tutorial_3.0.png
+   :width: 100px
+   :target: images/far_tutorial_3.0.png
+
 .. list-table:: **Far Tutorials**
    :class: quickref
    :widths: 50 50
@@ -72,7 +76,15 @@ or in your local ``<repository root>/turorials``.
          data.
        | |far_tut_1|
        |
-     - | **Tutorial 4**
+     - | **Tutorial 3**
+       | Building on tutorial 0, this example shows how to instantiate a simple mesh, 
+         refine it uniformly and then interpolate both 'vertex' and 'face-varying'    
+         primvar data.                                                                
+         The resulting interpolated data is output as an 'obj' file, with the         
+         'face-varying' data recorded in the uv texture layout.                       
+       | |far_tut_3|
+       |
+       | **Tutorial 4**
        | This tutorial shows how to create and manipulate FarStencilTables. We use the
          factorized stencils to interpolate vertex primvar data buffers.
        |
