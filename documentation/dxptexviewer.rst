@@ -55,13 +55,8 @@ DESCRIPTION
 with color, displacement, occlusion and specular ptex maps. Multiple controls 
 are available to experiment with the algorithms.
 
-.. container:: notebox
+.. include:: under_development.rst
 
-    Content under development....
-    
-    .. image:: images/construction.png
-       :align: center
-       :height: 100
 
 OPTIONS
 =======

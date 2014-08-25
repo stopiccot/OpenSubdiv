@@ -44,13 +44,7 @@ of a vertex class. It supports these subdivision schemes:
 Factories & Tables
 ==================
 
-.. container:: notebox
-
-    Content under development....
-    
-    .. image:: images/construction.png
-       :align: center
-       :height: 100
+.. include:: under_development.rst
 
 
 Patch Tables

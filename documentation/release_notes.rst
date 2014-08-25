@@ -31,24 +31,53 @@ Release Notes
 
 ----
 
+.. include:: under_development.rst
+
+
+General 3.x RoadMap 
+===================
+
+Within the 3.x release cycle we would like to address first and foremost many of
+the issues related to scaling the application of subdivision surfaces to large
+volumes of primitives within typical graphics pipelines. 
+
+Enabling workflows at larger scales will require improvements on several fronts:
+
+* Handle more primitives, but with fewer overheads:
+
+    * Reduce Compute kernel launches using stencils instead of subdivision tables
+    * Reduce Draw calls by addressing the combinatorial explosion of tessellation
+      shaders
+    * Provide back-ends for next-gen APIs (D3D12, Mantle, Metal, GL 5.x)
+
+* More semi-sharp creases: feature isolation needs to become much more efficient to
+  allow for complete creative freedom in using the feature.
+* Faster topology analysis
+
+
 Release 3.0
 ===========
 
 OpenSubdiv 3.0 represents a landmark release with very profound changes to the
-core algorithms. While providing faster, more efficient and flexible subdivision
-code remains our principal goal, OpenSubdiv 3.0 introduces many improvements
-that are fairly radical departures from previous versions.
+core algorithms. While providing faster, more efficient, and more flexible
+subdivision code remains our principal goal, OpenSubdiv 3.0 introduces many
+improvements that constitute a fairly radical departures from our previous
+code releases.
 
 Improved performance
 ********************
 
 OpenSubdiv 3.0 introduces new data structures and algorithms that greatly enhance
-performance over previous versions. This 3.0 releases focuse mostly on the CPU
-side, and provides speed-ups in the range of an order of magnitude for topology
-refinement and analysis (uniform and adaptive). On the GPU side, we have removed
-several bottlenecks in the Compute area that yield up to 4x faster interpolation
-on CUDA platforms. We have also significantly reduced the number of kernel
-launches (now 1 per primitive), which was a known issue on certain mobile platforms.
+performance over previous versions. The 3.0 release focuses mostly on the CPU
+side, and  should provide "out-of-the-box" speed-ups close to an order of
+magnitude for topology refinement and analysis (both uniform and adaptive).
+
+On the GPU side, the replacement of subdivision tables with stencils allows
+us to remove several bottlenecks in the Compute area that can yield as much as
+4x faster interpolation on CUDA platforms. At the same time, stencils also
+reduce the dozens of kernel launches required per primitive to a single one (this
+was a known issue on certain mobile platforms). Compute calls batching is now
+trivial.
 
 New topology entry-points
 *************************
@@ -66,7 +95,6 @@ been emphasized, or a lower-level interface for enhanced efficiency.
 As a result, Hbr is no longer a core API of OpenSubdiv. While the code is marked
 as deprecated, it will remain in the source distribution for legacy and
 regression purposes.
-
 
 Stencil Tables
 **************
@@ -90,6 +118,8 @@ The refactoring of OpenSubdiv 3.0 data representations presents a unique
 opportunity to revisit some corners of the subdivision specification and
 remove or update some legacy features.
 
+XXXX
+
 Hierarchical Edits
 ++++++++++++++++++
 
@@ -100,21 +130,31 @@ algorithms. If we can identify legitimate use cases for hierarchical tags, we
 will consider re-implementing them in future releases, as time and resources
 allow.
 
-General RoadMap
-***************
+Alpha Release Notes
+===================
 
-Known Issues
-************
+Our intentions as open-source developpers is to give as much access to our code,
+as early as possible, because we value and welcome the feedback from the community.
 
-* Maximum vertex valence is still limited (XXXX todo)
+The 'alpha' release moniker means to us that our code is still far from being
+finalized. Although we are now close from being feature complete, our
+public-facing interfaces are still subject to change. Therefore, we do not
+recommend this version of OpenSubdiv be used in client applications until both
+features and interfaces have been finalized in an official 'Beta' Release.
 
-.. container:: notebox
+The following is a short list of featurs and issues that will be addressed during
+the alpha cycle:
 
-    Content under development....
-    
-    .. image:: images/construction.png
-       :align: center
-       :height: 100
+    #. Rename "FarRefineTables"
+    #. Refactor Interpolate<>()
+    #. Refinement orientation bug + validation code
+    #. Face-varying boundary interpolation rules interpolation
+    #. Arbitrary-location limit stencils
+    #. Limit Masks
+    #. Loop / Bilinear schemes + Vtr / Far refactor
+    #. Holes implementation
+    #. Misc Sdc / Vtr / Far code cleanup & documentation
+    #. GCD Compute back-end
 
 
 
