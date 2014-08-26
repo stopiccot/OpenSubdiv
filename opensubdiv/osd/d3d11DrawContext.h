@@ -72,10 +72,6 @@ public:
     ///
     /// @param numVertexElements    The number of vertex elements
     ///
-    /// @param requireFVarData      Set to true to enable face-varying data to be
-    ///                             carried over from the Far data structures.
-    ///
-    ///
     static OsdD3D11DrawContext *Create(FarPatchTables const *patchTables,
                                        ID3D11DeviceContext *pd3d11DeviceContext,
                                        int numVertexElements);
@@ -111,7 +107,7 @@ public:
 
     /// Sets face-varying data buffer
     ///
-    /// @param fvarPatchTables      Face-varying patch tables
+    /// @param patchTables          A valid set of FarPatchTables
     ///
     /// @param pd3d11DeviceContext  A device context
     ///

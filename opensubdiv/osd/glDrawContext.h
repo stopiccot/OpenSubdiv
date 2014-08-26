@@ -111,7 +111,7 @@ public:
 
     /// Sets face-varying data buffer
     ///
-    /// @param fvarPatchTables  Face-varying patch tables
+    /// @param patchTables      A valid set of FarPatchTables
     ///
     /// @param fvarWidth        Total face-varying primvar data width in fvarData
     ///

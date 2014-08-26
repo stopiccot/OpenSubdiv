@@ -408,7 +408,7 @@ public:
             return (int)_channels.size();
         }
 
-        /// \brienf Returns the face-varying patches vertex indices
+        /// \brief Returns the face-varying patches vertex indices
         ///
         /// @param channel  Then face-varying primvar channel index
         ///
