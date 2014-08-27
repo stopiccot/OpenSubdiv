@@ -29,6 +29,8 @@ FAR Overview
    :local:
    :backlinks: none
 
+.. include:: under_development.rst
+
 Feature Adaptive Representation (Far)
 =====================================
 
@@ -41,10 +43,18 @@ cubic patch evaluation. Far is also a generic, templated algorithmic base API
 that clients in higher levels instantiate and use by providing an implementation
 of a vertex class. It supports these subdivision schemes:
 
+API Architecture
+****************
+
+The base container for stencil data is the FarStencilTables class. As with most
+other Far entities, it has an associated FarStencilTablesFactory that requires
+a FarRefineTables:
+
+.. image:: images/far_stencil5.png
+   :align: center
+
 Factories & Tables
 ==================
-
-.. include:: under_development.rst
 
 
 Patch Tables
@@ -53,34 +63,6 @@ Patch Tables
 
 Stencil Tables
 ==============
-
-
-Stencils are the most direct method of evaluation of specific locations on the
-limit of a subdivision surface starting from the coarse vertices of the control
-cage.
-
-.. image:: images/far_stencil0.png
-   :align: center
-
-
-Limit Stencils
-**************
-
-
-Sample Location
-***************
-
-Each stencil is associated with a singular parametric location on the coarse
-mesh. The paramatric location is defined as face location and local [0.0 - 1.0]
-(u,v) triplet:
-
-In the case of a non-coarse quad face, the parametric sub-face quadrant needs to
-be identified. This can be done either explicitly or implicitly by using the
-unique ptex face indices for instance.
-
-.. image:: images/far_stencil6.png
-   :align: center
-
 
 Principles
 **********
@@ -119,15 +101,33 @@ control cage only around extraordinary locations, and otherwise reverting to fas
 bi-cubic bspline patch evaluation. The use of bi-cubic patches also allows the
 accumulation of analytical derivatives.
 
-API Architecture
-****************
+Limit Stencils
+**************
 
-The base container for stencil data is the FarStencilTables class. As with most
-other Far entities, it has an associated FarStencilTablesFactory that requires
-a FarRefineTables:
+Limit stencils are the most direct method of evaluation of specific locations on
+the limit of a subdivision surface starting from the coarse vertices of the
+control cage.
 
-.. image:: images/far_stencil5.png
+.. image:: images/far_stencil0.png
    :align: center
+
+
+Sample Location
+***************
+
+Each stencil is associated with a singular parametric location on the coarse
+mesh. The paramatric location is defined as face location and local [0.0 - 1.0]
+(u,v) triplet:
+
+In the case of a non-coarse quad face, the parametric sub-face quadrant needs to
+be identified. This can be done either explicitly or implicitly by using the
+unique ptex face indices for instance.
+
+.. image:: images/far_stencil6.png
+   :align: center
+
+Code example
+************
 
 Assuming a properly qualified HbrMesh:
 

@@ -53,22 +53,31 @@ processing costs of any given feature that is not used.
 
 ----
 
-Layers
-======
+API Layers
+==========
 
-From a top-down point of view, OpenSubdiv is comprised of 2 public layers (**Far**
-and **Osd**) and 1 private layer (**Vtr**). 
+From a top-down point of view, OpenSubdiv is comprised of several layers, some
+public, and some private.
 
-.. image:: images/api_layers.png
+Layers list in descending order:
 
-The color groupings indicate inter-layer functional dependencies:
+  * **Osd** (OpenSubdiv)
+  * **Far** (Feature Adaptive Representation)
+  * **Vtr** (Vectorized Topological Representation)
+  * **Sdc** (Subdivision Core)
 
-  * **Osd** depends on **Far**
-  * **Far** has private dependencies on Vtr
-  * **Vtr** has no dependencies
+Client mesh data enters the API through the Far layer. Typically, results will
+be collected from the Osd layer. However, it is therefore possible to use
+functionality from Far without introducing any dependency on Osd.
 
-It is therefore possible to use functionality from Far without introducing any
-dependency on Osd. See `Using the Right Tools`_ for more in-depth coverage.
+Although there are several entry-points to provide topology and primitive variable
+data to OpenSubdiv, eventually everything must pass through the private Vtr and Sdc
+representations for topological analysis.
+
+See `Using the Right Tools`_ for more in-depth coverage.
+
+.. image:: images/api_layers_3_0.png
+   :align: center
 
 ----
 
@@ -100,22 +109,6 @@ simple as series of multiply-ads).
 
 ----
 
-Data Flows
-==========
-
-Data flows are mostly 1-directional, from top to bottom as a number of algorithms 
-are preparing the coarse mesh data to be refined and pass their results to the next
-stage in the pre-computation's chain.
-
-.. image:: images/api_data_flow.png
-   :align: center
-
-Although there are several entry-points to provide topology and primitive variable
-data to OpenSubdiv, eventually everything must pass through the private Vtr
-representation for topological analysis.
-
-----
-
 Multiple Representations
 ========================
 
@@ -140,15 +133,14 @@ the very description of these connections (dependencies) between vertices.
    :align: center
 
 This is why OpenSubdiv provides specific representations for mesh data: 
-  - Hbr is a general-purpose half-edge relational representation
   - Vtr is a vectorized topology-only representation
-  - Far is a serialized representation
+  - Far is a feature adaptive serialized representation
 
 A typical workflow would be to manipulate the topology in authoring applications,
-maybe using Hbr or a similar representation, for common editing operations. Once
-the topology of the mesh has stabilized, it is processed into a serialized form
+maybe using Hbr or a similar relational representation for common editing operations.
+Once the topology of the mesh has stabilized, it is processed into a serialized form
 that can then be evaluated at interactive framerates. The serialized form is 
-embodied by Far, which can then be migrated by the device-specific functions in Osd.
+embodied by Far, which can then be migrated by device-specific functions in Osd.
 
 .. image:: images/api_workflows.png
    :align: center
@@ -183,28 +175,30 @@ Using the Right Tools
 
 OpenSubdiv's tiered interface offers a lot flexibility to make your application
 both fast and robust. Because navigating through the large collection of classes and
-features can be challengeing, here is a snapshot flow-chart that should help sketch
+features can be challenging, here is a flow-chart that should help sketch
 the broad lines of going about using subdivisions in your application.
+
+General client application requirements:
+
+    * For some applications, a polygonal approximation of the smooth surface is enough.
+      Others require C :sup:`2` continuous differentiable bi-cubic patches 
+      (ex: deformable displacement mapping, smooth normals and semi-sharp
+      creases...)
+
+    * Applications such as off-line image renderers often process a single frame at a
+      time. Others, such as interactive games need to evaluate deforming character
+      surface every frame. Because we can amortize many computations if the topology
+      of the mesh does not change, OpenSubdiv provides 'stencil tables' in order
+      to leverage subdivision refinement into a pre-computation step.
+
+    * OpenSubdiv also provides dedicated interfaces to leverage parallelism on a wide
+      variety of platforms and API standards, including both CPUs and GPUs.
+
+    * If the application requires interactive drawing on screen, OpenSubdiv provides
+      several back-end implementations, including D3D11 and OpenGL. These back-ends
+      provide full support for programmable shading.
 
 .. image:: images/osd_flow.png
    :align: center
    :target: images/osd_flow.png 
-
-General requirements:
-
-* Surface limits ? For some applications, a polygonal approximation of the smooth
-  surface is enough. Others require C :sup:`2` continuous differentiable bi-cubic
-  patches (ex: deformable displacement mapping, smooth normals and semi-sharp
-  creases...)
-
-* Refine more than once ? Applications such as off-line image renderers often
-  process a single frame at a time. Others, such as interactive games need to
-  evaluate deforming character surface every frame. Because we can amortize many
-  computations if the topology of the mesh does not change, OpenSubdiv provides
-  a variety of data-structures to leverage this performance.
-
-* Multi-thread ? OpenSubdiv provides dedicated interfaces to leverage parallelism
-  on a wide variety of platforms and API standards, including both CPUs and GPUs.
-
-* Draw ? Does the applications need to draw on screen interactively ?
 
