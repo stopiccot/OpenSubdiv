@@ -498,7 +498,20 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& sele
 
         bool selectFace = false;
         if (faceVerts.size() != 4) {
-            selectFace = true;
+            //  Only necessary at level 0, and potentially warrants separating
+            //  to a separate method -- we need to also ensure that all adjacent
+            //  faces to this one are also selected (so don't bother selecting
+            //  this one here).
+            //
+            //  This is the only place other faces are selected as a side effect.
+            //  In general we don't need to test if faces were already selected,
+            //  but this case may ultimiately force us to do so, or pay the price
+            //  of such faces being selected twice in level 0.
+            //
+            VtrIndexArray const fVerts = level.getFaceVertices(face);
+            for (int i = 0; i < fVerts.size(); ++i) {
+                selector.selectVertexFaces(fVerts[i]);
+            }
         } else {
             VtrLevel::VTag compFaceTag = level.getFaceCompositeVTag(faceVerts);
 
