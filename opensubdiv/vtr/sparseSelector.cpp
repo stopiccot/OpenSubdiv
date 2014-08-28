@@ -94,6 +94,8 @@ VtrSparseSelector::selectFace(VtrIndex parentFace)
 void
 VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex)
 {
+    markSelection();
+
     //
     //  Unclear if this will still be useful -- regardless, we can no longer tag the
     //  vertex to distinguish it being selected by incidence of a selected face or
