@@ -21,8 +21,8 @@
 //   KIND, either express or implied. See the Apache License for the specific
 //   language governing permissions and limitations under the Apache License.
 //
-#ifndef FAR_REFINE_TABLES_H
-#define FAR_REFINE_TABLES_H
+#ifndef FAR_TOPOLOGY_REFINER_H
+#define FAR_TOPOLOGY_REFINER_H
 
 #include "../version.h"
 
@@ -43,13 +43,13 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-template <class MESH> class FarRefineTablesFactory;
+template <class MESH> class FarTopologyRefinerFactory;
 class VtrSparseSelector;
 
 ///
 ///  \brief Stores topology data for a specified set of refinement options.
 ///
-class FarRefineTables
+class FarTopologyRefiner
 {
 public:
 
@@ -63,10 +63,10 @@ public:
 public:
 
     /// \brief Constructor
-    FarRefineTables(SdcType type, SdcOptions options = SdcOptions());
+    FarTopologyRefiner(SdcType type, SdcOptions options = SdcOptions());
 
     /// \brief Destructor
-    ~FarRefineTables();
+    ~FarTopologyRefiner();
 
     /// \brief Returns the subdivision scheme
     SdcType    GetSchemeType() const    { return _subdivType; }
@@ -392,8 +392,8 @@ protected:
     //  For use by the Factory base and subclasses to construct the base level:
     //
     template <class MESH>
-    friend class FarRefineTablesFactory;
-    friend class FarRefineTablesFactoryBase;
+    friend class FarTopologyRefinerFactory;
+    friend class FarTopologyRefinerFactoryBase;
     friend class FarPatchTablesFactory;
 
     int                   getNumLevels() const { return (int)_levels.size(); }
@@ -480,7 +480,7 @@ private:
 
 template <class T, class U>
 inline void
-FarRefineTables::Interpolate(T const * src, U * dst) const {
+FarTopologyRefiner::Interpolate(T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
@@ -495,7 +495,7 @@ FarRefineTables::Interpolate(T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::Interpolate(int level, T const * src, U * dst) const {
+FarTopologyRefiner::Interpolate(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -508,7 +508,7 @@ FarRefineTables::Interpolate(int level, T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromFaces(
+FarTopologyRefiner::interpolateChildVertsFromFaces(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
@@ -549,7 +549,7 @@ FarRefineTables::interpolateChildVertsFromFaces(
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromEdges(
+FarTopologyRefiner::interpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -607,7 +607,7 @@ FarRefineTables::interpolateChildVertsFromEdges(
 
 template <class T, class U>
 inline void
-FarRefineTables::interpolateChildVertsFromVerts(
+FarTopologyRefiner::interpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -679,7 +679,7 @@ FarRefineTables::interpolateChildVertsFromVerts(
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateVarying(T const * src, U * dst) const {
+FarTopologyRefiner::InterpolateVarying(T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
@@ -694,7 +694,7 @@ FarRefineTables::InterpolateVarying(T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateVarying(int level, T const * src, U * dst) const {
+FarTopologyRefiner::InterpolateVarying(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -707,7 +707,7 @@ FarRefineTables::InterpolateVarying(int level, T const * src, U * dst) const {
 
 template <class T, class U>
 inline void
-FarRefineTables::varyingInterpolateChildVertsFromFaces(
+FarTopologyRefiner::varyingInterpolateChildVertsFromFaces(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     const VtrLevel& parent = refinement.parent();
@@ -735,7 +735,7 @@ FarRefineTables::varyingInterpolateChildVertsFromFaces(
 
 template <class T, class U>
 inline void
-FarRefineTables::varyingInterpolateChildVertsFromEdges(
+FarTopologyRefiner::varyingInterpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -763,7 +763,7 @@ FarRefineTables::varyingInterpolateChildVertsFromEdges(
 
 template <class T, class U>
 inline void
-FarRefineTables::varyingInterpolateChildVertsFromVerts(
+FarTopologyRefiner::varyingInterpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -791,7 +791,7 @@ FarRefineTables::varyingInterpolateChildVertsFromVerts(
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateFaceVarying(T const * src, U * dst, int channel) const {
+FarTopologyRefiner::InterpolateFaceVarying(T const * src, U * dst, int channel) const {
 
     assert(_subdivType == TYPE_CATMARK);
 
@@ -806,7 +806,7 @@ FarRefineTables::InterpolateFaceVarying(T const * src, U * dst, int channel) con
 
 template <class T, class U>
 inline void
-FarRefineTables::InterpolateFaceVarying(int level, T const * src, U * dst, int channel) const {
+FarTopologyRefiner::InterpolateFaceVarying(int level, T const * src, U * dst, int channel) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
@@ -819,7 +819,7 @@ FarRefineTables::InterpolateFaceVarying(int level, T const * src, U * dst, int c
 
 template <class T, class U>
 inline void
-FarRefineTables::faceVaryingInterpolateChildVertsFromFaces(
+FarTopologyRefiner::faceVaryingInterpolateChildVertsFromFaces(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
     SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
@@ -860,7 +860,7 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromFaces(
 
 template <class T, class U>
 inline void
-FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
+FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -991,7 +991,7 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromEdges(
 
 template <class T, class U>
 inline void
-FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
+FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
     assert(_subdivType == TYPE_CATMARK);
@@ -1136,4 +1136,4 @@ FarRefineTables::faceVaryingInterpolateChildVertsFromVerts(
 using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
 
-#endif /* FAR_REFINE_TABLES_H */
+#endif /* FAR_TOPOLOGY_REFINER_H */

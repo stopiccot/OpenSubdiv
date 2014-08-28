@@ -48,7 +48,7 @@ API Architecture
 
 The base container for stencil data is the FarStencilTables class. As with most
 other Far entities, it has an associated FarStencilTablesFactory that requires
-a FarRefineTables:
+a FarTopologyRefiner:
 
 .. image:: images/far_stencil5.png
    :align: center
@@ -133,7 +133,7 @@ Assuming a properly qualified HbrMesh:
 
 .. code:: c++
 
-    //OpenSubdiv::FarRefineTables * refTables = ...;
+    //OpenSubdiv::FarTopologyRefiner * refiner = ...;
 
     FarStencilTables controlStencils;
 
@@ -141,7 +141,7 @@ Assuming a properly qualified HbrMesh:
     options.generateOffsets=true;
     options.generateAllLevels=false;
 
-    OpenSubdiv::FarStencilTablesFactory<> factory(*refTables, options);
+    OpenSubdiv::FarStencilTablesFactory<> factory(*refiner, options);
     
     for (int i=0; i<nfaces; ++i) {
 

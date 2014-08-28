@@ -274,26 +274,26 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
-    int nedges = refTables->GetNumEdges(0),
-        nverts = refTables->GetNumVertices(0);
+    int nedges = refiner->GetNumEdges(0),
+        nverts = refiner->GetNumVertices(0);
 
     g_coarseEdges.resize(nedges*2);
     g_coarseEdgeSharpness.resize(nedges);
     g_coarseVertexSharpness.resize(nverts);
 
     for(int i=0; i<nedges; ++i) {
-        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        IndexArray verts = refiner->GetEdgeVertices(0, i);
         g_coarseEdges[i*2  ]=verts[0];
         g_coarseEdges[i*2+1]=verts[1];
-        g_coarseEdgeSharpness[i]=refTables->GetEdgeSharpness(0, i);
+        g_coarseEdgeSharpness[i]=refiner->GetEdgeSharpness(0, i);
     }
 
     for(int i=0; i<nverts; ++i) {
-        g_coarseVertexSharpness[i]=refTables->GetVertexSharpness(0, i);
+        g_coarseVertexSharpness[i]=refiner->GetVertexSharpness(0, i);
     }
 
     g_orgPositions=shape->verts;
@@ -322,7 +322,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdCpuComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cpuComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -335,7 +335,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdOmpComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_ompComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -349,7 +349,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdTbbComputeController,
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_tbbComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -363,7 +363,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdCLComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_clComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_clContext, g_clQueue, g_pd3dDeviceContext);
@@ -377,7 +377,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdCudaComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cudaComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -390,7 +390,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdD3D11ComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_d3d11ComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);

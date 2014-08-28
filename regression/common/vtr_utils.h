@@ -25,7 +25,7 @@
 #ifndef VTR_UTILS_H
 #define VTR_UTILS_H
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 
 #include "../../regression/common/shape_utils.h"
 
@@ -122,38 +122,38 @@ namespace OPENSUBDIV_VERSION {
 
 template <>
 inline void
-FarRefineTablesFactory<Shape>::resizeComponentTopology(
-    FarRefineTables & refTables, Shape const & shape) {
+FarTopologyRefinerFactory<Shape>::resizeComponentTopology(
+    FarTopologyRefiner & refiner, Shape const & shape) {
 
     int nfaces = shape.GetNumFaces(),
         nverts = shape.GetNumVertices();
 
-    refTables.setNumBaseFaces(nfaces);
+    refiner.setNumBaseFaces(nfaces);
     for (int i=0; i<nfaces; ++i) {
 
         int nv = shape.nvertsPerFace[i];
-        refTables.setNumBaseFaceVertices(i, nv);
+        refiner.setNumBaseFaceVertices(i, nv);
     }
 
     // Vertices and vert-faces and vert-edges
-    refTables.setNumBaseVertices(nverts);
+    refiner.setNumBaseVertices(nverts);
 }
 
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignComponentTopology(
-    FarRefineTables & refTables, Shape const & shape) {
+FarTopologyRefinerFactory<Shape>::assignComponentTopology(
+    FarTopologyRefiner & refiner, Shape const & shape) {
 
-    typedef FarRefineTables::IndexArray IndexArray;
+    typedef FarTopologyRefiner::IndexArray IndexArray;
 
     { // Face relations:
-        int nfaces = refTables.getNumBaseFaces();
+        int nfaces = refiner.getNumBaseFaces();
 
         for (int i=0, ofs=0; i < nfaces; ++i) {
 
-            IndexArray dstFaceVerts = refTables.setBaseFaceVertices(i);
-            //IndexArray dstFaceEdges = refTables.setBaseFaceEdges(i);
+            IndexArray dstFaceVerts = refiner.setBaseFaceVertices(i);
+            //IndexArray dstFaceEdges = refiner.setBaseFaceEdges(i);
 
             for (int j=0; j<dstFaceVerts.size(); ++j) {
                 dstFaceVerts[j] = shape.faceverts[ofs++];
@@ -165,20 +165,20 @@ FarRefineTablesFactory<Shape>::assignComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignFaceVaryingTopology(
-    FarRefineTables & refTables, Shape const & shape) {
+FarTopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
+    FarTopologyRefiner & refiner, Shape const & shape) {
 
-    typedef FarRefineTables::IndexArray IndexArray;
+    typedef FarTopologyRefiner::IndexArray IndexArray;
 
     // UV layyout (we only parse 1 channel)
     if (not shape.faceuvs.empty()) {
 
-        int nfaces = refTables.getNumBaseFaces(),
-           channel = refTables.createFVarChannel( (int)shape.faceuvs.size() );
+        int nfaces = refiner.getNumBaseFaces(),
+           channel = refiner.createFVarChannel( (int)shape.faceuvs.size() );
 
         for (int i=0, ofs=0; i < nfaces; ++i) {
 
-            IndexArray dstFaceUVs = refTables.getBaseFVarFaceValues(i, channel);
+            IndexArray dstFaceUVs = refiner.getBaseFVarFaceValues(i, channel);
 
             for (int j=0; j<dstFaceUVs.size(); ++j) {
                 dstFaceUVs[j] = shape.faceuvs[ofs++];
@@ -190,8 +190,8 @@ FarRefineTablesFactory<Shape>::assignFaceVaryingTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarRefineTablesFactory<Shape>::assignComponentTags(
-    FarRefineTables & refTables, Shape const & shape) {
+FarTopologyRefinerFactory<Shape>::assignComponentTags(
+    FarTopologyRefiner & refiner, Shape const & shape) {
 
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
@@ -202,12 +202,12 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
 
             for (int j=0; j<(int)t->intargs.size()-1; j += 2) {
 
-                OpenSubdiv::VtrIndex edge = refTables.FindEdge(/*level*/0, t->intargs[j], t->intargs[j+1]);
+                OpenSubdiv::VtrIndex edge = refiner.FindEdge(/*level*/0, t->intargs[j], t->intargs[j+1]);
                 if (edge==OpenSubdiv::VTR_INDEX_INVALID) {
                     printf("cannot find edge for crease tag (%d,%d)\n", t->intargs[j], t->intargs[j+1] );
                 } else {
                     int nfloat = (int) t->floatargs.size();
-                    refTables.baseEdgeSharpness(edge) =
+                    refiner.baseEdgeSharpness(edge) =
                         std::max(0.0f, ((nfloat > 1) ? t->floatargs[j] : t->floatargs[0]));
                 }
             }
@@ -215,11 +215,11 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
 
             for (int j=0; j<(int)t->intargs.size(); ++j) {
                 int vertex = t->intargs[j];
-                if (vertex<0 or vertex>=refTables.GetNumVertices(/*level*/0)) {
+                if (vertex<0 or vertex>=refiner.GetNumVertices(/*level*/0)) {
                     printf("cannot find vertex for corner tag (%d)\n", vertex );
                 } else {
                     int nfloat = (int) t->floatargs.size();
-                    refTables.baseVertexSharpness(vertex) =
+                    refiner.baseVertexSharpness(vertex) =
                         std::max(0.0f, ((nfloat > 1) ? t->floatargs[j] : t->floatargs[0]));
                 }
             }
@@ -233,7 +233,7 @@ FarRefineTablesFactory<Shape>::assignComponentTags(
 //------------------------------------------------------------------------------
 
 void
-InterpolateFVarData(OpenSubdiv::FarRefineTables & refTables,
+InterpolateFVarData(OpenSubdiv::FarTopologyRefiner & refiner,
     Shape const & shape, std::vector<float> & fvarData);
 
 //------------------------------------------------------------------------------

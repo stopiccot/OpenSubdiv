@@ -21,7 +21,7 @@
 //   KIND, either express or implied. See the Apache License for the specific
 //   language governing permissions and limitations under the Apache License.
 //
-#include "../far/refineTables.h"
+#include "../far/topologyRefiner.h"
 #include "../vtr/sparseSelector.h"
 
 #include <cassert>
@@ -36,7 +36,7 @@ namespace OPENSUBDIV_VERSION {
 //  Relatively trivial construction/destruction -- the base level (level[0]) needs
 //  to be explicitly initialized after construction and refinement then applied
 //
-FarRefineTables::FarRefineTables(SdcType schemeType, SdcOptions schemeOptions) :
+FarTopologyRefiner::FarTopologyRefiner(SdcType schemeType, SdcOptions schemeOptions) :
     _subdivType(schemeType),
     _subdivOptions(schemeOptions),
     _isUniform(true),
@@ -48,10 +48,10 @@ FarRefineTables::FarRefineTables(SdcType schemeType, SdcOptions schemeOptions) :
     _levels.resize(1);
 }
 
-FarRefineTables::~FarRefineTables() { }
+FarTopologyRefiner::~FarTopologyRefiner() { }
 
 void
-FarRefineTables::Unrefine() {
+FarTopologyRefiner::Unrefine() {
     if (_levels.size()) {
         _levels.resize(1);
     }
@@ -59,7 +59,7 @@ FarRefineTables::Unrefine() {
 }
 
 void
-FarRefineTables::Clear() {
+FarTopologyRefiner::Clear() {
     _levels.clear();
     _refinements.clear();
 }
@@ -69,7 +69,7 @@ FarRefineTables::Clear() {
 //  Accessors to the topology information:
 //
 int
-FarRefineTables::GetNumVerticesTotal() const {
+FarTopologyRefiner::GetNumVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumVertices();
@@ -77,7 +77,7 @@ FarRefineTables::GetNumVerticesTotal() const {
     return sum;
 }
 int
-FarRefineTables::GetNumEdgesTotal() const {
+FarTopologyRefiner::GetNumEdgesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumEdges();
@@ -85,7 +85,7 @@ FarRefineTables::GetNumEdgesTotal() const {
     return sum;
 }
 int
-FarRefineTables::GetNumFacesTotal() const {
+FarTopologyRefiner::GetNumFacesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaces();
@@ -93,7 +93,7 @@ FarRefineTables::GetNumFacesTotal() const {
     return sum;
 }
 int
-FarRefineTables::GetNumFaceVerticesTotal() const {
+FarTopologyRefiner::GetNumFaceVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaceVerticesTotal();
@@ -101,7 +101,7 @@ FarRefineTables::GetNumFaceVerticesTotal() const {
     return sum;
 }
 int
-FarRefineTables::GetNumFVarValuesTotal(int channel) const {
+FarTopologyRefiner::GetNumFVarValuesTotal(int channel) const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFVarValues(channel);
@@ -124,7 +124,7 @@ computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices)
     ptexIndices[nfaces]=ptexID;
 }
 void
-FarRefineTables::initializePtexIndices() const {
+FarTopologyRefiner::initializePtexIndices() const {
     std::vector<int> & indices = const_cast<std::vector<int> &>(_ptexIndices);
     switch (GetSchemeType()) {
         case TYPE_BILINEAR:
@@ -136,7 +136,7 @@ FarRefineTables::initializePtexIndices() const {
     }
 }
 int
-FarRefineTables::GetNumPtexFaces() const {
+FarTopologyRefiner::GetNumPtexFaces() const {
     if (_ptexIndices.empty()) {
         initializePtexIndices();
     }
@@ -144,7 +144,7 @@ FarRefineTables::GetNumPtexFaces() const {
     return _ptexIndices.back();
 }
 int
-FarRefineTables::GetPtexIndex(Index f) const {
+FarTopologyRefiner::GetPtexIndex(Index f) const {
     if (_ptexIndices.empty()) {
         initializePtexIndices();
     }
@@ -159,7 +159,7 @@ FarRefineTables::GetPtexIndex(Index f) const {
 //  Main refinement method -- allocating and initializing levels and refinements:
 //
 void
-FarRefineTables::RefineUniform(int maxLevel, bool fullTopology) {
+FarTopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
@@ -190,7 +190,7 @@ FarRefineTables::RefineUniform(int maxLevel, bool fullTopology) {
 
 
 void
-FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology) {
+FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == TYPE_CATMARK);
@@ -297,7 +297,7 @@ FarRefineTables::RefineAdaptive(int subdivLevel, bool fullTopology) {
 //  that work should be minimal.
 //
 void
-FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
+FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
 
     VtrLevel const& level = selector.getRefinement().parent();
 
@@ -489,7 +489,7 @@ FarRefineTables::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
 }
 
 void
-FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector) {
+FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector) {
 
     VtrLevel const& level = selector.getRefinement().parent();
 
@@ -536,7 +536,7 @@ FarRefineTables::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selecto
 
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
 void
-FarRefineTables::ComputeMaskWeights() {
+FarTopologyRefiner::ComputeMaskWeights() {
 
     assert(_subdivType == TYPE_CATMARK);
 

@@ -141,37 +141,37 @@ interpolateHbrVertexData(ShapeDesc const & desc, int maxlevel) {
 }
 
 //------------------------------------------------------------------------------
-typedef OpenSubdiv::FarRefineTables               FaRefineTables;
-typedef OpenSubdiv::FarRefineTablesFactory<Shape> FaRefineTablesFactory;
+typedef OpenSubdiv::FarTopologyRefiner               FarTopoloyRefiner;
+typedef OpenSubdiv::FarTopologyRefinerFactory<Shape> FarTopoloyRefinerFactory;
 
-static FaRefineTables *
+static FarTopoloyRefiner *
 interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV> & data) {
 
     // Vtr interpolation
     Shape * shape = Shape::parseObj(desc.data.c_str(), desc.scheme);
 
-    FaRefineTablesFactory refFactory;
+    FarTopoloyRefinerFactory refFactory;
 
-    FaRefineTables * refTables = refFactory.Create( GetSdcType(*shape),
+    FarTopoloyRefiner * refiner = refFactory.Create( GetSdcType(*shape),
                                                    GetSdcOptions(*shape),
                                                    *shape);
-    assert(refTables);
+    assert(refiner);
 
-    refTables->RefineUniform(maxlevel, true /*full topology*/ );
+    refiner->RefineUniform(maxlevel, true /*full topology*/ );
 
     // populate coarse mesh positions
-    data.resize(refTables->GetNumVerticesTotal());
-    for (int i=0; i<refTables->GetNumVertices(0); i++) {
+    data.resize(refiner->GetNumVerticesTotal());
+    for (int i=0; i<refiner->GetNumVertices(0); i++) {
         data[i].SetPosition(shape->verts[i*3+0],
                             shape->verts[i*3+1],
                             shape->verts[i*3+2]);
     }
 
     xyzVV * verts = &data[0];
-    refTables->Interpolate(verts, verts+refTables->GetNumVertices(0));
+    refiner->Interpolate(verts, verts+refiner->GetNumVertices(0));
 
     delete shape;
-    return refTables;
+    return refiner;
 }
 
 //------------------------------------------------------------------------------
@@ -202,22 +202,22 @@ struct Mapper {
 
     std::vector<LevelMap> maps;
     
-    Mapper(FaRefineTables * refTables, Hmesh * hmesh) {
+    Mapper(FarTopoloyRefiner * refiner, Hmesh * hmesh) {
 
-        assert(refTables and hmesh);
+        assert(refiner and hmesh);
 
-        maps.resize(refTables->GetMaxLevel()+1);
+        maps.resize(refiner->GetMaxLevel()+1);
 
-        typedef OpenSubdiv::FarRefineTables::Index      Index;
-        typedef OpenSubdiv::FarRefineTables::IndexArray IndexArray;
+        typedef OpenSubdiv::FarTopologyRefiner::Index      Index;
+        typedef OpenSubdiv::FarTopologyRefiner::IndexArray IndexArray;
 
         {   // Populate base level
             // note : topological ordering is identical between Hbr and Vtr for the
             // base level
 
-            int nfaces = refTables->GetNumFaces(0),
-                nedges = refTables->GetNumEdges(0), 
-                nverts = refTables->GetNumVertices(0);
+            int nfaces = refiner->GetNumFaces(0),
+                nedges = refiner->GetNumEdges(0), 
+                nverts = refiner->GetNumVertices(0);
 
             maps[0].faces.resize(nfaces, 0);
             maps[0].edges.resize(nedges, 0);
@@ -229,7 +229,7 @@ struct Mapper {
 
             for (int edge = 0; edge <nedges; ++edge) {
 
-                IndexArray vtrVerts = refTables->GetEdgeVertices(0, edge);
+                IndexArray vtrVerts = refiner->GetEdgeVertices(0, edge);
 
                 Hvertex const * v0 = hmesh->GetVertex(vtrVerts[0]),
                               * v1 = hmesh->GetVertex(vtrVerts[1]);
@@ -249,21 +249,21 @@ struct Mapper {
         }
 
         // Populate refined levels
-        for (int level=1, ecount=0; level<=refTables->GetMaxLevel(); ++level) {
+        for (int level=1, ecount=0; level<=refiner->GetMaxLevel(); ++level) {
 
             LevelMap & previous = maps[level-1],
                      & current = maps[level];
 
-            current.faces.resize(refTables->GetNumFaces(level), 0);
-            current.edges.resize(refTables->GetNumEdges(level), 0);
-            current.verts.resize(refTables->GetNumVertices(level), 0);
+            current.faces.resize(refiner->GetNumFaces(level), 0);
+            current.edges.resize(refiner->GetNumEdges(level), 0);
+            current.verts.resize(refiner->GetNumVertices(level), 0);
 
-            for (int face=0; face < refTables->GetNumFaces(level-1); ++face) {
+            for (int face=0; face < refiner->GetNumFaces(level-1); ++face) {
 
                 // populate child faces
                 Hface * f = previous.faces[face];
 
-                IndexArray childFaces = refTables->GetFaceChildFaces(level-1, face);
+                IndexArray childFaces = refiner->GetFaceChildFaces(level-1, face);
                 assert(childFaces.size()==f->GetNumVertices());
 
                 for (int i=0; i<childFaces.size(); ++i) {
@@ -271,33 +271,33 @@ struct Mapper {
                 }
 
                 // populate child face-verts
-                Index childVert = refTables->GetFaceChildVertex(level-1, face);
+                Index childVert = refiner->GetFaceChildVertex(level-1, face);
                 Hvertex * v = f->Subdivide();
                 assert(v->GetParentFace());
                 current.verts[childVert] = v;
             }
 
-            for (int edge=0; edge < refTables->GetNumEdges(level-1); ++edge) {
+            for (int edge=0; edge < refiner->GetNumEdges(level-1); ++edge) {
                 // populate child edge-verts
-                Index childVert = refTables->GetEdgeChildVertex(level-1,edge);
+                Index childVert = refiner->GetEdgeChildVertex(level-1,edge);
                 Hhalfedge * e = previous.edges[edge];
                 Hvertex * v = e->Subdivide();
                 assert(v->GetParentEdge());
                 current.verts[childVert] = v;
             }
 
-            for (int vert = 0; vert < refTables->GetNumVertices(level-1); ++vert) {
+            for (int vert = 0; vert < refiner->GetNumVertices(level-1); ++vert) {
                 // populate child vert-verts
-                Index childVert = refTables->GetVertexChildVertex(level-1, vert);
+                Index childVert = refiner->GetVertexChildVertex(level-1, vert);
                 Hvertex * v = previous.verts[vert]->Subdivide();
                 current.verts[childVert] = v;
                 assert(v->GetParentVertex());
             }
 
             // populate child edges
-            for (int edge=0; edge < refTables->GetNumEdges(level); ++edge) {
+            for (int edge=0; edge < refiner->GetNumEdges(level); ++edge) {
 
-                IndexArray vtrVerts = refTables->GetEdgeVertices(level, edge);
+                IndexArray vtrVerts = refiner->GetEdgeVertices(level, edge);
 
                 Hvertex const * v0 = current.verts[vtrVerts[0]],
                               * v1 = current.verts[vtrVerts[1]];
@@ -310,7 +310,7 @@ struct Mapper {
                 assert(e);
                 current.edges[edge] = e;
             }
-            ecount += refTables->GetNumEdges(level-1);
+            ecount += refiner->GetNumEdges(level-1);
         }
     }
 };
@@ -332,15 +332,15 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
     Hmesh *  hmesh =
         interpolateHbrVertexData(desc, maxlevel);
 
-    FaRefineTables * refTables =
+    FarTopoloyRefiner * refiner =
         interpolateVtrVertexData(desc, maxlevel, vtrVertexData);
 
     {   // copy Hbr vertex data into a re-ordered buffer (for easier comparison)
 
-        Mapper mapper(refTables, hmesh);
+        Mapper mapper(refiner, hmesh);
 
         int nverts = hmesh->GetNumVertices();
-        assert( nverts==refTables->GetNumVerticesTotal() );
+        assert( nverts==refiner->GetNumVerticesTotal() );
 
         hbrVertexData.resize(nverts);
 

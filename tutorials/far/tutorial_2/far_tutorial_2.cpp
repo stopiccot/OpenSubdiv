@@ -31,7 +31,7 @@
 // data.
 //
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 
 #include <cstdio>
 
@@ -139,21 +139,21 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarRefineTables * createFarRefineTables();
+static FarTopologyRefiner * createFarTopologyRefiner();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
     int maxlevel = 5;
 
-    FarRefineTables * refTables = createFarRefineTables();
+    FarTopologyRefiner * refiner = createFarTopologyRefiner();
 
     // Uniformly refine the topolgy up to 'maxlevel'
-    refTables->RefineUniform( maxlevel );
+    refiner->RefineUniform( maxlevel );
 
     // Allocate a buffer for vertex primvar data. The buffer length is set to
     // be the sum of all children vertices up to the highest level of refinement.
-    std::vector<Vertex> vbuffer(refTables->GetNumVerticesTotal());
+    std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
     Vertex * verts = &vbuffer[0];
 
     // Initialize coarse mesh primvar data
@@ -168,7 +168,7 @@ int main(int, char **) {
     // Interpolate all primvar data - not that this will perform both 'vertex' and
     // 'varying' interpolation at once by calling each specialized method in our
     // Vertex class with the appropriate weights.
-    refTables->Interpolate(verts, verts + nCoarseVerts);
+    refiner->Interpolate(verts, verts + nCoarseVerts);
 
 
 
@@ -176,11 +176,11 @@ int main(int, char **) {
       // particles at the location of the refined vertices (don't forget to
       // turn shading on in the viewport to see the colors)
 
-        int nverts = refTables->GetNumVertices(maxlevel);
+        int nverts = refiner->GetNumVertices(maxlevel);
 
         // Position the 'verts' pointer to the first vertex of our 'maxlevel' level
         for (int level=0; level<maxlevel; ++level) {
-            verts += refTables->GetNumVertices(level);
+            verts += refiner->GetNumVertices(level);
         }
 
         // Output particle positions
@@ -208,16 +208,16 @@ int main(int, char **) {
 }
 
 //------------------------------------------------------------------------------
-// Creates FarRefineTables from raw geometry
+// Creates FarTopologyRefiner from raw geometry
 //
 // see far_tutorial_0 for more details
 //
-static FarRefineTables *
-createFarRefineTables() {
+static FarTopologyRefiner *
+createFarTopologyRefiner() {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
 
@@ -230,9 +230,9 @@ createFarRefineTables() {
     desc.vertsPerFace = g_vertsperface;
     desc.vertIndices  = g_vertIndices;
 
-    // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a FarTopologyRefiner from the descriptor
+    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
-    return refTables;
+    return refiner;
 }
 //------------------------------------------------------------------------------

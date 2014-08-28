@@ -5,10 +5,10 @@ deliberation.
 
 Vtr is the newly proposed layer to support the "vectorized topological representation" of a mesh
 and its associated refinement.  Vtr is intended for internal use and is currently accessed through
-the public FarRefineTables class and its Factory class that internally transforms an instance of
-a client's mesh into Vtr form.  FarRefineTables is intended to be one of a set of modular, table-
+the public FarTopologyRefiner class and its Factory class that internally transforms an instance of
+a client's mesh into Vtr form.  FarTopologyRefiner is intended to be one of a set of modular, table-
 oriented classes made available for public use in the Far layer.  As such, its debatable whether
-the Vtr classes that support FarRefineTables should be part of Far or the new Vtr layer.  So we
+the Vtr classes that support FarTopologyRefiner should be part of Far or the new Vtr layer.  So we
 are prepared to rename all Vtr classes as Far in future if necessary.
 
 Currently there are three header files containing the following:
@@ -32,7 +32,7 @@ currently the priority.  Work to be done includes:
     - specializations for regular levels and refinements
 
 Since intended for internal use, we can continue to take liberties with the interfaces for the near
-term, e.g. allowing direct member access as needed ala FarSubdivisionTables.  The FarRefineTables
+term, e.g. allowing direct member access as needed ala FarSubdivisionTables.  The FarTopologyRefiner
 class and its Factory class will be the public interface to the functionality provided here, and so
 they warrant far more attention (and will be discussed as part of proposed Far changes/additions).
 
@@ -155,7 +155,7 @@ the data in subsequent levels is typically 4x its predecessor, we can minimize w
 generate or keep around at each level.  For instance, if only a face-list is required at the
 finest level, we only need to generate one of the six topological relations -- the vertices
 incident each face.  So when we do keep VtrLevels around in memory (as is the case with the
-FarRefineTables) we do have do have the opportunity to prune what is not strictly necessary
+FarTopologyRefiner) we do have do have the opportunity to prune what is not strictly necessary
 after the refinement.  Just as with construction, whatever classes are privileged to construct
 a VtrLevel are likely those that will be privileged to prune its contents when needed.
 
@@ -236,7 +236,7 @@ class in Far.  (Currently I optionally compute and store them in VtrRefinement a
 experiment for Manuel, but they are not intended to persist, and so are hard-coded to be for
 Catmark only for the duration of the experiment.)  If stencil weights are to be computed and
 stored -- as with FarSubdivisionTables -- that may also be done where needed.  Similarly, the
-feature-adaptive analysis is also likely to be part of the FarRefineTables, where the refinement
+feature-adaptive analysis is also likely to be part of the FarTopologyRefiner, where the refinement
 parameters are publicly specified and internally translated into Vtr operations to be applied.
 
 Given that Vtr and Far might eventually be merged, whether these specializations for scheme occur

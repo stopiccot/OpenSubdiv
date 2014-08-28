@@ -240,18 +240,18 @@ bool g_bDone = false;
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OpenSubdiv::FarRefineTables * refTables,
+calcNormals(OpenSubdiv::FarTopologyRefiner * refiner,
     std::vector<float> const & pos, std::vector<float> & result ) {
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
     // calc normal vectors
-    int nverts = refTables->GetNumVertices(0),
-        nfaces = refTables->GetNumFaces(0);
+    int nverts = refiner->GetNumVertices(0),
+        nfaces = refiner->GetNumFaces(0);
 
     for (int face = 0; face < nfaces; ++face) {
 
-        IndexArray fverts = refTables->GetFaceVertices(0, face);
+        IndexArray fverts = refiner->GetFaceVertices(0, face);
 
         float const * p0 = &pos[fverts[0]*3],
                     * p1 = &pos[fverts[1]*3],
@@ -658,16 +658,16 @@ createOsdMesh(int level, int kernel) {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
 
     // create cage edge index
-    int nedges = refTables->GetNumEdges(0);
+    int nedges = refiner->GetNumEdges(0);
     std::vector<int> edgeIndices(nedges*2);
     for(int i=0; i<nedges; ++i) {
-        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        IndexArray verts = refiner->GetEdgeVertices(0, i);
         edgeIndices[i*2  ]=verts[0];
         edgeIndices[i*2+1]=verts[1];
     }
@@ -675,7 +675,7 @@ createOsdMesh(int level, int kernel) {
     delete shape;
 
     g_normals.resize(g_positions.size(), 0.0f);
-    calcNormals(refTables, g_positions, g_normals);
+    calcNormals(refiner, g_positions, g_normals);
 
     delete g_mesh;
     g_mesh = NULL;
@@ -698,7 +698,7 @@ createOsdMesh(int level, int kernel) {
                                          OpenSubdiv::OsdCpuComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cpuComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -711,7 +711,7 @@ createOsdMesh(int level, int kernel) {
                                          OpenSubdiv::OsdOmpComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_ompComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -725,7 +725,7 @@ createOsdMesh(int level, int kernel) {
                                          OpenSubdiv::OsdCLComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_clComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -739,7 +739,7 @@ createOsdMesh(int level, int kernel) {
                                          OpenSubdiv::OsdCudaComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_cudaComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);
@@ -752,7 +752,7 @@ createOsdMesh(int level, int kernel) {
                                          OpenSubdiv::OsdD3D11ComputeController,
                                          OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_d3d11ComputeController,
-                                                refTables,
+                                                refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits, g_pd3dDeviceContext);

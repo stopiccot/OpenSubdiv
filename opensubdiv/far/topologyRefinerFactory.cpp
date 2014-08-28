@@ -25,8 +25,8 @@
 #include "../sdc/options.h"
 #include "../sdc/crease.h"
 #include "../vtr/level.h"
-#include "../far/refineTables.h"
-#include "../far/refineTablesFactory.h"
+#include "../far/topologyRefiner.h"
+#include "../far/topologyRefinerFactory.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -38,9 +38,9 @@ namespace OPENSUBDIV_VERSION {
 //
 //
 void
-FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& refTables) {
+FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefiner& refiner) {
 
-    VtrLevel& baseLevel = refTables.getBaseLevel();
+    VtrLevel& baseLevel = refiner.getBaseLevel();
 
     int vCount = baseLevel.getNumVertices();
     int eCount = baseLevel.getNumEdges();
@@ -77,9 +77,9 @@ FarRefineTablesFactoryBase::validateComponentTopologySizing(FarRefineTables& ref
 }
 
 void
-FarRefineTablesFactoryBase::validateVertexComponentTopologyAssignment(FarRefineTables& refTables) {
+FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopologyRefiner& refiner) {
 
-    VtrLevel& baseLevel = refTables.getBaseLevel();
+    VtrLevel& baseLevel = refiner.getBaseLevel();
 
     //
     //  In future we may want the ability to complete aspects of the topology that are incovenient
@@ -96,7 +96,7 @@ FarRefineTablesFactoryBase::validateVertexComponentTopologyAssignment(FarRefineT
     bool applyValidation = false;
     if (applyValidation) {
         if (!baseLevel.validateTopology()) {
-            printf("Invalid topology detected in FarRefineTablesFactory (%s)\n",
+            printf("Invalid topology detected in FarTopologyRefinerFactory (%s)\n",
                 completeMissingTopology ? "partially specified and completed" : "fully specified");
             //baseLevel.print();
             assert(false);
@@ -105,10 +105,10 @@ FarRefineTablesFactoryBase::validateVertexComponentTopologyAssignment(FarRefineT
 }
 
 void
-FarRefineTablesFactoryBase::validateFaceVaryingComponentTopologyAssignment(FarRefineTables& refTables) {
+FarTopologyRefinerFactoryBase::validateFaceVaryingComponentTopologyAssignment(FarTopologyRefiner& refiner) {
 
-    for (int channel=0; channel<refTables.GetNumFVarChannels(); ++channel) {
-        refTables.completeFVarChannelTopology(channel);
+    for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
+        refiner.completeFVarChannelTopology(channel);
     }
 }
 
@@ -119,15 +119,15 @@ FarRefineTablesFactoryBase::validateFaceVaryingComponentTopologyAssignment(FarRe
 //  to do both at once...
 //
 void
-FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTables& refTables) {
+FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopologyRefiner& refiner) {
 
-    VtrLevel&  baseLevel = refTables.getBaseLevel();
+    VtrLevel&  baseLevel = refiner.getBaseLevel();
 
     assert((int)baseLevel._edgeTags.size() == baseLevel.getNumEdges());
     assert((int)baseLevel._vertTags.size() == baseLevel.getNumVertices());
     assert((int)baseLevel._faceTags.size() == baseLevel.getNumFaces());
 
-    SdcOptions options = refTables.GetSchemeOptions();
+    SdcOptions options = refiner.GetSchemeOptions();
     SdcCrease  creasing(options);
 
     bool sharpenCornerVerts    = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
@@ -199,7 +199,7 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
         //  tag is still being considered, but regardless, it depends on the SdcScheme...
         //
-        assert(refTables.GetSchemeType() == TYPE_CATMARK);
+        assert(refiner.GetSchemeType() == TYPE_CATMARK);
 
         vTag._boundary = (vFaces.size() < vEdges.size());
         if (isCorner) {
@@ -223,26 +223,26 @@ FarRefineTablesFactoryBase::applyComponentTagsAndBoundarySharpness(FarRefineTabl
 //
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::resizeComponentTopology(
-    FarRefineTables & refTables, TopologyDescriptor const & desc) {
+FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::resizeComponentTopology(
+    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
-    refTables.setNumBaseVertices(desc.numVertices);
-    refTables.setNumBaseFaces(desc.numFaces);
+    refiner.setNumBaseVertices(desc.numVertices);
+    refiner.setNumBaseFaces(desc.numFaces);
 
     for (int face=0; face<desc.numFaces; ++face) {
 
-        refTables.setNumBaseFaceVertices(face, desc.vertsPerFace[face]);
+        refiner.setNumBaseFaceVertices(face, desc.vertsPerFace[face]);
     }
 }
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTopology(
-    FarRefineTables & refTables, TopologyDescriptor const & desc) {
+FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTopology(
+    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
     for (int face=0, idx=0; face<desc.numFaces; ++face) {
 
-        FarIndexArray dstFaceVerts = refTables.setBaseFaceVertices(face);
+        FarIndexArray dstFaceVerts = refiner.setBaseFaceVertices(face);
 
         for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
 
@@ -253,8 +253,8 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFaceVaryingTopology(
-    FarRefineTables & refTables, TopologyDescriptor const & desc) {
+FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignFaceVaryingTopology(
+    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
     if (desc.numFVarChannels>0) {
 
@@ -263,12 +263,12 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFa
             int        channelSize    = desc.fvarChannels[channel].numValues;
             int const* channelIndices = desc.fvarChannels[channel].valueIndices;
 
-            int channelIndex = refTables.createFVarChannel(channelSize);
+            int channelIndex = refiner.createFVarChannel(channelSize);
             assert(channelIndex == channel);
 
             for (int face=0, idx=0; face<desc.numFaces; ++face) {
 
-                FarIndexArray dstFaceValues = refTables.getBaseFVarFaceValues(face, channel);
+                FarIndexArray dstFaceValues = refiner.getBaseFVarFaceValues(face, channel);
 
                 for (int vert=0; vert<dstFaceValues.size(); ++vert) {
 
@@ -281,8 +281,8 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignFa
 
 template <>
 void
-FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignComponentTags(
-    FarRefineTables & refTables, TopologyDescriptor const & desc) {
+FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTags(
+    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
 
     if ((desc.numCreases>0) and desc.creaseVertexIndexPairs and desc.creaseWeights) {
@@ -290,10 +290,10 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
         int const * vertIndexPairs = desc.creaseVertexIndexPairs;
         for (int edge=0; edge<desc.numCreases; ++edge, vertIndexPairs+=2) {
 
-            FarIndex idx = refTables.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
+            FarIndex idx = refiner.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
 
             if (idx!=VTR_INDEX_INVALID) {
-                refTables.baseEdgeSharpness(idx) = desc.creaseWeights[edge];
+                refiner.baseEdgeSharpness(idx) = desc.creaseWeights[edge];
             } else {
                 // XXXX report error !
             }
@@ -306,8 +306,8 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
 
             int idx = desc.cornerVertexIndices[vert];
 
-            if (idx < refTables.GetNumVertices(0)) {
-                refTables.baseVertexSharpness(idx) = desc.cornerWeights[vert];
+            if (idx < refiner.GetNumVertices(0)) {
+                refiner.baseVertexSharpness(idx) = desc.cornerWeights[vert];
             } else {
                 // XXXX report error !
             }
@@ -316,7 +316,7 @@ FarRefineTablesFactory<FarRefineTablesFactoryBase::TopologyDescriptor>::assignCo
 
 }
 
-FarRefineTablesFactoryBase::TopologyDescriptor::TopologyDescriptor() :
+FarTopologyRefinerFactoryBase::TopologyDescriptor::TopologyDescriptor() :
     numVertices(0), numFaces(0), vertsPerFace(0), vertIndices(0),
         numCreases(0), creaseVertexIndexPairs(0), creaseWeights(0),
             numCorners(0), cornerVertexIndices(0), cornerWeights(0),

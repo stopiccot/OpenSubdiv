@@ -41,7 +41,7 @@ namespace OPENSUBDIV_VERSION {
 
 class VtrSparseSelector;
 class VtrFVarRefinement;
-class FarRefineTables;
+class FarTopologyRefiner;
 class FarPatchTablesFactory;
 
 //
@@ -53,7 +53,7 @@ class FarPatchTablesFactory;
 //
 //  At a high level, all that is necessary in terms of interface is to construct, initialize
 //  (linking the two levels), optionally select components for sparse refinement (via use of the
-//  VtrSparseSelector) and call the refine() method.  This is the usage expected in FarRefineTables.
+//  VtrSparseSelector) and call the refine() method.  This is the usage expected in FarTopologyRefiner.
 //
 //  Since we really want this class to be restricted from public access eventually, all methods
 //  begin with lower case (as is the convention for protected methods) and the list of friends
@@ -143,7 +143,7 @@ public:
 protected:
     friend class VtrFVarRefinement;
     friend class VtrSparseSelector;
-    friend class FarRefineTables;
+    friend class FarTopologyRefiner;
     friend class FarPatchTablesFactory;
 
 

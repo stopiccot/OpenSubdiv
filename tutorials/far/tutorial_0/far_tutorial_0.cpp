@@ -30,7 +30,7 @@
 // instantiate a Far mesh from simple topological data.
 //
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 
 #include <cstdio>
 
@@ -105,7 +105,7 @@ int main(int, char **) {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
 
@@ -119,18 +119,18 @@ int main(int, char **) {
     desc.vertIndices  = g_vertIndices;
 
 
-    // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a FarTopologyRefiner from the descriptor
+    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     int maxlevel = 2;
 
     // Uniformly refine the topolgy up to 'maxlevel'
-    refTables->RefineUniform( maxlevel );
+    refiner->RefineUniform( maxlevel );
 
 
     // Allocate a buffer for vertex primvar data. The buffer length is set to
     // be the sum of all children vertices up to the highest level of refinement.
-    std::vector<Vertex> vbuffer(refTables->GetNumVerticesTotal());
+    std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
     Vertex * verts = &vbuffer[0];
 
 
@@ -142,7 +142,7 @@ int main(int, char **) {
 
 
     // Interpolate vertex primvar data
-    refTables->Interpolate(verts, verts + nCoarseVerts);
+    refiner->Interpolate(verts, verts + nCoarseVerts);
 
 
 
@@ -152,19 +152,19 @@ int main(int, char **) {
         for (int level=0, firstVert=0; level<=maxlevel; ++level) {
 
             if (level==maxlevel) {
-                for (int vert=0; vert<refTables->GetNumVertices(maxlevel); ++vert) {
+                for (int vert=0; vert<refiner->GetNumVertices(maxlevel); ++vert) {
                     float const * pos = verts[firstVert+vert].GetPosition();
                     printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
                 }
             } else {
-                firstVert += refTables->GetNumVertices(level);
+                firstVert += refiner->GetNumVertices(level);
             }
         }
 
         // Print faces
-        for (int face=0; face<refTables->GetNumFaces(maxlevel); ++face) {
+        for (int face=0; face<refiner->GetNumFaces(maxlevel); ++face) {
 
-            FarIndexArray fverts = refTables->GetFaceVertices(maxlevel, face);
+            FarIndexArray fverts = refiner->GetFaceVertices(maxlevel, face);
 
             // all refined Catmark faces should be quads
             assert(fverts.size()==4);

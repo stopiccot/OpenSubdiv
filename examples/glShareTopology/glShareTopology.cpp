@@ -580,20 +580,20 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
 
     std::vector<float> restPosition(shape->verts);
 
-    FarRefineTables * refTables = 0;
+    FarTopologyRefiner * refiner = 0;
     {
         SdcType type = GetSdcType(*shape);
         SdcOptions options = GetSdcOptions(*shape);
 
-        refTables = FarRefineTablesFactory<Shape>::Create(type, options, *shape);
+        refiner = FarTopologyRefinerFactory<Shape>::Create(type, options, *shape);
 
-        assert(refTables);
+        assert(refiner);
     }
 
     // material assignment
     std::vector<int> idsOnPtexFaces;
     {
-        int numFaces = refTables->GetNumFaces(0);
+        int numFaces = refiner->GetNumFaces(0);
 
         // first, assign material ID to each coarse face
         std::vector<int> idsOnCoarseFaces;
@@ -603,7 +603,7 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
         }
 
         // create ptex index to coarse face index mapping
-        int numPtexFaces = refTables->GetNumPtexFaces();
+        int numPtexFaces = refiner->GetNumPtexFaces();
 
         // XXX: duped logic to simpleHbr
         std::vector<int> ptexIndexToFaceMapping(numPtexFaces);
@@ -611,7 +611,7 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
         for (int face=0; face < numFaces; ++face) {
 
             ptexIndexToFaceMapping[ptexIndex++] = face;
-            FarIndexArray fverts = refTables->GetFaceVertices(0, face);
+            FarIndexArray fverts = refiner->GetFaceVertices(0, face);
             if ( (scheme==kCatmark or scheme==kBilinear) and fverts.size() != 4 ) {
                 for (int j = 0; j < (fverts.size()-1); ++j) {
                     ptexIndexToFaceMapping[ptexIndex++] = face;
@@ -629,9 +629,9 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
     bool doAdaptive = (g_adaptive!=0 and scheme==kCatmark);
 
     if (doAdaptive) {
-        refTables->RefineAdaptive(level);
+        refiner->RefineAdaptive(level);
     } else {
-        refTables->RefineUniform(level);
+        refiner->RefineUniform(level);
     }
 
     FarStencilTables const * vertexStencils=0, * varyingStencils=0;
@@ -640,17 +640,17 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
         options.generateOffsets = true;
         options.generateAllLevels = doAdaptive ? true : false;
 
-        vertexStencils = FarStencilTablesFactory::Create(*refTables, options);
+        vertexStencils = FarStencilTablesFactory::Create(*refiner, options);
 
         if (g_displayStyle==kVarying or g_displayStyle==kVaryingInterleaved) {
-            varyingStencils = FarStencilTablesFactory::Create(*refTables, options);
+            varyingStencils = FarStencilTablesFactory::Create(*refiner, options);
         }
 
         assert(vertexStencils);
     }
 
     FarPatchTables const * patchTables =
-        FarPatchTablesFactory::Create(*refTables);
+        FarPatchTablesFactory::Create(*refiner);
 
 
     // create partitioned patcharray
@@ -697,7 +697,7 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
     } else {
     }
 
-    delete refTables;
+    delete refiner;
     delete vertexStencils;
     delete varyingStencils;
     delete patchTables;

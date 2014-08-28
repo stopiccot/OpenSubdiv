@@ -228,11 +228,11 @@ createOsdMesh() {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // count ptex face id
-    int numPtexFaces = refTables->GetNumPtexFaces();
+    int numPtexFaces = refiner->GetNumPtexFaces();
 
     delete g_mesh;
     g_mesh = NULL;
@@ -249,7 +249,7 @@ createOsdMesh() {
         OpenSubdiv::OsdCpuComputeController,
         OpenSubdiv::OsdGLDrawContext>(
             g_cpuComputeController,
-            refTables, 3, 0, g_level, bits);
+            refiner, 3, 0, g_level, bits);
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};

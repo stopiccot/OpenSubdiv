@@ -30,7 +30,7 @@
 // 'Controllers'.
 //
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 #include <far/stencilTablesFactory.h>
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
@@ -64,7 +64,7 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarRefineTables const * createRefineTables(int maxlevel);
+static FarTopologyRefiner const * createTopologyRefiner(int maxlevel);
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
@@ -81,7 +81,7 @@ int main(int, char **) {
     // Setup phase
     //  
     { // Setup Context
-        FarRefineTables const * refTables = createRefineTables(maxlevel);
+        FarTopologyRefiner const * refiner = createTopologyRefiner(maxlevel);
 
         // Setup a factory to create FarStencilTables (for more details see
         // Far tutorials)
@@ -90,7 +90,7 @@ int main(int, char **) {
         options.generateAllLevels=false;
 
         FarStencilTables const * stencilTables =
-            FarStencilTablesFactory::Create(*refTables, options);
+            FarStencilTablesFactory::Create(*refiner, options);
 
         // We need a kernel batch to dispatch Compute launches
         batches.push_back(FarStencilTablesFactory::Create(*stencilTables));
@@ -98,11 +98,11 @@ int main(int, char **) {
         // Create an Osd Compute Context from the stencil tables
         context = OsdCpuComputeContext::Create(stencilTables);
 
-        nCoarseVerts = refTables->GetNumVertices(0);
+        nCoarseVerts = refiner->GetNumVertices(0);
         nRefinedVerts = stencilTables->GetNumStencils();
 
         // We are done with Far: cleanup tables
-        delete refTables;
+        delete refiner;
         delete stencilTables;
     }
 
@@ -142,12 +142,12 @@ int main(int, char **) {
 }
 
 //------------------------------------------------------------------------------
-static FarRefineTables const *
-createRefineTables(int maxlevel) {
+static FarTopologyRefiner const *
+createTopologyRefiner(int maxlevel) {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
 
@@ -160,13 +160,13 @@ createRefineTables(int maxlevel) {
     desc.vertsPerFace = g_vertsperface;
     desc.vertIndices  = g_vertIndices;
 
-    // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a FarTopologyRefiner from the descriptor
+    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     // Uniformly refine the topolgy up to 'maxlevel'
-    refTables->RefineUniform( maxlevel );
+    refiner->RefineUniform( maxlevel );
 
-    return refTables;
+    return refiner;
 }
 
 //------------------------------------------------------------------------------

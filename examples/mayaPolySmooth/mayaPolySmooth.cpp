@@ -60,7 +60,7 @@
 #endif
 
 // OpenSubdiv includes
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 #include <far/stencilTablesFactory.h>
 
 #include <osd/mesh.h>
@@ -184,7 +184,7 @@ createComp(MFnMeshData &dataCreator, MFn::Type compType, unsigned compId, MIntAr
 // OpenSubdiv Functions
 // ====================================
 
-typedef OpenSubdiv::FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+typedef OpenSubdiv::FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
 // Reference: OSD shape_utils.h:: applyTags() "crease"
 static float
@@ -300,7 +300,7 @@ getMayaFvarFieldParams(
 
 
 //! Caller is expected to delete the returned value
-static OpenSubdiv::FarRefineTables *
+static OpenSubdiv::FarTopologyRefiner *
 gatherTopology( MFnMesh const & inMeshFn,
                 MItMeshPolygon & inMeshItPolygon,
                 OpenSubdiv::SdcType type,
@@ -377,8 +377,8 @@ gatherTopology( MFnMesh const & inMeshFn,
 
     float maxVertexCrease = getCreaseVertices( inMeshFn, desc );
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     delete [] desc.vertsPerFace;
     delete [] desc.vertIndices;
@@ -392,7 +392,7 @@ gatherTopology( MFnMesh const & inMeshFn,
         *maxCreaseSharpness = std::max(maxEdgeCrease, maxVertexCrease);
     }
 
-    return refTables;
+    return refiner;
 }
 
 static inline int
@@ -510,7 +510,7 @@ struct Vertex {
 };
 
 static MStatus
-convertToMayaMeshData(OpenSubdiv::FarRefineTables const & refTables,
+convertToMayaMeshData(OpenSubdiv::FarTopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer, MFnMesh const & inMeshFn,
         MObject newMeshDataObj) {
 
@@ -518,8 +518,8 @@ convertToMayaMeshData(OpenSubdiv::FarRefineTables const & refTables,
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
-    int maxlevel = refTables.GetMaxLevel(),
-        nfaces = refTables.GetNumFaces(maxlevel);
+    int maxlevel = refiner.GetMaxLevel(),
+        nfaces = refiner.GetNumFaces(maxlevel);
         
     // Init Maya Data
 
@@ -532,18 +532,18 @@ convertToMayaMeshData(OpenSubdiv::FarRefineTables const & refTables,
     // -- Face Connects
     MIntArray faceConnects(nfaces*4);
     for (int face=0, idx=0; face < nfaces; ++face) {
-        IndexArray fverts = refTables.GetFaceVertices(maxlevel, face);
+        IndexArray fverts = refiner.GetFaceVertices(maxlevel, face);
         for (int vert=0; vert < fverts.size(); ++vert) {
             faceConnects[idx++] = fverts[vert];
         }
     }
 
     // -- Points
-    MFloatPointArray points(refTables.GetNumVertices(maxlevel));
+    MFloatPointArray points(refiner.GetNumVertices(maxlevel));
     Vertex const * v = &vertexBuffer.at(0);
 
     for (int level=1; level<=maxlevel; ++level) {
-        int nverts = refTables.GetNumVertices(level);
+        int nverts = refiner.GetNumVertices(level);
         if (level==maxlevel) {
             for (int vert=0; vert < nverts; ++vert, ++v) {
                 points.set(vert, v->position[0], v->position[1], v->position[2]);
@@ -633,21 +633,21 @@ MayaPolySmooth::compute( const MPlug& plug, MDataBlock& data ) {
                  OpenSubdiv::SdcOptions::TRI_SUB_NEW : OpenSubdiv::SdcOptions::TRI_SUB_OLD);
 
             float maxCreaseSharpness=0.0f;
-            OpenSubdiv::FarRefineTables * refTables =
+            OpenSubdiv::FarTopologyRefiner * refiner =
                 gatherTopology(inMeshFn, inMeshItPolygon, type, options, &maxCreaseSharpness);
 
-            assert(refTables);
+            assert(refiner);
 
             // Refine & Interpolate
-            refTables->RefineUniform(subdivisionLevel);
+            refiner->RefineUniform(subdivisionLevel);
 
             Vertex const * controlVerts =
                 reinterpret_cast<Vertex const *>(inMeshFn.getRawPoints(&status));
 
             std::vector<Vertex> refinedVerts(
-                refTables->GetNumVerticesTotal() - refTables->GetNumVertices(0));
+                refiner->GetNumVerticesTotal() - refiner->GetNumVertices(0));
             
-            refTables->Interpolate(controlVerts, &refinedVerts.at(0));
+            refiner->Interpolate(controlVerts, &refinedVerts.at(0));
 
             // == Convert subdivided OpenSubdiv mesh to MFnMesh Data outputMesh =============
 
@@ -657,12 +657,12 @@ MayaPolySmooth::compute( const MPlug& plug, MDataBlock& data ) {
             MCHECKERR(status, "ERROR creating outputData");
 
             // Create out mesh
-            status = convertToMayaMeshData(*refTables, refinedVerts, inMeshFn, newMeshDataObj);
+            status = convertToMayaMeshData(*refiner, refinedVerts, inMeshFn, newMeshDataObj);
             MCHECKERR(status, "ERROR convertOsdFarToMayaMesh");
 
             // Propagate objectGroups from inMesh to outMesh (for per-facet shading, etc)
             status = createSmoothMesh_objectGroups(inMeshFn, inMeshDat,
-                newMeshData, subdivisionLevel, refTables->GetNumFaces(subdivisionLevel));
+                newMeshData, subdivisionLevel, refiner->GetNumFaces(subdivisionLevel));
 
             // Write to output plug
             MDataHandle outMeshH = data.outputValue(a_output, &status);
@@ -674,7 +674,7 @@ MayaPolySmooth::compute( const MPlug& plug, MDataBlock& data ) {
 
             // == Cleanup OSD ============================================
             // REVISIT: Re-add these deletes
-            delete refTables;
+            delete refiner;
 
             // note that the subd mesh was created (see the section below if !createdSubdMesh)
             createdSubdMesh = true;

@@ -158,8 +158,8 @@ static GLMesh g_base_glmesh,
 
 //------------------------------------------------------------------------------
 
-typedef OpenSubdiv::FarRefineTables               FRefineTables;
-typedef OpenSubdiv::FarRefineTablesFactory<Shape> FRefineTablesFactory;
+typedef OpenSubdiv::FarTopologyRefiner               FTopologyRefiner;
+typedef OpenSubdiv::FarTopologyRefinerFactory<Shape> FTopologyRefinerFactory;
 
 //------------------------------------------------------------------------------
 // generate display IDs for Hbr faces
@@ -359,28 +359,28 @@ createHbrMesh(Shape * shape, int maxlevel) {
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr verts
 static void
-createVertNumbers(OpenSubdiv::FarRefineTables const & refTables,
+createVertNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer) {
 
-    int maxlevel = refTables.GetMaxLevel(),
+    int maxlevel = refiner.GetMaxLevel(),
         firstvert = 0;
 
-    if (refTables.IsUniform()) {
+    if (refiner.IsUniform()) {
         for (int i=0; i<maxlevel; ++i) {
-            firstvert += refTables.GetNumVertices(i);
+            firstvert += refiner.GetNumVertices(i);
         }
     }
 
     static char buf[16];
-    if (refTables.IsUniform()) {
+    if (refiner.IsUniform()) {
         for (int i=firstvert; i<(int)vertexBuffer.size(); ++i) {
             snprintf(buf, 16, "%d", i);
             g_font->Print3D(vertexBuffer[i].GetPos(), buf, 1);
         }
     } else {
 
-        for (int level=0, vert=0; level<=refTables.GetMaxLevel(); ++level) {
-            for (int i=0; i<refTables.GetNumVertices(level); ++i, ++vert) {
+        for (int level=0, vert=0; level<=refiner.GetMaxLevel(); ++level) {
+            for (int i=0; i<refiner.GetNumVertices(level); ++i, ++vert) {
                 snprintf(buf, 16, "%d", i);
                 g_font->Print3D(vertexBuffer[vert].GetPos(), buf, 1);
             }
@@ -391,25 +391,25 @@ createVertNumbers(OpenSubdiv::FarRefineTables const & refTables,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr edges
 static void
-createEdgeNumbers(OpenSubdiv::FarRefineTables const & refTables,
+createEdgeNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer, bool ids=false, bool sharpness=false) {
 
     if (ids or sharpness) {
 
-        int maxlevel = refTables.GetMaxLevel(),
+        int maxlevel = refiner.GetMaxLevel(),
             firstvert = 0;
 
         for (int i=0; i<maxlevel; ++i) {
-            firstvert += refTables.GetNumVertices(i);
+            firstvert += refiner.GetNumVertices(i);
         }
 
         static char buf[16];
-        for (int i=0; i<refTables.GetNumEdges(maxlevel); ++i) {
+        for (int i=0; i<refiner.GetNumEdges(maxlevel); ++i) {
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::FarRefineTables::IndexArray const verts =
-                refTables.GetEdgeVertices(maxlevel, i);
+            OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+                refiner.GetEdgeVertices(maxlevel, i);
             assert(verts.size()==2);
 
             center.AddWithWeight(vertexBuffer[firstvert+verts[0]], 0.5f);
@@ -421,7 +421,7 @@ createEdgeNumbers(OpenSubdiv::FarRefineTables const & refTables,
             }
 
             if (sharpness) {
-                float sharpness = refTables.GetEdgeSharpness(maxlevel, i);
+                float sharpness = refiner.GetEdgeSharpness(maxlevel, i);
                 if (sharpness>0.0f) {
                     snprintf(buf, 16, "%g", sharpness);
                     g_font->Print3D(center.GetPos(), buf, std::min(8,(int)sharpness+4));
@@ -434,25 +434,25 @@ createEdgeNumbers(OpenSubdiv::FarRefineTables const & refTables,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr faces
 static void
-createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
+createFaceNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer) {
 
     static char buf[16];
 
-    if (refTables.IsUniform()) {
-        int maxlevel = refTables.GetMaxLevel(),
+    if (refiner.IsUniform()) {
+        int maxlevel = refiner.GetMaxLevel(),
             firstvert = 0;
 
         for (int i=0; i<maxlevel; ++i) {
-            firstvert += refTables.GetNumVertices(i);
+            firstvert += refiner.GetNumVertices(i);
         }
 
-        for (int face=0; face<refTables.GetNumFaces(maxlevel); ++face) {
+        for (int face=0; face<refiner.GetNumFaces(maxlevel); ++face) {
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::FarRefineTables::IndexArray const verts =
-                refTables.GetFaceVertices(maxlevel, face);
+            OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+                refiner.GetFaceVertices(maxlevel, face);
 
             float weight = 1.0f / (float)verts.size();
 
@@ -464,20 +464,20 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
             g_font->Print3D(center.GetPos(), buf, 2);
         }
     } else {
-        int maxlevel = refTables.GetMaxLevel(),
-//            patch = refTables.GetNumFaces(0),
-            firstvert = refTables.GetNumVertices(0);
+        int maxlevel = refiner.GetMaxLevel(),
+//            patch = refiner.GetNumFaces(0),
+            firstvert = refiner.GetNumVertices(0);
 
         for (int level=1; level<=maxlevel; ++level) {
 
-            int nfaces = refTables.GetNumFaces(level);
+            int nfaces = refiner.GetNumFaces(level);
 
             for (int face=0; face<nfaces; ++face /*, ++patch */) {
 
                 Vertex center(0.0f, 0.0f, 0.0f);
 
-                OpenSubdiv::FarRefineTables::IndexArray const verts =
-                    refTables.GetFaceVertices(level, face);
+                OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+                    refiner.GetFaceVertices(level, face);
 
                 float weight = 1.0f / (float)verts.size();
 
@@ -487,7 +487,7 @@ createFaceNumbers(OpenSubdiv::FarRefineTables const & refTables,
                 snprintf(buf, 16, "%d", face);
                 g_font->Print3D(center.GetPos(), buf, 2);
             }
-            firstvert+=refTables.GetNumVertices(level);
+            firstvert+=refiner.GetNumVertices(level);
         }
     }
 }
@@ -604,25 +604,25 @@ createVtrMesh(Shape * shape, int maxlevel) {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     OpenSubdiv::FarPatchTables * patchTables = 0;
 
     if (g_Adaptive) {
 
-        refTables->RefineAdaptive(maxlevel, /*fullTopology*/true);
+        refiner->RefineAdaptive(maxlevel, /*fullTopology*/true);
 
-        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(*refTables);
+        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(*refiner);
 
         g_numPatches = patchTables->GetNumPatches();
     } else {
-        refTables->RefineUniform(maxlevel, /*fullTopology*/true);
+        refiner->RefineUniform(maxlevel, /*fullTopology*/true);
     }
     s.Stop();
 
     // create vertex primvar data buffer
-    std::vector<Vertex> vertexBuffer(refTables->GetNumVerticesTotal());
+    std::vector<Vertex> vertexBuffer(refiner->GetNumVerticesTotal());
     Vertex * verts = &vertexBuffer[0];
 
     //printf("Vtr time: %f ms (topology)\n", float(s.GetElapsed())*1000.0f);
@@ -639,7 +639,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
     {
         s.Start();
         // populate buffer with Vtr interpolated vertex data
-        refTables->Interpolate(verts, verts + ncoarseverts);
+        refiner->Interpolate(verts, verts + ncoarseverts);
         s.Stop();
         //printf("          %f ms (interpolate)\n", float(s.GetElapsed())*1000.0f);
         //printf("          %f ms (total)\n", float(s.GetTotalElapsed())*1000.0f);
@@ -652,18 +652,18 @@ createVtrMesh(Shape * shape, int maxlevel) {
         options.sortBySize=false;
 
         OpenSubdiv::FarStencilTables const * stencilTables =
-            OpenSubdiv::FarStencilTablesFactory::Create(*refTables, options);
+            OpenSubdiv::FarStencilTablesFactory::Create(*refiner, options);
 
         stencilTables->UpdateValues(verts, verts + ncoarseverts);
     }
 #endif
 
     if (g_VtrDrawVertIDs) {
-        createVertNumbers(*refTables, vertexBuffer);
+        createVertNumbers(*refiner, vertexBuffer);
     }
 
     if (g_VtrDrawFaceIDs) {
-        createFaceNumbers(*refTables, vertexBuffer);
+        createFaceNumbers(*refiner, vertexBuffer);
     }
 
     if (g_VtrDrawPtexIDs and patchTables) {
@@ -674,7 +674,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
         createPatchNumbers(*patchTables, vertexBuffer);
     }
 
-    createEdgeNumbers(*refTables, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
+    createEdgeNumbers(*refiner, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
 
     GLMesh::Options options;
     options.vertColorMode=g_Adaptive ? GLMesh::VERTCOLOR_BY_LEVEL : GLMesh::VERTCOLOR_BY_SHARPNESS;
@@ -682,19 +682,19 @@ createVtrMesh(Shape * shape, int maxlevel) {
     options.faceColorMode=g_Adaptive ? GLMesh::FACECOLOR_BY_PATCHTYPE :GLMesh::FACECOLOR_SOLID;
 
     if (g_Adaptive) {
-        g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+        g_vtr_glmesh.Initialize(options, *refiner, patchTables, (float *)&verts[0]);
         g_vtr_glmesh.SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
     } else {
-        g_vtr_glmesh.Initialize(options, *refTables, patchTables, (float *)&verts[0]);
+        g_vtr_glmesh.Initialize(options, *refiner, patchTables, (float *)&verts[0]);
         g_vtr_glmesh.SetDiffuseColor(0.75f, 0.9f, 1.0f, 1.0f);
     }
 
 
-    //setFaceColors(*refTables);
+    //setFaceColors(*refiner);
 
     g_vtr_glmesh.InitializeDeviceBuffers();
 
-    delete refTables;
+    delete refiner;
     delete patchTables;
 }
 

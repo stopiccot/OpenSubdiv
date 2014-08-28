@@ -24,7 +24,7 @@
 
 #include "../far/stencilTables.h"
 #include "../far/stencilTablesFactory.h"
-#include "../far/refineTables.h"
+#include "../far/topologyRefiner.h"
 
 #include <cassert>
 #include <cstdio>
@@ -113,7 +113,7 @@ class StencilAllocator {
 public:
 
     // Constructor
-    StencilAllocator(FarRefineTables const & refTables,
+    StencilAllocator(FarTopologyRefiner const & refiner,
         FarStencilTablesFactory::Mode mode);
 
     // Destructor
@@ -323,7 +323,7 @@ Stencil::Print() const {
 }
 
 // Constructor
-StencilAllocator::StencilAllocator( FarRefineTables const & refTables,
+StencilAllocator::StencilAllocator( FarTopologyRefiner const & refiner,
     FarStencilTablesFactory::Mode mode) : _interpolateVarying(false) {
 
     if (mode == FarStencilTablesFactory::INTERPOLATE_VARYING) {
@@ -332,7 +332,7 @@ StencilAllocator::StencilAllocator( FarRefineTables const & refTables,
 
     // Make an educated guess as to what the max size should be
 
-    SdcType type = refTables.GetSchemeType();
+    SdcType type = refiner.GetSchemeType();
     switch (type) {
         case TYPE_BILINEAR :
             _maxsize = _interpolateVarying ? 5 : 5; break;
@@ -464,11 +464,11 @@ FarStencilTablesFactory::copyStencils(StencilVec & src,
 // FarStencilTables factory
 //
 FarStencilTables const *
-FarStencilTablesFactory::Create(FarRefineTables const & refTables,
+FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
     Options options) {
 
 
-    int maxlevel = refTables.GetMaxLevel();
+    int maxlevel = refiner.GetMaxLevel();
 
     if (maxlevel==0) {
         return new FarStencilTables;
@@ -478,7 +478,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
     std::vector<StencilAllocator> allocators(
         options.generateAllLevels ? maxlevel : 2,
-            StencilAllocator(refTables, mode));
+            StencilAllocator(refiner, mode));
 
     StencilAllocator * srcAlloc, * dstAlloc;
     if (options.generateAllLevels) {
@@ -494,22 +494,22 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
     for (int level=1;level<=maxlevel; ++level) {
 
-        dstAlloc->Resize(refTables.GetNumVertices(level));
+        dstAlloc->Resize(refiner.GetNumVertices(level));
 
         if (level==1) {
 
             // coarse vertices have a single index and a weight of 1.0f
-            int * srcStencils = new int[refTables.GetNumVertices(0)];
-            for (int i=0; i<refTables.GetNumVertices(0); ++i) {
+            int * srcStencils = new int[refiner.GetNumVertices(0)];
+            for (int i=0; i<refiner.GetNumVertices(0); ++i) {
                 srcStencils[i]=i;
             }
 
             Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
             if (mode==INTERPOLATE_VERTEX) {
-                refTables.Interpolate(level, srcStencils, dstStencils);
+                refiner.Interpolate(level, srcStencils, dstStencils);
             } else {
-                refTables.InterpolateVarying(level, srcStencils, dstStencils);
+                refiner.InterpolateVarying(level, srcStencils, dstStencils);
             }
 
             delete [] srcStencils;
@@ -519,9 +519,9 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
                     * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
             if (mode==INTERPOLATE_VERTEX) {
-                refTables.Interpolate(level, srcStencils, dstStencils);
+                refiner.Interpolate(level, srcStencils, dstStencils);
             } else {
-                refTables.InterpolateVarying(level, srcStencils, dstStencils);
+                refiner.InterpolateVarying(level, srcStencils, dstStencils);
             }
         }
 
@@ -539,7 +539,7 @@ FarStencilTablesFactory::Create(FarRefineTables const & refTables,
 
     FarStencilTables * result = new FarStencilTables;
     {
-        result->_numControlVertices = refTables.GetNumVertices(0);
+        result->_numControlVertices = refiner.GetNumVertices(0);
 
         // Add total number of stencils, weights & indices
         int nelems = 0, nstencils=0;

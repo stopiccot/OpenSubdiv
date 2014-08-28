@@ -30,7 +30,7 @@
 // factorized stencils to interpolate vertex primvar data buffers.
 //
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 #include <far/stencilTables.h>
 #include <far/stencilTablesFactory.h>
 
@@ -104,18 +104,18 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarRefineTables * createRefineTables();
+static FarTopologyRefiner * createTopologyRefiner();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
-    // Generate some FarRefineTables (see far_tutorial_0 for details).
-    FarRefineTables * refTables = createRefineTables();
+    // Generate some FarTopologyRefiner (see far_tutorial_0 for details).
+    FarTopologyRefiner * refiner = createTopologyRefiner();
 
 
     // Uniformly refine the topolgy up to 'maxlevel'.
     int maxlevel = 3;
-    refTables->RefineUniform( maxlevel );
+    refiner->RefineUniform( maxlevel );
 
 
     // Use the FarStencilTables factory to create discrete stencil tables
@@ -125,7 +125,7 @@ int main(int, char **) {
     options.generateOffsets=true;
     
     FarStencilTables const * stencilTables =
-        FarStencilTablesFactory::Create(*refTables, options);
+        FarStencilTablesFactory::Create(*refiner, options);
 
     // Allocate vertex primvar buffer (1 stencil for each vertex)
     int nstencils = stencilTables->GetNumStencils();
@@ -155,16 +155,16 @@ int main(int, char **) {
         printf("-c 1;\n");
     }
 
-    delete refTables;
+    delete refiner;
     delete stencilTables;
 }
 
 //------------------------------------------------------------------------------
-static FarRefineTables *
-createRefineTables() {
+static FarTopologyRefiner *
+createTopologyRefiner() {
 
     // Populate a topology descriptor with our raw data.
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
 
@@ -177,8 +177,8 @@ createRefineTables() {
     desc.vertsPerFace = g_vertsperface;
     desc.vertIndices  = g_vertIndices;
 
-    // Instantiate a FarRefineTables from the descriptor.
-    return FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a FarTopologyRefiner from the descriptor.
+    return FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
 }
 

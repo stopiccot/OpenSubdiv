@@ -23,7 +23,7 @@
 //
 #include "../far/patchTables.h"
 #include "../far/patchTablesFactory.h"
-#include "../far/refineTables.h"
+#include "../far/topologyRefiner.h"
 #include "../vtr/level.h"
 #include "../vtr/refinement.h"
 
@@ -353,27 +353,27 @@ FarPatchTablesFactory::allocateTables(FarPatchTables * tables, int /* nlevels */
 }
 
 FarPatchTables::FVarPatchTables *
-FarPatchTablesFactory::allocateFVarTables( FarRefineTables const & refTables,
+FarPatchTablesFactory::allocateFVarTables( FarTopologyRefiner const & refiner,
     FarPatchTables const & tables, Options options ) {
 
-    assert( refTables.GetNumFVarChannels()>0 );
+    assert( refiner.GetNumFVarChannels()>0 );
 
     FarPatchTables::PatchArrayVector const & parrays = tables.GetPatchArrayVector();
 
     FVarPatchTables * fvarTables = new FVarPatchTables;
 
-    fvarTables->_channels.resize( refTables.GetNumFVarChannels() );
+    fvarTables->_channels.resize( refiner.GetNumFVarChannels() );
 
-    if (refTables.IsUniform()) {
+    if (refiner.IsUniform()) {
 
         assert( not tables.IsFeatureAdaptive() );
 
-        int maxlevel = refTables.GetMaxLevel();
-        for (int channel=0; channel<refTables.GetNumFVarChannels(); ++channel) {
+        int maxlevel = refiner.GetMaxLevel();
+        for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
 
             int nverts = options.generateAllLevels ?
-                refTables.GetNumFacesTotal() :
-                    refTables.GetNumFaces(maxlevel);
+                refiner.GetNumFacesTotal() :
+                    refiner.GetNumFaces(maxlevel);
 
             assert(not parrays.empty());
             nverts *= parrays[0].GetDescriptor().GetNumFVarControlVertices();
@@ -392,7 +392,7 @@ FarPatchTablesFactory::allocateFVarTables( FarRefineTables const & refTables,
         }
         assert(nverts>0);
 
-        for (int channel=0; channel<refTables.GetNumFVarChannels(); ++channel) {
+        for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
             fvarTables->_channels[channel].patchVertIndices.resize(nverts);
         }
     }
@@ -423,7 +423,7 @@ FarPatchTablesFactory::pushPatchArray( FarPatchTables::Descriptor desc,
 //  a pointer to the next descriptor
 //
 FarPatchParam *
-FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
+FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
                                          int depth, VtrIndex faceIndex, int rotation,
                                          FarPatchParam *coord) {
 
@@ -435,11 +435,11 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
         v = 0,
         ofs = 1;
 
-    bool nonquad = (refTables.GetFaceVertices(depth, faceIndex).size() != 4);
+    bool nonquad = (refiner.GetFaceVertices(depth, faceIndex).size() != 4);
 
     for (int i = depth; i > 0; --i) {
-        VtrRefinement const& refinement  = refTables.getRefinement(i-1);
-        VtrLevel const&      parentLevel = refTables.getLevel(i-1);
+        VtrRefinement const& refinement  = refiner.getRefinement(i-1);
+        VtrLevel const&      parentLevel = refiner.getLevel(i-1);
 
         VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
                  childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
@@ -467,7 +467,7 @@ FarPatchTablesFactory::computePatchParam(FarRefineTables const & refTables,
         faceIndex = parentFaceIndex;
     }
 
-    VtrIndex ptexIndex = refTables.GetPtexIndex(faceIndex);
+    VtrIndex ptexIndex = refiner.GetPtexIndex(faceIndex);
     assert(ptexIndex!=-1);
 
     if (nonquad) {
@@ -519,21 +519,21 @@ FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, un
 //  but that may no longer be necessary (see notes in the uniform version below)...
 //
 FarPatchTables *
-FarPatchTablesFactory::Create( FarRefineTables const & refineTables, Options options ) {
+FarPatchTablesFactory::Create( FarTopologyRefiner const & refiner, Options options ) {
 
-    if (refineTables.IsUniform()) {
-        return createUniform(refineTables, options);
+    if (refiner.IsUniform()) {
+        return createUniform(refiner, options);
     } else {
-        return createAdaptive(refineTables, options);
+        return createAdaptive(refiner, options);
     }
 }
 
 static void
-gatherFVarPatchVertices(FarRefineTables const & refineTables,
+gatherFVarPatchVertices(FarTopologyRefiner const & refiner,
     int level, int faceIndex, int rotation, int const * levelOffsets, unsigned int ** fptrs) {
 
-    for (int channel=0; channel<refineTables.GetNumFVarChannels(); ++channel) {
-        FarIndexArray const & fverts = refineTables.GetFVarFaceValues(level, faceIndex, channel);
+    for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
+        FarIndexArray const & fverts = refiner.GetFVarFaceValues(level, faceIndex, channel);
         for (int vert=0; vert<fverts.size(); ++vert) {
             fptrs[channel][vert] = levelOffsets[channel] + fverts[(vert+rotation)%4];
         }
@@ -542,21 +542,21 @@ gatherFVarPatchVertices(FarRefineTables const & refineTables,
 }
 
 FarPatchTables *
-FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Options options ) {
+FarPatchTablesFactory::createUniform( FarTopologyRefiner const & refiner, Options options ) {
 
-    assert(refineTables.IsUniform());
+    assert(refiner.IsUniform());
 
     bool triangulateQuads = (options.triangulateQuads and
-        refineTables.GetSchemeType()==TYPE_LOOP);
+        refiner.GetSchemeType()==TYPE_LOOP);
 
-    int maxvalence = refineTables.getLevel(0).getMaxValence(),
-        maxlevel = refineTables.GetMaxLevel(),
+    int maxvalence = refiner.getLevel(0).getMaxValence(),
+        maxlevel = refiner.GetMaxLevel(),
         firstlevel = options.generateAllLevels ? 0 : maxlevel,
         nlevels = maxlevel-firstlevel+1,
         nCVs = 0;
 
     FarPatchTables::Type ptype = FarPatchTables::NON_PATCH;
-    switch (refineTables.GetSchemeType()) {
+    switch (refiner.GetSchemeType()) {
         case TYPE_BILINEAR :
         case TYPE_CATMARK  : ptype = FarPatchTables::QUADS; break;
         case TYPE_LOOP     : ptype = FarPatchTables::TRIANGLES; break;
@@ -575,7 +575,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     //
     FarPatchTables * tables = new FarPatchTables(maxvalence);
 
-    tables->_numPtexFaces = refineTables.GetNumPtexFaces();
+    tables->_numPtexFaces = refiner.GetNumPtexFaces();
 
     FarPatchTables::PatchArrayVector & parrays = tables->_patchArrays;
     parrays.reserve( nlevels );
@@ -585,7 +585,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     // generate patch arrays
     for (int level=firstlevel, poffset=0, voffset=0; level<=maxlevel; ++level) {
 
-        int npatches = refineTables.GetNumFaces(level);
+        int npatches = refiner.GetNumFaces(level);
         if (triangulateQuads) {
             assert(ptype==FarPatchTables::QUADS);
             npatches *= 2;
@@ -601,7 +601,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     allocateTables( tables, 0 );
 
     if (options.generateFVarTables) {
-        tables->_fvarPatchTables = allocateFVarTables( refineTables, *tables, options );
+        tables->_fvarPatchTables = allocateFVarTables( refiner, *tables, options );
     }
 
     //
@@ -612,7 +612,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
     unsigned int  ** fptr=0;
 
     if (tables->_fvarPatchTables) {
-        int nchannels = refineTables.GetNumFVarChannels();
+        int nchannels = refiner.GetNumFVarChannels();
         fptr = (unsigned int **)alloca(nchannels*sizeof(unsigned int *));
         for (int channel=0; channel<nchannels; ++channel) {
             fptr[channel] = const_cast<unsigned int *>(
@@ -620,30 +620,30 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
         }
     }
 
-    int levelVertOffset = options.generateAllLevels ? 0 : refineTables.GetNumVertices(0);
+    int levelVertOffset = options.generateAllLevels ? 0 : refiner.GetNumVertices(0);
 
     int * levelFVarVertOffsets = 0;
     if (tables->_fvarPatchTables) {
-         levelFVarVertOffsets = (int *)alloca(refineTables.GetNumFVarChannels());
-         memset(levelFVarVertOffsets, 0, refineTables.GetNumFVarChannels()*sizeof(int));
+         levelFVarVertOffsets = (int *)alloca(refiner.GetNumFVarChannels());
+         memset(levelFVarVertOffsets, 0, refiner.GetNumFVarChannels()*sizeof(int));
     }
 
     for (int level=1; level<=maxlevel; ++level) {
 
-        int nfaces = refineTables.GetNumFaces(level);
+        int nfaces = refiner.GetNumFaces(level);
         if (level>=firstlevel) {
             for (int face=0; face<nfaces; ++face) {
 
-                FarIndexArray const & fverts = refineTables.GetFaceVertices(level, face);
+                FarIndexArray const & fverts = refiner.GetFaceVertices(level, face);
 
                 for (int vert=0; vert<fverts.size(); ++vert) {
                     *iptr++ = levelVertOffset + fverts[vert];
                 }
 
-                pptr = computePatchParam(refineTables, level, face, /*rot*/0, pptr);
+                pptr = computePatchParam(refiner, level, face, /*rot*/0, pptr);
 
                 if (tables->_fvarPatchTables) {
-                    gatherFVarPatchVertices(refineTables, level, face, 0, levelFVarVertOffsets, fptr);
+                    gatherFVarPatchVertices(refiner, level, face, 0, levelFVarVertOffsets, fptr);
                 }
 
                 if (triangulateQuads) {
@@ -657,7 +657,7 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
                     ++pptr;
 
                     if (tables->_fvarPatchTables) {
-                        for (int channel=0; channel<refineTables.GetNumFVarChannels(); ++channel) {
+                        for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
                             *fptr[channel] = *(fptr[channel]-4); // copy fv0 index
                             *fptr[channel] = *(fptr[channel]-3); // copy fv2 index
                         }
@@ -667,11 +667,11 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
         }
 
         if (options.generateAllLevels) {
-            levelVertOffset += refineTables.GetNumVertices(level);
+            levelVertOffset += refiner.GetNumVertices(level);
             if (tables->_fvarPatchTables) {
-                int nchannels = refineTables.GetNumFVarChannels();
+                int nchannels = refiner.GetNumFVarChannels();
                 for (int channel=0; channel<nchannels; ++channel) {
-                    levelFVarVertOffsets[channel] += refineTables.GetNumFVarValues(level, channel);
+                    levelFVarVertOffsets[channel] += refiner.GetNumFVarValues(level, channel);
                 }
             }
         }
@@ -680,9 +680,9 @@ FarPatchTablesFactory::createUniform( FarRefineTables const & refineTables, Opti
 }
 
 FarPatchTables *
-FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Options options ) {
+FarPatchTablesFactory::createAdaptive( FarTopologyRefiner const & refiner, Options options ) {
 
-    assert(not refineTables.IsUniform());
+    assert(not refiner.IsUniform());
 
     //
     //  First identify the patches -- accumulating the inventory patches for all of the
@@ -691,13 +691,13 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
     PatchCounters             patchInventory;
     std::vector<PatchFaceTag> patchTags;
 
-    identifyAdaptivePatches(refineTables, patchInventory, patchTags);
+    identifyAdaptivePatches(refiner, patchInventory, patchTags);
 
     //
     //  Create the instance of the tables and allocate and initialize its members based on
     //  the inventory of patches determined above:
     //
-    int maxValence = refineTables.getLevel(0).getMaxValence();
+    int maxValence = refiner.getLevel(0).getMaxValence();
 
     FarPatchTables * tables = new FarPatchTables(maxValence);
 
@@ -712,13 +712,13 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
         pushPatchArray( *it, parray, patchInventory.getValue(*it), &voffset, &poffset, &qoffset );
     }
 
-    tables->_numPtexFaces = refineTables.GetNumPtexFaces();
+    tables->_numPtexFaces = refiner.GetNumPtexFaces();
 
     // Allocate various tables
     allocateTables( tables, 0 );
 
     if (options.generateFVarTables) {
-        tables->_fvarPatchTables = allocateFVarTables( refineTables, *tables, options );
+        tables->_fvarPatchTables = allocateFVarTables( refiner, *tables, options );
     }
 
     // Specifics for Gregory patches
@@ -729,7 +729,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
     //
     //  Now populate the patches:
     //
-    populateAdaptivePatches(refineTables, patchInventory, patchTags, tables);
+    populateAdaptivePatches(refiner, patchInventory, patchTags, tables);
 
     return tables;
 }
@@ -740,7 +740,7 @@ FarPatchTablesFactory::createAdaptive( FarRefineTables const & refineTables, Opt
 //  later with no additional analysis.
 //
 void
-FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTables,
+FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refiner,
                                                 PatchCounters &         patchInventory,
                                                 PatchTagVector &        patchTags ) {
 
@@ -754,12 +754,12 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
     //  has no Refinement, so a single level is effectively the last, but with less information
     //  available in some cases, as it was not generated by refinement.
     //
-    patchTags.resize(refineTables.GetNumFacesTotal());
+    patchTags.resize(refiner.GetNumFacesTotal());
 
     PatchFaceTag * levelPatchTags = &patchTags[0];
 
-    for (int i = 0; i < (int)refineTables.getNumLevels(); ++i) {
-        VtrLevel const * level = &refineTables.getLevel(i);
+    for (int i = 0; i < (int)refiner.getNumLevels(); ++i) {
+        VtrLevel const * level = &refiner.getLevel(i);
 
         //
         //  Given components at Level[i], we need to be looking at Refinement[i] -- and not
@@ -774,10 +774,10 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
         //    - what Faces are "complete" (done for child vertices in Refinement)
         //
         bool isLevelFirst = (i == 0);
-        bool isLevelLast  = (i == ((int)refineTables.getNumLevels() - 1));
+        bool isLevelLast  = (i == ((int)refiner.getNumLevels() - 1));
 
-        VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refineTables.getRefinement(i-1);
-        VtrRefinement const * refineNext = isLevelLast  ? 0 : &refineTables.getRefinement(i);
+        VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refiner.getRefinement(i-1);
+        VtrRefinement const * refineNext = isLevelLast  ? 0 : &refiner.getRefinement(i);
 
         VtrRefinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0;
 
@@ -935,7 +935,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarRefineTables const & refineTa
 //  idenified.
 //
 void
-FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTables,
+FarPatchTablesFactory::populateAdaptivePatches( FarTopologyRefiner const & refiner,
                                                 PatchCounters const &   patchInventory,
                                                 PatchTagVector const &  patchTags,
                                                 FarPatchTables *        tables ) {
@@ -957,7 +957,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
         pptrs.getValue( *it ) = &tables->_paramTable[pa->GetPatchIndex()];
 
         if (tables->_fvarPatchTables) {
-            int nchannels = refineTables.GetNumFVarChannels(),
+            int nchannels = refiner.GetNumFVarChannels(),
                 ncvs = pa->GetDescriptor().GetNumFVarControlVertices(); // XXXX manuelk this will break with bi-cubic fvar interp !!!
 
             unsigned int ** fptr = (unsigned int **)alloca(nchannels*sizeof(unsigned int *));
@@ -981,7 +981,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
     //
     bool hasGregoryPatches = (patchInventory.G > 0) or (patchInventory.GB > 0);
     if (hasGregoryPatches) {
-        gregoryVertexFlags.resize(refineTables.GetNumVerticesTotal(), false);
+        gregoryVertexFlags.resize(refiner.GetNumVerticesTotal(), false);
     }
 
     //
@@ -991,12 +991,12 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
     int levelVertOffset = 0;
     int * levelFVarVertOffsets = 0;
     if (tables->_fvarPatchTables) {
-         levelFVarVertOffsets = (int *)alloca(refineTables.GetNumFVarChannels());
-         memset(levelFVarVertOffsets, 0, refineTables.GetNumFVarChannels()*sizeof(int));
+         levelFVarVertOffsets = (int *)alloca(refiner.GetNumFVarChannels());
+         memset(levelFVarVertOffsets, 0, refiner.GetNumFVarChannels()*sizeof(int));
     }
 
-    for (int i = 0; i < (int)refineTables.getNumLevels(); ++i) {
-        VtrLevel const * level = &refineTables.getLevel(i);
+    for (int i = 0; i < (int)refiner.getNumLevels(); ++i) {
+        VtrLevel const * level = &refiner.getLevel(i);
 
         const PatchFaceTag * levelPatchTags = &patchTags[levelFaceOffset];
 
@@ -1019,10 +1019,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     offsetAndPermuteIndices(patchVerts, 16, levelVertOffset, permuteInterior, iptrs.R[tIndex]);
 
                     iptrs.R[tIndex] += 16;
-                    pptrs.R[tIndex] = computePatchParam(refineTables, i, faceIndex, rIndex, pptrs.R[tIndex]);
+                    pptrs.R[tIndex] = computePatchParam(refiner, i, faceIndex, rIndex, pptrs.R[tIndex]);
 
                     if (tables->_fvarPatchTables) {
-                        gatherFVarPatchVertices(refineTables, i, faceIndex, rIndex, levelFVarVertOffsets, fptrs.R[tIndex]);
+                        gatherFVarPatchVertices(refiner, i, faceIndex, rIndex, levelFVarVertOffsets, fptrs.R[tIndex]);
                     }
                 } else {
                     //  For the boundary and corner cases, the Hbr code makes some adjustments to the
@@ -1051,10 +1051,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                         offsetAndPermuteIndices(patchVerts, 12, levelVertOffset, permuteBoundary, iptrs.B[tIndex][rIndex]);
 
                         iptrs.B[tIndex][rIndex] += 12;
-                        pptrs.B[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
+                        pptrs.B[tIndex][rIndex] = computePatchParam(refiner, i, faceIndex, bIndex, pptrs.B[tIndex][rIndex]);
 
                         if (tables->_fvarPatchTables) {
-                            gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.B[tIndex][rIndex]);
+                            gatherFVarPatchVertices(refiner, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.B[tIndex][rIndex]);
                         }
                     } else {
                         unsigned int const permuteCorner[9] = { 8, 3, 0, 7, 2, 1, 6, 5, 4 };
@@ -1065,10 +1065,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                         bIndex = (bIndex+3)%4;
 
                         iptrs.C[tIndex][rIndex] += 9;
-                        pptrs.C[tIndex][rIndex] = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.C[tIndex][rIndex]);
+                        pptrs.C[tIndex][rIndex] = computePatchParam(refiner, i, faceIndex, bIndex, pptrs.C[tIndex][rIndex]);
 
                         if (tables->_fvarPatchTables) {
-                            gatherFVarPatchVertices(refineTables, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.C[tIndex][rIndex]);
+                            gatherFVarPatchVertices(refiner, i, faceIndex, bIndex, levelFVarVertOffsets, fptrs.C[tIndex][rIndex]);
                         }
                     }
                 }
@@ -1085,10 +1085,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
                     getQuadOffsets(*level, faceIndex, quad_G_C0_P);
                     quad_G_C0_P += 4;
 
-                    pptrs.G = computePatchParam(refineTables, i, faceIndex, 0, pptrs.G);
+                    pptrs.G = computePatchParam(refiner, i, faceIndex, 0, pptrs.G);
 
                     if (tables->_fvarPatchTables) {
-                        gatherFVarPatchVertices(refineTables, i, faceIndex, 0, levelFVarVertOffsets, fptrs.G);
+                        gatherFVarPatchVertices(refiner, i, faceIndex, 0, levelFVarVertOffsets, fptrs.G);
                     }
                 } else {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
@@ -1104,10 +1104,10 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
 
                     int bIndex = (patchTag._boundaryIndex+1)%4;
 
-                    pptrs.GB = computePatchParam(refineTables, i, faceIndex, bIndex, pptrs.GB);
+                    pptrs.GB = computePatchParam(refiner, i, faceIndex, bIndex, pptrs.GB);
 
                     if (tables->_fvarPatchTables) {
-                        gatherFVarPatchVertices(refineTables, i, faceIndex, 0, levelFVarVertOffsets, fptrs.GB);
+                        gatherFVarPatchVertices(refiner, i, faceIndex, 0, levelFVarVertOffsets, fptrs.GB);
                     }
                 }
             }
@@ -1115,9 +1115,9 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
         levelFaceOffset += level->getNumFaces();
         levelVertOffset += level->getNumVertices();
         if (tables->_fvarPatchTables) {
-            int nchannels = refineTables.GetNumFVarChannels();
+            int nchannels = refiner.GetNumFVarChannels();
             for (int channel=0; channel<nchannels; ++channel) {
-                levelFVarVertOffsets[channel] += refineTables.GetNumFVarValues(i, channel);
+                levelFVarVertOffsets[channel] += refiner.GetNumFVarValues(i, channel);
             }
         }
     }
@@ -1135,13 +1135,13 @@ FarPatchTablesFactory::populateAdaptivePatches( FarRefineTables const & refineTa
         const int SizePerVertex = 2*tables->_maxValence + 1;
 
         FarPatchTables::VertexValenceTable & vTable = tables->_vertexValenceTable;
-        vTable.resize(refineTables.GetNumVerticesTotal() * SizePerVertex);
+        vTable.resize(refiner.GetNumVerticesTotal() * SizePerVertex);
 
         int vOffset = 0;
-        int levelLast = (int)refineTables.getNumLevels() - 1;
+        int levelLast = (int)refiner.getNumLevels() - 1;
         for (int i = 0; i <= levelLast; ++i) {
 
-            VtrLevel const * level = &refineTables.getLevel(i);
+            VtrLevel const * level = &refiner.getLevel(i);
 
             if (i == levelLast) {
 

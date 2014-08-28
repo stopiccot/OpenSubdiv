@@ -33,7 +33,7 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 //  Forward declarations (for internal implementation purposes):
-class FarRefineTables;
+class FarTopologyRefiner;
 class VtrLevel;
 struct PatchFaceTag;
 template <typename T> struct PatchTypes;
@@ -61,29 +61,29 @@ public:
 
     /// \brief Factory constructor for FarPatchTables
     ///
-    /// @param refineTables  FarRefineTables from which to generate patches
+    /// @param refiner  FarTopologyRefiner from which to generate patches
     ///
     /// @param options       Options controlling the creation of the tables
     ///
     /// @return              A new instance of FarPatchTables
     ///
-    static FarPatchTables * Create(FarRefineTables const & refineTables, Options options=Options());
+    static FarPatchTables * Create(FarTopologyRefiner const & refiner, Options options=Options());
 
 private:
 
     typedef FarPatchTables::Descriptor Descriptor;
     typedef FarPatchTables::FVarPatchTables FVarPatchTables;
 
-    static FarPatchTables * createUniform( FarRefineTables const & refineTables, Options options );
+    static FarPatchTables * createUniform( FarTopologyRefiner const & refiner, Options options );
 
-    static FarPatchTables * createAdaptive( FarRefineTables const & refineTables, Options options );
+    static FarPatchTables * createAdaptive( FarTopologyRefiner const & refiner, Options options );
 
     //  High-level methods for identifying and populating patches associated with faces:
-    static void identifyAdaptivePatches( FarRefineTables const &     refTables,
+    static void identifyAdaptivePatches( FarTopologyRefiner const &     refiner,
                                          PatchTypes<int> &           patchInventory,
                                          std::vector<PatchFaceTag> & patchTags);
 
-    static void populateAdaptivePatches( FarRefineTables const &           refTables,
+    static void populateAdaptivePatches( FarTopologyRefiner const &           refiner,
                                          PatchTypes<int> const &           patchInventory,
                                          std::vector<PatchFaceTag> const & patchTags,
                                          FarPatchTables *                  tables);
@@ -91,7 +91,7 @@ private:
     //  Methods for allocating and managing the patch table data arrays:
     static void allocateTables( FarPatchTables * tables, int nlevels );
 
-    static FVarPatchTables * allocateFVarTables( FarRefineTables const & refTables,
+    static FVarPatchTables * allocateFVarTables( FarTopologyRefiner const & refiner,
                                                  FarPatchTables const & tables,
                                                  Options options );
 
@@ -99,7 +99,7 @@ private:
                                 FarPatchTables::PatchArrayVector & parray,
                                 int npatches, int * voffset, int * poffset, int * qoffset );
 
-    static FarPatchParam * computePatchParam( FarRefineTables const & refTables, int level,
+    static FarPatchParam * computePatchParam( FarTopologyRefiner const & refiner, int level,
                                               int face, int rotation, FarPatchParam * coord );
 
     static void getQuadOffsets(VtrLevel const & level, int face, unsigned int * result);

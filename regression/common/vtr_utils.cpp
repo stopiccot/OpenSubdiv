@@ -39,29 +39,29 @@ struct FVarVertex {
 };
 
 void
-InterpolateFVarData(OpenSubdiv::FarRefineTables & refTables,
+InterpolateFVarData(OpenSubdiv::FarTopologyRefiner & refiner,
     Shape const & shape, std::vector<float> & fvarData) {
 
     int channel = 0,    // shapes only have 1 UV channel
         fvarWidth = 2;
 
-    int numValuesTotal = refTables.GetNumFVarValuesTotal(channel),
-            numValues0 = refTables.GetNumFVarValues(0, channel);
+    int numValuesTotal = refiner.GetNumFVarValuesTotal(channel),
+            numValues0 = refiner.GetNumFVarValues(0, channel);
 
     if (shape.uvs.empty() or numValuesTotal<=0) {
         return;
     }
 
-    if (refTables.IsUniform()) {
+    if (refiner.IsUniform()) {
 
         std::vector<FVarVertex> buffer(numValuesTotal);
 
-        int maxlevel = refTables.GetMaxLevel(),
-            numValuesM = refTables.GetNumFVarValues(maxlevel, channel);
+        int maxlevel = refiner.GetMaxLevel(),
+            numValuesM = refiner.GetNumFVarValues(maxlevel, channel);
 
         memcpy(&buffer[0], &shape.uvs[0], shape.uvs.size()*sizeof(float));
 
-        refTables.InterpolateFaceVarying(
+        refiner.InterpolateFaceVarying(
             &buffer[0], &buffer[numValues0], channel);
 
         // we only keep the highest level of refinement !
@@ -78,6 +78,6 @@ InterpolateFVarData(OpenSubdiv::FarRefineTables & refTables,
 
         memcpy(src, &shape.uvs[0], shape.uvs.size()*sizeof(float));
 
-        refTables.InterpolateFaceVarying(src, dst, channel);
+        refiner.InterpolateFaceVarying(src, dst, channel);
     }
 }

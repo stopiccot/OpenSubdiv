@@ -184,11 +184,11 @@ public:
 
     // -----------------------------------------------------
     // Vtr initialization
-    typedef OpenSubdiv::FarRefineTables RefineTables;
+    typedef OpenSubdiv::FarTopologyRefiner TopologyRefiner;
 
     typedef OpenSubdiv::FarPatchTables PatchTables;
 
-    void Initialize(Options options, RefineTables const & refTables,
+    void Initialize(Options options, TopologyRefiner const & refiner,
         PatchTables const * patchTables, float const * vertexData);
 
     void InitializeDeviceBuffers();
@@ -215,10 +215,10 @@ private:
 
     void initializeVertexComponentBuffer(float const * vertexData, int nverts);
 
-    void initializeBuffers(Options options, RefineTables const & refTables,
+    void initializeBuffers(Options options, TopologyRefiner const & refiner,
         float const * vertexData);
 
-    void initializeBuffers(Options options, RefineTables const & refTables,
+    void initializeBuffers(Options options, TopologyRefiner const & refiner,
         PatchTables const & patchTables, float const * vertexData);
 
     void clearBuffers();

@@ -185,27 +185,27 @@ createRandomVaryingColors(int nverts, std::vector<float> & colors) {
 
 //------------------------------------------------------------------------------
 static void
-createCoarseMesh(OpenSubdiv::FarRefineTables const & refTables) {
+createCoarseMesh(OpenSubdiv::FarTopologyRefiner const & refiner) {
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
     // save coarse topology (used for coarse mesh drawing)
-    int nedges = refTables.GetNumEdges(0),
-        nverts = refTables.GetNumVertices(0);
+    int nedges = refiner.GetNumEdges(0),
+        nverts = refiner.GetNumVertices(0);
 
     g_coarseEdges.resize(nedges*2);
     g_coarseEdgeSharpness.resize(nedges);
     g_coarseVertexSharpness.resize(nverts);
 
     for(int i=0; i<nedges; ++i) {
-        IndexArray verts = refTables.GetEdgeVertices(0, i);
+        IndexArray verts = refiner.GetEdgeVertices(0, i);
         g_coarseEdges[i*2  ]=verts[0];
         g_coarseEdges[i*2+1]=verts[1];
-        g_coarseEdgeSharpness[i]=refTables.GetEdgeSharpness(0, i);
+        g_coarseEdgeSharpness[i]=refiner.GetEdgeSharpness(0, i);
     }
 
     for(int i=0; i<nverts; ++i) {
-        g_coarseVertexSharpness[i]=refTables.GetVertexSharpness(0, i);
+        g_coarseVertexSharpness[i]=refiner.GetVertexSharpness(0, i);
     }
 
     // assign a randomly generated color for each vertex ofthe mesh
@@ -215,11 +215,11 @@ createCoarseMesh(OpenSubdiv::FarRefineTables const & refTables) {
 
 //------------------------------------------------------------------------------
 static int
-getNumPtexFaces(OpenSubdiv::FarRefineTables const & refTables) {
+getNumPtexFaces(OpenSubdiv::FarTopologyRefiner const & refiner) {
 
     int result = 0;
-    for (int face=0; face<refTables.GetNumFaces(0); ++face) {
-        OpenSubdiv::FarIndexArray fverts = refTables.GetFaceVertices(0, face);
+    for (int face=0; face<refiner.GetNumFaces(0); ++face) {
+        OpenSubdiv::FarIndexArray fverts = refiner.GetFaceVertices(0, face);
         result += fverts.size()==4 ? 1 : fverts.size();
     }
     return result;
@@ -361,24 +361,24 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
     OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     g_orgPositions=shape->verts;
     g_positions.resize(g_orgPositions.size(),0.0f);
 
     delete shape;
 
-    int nptexfaces = getNumPtexFaces(*refTables),
+    int nptexfaces = getNumPtexFaces(*refiner),
         nsamples = createRandomSamples( nptexfaces, g_nsamples, g_coords ),
         nverts = 0;
 
-    createCoarseMesh(*refTables);
+    createCoarseMesh(*refiner);
 
     {
-        refTables->RefineAdaptive(level);
+        refiner->RefineAdaptive(level);
 
-        nverts = refTables->GetNumVerticesTotal();
+        nverts = refiner->GetNumVerticesTotal();
 
         FarStencilTablesFactory::Options options;
         options.generateOffsets=true;
@@ -386,11 +386,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         // Generate stencil tables
         FarStencilTables const * vertexStencils =
-            FarStencilTablesFactory::Create(*refTables, options);
+            FarStencilTablesFactory::Create(*refiner, options);
 
         options.interpolationMode = FarStencilTablesFactory::INTERPOLATE_VARYING;
         FarStencilTables const * varyingStencils =
-            FarStencilTablesFactory::Create(*refTables, options);
+            FarStencilTablesFactory::Create(*refiner, options);
 
         g_kernelBatches.clear();
         g_kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
@@ -398,7 +398,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         // Generate adaptive patch tables
         FarPatchTables const * patchTables =
-             FarPatchTablesFactory::Create(*refTables);
+             FarPatchTablesFactory::Create(*refiner);
 
         // Create a Compute context, used to "pose" the vertices
         delete g_computeCtx;
@@ -409,7 +409,7 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
         g_evalCtx = OsdCpuEvalLimitContext::Create(*patchTables);
     }
 
-    delete refTables;
+    delete refiner;
 
     {   // Create vertex data buffer & populate w/ positions
         delete g_vertexData;

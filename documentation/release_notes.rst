@@ -145,7 +145,7 @@ features and interfaces have been finalized in an official 'Beta' Release.
 The following is a short list of featurs and issues that will be addressed during
 the alpha cycle:
 
-    #. Rename "FarRefineTables"
+    #. Rename "FarTopologyRefiner"
     #. Refactor Interpolate<>()
     #. Refinement orientation bug + validation code
     #. Face-varying boundary interpolation rules interpolation

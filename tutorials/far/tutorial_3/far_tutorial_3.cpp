@@ -33,7 +33,7 @@
 // 'face-varying' data recorded in the uv texture layout.
 //
 
-#include <far/refineTablesFactory.h>
+#include <far/topologyRefinerFactory.h>
 
 #include <cstdio>
 
@@ -162,7 +162,7 @@ int main(int, char **) {
 
     int maxlevel = 3;
 
-    typedef FarRefineTablesFactoryBase::TopologyDescriptor Descriptor;
+    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     SdcType type = OpenSubdiv::TYPE_CATMARK;
 
@@ -186,17 +186,17 @@ int main(int, char **) {
     desc.numFVarChannels = 1;
     desc.fvarChannels = & uvs;
 
-    // Instantiate a FarRefineTables from the descriptor
-    FarRefineTables * refTables = FarRefineTablesFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a FarTopologyRefiner from the descriptor
+    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     // Uniformly refine the topolgy up to 'maxlevel'
     // note: fullTopologyInLastLevel must be true to work with face-varying data
-    refTables->RefineUniform( maxlevel, /*fullTopology*/ true );
+    refiner->RefineUniform( maxlevel, /*fullTopology*/ true );
 
 
     // Allocate & interpolate the 'vertex' primvar data (see tutorial 2 for
     // more details).
-    std::vector<Vertex> vbuffer(refTables->GetNumVerticesTotal());
+    std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
     Vertex * verts = &vbuffer[0];
 
     int nCoarseVerts = g_nverts;
@@ -204,14 +204,14 @@ int main(int, char **) {
         verts[i].SetPosition(g_verts[i][0], g_verts[i][1], g_verts[i][2]);
     }
 
-    refTables->Interpolate(verts, verts + nCoarseVerts);
+    refiner->Interpolate(verts, verts + nCoarseVerts);
 
 
     // Allocate & interpolate the 'face-varying' primvar data
     int channel = 0,
-        nCoarseFVVerts = refTables->GetNumFVarValues(0, channel);
+        nCoarseFVVerts = refiner->GetNumFVarValues(0, channel);
 
-    std::vector<FVarVertex> fvBuffer(refTables->GetNumFVarValuesTotal(channel));
+    std::vector<FVarVertex> fvBuffer(refiner->GetNumFVarValuesTotal(channel));
     FVarVertex * fvVerts = &fvBuffer[0];
 
     for (int i=0; i<g_nuvs; ++i) {
@@ -219,7 +219,7 @@ int main(int, char **) {
         fvVerts[i].v = g_uvs[i][1];
     }
 
-    refTables->InterpolateFaceVarying(fvVerts, fvVerts + nCoarseFVVerts, channel);
+    refiner->InterpolateFaceVarying(fvVerts, fvVerts + nCoarseFVVerts, channel);
 
 
     { // Output OBJ of the highest level refined -----------
@@ -228,12 +228,12 @@ int main(int, char **) {
         for (int level=0, firstVert=0; level<=maxlevel; ++level) {
 
             if (level==maxlevel) {
-                for (int vert=0; vert<refTables->GetNumVertices(level); ++vert) {
+                for (int vert=0; vert<refiner->GetNumVertices(level); ++vert) {
                     float const * pos = verts[firstVert+vert].GetPosition();
                     printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
                 }
             } else {
-                firstVert += refTables->GetNumVertices(level);
+                firstVert += refiner->GetNumVertices(level);
             }
         }
 
@@ -241,21 +241,21 @@ int main(int, char **) {
         for (int level=0, firstVert=0; level<=maxlevel; ++level) {
 
             if (level==maxlevel) {
-                for (int vert=0; vert<refTables->GetNumFVarValues(level, channel); ++vert) {
+                for (int vert=0; vert<refiner->GetNumFVarValues(level, channel); ++vert) {
                     FVarVertex const & uv = fvVerts[firstVert+vert];
                     printf("vt %f %f\n", uv.u, uv.v);
                 }
             } else {
-                firstVert += refTables->GetNumFVarValues(level, channel);
+                firstVert += refiner->GetNumFVarValues(level, channel);
             }
         }
 
 
         // Print faces
-        for (int face=0; face<refTables->GetNumFaces(maxlevel); ++face) {
+        for (int face=0; face<refiner->GetNumFaces(maxlevel); ++face) {
 
-            FarIndexArray fverts = refTables->GetFaceVertices(maxlevel, face),
-                          fvverts = refTables->GetFVarFaceValues(maxlevel, face, channel);
+            FarIndexArray fverts = refiner->GetFaceVertices(maxlevel, face),
+                          fvverts = refiner->GetFVarFaceValues(maxlevel, face, channel);
 
             // all refined Catmark faces should be quads
             assert(fverts.size()==4 and fvverts.size()==4);

@@ -41,9 +41,9 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 //  Forward declarations for friends:
-template <class MESH> class FarRefineTablesFactory;
-class FarRefineTablesFactoryBase;
-class FarRefineTables;
+template <class MESH> class FarTopologyRefinerFactory;
+class FarTopologyRefinerFactoryBase;
+class FarTopologyRefiner;
 class VtrRefinement;
 class VtrFVarRefinement;
 class VtrFVarLevel;
@@ -233,9 +233,9 @@ public:
 
 protected:
     template <class MESH>
-    friend class FarRefineTablesFactory;
-    friend class FarRefineTablesFactoryBase;
-    friend class FarRefineTables;
+    friend class FarTopologyRefinerFactory;
+    friend class FarTopologyRefinerFactoryBase;
+    friend class FarTopologyRefiner;
     friend class FarPatchTablesFactory;
     friend class VtrRefinement;
     friend class VtrFVarRefinement;

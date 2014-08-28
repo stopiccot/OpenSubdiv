@@ -238,7 +238,7 @@ linkDefaultProgram() {
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OpenSubdiv::FarRefineTables const & refTables,
+calcNormals(OpenSubdiv::FarTopologyRefiner const & refiner,
     std::vector<float> const & pos, std::vector<float> & normals) {
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
@@ -246,10 +246,10 @@ calcNormals(OpenSubdiv::FarRefineTables const & refTables,
     // calc normal vectors
     int nverts = (int)pos.size()/3;
 
-    int nfaces = refTables.GetNumFaces(0);
+    int nfaces = refiner.GetNumFaces(0);
     for (int face = 0; face < nfaces; ++face) {
 
-        IndexArray fverts = refTables.GetFaceVertices(0, face);
+        IndexArray fverts = refiner.GetFaceVertices(0, face);
 
         assert(fverts.size()>=2);
 
@@ -324,31 +324,31 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
 
     sdcoptions.SetFVarBoundaryInterpolation(g_fvarBoundary);
 
-    OpenSubdiv::FarRefineTables * refTables =
-        OpenSubdiv::FarRefineTablesFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::FarTopologyRefiner * refiner =
+        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
-    int nedges = refTables->GetNumEdges(0),
-        nverts = refTables->GetNumVertices(0);
+    int nedges = refiner->GetNumEdges(0),
+        nverts = refiner->GetNumVertices(0);
 
     g_coarseEdges.resize(nedges*2);
     g_coarseEdgeSharpness.resize(nedges);
     g_coarseVertexSharpness.resize(nverts);
 
     for(int i=0; i<nedges; ++i) {
-        IndexArray verts = refTables->GetEdgeVertices(0, i);
+        IndexArray verts = refiner->GetEdgeVertices(0, i);
         g_coarseEdges[i*2  ]=verts[0];
         g_coarseEdges[i*2+1]=verts[1];
-        g_coarseEdgeSharpness[i]=refTables->GetEdgeSharpness(0, i);
+        g_coarseEdgeSharpness[i]=refiner->GetEdgeSharpness(0, i);
     }
 
     for(int i=0; i<nverts; ++i) {
-        g_coarseVertexSharpness[i]=refTables->GetVertexSharpness(0, i);
+        g_coarseVertexSharpness[i]=refiner->GetVertexSharpness(0, i);
     }
 
     g_orgPositions=shape->verts;
     g_normals.resize(g_orgPositions.size(), 0.0f);
-    calcNormals(*refTables, g_orgPositions, g_normals);
+    calcNormals(*refiner, g_orgPositions, g_normals);
 
     g_positions.resize(g_orgPositions.size(),0.0f);
 
@@ -374,14 +374,14 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
         OpenSubdiv::OsdCpuComputeController,
         OpenSubdiv::OsdGLDrawContext>(
             g_cpuComputeController,
-            refTables,
+            refiner,
             numVertexElements,
             numVaryingElements,
             level, bits);
 
     std::vector<float> fvarData;
 
-    InterpolateFVarData(*refTables, *shape, fvarData);
+    InterpolateFVarData(*refiner, *shape, fvarData);
 
     g_mesh->SetFVarDataChannel(shape->GetFVarWidth(), fvarData);
 
