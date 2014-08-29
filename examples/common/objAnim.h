@@ -27,7 +27,7 @@
 
 #include <vector>
 
-class Shape;
+struct Shape;
 
 class ObjAnim {
 
