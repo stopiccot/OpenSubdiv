@@ -67,7 +67,7 @@ struct Shape {
     
     bool HasUV() const { return not (uvs.empty() or faceuvs.empty()); }
     
-    int GetFVarWidth() { return HasUV() ? 2 : 0; }
+    int GetFVarWidth() const { return HasUV() ? 2 : 0; }
 
     std::vector<float>  verts;
     std::vector<float>  uvs;

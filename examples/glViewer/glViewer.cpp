@@ -118,6 +118,7 @@ OpenSubdiv::OsdGLMeshInterface *g_mesh;
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/gl_hud.h"
+#include "../common/objAnim.h"
 #include "../common/patchColors.h"
 
 static const char *shaderSource =
@@ -161,8 +162,13 @@ enum HudCheckBox { kHUD_CB_DISPLAY_CAGE_EDGES,
 
 int g_currentShape = 0;
 
+ObjAnim const * g_objAnim = 0;
+
+bool g_axis=true;
+
 int   g_frame = 0,
       g_repeatCount = 0;
+float g_animTime = 0;
 
 // GUI variables
 int   g_fullscreen = 0,
@@ -332,53 +338,100 @@ linkDefaultProgram() {
 static void
 updateGeom() {
 
-    int nverts = (int)g_orgPositions.size() / 3;
-
     std::vector<float> vertex, varying;
 
-    if (g_displayStyle == kInterleavedVaryingColor)
-        vertex.reserve(nverts*7);
-    else
-        vertex.reserve(nverts*3);
+    int nverts=0, stride=g_displayStyle == kInterleavedVaryingColor ? 7 : 3;
 
-    if (g_displayStyle == kVaryingColor)
-        varying.reserve(nverts*4);
+    if (g_objAnim and g_currentShape==0) {
 
-    const float *p = &g_orgPositions[0];
+        nverts = g_objAnim->GetShape()->GetNumVertices(),
 
-    float r = sin(g_frame*0.001f) * g_moveScale;
-    for (int i = 0; i < nverts; ++i) {
-        //float move = 0.05f*cosf(p[0]*20+g_frame*0.01f);
-        float ct = cos(p[2] * r);
-        float st = sin(p[2] * r);
-        g_positions[i*3+0] = p[0]*ct + p[1]*st;
-        g_positions[i*3+1] = -p[0]*st + p[1]*ct;
-        g_positions[i*3+2] = p[2];
+        vertex.reserve(nverts*stride);
 
-        p += 3;
-    }
-
-    p = &g_orgPositions[0];
-    const float *pp = &g_positions[0];
-    for (int i = 0; i < nverts; ++i) {
-        vertex.push_back(pp[0]);
-        vertex.push_back(pp[1]);
-        vertex.push_back(pp[2]);
-        if (g_displayStyle == kInterleavedVaryingColor) {
-            vertex.push_back(p[1]);
-            vertex.push_back(p[2]);
-            vertex.push_back(p[0]);
-            vertex.push_back(1.0f);
-            p += 3;
-        }
         if (g_displayStyle == kVaryingColor) {
-            varying.push_back(p[2]);
-            varying.push_back(p[1]);
-            varying.push_back(p[0]);
-            varying.push_back(1);
+            varying.reserve(nverts*4);
+        }
+
+        g_objAnim->InterpolatePositions(g_animTime, &vertex[0], stride);
+
+        if (g_drawCageEdges or g_drawCageVertices) {
+            g_positions.resize(nverts*3);
+            for (int i=0; i<nverts; ++i) {
+                int ofs = i * stride;
+                g_positions[i*3+0] = vertex[ofs+0];
+                g_positions[i*3+1] = vertex[ofs+1];
+                g_positions[i*3+2] = vertex[ofs+2];
+            }
+        }
+
+        if (g_displayStyle == kVaryingColor or
+            g_displayStyle == kInterleavedVaryingColor) {
+
+            const float *p = &g_objAnim->GetShape()->verts[0];
+            for (int i = 0; i < nverts; ++i) {
+                if (g_displayStyle == kInterleavedVaryingColor) {
+                    int ofs = i * stride;
+                    vertex[ofs + 0] = p[1];
+                    vertex[ofs + 1] = p[2];
+                    vertex[ofs + 2] = p[0];
+                    vertex[ofs + 3] = 0.0f;
+                    p += 3;
+                }
+                if (g_displayStyle == kVaryingColor) {
+                    varying.push_back(p[2]);
+                    varying.push_back(p[1]);
+                    varying.push_back(p[0]);
+                    varying.push_back(1);
+                    p += 3;
+                }
+            }
+        }
+    } else {
+
+        nverts = (int)g_orgPositions.size() / 3;
+
+        vertex.reserve(nverts*stride);
+
+        if (g_displayStyle == kVaryingColor) {
+            varying.reserve(nverts*4);
+        }
+
+        const float *p = &g_orgPositions[0];
+
+        float r = sin(g_frame*0.001f) * g_moveScale;
+        for (int i = 0; i < nverts; ++i) {
+            //float move = 0.05f*cosf(p[0]*20+g_frame*0.01f);
+            float ct = cos(p[2] * r);
+            float st = sin(p[2] * r);
+            g_positions[i*3+0] = p[0]*ct + p[1]*st;
+            g_positions[i*3+1] = -p[0]*st + p[1]*ct;
+            g_positions[i*3+2] = p[2];
+
             p += 3;
         }
-        pp += 3;
+
+        p = &g_orgPositions[0];
+        const float *pp = &g_positions[0];
+        for (int i = 0; i < nverts; ++i) {
+            vertex.push_back(pp[0]);
+            vertex.push_back(pp[1]);
+            vertex.push_back(pp[2]);
+            if (g_displayStyle == kInterleavedVaryingColor) {
+                vertex.push_back(p[1]);
+                vertex.push_back(p[2]);
+                vertex.push_back(p[0]);
+                vertex.push_back(1.0f);
+                p += 3;
+            }
+            if (g_displayStyle == kVaryingColor) {
+                varying.push_back(p[2]);
+                varying.push_back(p[1]);
+                varying.push_back(p[0]);
+                varying.push_back(1);
+                p += 3;
+            }
+            pp += 3;
+        }
     }
 
     g_mesh->UpdateVertexBuffer(&vertex[0], 0, nverts);
@@ -436,7 +489,14 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
-    Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
+    bool doAnim = g_objAnim and g_currentShape==0;
+
+    Shape const * shape = 0;
+    if (doAnim) {
+        shape = g_objAnim->GetShape();
+    } else {
+        shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
+    }
 
     // create Vtr mesh (topology)
     OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
@@ -605,11 +665,13 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
         std::vector<float> fvarData;
 
         InterpolateFVarData(*refiner, *shape, fvarData);
-        
+
         g_mesh->SetFVarDataChannel(shape->GetFVarWidth(), fvarData);
     }
-    
-    delete shape;
+
+    if (not doAnim) {
+        delete shape;
+    }
 
     // compute model bounding
     float min[3] = { FLT_MAX,  FLT_MAX,  FLT_MAX};
@@ -1221,10 +1283,16 @@ display() {
 
     float drawGpuTime = timeElapsed / 1000.0f / 1000.0f;
 
+    g_fpsTimer.Stop();
+    float elapsed = (float)g_fpsTimer.GetElapsed();
+    if (not g_freeze) {
+        g_animTime += elapsed;
+    }
+    g_fpsTimer.Start();
+
     if (g_hud.IsVisible()) {
-        g_fpsTimer.Stop();
-        double fps = 1.0/g_fpsTimer.GetElapsed();
-        g_fpsTimer.Start();
+
+        double fps = 1.0/elapsed;
 
         int x = -280;
         g_hud.DrawString(x, -360, "NonPatch         : %d",
@@ -1687,14 +1755,20 @@ int main(int argc, char ** argv)
 {
     bool fullscreen = false;
     std::string str;
+    std::vector<char const *> animobjs;
+
     for (int i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "-d"))
+        if (strstr(argv[i], ".obj")) {
+            animobjs.push_back(argv[i]);
+        } else if (!strcmp(argv[i], "-axis")) {
+            g_axis = false;
+        } else if (!strcmp(argv[i], "-d")) {
             g_level = atoi(argv[++i]);
-        else if (!strcmp(argv[i], "-c"))
+        } else if (!strcmp(argv[i], "-c")) {
             g_repeatCount = atoi(argv[++i]);
-        else if (!strcmp(argv[i], "-f"))
+        } else if (!strcmp(argv[i], "-f")) {
             fullscreen = true;
-        else {
+        } else {
             std::ifstream ifs(argv[1]);
             if (ifs) {
                 std::stringstream ss;
@@ -1706,7 +1780,16 @@ int main(int argc, char ** argv)
         }
     }
 
+    if (not animobjs.empty()) {
+
+        g_defaultShapes.push_back(ShapeDesc(animobjs[0], "", kCatmark));
+
+        g_objAnim = ObjAnim::Create(animobjs, g_axis);
+    }
+
     initShapes();
+
+    g_fpsTimer.Start();
 
     OsdSetErrorCallback(callbackError);
 
