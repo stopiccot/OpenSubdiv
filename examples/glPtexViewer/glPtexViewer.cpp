@@ -38,13 +38,9 @@
     #endif
 #endif
 
-#if defined(GLFW_VERSION_3)
-    #include <GLFW/glfw3.h>
-    GLFWwindow* g_window = 0;
-    GLFWmonitor* g_primary = 0;
-#else
-    #include <GL/glfw.h>
-#endif
+#include <GLFW/glfw3.h>
+GLFWwindow* g_window = 0;
+GLFWmonitor* g_primary = 0;
 
 #include <vector>
 #include <sstream>
@@ -549,20 +545,16 @@ createPTexGeo(PtexTexture * r) {
 //------------------------------------------------------------------------------
 
 void
-#if GLFW_VERSION_MAJOR >= 3
 reshape(GLFWwindow *, int width, int height) {
-#else
-reshape(int width, int height) {
-#endif
 
     g_width = width;
     g_height = height;
 
     int windowWidth = g_width, windowHeight = g_height;
-#if GLFW_VERSION_MAJOR>=3
+
     // window size might not match framebuffer size on a high DPI display
     glfwGetWindowSize(g_window, &windowWidth, &windowHeight);
-#endif
+
     g_hud.Rebuild(windowWidth, windowHeight);
 
     // resize framebuffers
@@ -604,23 +596,12 @@ reshape(int width, int height) {
 }
 
 void reshape() {
-#if GLFW_VERSION_MAJOR >= 3
     reshape(g_window, g_width, g_height);
-#else
-    reshape(g_width, g_height);
-#endif
 }
 
-#if GLFW_VERSION_MAJOR >= 3
 void windowClose(GLFWwindow*) {
     g_running = false;
 }
-#else
-int windowClose() {
-    g_running = false;
-    return GL_TRUE;
-}
-#endif
 
 //------------------------------------------------------------------------------
 const char *getKernelName(int kernel) {
@@ -1942,11 +1923,8 @@ screenshot(int multiplier=4) {
         width = multiplier * g_width,
         height = multiplier * g_height;
 
-#if GLFW_VERSION_MAJOR >= 3
+
     reshape(g_window, width, height);
-#else
-    reshape(width, height);
-#endif
 
     display();
 
@@ -1972,11 +1950,7 @@ screenshot(int multiplier=4) {
     glBindTexture( GL_TEXTURE_2D, restoreBinding );
     glPopClientAttrib();
 
-#if GLFW_VERSION_MAJOR >= 3
     reshape(g_window, oldwidth, oldheight);
-#else
-    reshape(oldwidth, oldheight);
-#endif
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2025,11 +1999,8 @@ screenshot(int multiplier=4) {
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR >= 3
 mouse(GLFWwindow *, int button, int state, int /* mods */) {
-#else
-mouse(int button, int state) {
-#endif
+
     if (state == GLFW_RELEASE)
         g_hud.MouseRelease();
 
@@ -2040,12 +2011,9 @@ mouse(int button, int state) {
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR >= 3
 motion(GLFWwindow *, double dx, double dy) {
     int x = (int)dx, y = (int)dy;
-#else
-motion(int x, int y) {
-#endif
+
     if (g_hud.MouseCapture()) {
         // check gui
         g_hud.MouseMotion(x, y);
@@ -2266,12 +2234,8 @@ toggleFullScreen() {
 
 //------------------------------------------------------------------------------
 void
-#if GLFW_VERSION_MAJOR >= 3
 keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
-#else
-#define GLFW_KEY_ESCAPE GLFW_KEY_ESC
-keyboard(int key, int event) {
-#endif
+
     if (event == GLFW_RELEASE) return;
     if (g_hud.KeyDown(tolower(key))) return;
 
@@ -2370,11 +2334,9 @@ callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
 static void
 setGLCoreProfile() {
 
-#if GLFW_VERSION_MAJOR >= 3
     #define glfwOpenWindowHint glfwWindowHint
     #define GLFW_OPENGL_VERSION_MAJOR GLFW_CONTEXT_VERSION_MAJOR
     #define GLFW_OPENGL_VERSION_MINOR GLFW_CONTEXT_VERSION_MINOR
-#endif
 
     glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if not defined(__APPLE__)
@@ -2468,8 +2430,6 @@ int main(int argc, char ** argv) {
     setGLCoreProfile();
 #endif
 
-#if GLFW_VERSION_MAJOR >= 3
-
     if (fullscreen) {
         g_primary = glfwGetPrimaryMonitor();
 
@@ -2500,18 +2460,6 @@ int main(int argc, char ** argv) {
     glfwSetKeyCallback(g_window, keyboard);
     glfwSetCursorPosCallback(g_window, motion);
     glfwSetMouseButtonCallback(g_window, mouse);
-#else
-    if (glfwOpenWindow(g_width, g_height, 8, 8, 8, 8, 24, 8,
-                       fullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW) == GL_FALSE) {
-        printf("Failed to open window.\n");
-        glfwTerminate();
-        return 1;
-    }
-    glfwSetWindowTitle(windowTitle);
-    glfwSetKeyCallback(keyboard);
-    glfwSetMousePosCallback(motion);
-    glfwSetMouseButtonCallback(mouse);
-#endif
 
 #if defined(OSD_USES_GLEW)
 #ifdef CORE_PROFILE
@@ -2530,7 +2478,6 @@ int main(int argc, char ** argv) {
 
     initGL();
 
-#if GLFW_VERSION_MAJOR >= 3
     // accommodate high DPI displays (e.g. mac retina displays)
     glfwGetFramebufferSize(g_window, &g_width, &g_height);
     glfwSetFramebufferSizeCallback(g_window, reshape);
@@ -2538,10 +2485,6 @@ int main(int argc, char ** argv) {
     glfwSetWindowCloseCallback(g_window, windowClose);
     // as of GLFW 3.0.1 this callback is not implicit
     reshape();
-#else
-    glfwSetWindowSizeCallback(reshape);
-    glfwSetWindowCloseCallback(windowClose);
-#endif
 
     // activate feature adaptive tessellation if OSD supports it
     g_adaptive = OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation();
@@ -2553,10 +2496,10 @@ int main(int argc, char ** argv) {
 #endif
 
     int windowWidth = g_width, windowHeight = g_height;
-#if GLFW_VERSION_MAJOR>=3
+
     // window size might not match framebuffer size on a high DPI display
     glfwGetWindowSize(g_window, &windowWidth, &windowHeight);
-#endif
+
     g_hud.Init(windowWidth, windowHeight);
 
     if (occlusionFilename != NULL) {
@@ -2789,12 +2732,9 @@ int main(int argc, char ** argv) {
         idle();
         display();
 
-#if GLFW_VERSION_MAJOR >= 3
         glfwPollEvents();
         glfwSwapBuffers(g_window);
-#else
-        glfwSwapBuffers();
-#endif
+
         glFinish();
     }
   error:

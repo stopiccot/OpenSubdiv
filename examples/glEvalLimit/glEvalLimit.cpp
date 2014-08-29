@@ -38,13 +38,9 @@
     #endif
 #endif
 
-#if defined(GLFW_VERSION_3)
-    #include <GLFW/glfw3.h>
-    GLFWwindow* g_window=0;
-    GLFWmonitor* g_primary=0;
-#else
-    #include <GL/glfw.h>
-#endif
+#include <GLFW/glfw3.h>
+GLFWwindow* g_window=0;
+GLFWmonitor* g_primary=0;
 
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
@@ -758,12 +754,9 @@ idle() {
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR>=3
 motion(GLFWwindow *, double dx, double dy) {
+
     int x=(int)dx, y=(int)dy;
-#else
-motion(int x, int y) {
-#endif
 
     if (g_mbutton[0] && !g_mbutton[1] && !g_mbutton[2]) {
         // orbit
@@ -786,11 +779,7 @@ motion(int x, int y) {
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR>=3
 mouse(GLFWwindow *, int button, int state, int /* mods */) {
-#else
-mouse(int button, int state) {
-#endif
 
     if (button == 0 && state == GLFW_PRESS && g_hud.MouseClick(g_prev_x, g_prev_y))
         return;
@@ -802,34 +791,23 @@ mouse(int button, int state) {
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR>=3
 reshape(GLFWwindow *, int width, int height) {
-#else
-reshape(int width, int height) {
-#endif
 
     g_width = width;
     g_height = height;
 
     int windowWidth = g_width, windowHeight = g_height;
-#if GLFW_VERSION_MAJOR>=3
+
     // window size might not match framebuffer size on a high DPI display
     glfwGetWindowSize(g_window, &windowWidth, &windowHeight);
-#endif
+
     g_hud.Rebuild(windowWidth, windowHeight);
 }
 
 //------------------------------------------------------------------------------
-#if GLFW_VERSION_MAJOR>=3
 void windowClose(GLFWwindow*) {
     g_running = false;
 }
-#else
-int windowClose() {
-    g_running = false;
-    return GL_TRUE;
-}
-#endif
 
 //------------------------------------------------------------------------------
 static void
@@ -844,12 +822,7 @@ setSamples(bool add)
 
 //------------------------------------------------------------------------------
 static void
-#if GLFW_VERSION_MAJOR>=3
 keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
-#else
-#define GLFW_KEY_ESCAPE GLFW_KEY_ESC
-keyboard(int key, int event) {
-#endif
 
     if (event == GLFW_RELEASE) return;
     if (g_hud.KeyDown(tolower(key))) return;
@@ -937,10 +910,10 @@ static void
 initHUD()
 {
     int windowWidth = g_width, windowHeight = g_height;
-#if GLFW_VERSION_MAJOR>=3
+
     // window size might not match framebuffer size on a high DPI display
     glfwGetWindowSize(g_window, &windowWidth, &windowHeight);
-#endif
+
     g_hud.Init(windowWidth, windowHeight);
 
     g_hud.AddCheckBox("Cage Edges (H)", true, 10, 10, callbackDisplayCageEdges, 0, 'h');
@@ -997,11 +970,9 @@ uninitGL() {
 static void
 setGLCoreProfile()
 {
-#if GLFW_VERSION_MAJOR>=3
     #define glfwOpenWindowHint glfwWindowHint
     #define GLFW_OPENGL_VERSION_MAJOR GLFW_CONTEXT_VERSION_MAJOR
     #define GLFW_OPENGL_VERSION_MINOR GLFW_CONTEXT_VERSION_MINOR
-#endif
 
     glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if not defined(__APPLE__)
@@ -1052,7 +1023,6 @@ int main(int argc, char **argv) {
     setGLCoreProfile();
 #endif
 
-#if GLFW_VERSION_MAJOR>=3
     if (fullscreen) {
 
         g_primary = glfwGetPrimaryMonitor();
@@ -1090,20 +1060,6 @@ int main(int argc, char **argv) {
     glfwSetCursorPosCallback(g_window, motion);
     glfwSetMouseButtonCallback(g_window, mouse);
     glfwSetWindowCloseCallback(g_window, windowClose);
-#else
-    if (glfwOpenWindow(g_width, g_height, 8, 8, 8, 8, 24, 8,
-                       fullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW) == GL_FALSE) {
-        printf("Failed to open window.\n");
-        glfwTerminate();
-        return 1;
-    }
-    glfwSetWindowTitle(windowTitle);
-    glfwSetKeyCallback(keyboard);
-    glfwSetMousePosCallback(motion);
-    glfwSetMouseButtonCallback(mouse);
-    glfwSetWindowSizeCallback(reshape);
-    glfwSetWindowCloseCallback(windowClose);
-#endif
 
 #if defined(OSD_USES_GLEW)
 #ifdef CORE_PROFILE
@@ -1137,12 +1093,8 @@ int main(int argc, char **argv) {
         idle();
         display();
 
-#if GLFW_VERSION_MAJOR>=3
         glfwPollEvents();
         glfwSwapBuffers(g_window);
-#else
-        glfwSwapBuffers();
-#endif
 
         glFinish();
     }
