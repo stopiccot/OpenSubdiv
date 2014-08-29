@@ -57,6 +57,7 @@
                         <li><a href="osd_overview.html">Osd</a></li>
                         <li><a href="far_overview.html">Far</a></li>
                         <ul>
+                            <li><a href="far_overview.html#topology-refiner">Topology Refiner</a></li>
                             <li><a href="far_overview.html#stencil-tables">Stencil Tables</a></li>
                             <li><a href="far_overview.html#patch-tables">Patch Tables</a></li>
                         </ul>

@@ -180,23 +180,34 @@ the broad lines of going about using subdivisions in your application.
 
 General client application requirements:
 
-    * For some applications, a polygonal approximation of the smooth surface is enough.
-      Others require C :sup:`2` continuous differentiable bi-cubic patches 
-      (ex: deformable displacement mapping, smooth normals and semi-sharp
-      creases...)
++----------------------+-------------------------------------------------------+
+| Surface Limit        | For some applications, a polygonal approximation of   | 
+|                      | the smooth surface is enough. Others require          |  
+|                      | C :sup:`2` continuous differentiable bi-cubic patches |  
+|                      | (ex: deformable displacement mapping, smooth normals  |  
+|                      | and semi-sharp creases...)                            |  
++----------------------+-------------------------------------------------------+
+| Deforming Surface    | Applications such as off-line image renderers often   |
+|                      | process a single frame at a time. Others, such as     |    
+|                      | interactive games need to evaluate deforming          |    
+|                      | character surface every frame. Because we can amortize|    
+|                      | many computations if the topology of the mesh does not|    
+|                      | change, OpenSubdiv provides 'stencil tables' in order |    
+|                      | to leverage subdivision refinement into a             |     
+|                      | pre-computation step.                                 |                 
++----------------------+-------------------------------------------------------+
+| Multi-threading      | OpenSubdiv also provides dedicated interfaces to      |
+|                      | leverage parallelism on a wide variety of platforms   |
+|                      | and API standards, including both CPUs and GPUs.      |
++----------------------+-------------------------------------------------------+
+| GPU Draw             | If the application requires interactive drawing on    |
+|                      | screen, OpenSubdiv provides several back-end          |
+|                      | implementations, including D3D11 and OpenGL. These    |
+|                      | back-ends provide full support for programmable       |
+|                      | shading.                                              |
++----------------------+-------------------------------------------------------+
 
-    * Applications such as off-line image renderers often process a single frame at a
-      time. Others, such as interactive games need to evaluate deforming character
-      surface every frame. Because we can amortize many computations if the topology
-      of the mesh does not change, OpenSubdiv provides 'stencil tables' in order
-      to leverage subdivision refinement into a pre-computation step.
-
-    * OpenSubdiv also provides dedicated interfaces to leverage parallelism on a wide
-      variety of platforms and API standards, including both CPUs and GPUs.
-
-    * If the application requires interactive drawing on screen, OpenSubdiv provides
-      several back-end implementations, including D3D11 and OpenGL. These back-ends
-      provide full support for programmable shading.
+Flow-chart:
 
 .. image:: images/osd_flow.png
    :align: center
