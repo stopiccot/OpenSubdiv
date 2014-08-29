@@ -102,7 +102,7 @@ public:
             std::sort(_eao[COMP_VERT].begin(), _eao[COMP_VERT].end());
             std::unique(_eao[COMP_VERT].begin(), _eao[COMP_VERT].end()); // XXXX this might be slow...
 
-            nedgeverts = _eao[COMP_FACE].size()*2;
+            nedgeverts = (int)_eao[COMP_FACE].size()*2;
             _eao[COMP_EDGE].resize(nedgeverts);
             for (int i=0; i<nedgeverts; ++i) {
                 _eao[COMP_EDGE][i]=i;
@@ -175,9 +175,9 @@ public:
             }
         }
 
-        _numComps[COMP_FACE] = _eao[COMP_FACE].size();
-        _numComps[COMP_EDGE] = _eao[COMP_EDGE].size();
-        _numComps[COMP_VERT] = _eao[COMP_VERT].size();
+        _numComps[COMP_FACE] = (int)_eao[COMP_FACE].size();
+        _numComps[COMP_EDGE] = (int)_eao[COMP_EDGE].size();
+        _numComps[COMP_VERT] = (int)_eao[COMP_VERT].size();
 
         _faceColors.resize(nfaces*4, 1.0f);
     }
@@ -233,9 +233,9 @@ private:
 
     std::vector<float> _vbo[COMP_NUM_COMPONENTS];
     std::vector<int>   _eao[COMP_NUM_COMPONENTS];
-    
+
     std::vector<float > _faceColors;
-    
+
     float _ambientColor[4],
           _diffuseColor[4];
 };

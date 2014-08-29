@@ -117,7 +117,7 @@ void GLFont::bindProgram() {
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 GLFont::SetFontScale(float scale) {
 
     if (_scale) {
@@ -135,7 +135,7 @@ GLFont::Clear() {
 void
 GLFont::Print3D(float const pos[3], const char * str, int color) {
 
-    int len = strlen(str);
+    int len = (int)strlen(str);
 
     for (int i=0; i<len; ++i) {
 
@@ -201,7 +201,7 @@ void GLFont::Draw(GLuint transformUB) {
     glEnableVertexAttribArray(_attrData);
     glVertexAttribPointer(_attrData,     4, GL_FLOAT, GL_FALSE, sizeof(Char), (void*)12);
 
-    glDrawElements(GL_POINTS, _chars.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_POINTS, (int)_chars.size(), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
     glUseProgram(0);

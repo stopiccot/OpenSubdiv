@@ -145,9 +145,9 @@ GLMesh::Initialize(Options options, TopologyRefiner const & refiner,
         initializeBuffers(options, refiner, vertexData);
     }
 
-    _numComps[COMP_FACE] = _eao[COMP_FACE].size();
-    _numComps[COMP_EDGE] = _eao[COMP_EDGE].size();
-    _numComps[COMP_VERT] = _eao[COMP_VERT].size();
+    _numComps[COMP_FACE] = (int)_eao[COMP_FACE].size();
+    _numComps[COMP_EDGE] = (int)_eao[COMP_EDGE].size();
+    _numComps[COMP_VERT] = (int)_eao[COMP_VERT].size();
 
     InitializeDeviceBuffers();
 }

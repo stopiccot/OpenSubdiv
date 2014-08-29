@@ -37,6 +37,7 @@ include_directories(
 )
 
 list(APPEND PLATFORM_LIBRARIES
+    "${OSD_LINK_TARGET}"
     "${OPENGL_LIBRARY}"
     "${GLFW_LIBRARIES}"
 )
@@ -68,7 +69,6 @@ _add_glfw_executable(vtrViewer
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:examples_common_obj>
 )
-
 target_link_libraries(vtrViewer
     ${PLATFORM_LIBRARIES}
 )

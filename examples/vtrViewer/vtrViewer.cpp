@@ -46,6 +46,9 @@
     #include <GL/glfw.h>
 #endif
 
+#if _MSC_VER
+    #define snprintf _snprintf
+#endif
 
 #include <osd/error.h>
 #include <osd/vertex.h>
@@ -674,7 +677,7 @@ createVtrMesh(Shape * shape, int maxlevel) {
         createPatchNumbers(*patchTables, vertexBuffer);
     }
 
-    createEdgeNumbers(*refiner, vertexBuffer, g_VtrDrawEdgeIDs, g_VtrDrawEdgeSharpness);
+    createEdgeNumbers(*refiner, vertexBuffer, g_VtrDrawEdgeIDs!=0, g_VtrDrawEdgeSharpness!=0);
 
     GLMesh::Options options;
     options.vertColorMode=g_Adaptive ? GLMesh::VERTCOLOR_BY_LEVEL : GLMesh::VERTCOLOR_BY_SHARPNESS;
@@ -1119,10 +1122,10 @@ initHUD()
     g_hud.AddPullDownButton(pulldown, "Wireframe", 2, g_HbrDrawMode==kDRAW_WIREFRAME);
     g_hud.AddPullDownButton(pulldown, "Faces",     3, g_HbrDrawMode==kDRAW_FACES);
 
-    g_hud.AddCheckBox("Vert IDs",   g_HbrDrawVertIDs, 10, 95, callbackDrawIDs, 0);
-    g_hud.AddCheckBox("Face IDs",   g_HbrDrawFaceIDs, 10, 115, callbackDrawIDs, 1);
-    g_hud.AddCheckBox("Ptex IDs",   g_HbrDrawPtexIDs, 10, 135, callbackDrawIDs, 2);
-    g_hud.AddCheckBox("Edge Sharp", g_HbrDrawEdgeSharpness, 10, 155, callbackDrawIDs, 3);
+    g_hud.AddCheckBox("Vert IDs",   g_HbrDrawVertIDs!=0, 10, 95, callbackDrawIDs, 0);
+    g_hud.AddCheckBox("Face IDs",   g_HbrDrawFaceIDs!=0, 10, 115, callbackDrawIDs, 1);
+    g_hud.AddCheckBox("Ptex IDs",   g_HbrDrawPtexIDs!=0, 10, 135, callbackDrawIDs, 2);
+    g_hud.AddCheckBox("Edge Sharp", g_HbrDrawEdgeSharpness!=0, 10, 155, callbackDrawIDs, 3);
 
     pulldown = g_hud.AddPullDown("Vtr Draw Mode (v)", 10, 195, 250, callbackVtrDrawMode, 'v');
     g_hud.AddPullDownButton(pulldown, "None",      0, g_VtrDrawMode==kDRAW_NONE);
@@ -1130,13 +1133,13 @@ initHUD()
     g_hud.AddPullDownButton(pulldown, "Wireframe", 2, g_VtrDrawMode==kDRAW_WIREFRAME);
     g_hud.AddPullDownButton(pulldown, "Faces",     3, g_VtrDrawMode==kDRAW_FACES);
 
-    g_hud.AddCheckBox("Vert IDs",   g_VtrDrawVertIDs, 10, 215, callbackDrawIDs, 4);
-    g_hud.AddCheckBox("Edge IDs",   g_VtrDrawEdgeIDs, 10, 235, callbackDrawIDs, 5);
-    g_hud.AddCheckBox("Face IDs",   g_VtrDrawFaceIDs, 10, 255, callbackDrawIDs, 6);
-    g_hud.AddCheckBox("Ptex IDs",   g_VtrDrawPtexIDs, 10, 275, callbackDrawIDs, 7);
-    g_hud.AddCheckBox("Edge Sharp", g_VtrDrawEdgeSharpness, 10, 295, callbackDrawIDs, 8);
+    g_hud.AddCheckBox("Vert IDs",   g_VtrDrawVertIDs!=0, 10, 215, callbackDrawIDs, 4);
+    g_hud.AddCheckBox("Edge IDs",   g_VtrDrawEdgeIDs!=0, 10, 235, callbackDrawIDs, 5);
+    g_hud.AddCheckBox("Face IDs",   g_VtrDrawFaceIDs!=0, 10, 255, callbackDrawIDs, 6);
+    g_hud.AddCheckBox("Ptex IDs",   g_VtrDrawPtexIDs!=0, 10, 275, callbackDrawIDs, 7);
+    g_hud.AddCheckBox("Edge Sharp", g_VtrDrawEdgeSharpness!=0, 10, 295, callbackDrawIDs, 8);
 
-    g_hud.AddCheckBox("Adaptive (`)", g_Adaptive, 10, 320, callbackAdaptive, 0, '`');
+    g_hud.AddCheckBox("Adaptive (`)", g_Adaptive!=0, 10, 320, callbackAdaptive, 0, '`');
 
 
     g_hud.AddSlider("Font Scale", 0.0f, 0.1f, 0.025f,
