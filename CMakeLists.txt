@@ -300,7 +300,6 @@ option(NO_TBB "Disable TBB backend" OFF)
 option(NO_CUDA "Disable CUDA backend" OFF)
 option(NO_OPENCL "Disable OpenCL backend" OFF)
 option(NO_CLEW "Disable CLEW wrapper library" OFF)
-option(NO_GCD "Disable GrandCentralDispatch backend" OFF)
 option(NO_OPENGL "Disable OpenGL support")
 
 # Check for dependencies
@@ -345,10 +344,6 @@ if (WIN32)
    find_package(DXSDK)
 endif()
 
-if (NOT NO_GCD AND APPLE)
-    set(GCD_FOUND 1)
-endif()
-
 if (NOT NO_MAYA)
 find_package(Maya 201200)
 endif()
@@ -363,10 +358,6 @@ endif()
 # Warn about missing dependencies that will cause parts of OpenSubdiv to be
 # disabled.  Also, add preprocessor defines that can be used in the source
 # code to determine if a specific dependency is present or not.
-
-if(GCD_FOUND)
-    add_definitions( -DOPENSUBDIV_HAS_GCD )
-endif()
 
 if(OPENMP_FOUND)
     add_definitions(

@@ -154,8 +154,6 @@ the alpha cycle:
     #. Loop / Bilinear schemes + Vtr / Far refactor
     #. Holes implementation
     #. Misc Sdc / Vtr / Far code cleanup & documentation
-    #. GCD Compute back-end
-
 
 
 Release 2.x

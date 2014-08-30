@@ -73,7 +73,6 @@ Optional:
 -DNO_OPENCL=1     // disable OpenCL
 -DNO_OPENGL=1     // disable OpenGL
 -DNO_CLEW=1       // disable CLEW wrapper library
--DNO_GCD=1        // disable GrandCentralDispatch on OSX
 ````
 
 The paths to Maya, Ptex, GLFW, and GLEW can also be specified through the

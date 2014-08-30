@@ -62,11 +62,6 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
     OpenSubdiv::OsdTbbComputeController *g_tbbComputeController = NULL;
 #endif
 
-#ifdef OPENSUBDIV_HAS_GCD
-    #include <osd/gcdComputeController.h>
-    OpenSubdiv::OsdGcdComputeController *g_gcdComputeController = NULL;
-#endif
-
 #ifdef OPENSUBDIV_HAS_OPENCL
     #include <osd/clGLVertexBuffer.h>
     #include <osd/clComputeContext.h>
@@ -134,11 +129,10 @@ static const char *shaderSource =
 enum KernelType { kCPU = 0,
                   kOPENMP = 1,
                   kTBB = 2,
-                  kGCD = 3,
-                  kCUDA = 4,
-                  kCL = 5,
-                  kGLSL = 6,
-                  kGLSLCompute = 7 };
+                  kCUDA = 3,
+                  kCL = 4,
+                  kGLSL = 5,
+                  kGLSLCompute = 6 };
 
 enum DisplayStyle { kWire = 0,
                     kShaded,
@@ -466,8 +460,6 @@ getKernelName(int kernel) {
         return "OpenMP";
     else if (kernel == kTBB)
         return "TBB";
-    else if (kernel == kGCD)
-        return "GCD";
     else if (kernel == kCUDA)
         return "Cuda";
     else if (kernel == kGLSL)
@@ -578,20 +570,6 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
                                          OpenSubdiv::OsdGLDrawContext>(
                                                 g_tbbComputeController,
                                                 refiner,
-                                                numVertexElements,
-                                                numVaryingElements,
-                                                level, bits);
-#endif
-#ifdef OPENSUBDIV_HAS_GCD
-    } else if (kernel == kGCD) {
-        if (not g_gcdComputeController) {
-            g_gcdComputeController = new OpenSubdiv::OsdGcdComputeController();
-        }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
-                                         OpenSubdiv::OsdGcdComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
-                                                g_gcdComputeController,
-                                                hmesh,
                                                 numVertexElements,
                                                 numVaryingElements,
                                                 level, bits);
@@ -1407,10 +1385,6 @@ uninitGL() {
 #ifdef OPENSUBDIV_HAS_TBB
     delete g_tbbComputeController;
 #endif
-
-#ifdef OPENSUBDIV_HAS_GCD
-    delete g_gcdComputeController;
-#endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     delete g_clComputeController;
     uninitCL(g_clContext, g_clQueue);
@@ -1622,9 +1596,6 @@ initHUD()
 #endif
 #ifdef OPENSUBDIV_HAS_TBB
     g_hud.AddPullDownButton(compute_pulldown, "TBB", kTBB);
-#endif
-#ifdef OPENSUBDIV_HAS_GCD
-    g_hud.AddPullDownButton(compute_pulldown, "GCD", kGCD);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
     g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);

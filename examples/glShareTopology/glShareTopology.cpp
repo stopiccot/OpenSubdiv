@@ -60,10 +60,6 @@ GLFWmonitor* g_primary=0;
     #include <osd/tbbComputeController.h>
 #endif
 
-#ifdef OPENSUBDIV_HAS_GCD
-    #include <osd/gcdComputeController.h>
-#endif
-
 #ifdef OPENSUBDIV_HAS_OPENCL
     #include <osd/clGLVertexBuffer.h>
     #include <osd/clComputeContext.h>
@@ -414,11 +410,10 @@ InstancesBase *g_instances = NULL;
 enum KernelType { kCPU = 0,
                   kOPENMP = 1,
                   kTBB = 2,
-                  kGCD = 3,
-                  kCUDA = 4,
-                  kCL = 5,
-                  kGLSL = 6,
-                  kGLSLCompute = 7 };
+                  kCUDA = 3,
+                  kCL = 4,
+                  kGLSL = 5,
+                  kGLSLCompute = 6 };
 
 enum DisplayStyle { kWire = 0,
                     kShaded,
@@ -663,11 +658,6 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
 #ifdef OPENSUBDIV_HAS_TBB
     } else if (g_kernel == kTBB) {
         topology = new Topology<OsdTbbComputeController,
-            OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
-#endif
-#ifdef OPENSUBDIV_HAS_GCD
-    } else if (g_kernel == kGCD) {
-        topology = new Topology<OsdGcdComputeController,
             OsdCpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
@@ -1451,9 +1441,6 @@ initHUD()
 #endif
 #ifdef OPENSUBDIV_HAS_TBB
     g_hud.AddPullDownButton(compute_pulldown, "TBB", kTBB);
-#endif
-#ifdef OPENSUBDIV_HAS_GCD
-    g_hud.AddPullDownButton(compute_pulldown, "GCD", kGCD);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
     g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
