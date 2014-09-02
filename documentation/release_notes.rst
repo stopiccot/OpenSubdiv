@@ -90,11 +90,29 @@ both redundant and inefficient.
 OpenSubdiv 3.0 introduces a new *intermediate* topological representation, named
 **Vtr** (Vectorized Topology Representation). The topological relationships held
 by Vtr can populated using either a high-level interface where simplicity has
-been emphasized, or a lower-level interface for enhanced efficiency.
+been emphasized, or a lower-level interface for enhanced efficiency (still under
+construction).  Vtr is much more efficient for the kinds of topological analysis
+required by Far and additionally is more flexible in that it supports the
+specification of non-manifold topology.
 
 As a result, Hbr is no longer a core API of OpenSubdiv. While the code is marked
 as deprecated, it will remain in the source distribution for legacy and
 regression purposes.
+
+Subdivision Core
+****************
+
+In consideration of the existing representations, Hbr and Vtr, all low-level
+details fundamental to subdivision and the specific subdivision schemes has been
+factored into a new low-level layer (the lowest) called Sdc.  This layer
+encapsulates the full set of applicable options, the formulae required to
+support semi-sharp creasing, the formulae for the refinement masks of each
+subdivision scheme, etc.
+
+Sdc provides the low-level nuts and bolts to provide a subdivision implementation
+consistent with OpenSubdiv.  It is used internally by Vtr but can also provide
+clients with an existing implementation of their own with the details to make
+that implementation consistent with OpenSubdiv.
 
 Stencil Tables
 **************
@@ -118,7 +136,16 @@ The refactoring of OpenSubdiv 3.0 data representations presents a unique
 opportunity to revisit some corners of the subdivision specification and
 remove or update some legacy features.
 
-XXXX
+Since the various options are now presented through a new API (Sdc rather than
+Hbr), based on the history of some of these options and input from interested
+parties, some of these are being reconsidered:
+
+    * the creasing method 'Normal' has been renamed 'Uniform'
+    * considering the renaming of the 'boundary interpolation' enum and its choices
+    * same as above for 'face varying boundary interpolation'
+
+In these cases, features are not being removed but simply re-expressed in what
+is hoped to be a clearer interface.
 
 Hierarchical Edits
 ++++++++++++++++++
@@ -145,14 +172,13 @@ features and interfaces have been finalized in an official 'Beta' Release.
 The following is a short list of featurs and issues that will be addressed during
 the alpha cycle:
 
-    #. Rename "FarTopologyRefiner"
-    #. Refactor Interpolate<>()
-    #. Refinement orientation bug + validation code
-    #. Face-varying boundary interpolation rules interpolation
+    #. Support for Loop and Bilinear schemes (consistent with 2.x)
+    #. Refactor Interpolate<>(), InterpolateFaceVarying<>() et al
+    #. Complete all face-varying boundary interpolation interpolation rules
     #. Arbitrary-location limit stencils
     #. Limit Masks
-    #. Loop / Bilinear schemes + Vtr / Far refactor
-    #. Holes implementation
+    #. Tagging and recognition of faces as Holes
+    #. Complete the accelerated conversion from client mesh to FarTopologyRefiner
     #. Misc Sdc / Vtr / Far code cleanup & documentation
 
 
