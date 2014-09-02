@@ -150,6 +150,15 @@ protect core code from unwanted specialization.
 
 XXXX <insert blurb about Descriptor>
 
+Refining Topology
+*****************
+
+XXXX <insert blurb about uniform / adaptive refinement>
+
+.. image:: images/topology_refiner.png
+   :align: center
+
+
 Patch Tables
 ============
 
