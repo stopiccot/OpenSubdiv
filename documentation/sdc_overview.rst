@@ -59,35 +59,36 @@ set of subdivision schemes that are supported.  It is not intended to be
 a general framework for defining customized subdivision schemes.
 
 
-Alpha Issues
-============
+.. container:: notebox
 
-Warnings of change:
+    **Alpha Issues**
 
-    * note change in creasing method from "Normal" to "Uniform" and related
-      use of "Uniform"
-    * all boundary interpolation choices in SdcOptions are subject to change
+    Warnings of change:
 
-Other changes under consideration:
+        * note change in creasing method from *"Normal"* to *"Uniform"* and
+          related use of *"Uniform"*
+        * all boundary interpolation choices in SdcOptions are subject to change
 
-    * <MASK> face-weights to support face-centers and/or original vertices
-    * merging SdcTypeTraits<T> into SdcScheme<T> as static methods
-    * should we nest the various enums of SdcOptions within SdcOptions?
-    * static initialization of creasing constants (for smooth and infinitely sharp)
-    * how to document template paremeter interfaces, e.g. <MASK>, <FACE>, etc.?
+    Other changes under consideration:
+
+        * *<MASK>* face-weights to support face-centers and/or original vertices
+        * merging *SdcTypeTraits<T>* into *SdcScheme<T>* as static methods
+        * should we nest the various enums of SdcOptions within SdcOptions?
+        * static initialization of creasing constants (for smooth and
+          infinitely sharp)
+        * how to document template paremeter interfaces, e.g. *<MASK>*,
+          *<FACE>*, etc.?
 
 
 Types, Traits and Options
 =========================
 
-See `sdc/type.h` and `sdc/options.h`
-
 The most basic type is the enum that identifies the fixed set of subdivision
-schemes supported by OpenSubdiv:  Bilinear, Catmark and Loop.  With this alone,
-we intend to avoid all dynamic casting issues related to the scheme by simply
-adding members to the associated subclasses for inspection.  In addition to the
-type enum itself, a class defining a set of TypeTraits<TYPE> for each scheme is
-provided along with the required specializations for each scheme.
+schemes supported by OpenSubdiv:  *Bilinear*, *Catmark* and *Loop*.  With this
+alone, we intend to avoid all dynamic casting issues related to the scheme by
+simply adding members to the associated subclasses for inspection.  In addition
+to the type enum itself, a class defining a set of *TypeTraits<TYPE>* for each
+scheme is provided along with the required specializations for each scheme.
 
 The second contribution is the collection of all variations in one place that can
 be applied to the subdivision schemes, i.e. the boundary interpolation rules,
@@ -108,8 +109,6 @@ propagate to the lowest level where they are relevant.
 Creasing support
 ================
 
-See `sdc/crease.h`
-
 Since the computations involved in the support of semi-sharp creasing are
 independent of the subdivision scheme, the goal in Sdc was to encapsulate all
 related creasing functionality in a similarly independent manner.  Computations
@@ -121,7 +120,7 @@ for more scheme-specific functionality is arguably not necessary here.
 Creasing computations have been provided as methods defined on a Crease class
 that is constructed with a set of Options.  Its methods typically take sharpness
 values as inputs and compute one or a corresponding set of new sharpness values
-as a result.  For the "Uniform" creasing method (previously known as "Normal"),
+as a result.  For the "Uniform" creasing method (previously known as *"Normal"*),
 the computations may be so trivial as to question whether such an interface is
 worth it, but for "Chaikin" or other schemes in future that are non-trivial, the
 benefits should be clear.  Functionality is divided between both uniform and
@@ -138,9 +137,9 @@ a face, was the child of a Smooth vertex, etc.).
 
 Methods are defined for the Crease class to:
 
-    - subdivide edge and vertex sharpness values
-    - determine the Rule for a vertex based on incident sharpness values
-    - determine the transitional weight between two sets of sharpness values
+    * subdivide edge and vertex sharpness values
+    * determine the Rule for a vertex based on incident sharpness values
+    * determine the transitional weight between two sets of sharpness values
 
 Being all low-level and working directly on sharpness values, it is a client's
 responsibility to coordinate the application of any hierarchical crease edits
@@ -157,51 +156,58 @@ for temporary use.
 Scheme-specific support
 =======================
 
-See `sdc/scheme.h`, `sdc/catmarkScheme.h`, etc.
-
 While the TypeTraits class provides traits for each subdivision scheme supported
-by OpenSubdiv (i.e. Bilinear, Catmark and Loop), the Scheme class provides methods
-for computing the various sets of weights used to compute new vertices resulting
-from subdivision.  The collection of weights used to compute a single vertex at a
-new subdivision level is typically referred to as a "mask".  The primary purpose
-of the Scheme class is to provide such masks in a manner both general and efficient.
+by OpenSubdiv (i.e. *Bilinear*, *Catmark* and *Loop*), the Scheme class
+provides methods for computing the various sets of weights used to compute new
+vertices resulting from subdivision.  The collection of weights used to compute
+a single vertex at a new subdivision level is typically referred to as a
+*"mask"*.  The primary purpose of the Scheme class is to provide such masks in a
+manner both general and efficient.
 
 Each subdivision scheme has its own values for its masks, and each are provided as
-specializations of the template class Scheme<SdcType TYPE>.  The intent is to 
+specializations of the template class *Scheme<SdcType TYPE>*.  The intent is to
 minimize the amount of code specific to each scheme.
 
 The computation of mask weights for subdivided vertices is the most significant
 contribution of Sdc.  The use of semi-sharp creasing with each
 non-linear subdivision scheme complicates what are otherwise simple
 masks detemined solely by the topology, and packaging that functionality to
-achieve both the generality and efficiency desired has been a challenge.  
+achieve both the generality and efficiency desired has been a challenge.
 
-Mask queries are defined in the Scheme class template, which has
-specializations for each of the supported subdivision schemes.  Mask queries
-are defined in terms of interfaces for two template parameters:  the first
+Mask queries are defined in the *Scheme* class template, which has
+specializations for each of the supported subdivision schemes. Mask queries
+are defined in terms of interfaces for two template parameters: the first
 defining the topological neighborhood of a vertex, and a second defining a
 container in which to gather the individual weights:
+
+.. code:: c++
 
     template <typename FACE, typename MASK>
     void ComputeFaceVertexMask(FACE const& faceNeighborhood, MASK& faceVertexMask, ...) const;
 
-Each mask query is expected to call methods defined for the FACE, EDGE or VERTEX
-classes to obtain the information they require -- typically these methods are
-simple queries about the topology and associated sharpness values.  Clients are
-free to use their own mesh representations to gather the requested information as
-quickly as possible, or to cache some subset as member variables for immediate
-inline retrieval.
+Each mask query is expected to call methods defined for the **FACE**, **EDGE** or
+**VERTEX** classes to obtain the information they require ; typically these
+methods are simple queries about the topology and associated sharpness values.
+Clients are free to use their own mesh representations to gather the requested
+information as quickly as possible, or to cache some subset as member variables
+for immediate inline retrieval.
 
 In general, the set of weights for a subdivided vertex is dependent on the following:
 
-    - the topology around the parent component from which the vertex originates
-    - the type of subdivision Rule applicable to the parent component
-        - requiring the sharpness values at and around that component
-    - the type of subdivision Rule applicable to the new child vertex
-        - requiring the subdivided sharpness values at and around the new vertex
-        - sometimes trivially inferred from the parent rule
-    - a weight blending the effect between differing rules for parent and child
-        - requiring all parent and child sharpness values
+    * the topology around the parent component from which the vertex originates
+
+    * the type of subdivision *Rule* applicable to the parent component:
+
+        * requiring the sharpness values at and around that component
+
+    * the type of subdivision *Rule* applicable to the new child vertex:
+
+        * requiring the subdivided sharpness values at and around the new vertex
+        * sometimes trivially inferred from the parent rule
+
+    * a weight blending the effect between differing rules for parent and child:
+
+        * requiring all parent and child sharpness values
 
 Clearly the sharpness values are inspected multiple times and so it pays to have
 them available for retrieval.  Computing them on an as-needed basis may be simple
@@ -214,45 +220,47 @@ mask weights completely independent of any other consideration.  Expecting and
 encouraging the client to have subdivided sharpness values first, for use in more
 than one place, is therefore recommended.
 
-The complexity of the general case above is also unnecessary for most vertices. 
+The complexity of the general case above is also unnecessary for most vertices.
 Any client using Sdc typically has more information about the nature of the vertex
 being subdivided and much of this can be avoided -- particularly for the smooth
 interior case that often dominates.  More on that in the details of the Scheme classes.
 
 Given that most of the complexity has been moved into the template parameters for
 the mask queries, the Scheme class remains fairly simple.  Like the Crease class,
-it is instantiated with a set of Options to avoid them cluttering the interface. 
+it is instantiated with a set of Options to avoid them cluttering the interface.
 It is currently little more than three methods for the mask queries for each vertex
-type.  The set of masks may need to be extended in future to include limit masks
+type. The set of masks may need to be extended in future to include limit masks
 and (potentially) masks for face-varying data sets (whose neighborhoods may vary in
 their definition).
 
-The mask queries have been written in a way that greatly simplifies the specializations
-required for each scheme.  The generic implementation for both the edge-vertex and
-vertex-vertex masks take care of all of the creasing logic, requiring only a small
-set of specific masks to be assigned for each Scheme: smooth and crease masks for
-an edge-vertex, and smooth, crease and corner masks for a vertex-vertex.  Other
-than the Bilinear case, which will specialize the mask queries to trivialize them
-for linear interpolation, the specializations for each Scheme should only require
-defining this set of masks -- and with two of them common (edge-vertex crease and
-vertex-vertex corner) the Catmark scheme only needs to define three.
+The mask queries have been written in a way that greatly simplifies the
+specializations required for each scheme. The generic implementation for both
+the edge-vertex and vertex-vertex masks take care of all of the creasing logic,
+requiring only a small set of specific masks to be assigned for each Scheme:
+smooth and crease masks for an edge-vertex, and smooth, crease and corner masks
+for a vertex-vertex.  Other than the *Bilinear* case, which will specialize the
+mask queries to trivialize them for linear interpolation, the specializations
+for each *Scheme* should only require defining this set of masks -- and with
+two of them common (edge-vertex crease and vertex-vertex corner) the Catmark
+scheme only needs to define three.
 
 
 The <FACE>, <EDGE> and <VERTEX> interfaces
 ******************************************
 
-Mask queries require an interface to a topological neighborhood, currently labeled
-FACE, EDGE and VERTEX.  This naming potentially implies more generality than
-intended as such classes are only expected to provide the methods required of the
-mask queries to compute its associated weights.  While all methods must be defined,
-some may rarely be invoked, and the client has considerable flexibility in the
-implementation of these -- they can defer some evaluations lazily until required,
-or be pro-active and cache information in member variables for immediate access.
+Mask queries require an interface to a topological neighborhood, currently
+labeled **FACE**, **EDGE** and **VERTEX**. This naming potentially implies more
+generality than intended as such classes are only expected to provide the
+methods required of the mask queries to compute its associated weights.  While
+all methods must be defined, some may rarely be invoked, and the client has
+considerable flexibility in the implementation of these: they can defer some
+evaluations lazily until required, or be pro-active and cache information in
+member variables for immediate access.
 
 An approach discussed in the past has alluded to iterator classes that clients
-would write to traverse their meshes.  The mask queries would then be parameterized
+would write to traverse their meshes. The mask queries would then be parameterized
 in terms of a more general and generic mesh component that would make use of more
-general traversal iterators.  The advantage here is the iterators are written once,
+general traversal iterators. The advantage here is the iterators are written once,
 then traversal is left to the query and only what is necessary is gathered.  The
 disadvantages are that clients are forced to write these to do anything, getting
 them correct and efficient may not be trivial (or possible in some cases), and that
@@ -260,7 +268,7 @@ the same data (e.g. subdivided sharpness) may be gathered or computed multiple
 times for different purposes.
 
 The other extreme was to gather everything possible required at once, but that is
-objectionable.  The approach taken here provides a reasonable compromise between
+objectionable. The approach taken here provides a reasonable compromise between
 the two.  The mask queries ask for exactly what they want, and the provided classes
 are expected to deliver it as efficiently as possible.  In some cases the client
 may already be storing it in a more accessible form and general topological
@@ -268,16 +276,16 @@ iteration can be avoided.
 
 The information requested of these classes in the three mask queries is as follows:
 
-    For FACE:
+    For **FACE**:
         * the number of incident vertices
 
-    For EDGE:
+    For **EDGE**:
         * the number of incident faces
         * the sharpness value of the parent edge
         * the sharpness values of the two child edges
         * the number of vertices per incident face
 
-    For VERTEX:
+    For **VERTEX**:
         * the number of incident faces
         * the number of incident edges
         * the sharpness value of the parent vertex
@@ -285,30 +293,31 @@ The information requested of these classes in the three mask queries is as follo
         * the sharpness value of the child vertex
         * the sharpness values for each incident child edge
 
-The latter should not be surprising given the dependencies noted above.  There are
-also a few more to consider for future use, e.g. whether the EDGE or VERTEX is
-manifold or not.  In most cases additional information can be provided to the mask
-queries (i.e. pre-determined Rules) and most of the child sharpness values are not
-necessary.  The most demanding situation is a fractional crease that decays to zero
--- in which case all parent and child sharpness values in the neighborhood are
-required to determine the proper transitional weight.
+The latter should not be surprising given the dependencies noted above.  There
+are also a few more to consider for future use, e.g. whether the **EDGE** or
+**VERTEX** is manifold or not.  In most cases additional information can be
+provided to the mask queries (i.e. pre-determined Rules) and most of the child
+sharpness values are not necessary. The most demanding situation is a
+fractional crease that decays to zero -- in which case all parent and child
+sharpness values in the neighborhood are required to determine the proper
+transitional weight.
 
 
 The <MASK> interface
 ********************
 
 Methods dealing with the collections of weights defining a mask are typically
-parameterized by a MASK template parameter that contains the weights.  The set of
+parameterized by a *MASK* template parameter that contains the weights.  The set of
 mask weights is currently divided into vertex-weights, edge-weights and
 face-weights -- consistent with previous usage in OpenSubdiv and providing some
 useful correllation between the full set of weights and topology.  The
 vertex-weights refer to parent vertices incident the parent component from which a
 vertex originated, the edge-weights the vertices opposite incident edges of the
 parent, and the face-weights the center of indicent parent faces.  Note the latter
-is NOT in terms of vertices of the parent but potentially vertices in the child
+is **NOT** in terms of vertices of the parent but potentially vertices in the child
 originating from faces of the parent.  This has been done historically in
 OpenSubdiv but is finding less use -- particularly when it comes to providing
-greater support for the Loop scheme -- and is a point needing attention.  
+greater support for the Loop scheme -- and is a point needing attention.
 
 So the mask queries require the following capabilities:
 
@@ -317,31 +326,34 @@ So the mask queries require the following capabilities:
     * assign individual vertex, edge and/or face weights by index
     * retrieve individual vertex, edge and/or face weights by index
 
-through a set of methods required of all MASK classes.  Since the maximum number of
-weights is typically known based on the topology, usage within Vtr, Far or Hbr is
-expected to simply define buffers on the stack or in pre-allocated tables to be
-partitioned into the three sets of weights on construction of a MASK and then populated by the mask queries.
+through a set of methods required of all *MASK* classes. Since the maximum
+number of weights is typically known based on the topology, usage within Vtr,
+*Far* or *Hbr* is expected to simply define buffers on the stack or in
+pre-allocated tables to be partitioned into the three sets of weights on
+construction of a *MASK* and then populated by the mask queries.
 
 A potentially useful side-effect of this is that the client can define their
-weights to be stored in either single- or double-precision.  With that possibility
-in mind, care was taken within the mask queries to make use of a declared type in
-the MASK interface (MASK::Weight) for intermediate calculations.  Having support
-for double-precision masks in Sdc does enable it at higher levels in OpenSubdiv if
-later desired, and that support is made almost trivial with MASK being generic.  
+weights to be stored in either single or double-precision. With that
+possibility in mind, care was taken within the mask queries to make use of a
+declared type in the *MASK* interface (*MASK::Weight*) for intermediate
+calculations. Having support for double-precision masks in *Sdc* does enable it
+at higher levels in OpenSubdiv if later desired, and that support is made
+almost trivial with *MASK* being generic.
 
-It is important to remember here that these masks are being defined consistent with
-existing usage within OpenSubdiv:  both Hbr and the subdivision tables generated by
-Far.  As noted above, the "face weights" correspond to the centers of incident
-faces, i.e. vertices on the same level as the vertex for which the mask is being
-computed, and not relative to vertices in the parent level as with the other sets
-of weights.  It is true that the weights can be translated into a set in terms
-solely of parent vertices, but in the general case (i.e. Catmark subdivision with
-non-quads in the base mesh) this requires additional topological association.  In
-general we would need N-3 weights for the N-3 vertices between the two incident
-edges, where N is the number of vertices of each face (typically 4 even at level
-0).  Perhaps such a translation method could be provided on the mask class, with an
-optional indication of the incident face topology for the irregular cases.  The
-Loop scheme does not have "face weights", for a vertex-vertex mask, but for an
+It is important to remember here that these masks are being defined consistent
+with existing usage within OpenSubdiv: both *Hbr* and the subdivision tables
+generated by *Far*. As noted above, the "face weights" correspond to the
+centers of incident faces, i.e. vertices on the same level as the vertex for
+which the mask is being computed, and not relative to vertices in the parent
+level as with the other sets of weights. It is true that the weights can be
+translated into a set in terms solely of parent vertices, but in the general
+case (i.e. *Catmark* subdivision with non-quads in the base mesh) this requires
+additional topological association. In general we would need N-3 weights for
+the N-3 vertices between the two incident edges, where N is the number of
+vertices of each face (typically 4 even at level 0). Perhaps such a
+translation method could be provided on the mask class, with an optional
+indication of the incident face topology for the irregular cases. The *Loop*
+scheme does not have *"face weights"*, for a vertex-vertex mask, but for an
 edge-vertex mask it does require weights associated with the faces incident the
-edge -- either the vertex opposite the edge for each triangle, or its center (which
-has no other use for Loop).
+edge -- either the vertex opposite the edge for each triangle, or its center
+(which has no other use for Loop).

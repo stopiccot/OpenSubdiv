@@ -37,13 +37,13 @@ Vtr Overview
 Vectorized Topology Representation (Vtr)
 ========================================
 
-Vtr consists of a suite of classes that collectively provide an intermediate
-representation of topology that supports efficient refinement.  Vtr is intended
-for internal use only and is currently accessed through the Far layer by the
-`FarTopologyRefiner <far_overview.html>`__, which assembles these Vtr classes to
-meet the topological and refinement needs of the Far layer.
+*Vtr* consists of a suite of classes that collectively provide an intermediate
+representation of topology that supports efficient refinement.  *Vtr* is intended
+for internal use only and is currently accessed through the *Far* layer by the
+`FarTopologyRefiner <far_overview.html>`__, which assembles these *Vtr* classes to
+meet the topological and refinement needs of the *Far* layer.
 
-Vtr is vectorized in that its topological data is stored more as a collection of
+*Vtr* is vectorized in that its topological data is stored more as a collection of
 vectors of primitive elements rather than as the faces, vertices and edges that
 make up many other topological representations.  It is essentially a
 structure-of-arrays (SOA) approach to topology in contrast to the more common
@@ -51,7 +51,7 @@ array-of-structures pattern found in many other topological representations.
 Vtr's use of vectors allows it to be fairly efficient in its use of memory and
 similarly efficient to refine, but the topology is fixed once defined.
 
-Vtr classes are purely topological.  They are even more independent of the
+*Vtr* classes are purely topological.  They are even more independent of the
 representation of vertices, faces, etc. than Hbr in that they are not even
 parameterized by an interface to such components.  So the same set of Vtr
 objects can eventually be used to serve more than one representation of these
@@ -60,11 +60,11 @@ indexable set (i.e. a vector or array) of vertices, edges and faces.  The index
 of a component uniquely identifies it and properties are retrieved by referring
 to it by index.
 
-The two primary classes in Vtr consist of:
+The two primary classes in *Vtr* consist of:
 
     * `VtrLevel <#vtrlevel>`__ - a class representing complete vertex topology
       for a level
-    * `VtrRefinement <#vtrrefinement>`__ - a class mapping a parent VtrLevel
+    * `VtrRefinement <#vtrrefinement>`__ - a class mapping a parent *VtrLevel*
       to a child level
 
 Others exist to represent the following:
@@ -74,33 +74,32 @@ Others exist to represent the following:
     * mapping between face-varying topology at successive levels
     * common low-level utilities, e.g. simple array classes
 
-contents along with current issues being addressed. More details may be
+Contents along with current issues being addressed. More details may be
 provided in the headers themselves.
 
 
-Alpha Notes
-===========
+.. container:: notebox
 
-Being intended for internal use, any changes to Vtr should not impact public
-interfaces.  Regardless, its worth noting some of the work planned:
+    **Alpha Issues**
 
-    * support for tri-split refinement required by Loop subdivision
-    * addition of more per-component tags to propogate with refinement
-      (e.g. holes, etc.)
-    * encapsulation of any scheme-specific code into classes specific to the
-      schemes
-    * potential nesting of FVar classes within Level and Refinement
-    * potential specializations for regular levels and refinements
+    Being intended for internal use, any changes to *Vtr* should not impact public
+    interfaces.  Regardless, its worth noting some of the work planned:
 
-Priority will be given to satisfying functional needs.
+        * support for tri-split refinement required by Loop subdivision
+        * addition of more per-component tags to propogate with refinement
+          (e.g. holes, etc.)
+        * encapsulation of any scheme-specific code into classes specific to the
+          schemes
+        * potential nesting of FVar classes within Level and Refinement
+        * potential specializations for regular levels and refinements
+
+    Priority will be given to satisfying functional needs.
 
 
 VtrLevel
 ========
 
-See `vtr/level.h`
-
-VtrLevel is a complete topological description of a subdivision level, with the
+*VtrLevel* is a complete topological description of a subdivision level, with the
 topological relations, sharpness values and component tags all stored in
 vectors (literally std::vectors, but easily changed via typedefs). There are no
 classes or objects for the mesh component types (i.e. faces, edges and
@@ -111,9 +110,9 @@ identifying that component. So with no classes the for the components, its
 difficult to say what constitutes a "vertex" or a "face": they are each the sum
 of all the fields scattered amongst the many vectors included.
 
-VtrLevel represents a single level of a potential hierarchy and is capable of
+*VtrLevel* represents a single level of a potential hierarchy and is capable of
 representing the complete base mesh.  There are no members that relate data in
-one level to any other, either below or above.  As such, any VtrLevel can be
+one level to any other, either below or above.  As such, any *VtrLevel* can be
 used as the base level for a new subdivision hierarchy (potentially more than
 one). All relationships between separate levels are maintained in the
 `VtrRefinement <#vtrrefinement>`__ class.
@@ -121,12 +120,12 @@ one). All relationships between separate levels are maintained in the
 Topological Relationships
 *************************
 
-`VtrLevel <#vtrlevel>`__ requires the definition of and associations between a
-fixed set of indexable components for all three component types, i.e. an
-explicit edge list in addition to the expected set of vertices and faces.
-There are no explicit component objects in the representation, only an
-integer index (*VtrIndex*) identifying each component within the set and data
-associated with that component in the various vectors.
+*VtrLevel* requires the definition of and associations between a fixed set of
+indexable components for all three component types, i.e. an explicit edge list
+in addition to the expected set of vertices and faces. There are no explicit
+component objects in the representation, only an integer index (*VtrIndex*)
+identifying each component within the set and data associated with that
+component in the various vectors.
 
 The topology is stored as six sets of incident relations between the components:
 two each for the two other component types incident each component type, i.e.:
@@ -150,10 +149,10 @@ vertices are included (and so sized according to the number of edges and
 vertices), along with additional tags for the components that may be helpful to
 refinement (i.e. the type of subdivision Rule associated with each vertex).
 
-A VtrLevel is really just a container for data in a subdivision level, and so
+A *VtrLevel* is really just a container for data in a subdivision level, and so
 its public methods are primarily to access that data. Modification of the data
 is protected and only made available to classes that are intended to construct
-VtrLevels: currently the Far factory class that is responsible for building the
+*VtrLevels*: currently the *Far* factory class that is responsible for building the
 base level, and the `VtrRefinement <#vtrrefinement>`__ class that constructs
 subsequent levels during refinement.
 
@@ -171,7 +170,7 @@ six topological relations: the vertices incident each face. When we do keep
 VtrLevels around in memory (as is the case with the `FarTopologyRefiner
 <far_overview.html>`__) we do have do have the opportunity to prune what is not
 strictly necessary after the refinement. Just as with construction, whatever
-classes are privileged to construct a VtrLevel are likely those that will be
+classes are privileged to construct a *VtrLevel* are likely those that will be
 privileged to prune its contents when needed.
 
 
@@ -181,29 +180,34 @@ VtrRefinement
 See `vtr/refinement.h`
 
 While `VtrLevel <#vtrlevel>`__ contains the topology for a subdivision level,
-VtrRefinement is responsible for creating a new level via refinement of an
+*VtrRefinement*  is responsible for creating a new level via refinement of an
 existing one, and for maintaining the relationships between the components in
-the parent and child levels.  So a simplified view of a subdivision hierarchy
-with Vtr is a set of VtrLevels with a VtrRefinement between each successive
-pair.
+the parent and child levels. So a simplified view of a subdivision hierarchy
+with *Vtr* is a set of *VtrLevels* with a *VtrRefinement*  between each
+successive pair.
 
-VtrRefinement is a friend of VtrLevel and will populate a child level from a
-parent given a set of refinement parameters.  Aside from parameters related to
-data or depth, there are two kinds of refinement supported:  uniform and
-sparse.  The latter sparse refinement requires selection of an arbitrary set
-of components -- any dependent or "neighboring" components that are required
-for the limit will be automatically included.  So feature-adaptive refinement
-is just one form of this selective sparse refinement, the criteria being the
-topological features of interest (creases and extra-ordinary vertices).  The
+.. image:: images/vtr_refinement.1.png
+   :align: center
+   :target: images/vtr_refinement.1.png
+
+
+*VtrRefinement*  is a friend of *VtrLevel* and will populate a child level from
+a parent given a set of refinement parameters. Aside from parameters related
+to data or depth, there are two kinds of refinement supported:  uniform and
+sparse.  The latter sparse refinement requires selection of an arbitrary set of
+components -- any dependent or *"neighboring"* components that are required for
+the limit will be automatically included. So feature-adaptive refinement is
+just one form of this selective sparse refinement, the criteria being the
+topological features of interest (creases and extra-ordinary vertices). The
 intent is to eventually provide more flexibility to facilitate the refinement
 of particular regions of interest or more dynamic/adaptive needs.
 
 Parent-child and child-parent relationships
 *******************************************
 
-While VtrRefinement populates a new child VtrLevel as part of its refinement
+While *VtrRefinement* populates a new child *VtrLevel* as part of its refinement
 operation, it also accumulates the relationships between the parent and child
-level (and as with VtrLevel, this data is stored in vectors indexable by the
+level (and as with *VtrLevel*, this data is stored in vectors indexable by the
 components).
 
 The associations between components in the two levels was initially only
@@ -211,23 +215,23 @@ uni-directional:  child components were associated with incident components
 of a parent component based on the parent components topology, so we had a
 parent-to-child mapping (one to many).  Storing the reverse child-to-parent
 mapping was avoided to reduce memory (particularly in the case of uniform
-refinement) as it often was not necessary, but a growing need for it --
-particularly in the case of sparse feature-adaptive refinement -- lead to it
+refinement) as it often was not necessary, but a growing need for it,
+particularly in the case of sparse feature-adaptive refinement, lead to it
 being included.
 
 Data flexibility
 ****************
 
-One of the advantages of the structure-of-arrays representation in both VtrLevel
-and Refinement is that we can make more dynamic choices about what type of data
-we choose to allocate and use based on needs. For instance, we can choose
-between maintaining the parent-child or child-parent mapping in VtrRefinement,
-or both if needed, and we can remove one if no longer necessary. An active
-example of this is uniform refinement: if we only require the face-vertex
-list at the finest subdivision level, there is no need to generate a complete
-topological description of that level (as would be required of more traditional
-representations), and given that level is 4x the magnitude of its parent, the
-savings are considerable.
+One of the advantages of the structure-of-arrays representation in both
+*VtrLevel* and Refinement is that we can make more dynamic choices about what
+type of data we choose to allocate and use based on needs. For instance, we can
+choose between maintaining the parent-child or child-parent mapping in
+*VtrRefinement*, or both if needed, and we can remove one if no longer
+necessary. An active example of this is uniform refinement: if we only require
+the face-vertex list at the finest subdivision level, there is no need to
+generate a complete topological description of that level (as would be required
+of more traditional representations), and given that level is 4x the magnitude
+of its parent, the savings are considerable.
 
 Currently there is nothing specific to a subdivision scheme in the refinement
 other than the type of topological splitting to apply. The refinement does
