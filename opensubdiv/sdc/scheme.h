@@ -143,6 +143,22 @@ public:
                                     SdcCrease::Rule parentRule = SdcCrease::RULE_UNKNOWN,
                                     SdcCrease::Rule childRule = SdcCrease::RULE_UNKNOWN) const;
 
+    //
+    //  UNDER CONSIDERATION -- NOT YET IMPLEMENTED...
+    //
+    //  Masks for limit points and tangents -- note that these require the vertex be
+    //  suitably isolated such that its limit is well-defined.  These will also require
+    //  internal methods for the boundary and interior cases to be specialized for each
+    //  scheme.
+    //
+    template <typename VERTEX, typename MASK>
+    void ComputeVertexLimitMask(VERTEX const& vertexNeighborhood, MASK& positionMask) const;
+
+    template <typename VERTEX, typename MASK>
+    void ComputeVertexLimitMask(VERTEX const& vertexNeighborhood, MASK& positionMask,
+                                                                  MASK& tangent1Mask,
+                                                                  MASK& tangent2Mask) const;
+
 protected:
     //
     //  Supporting internal methods -- optionally implemented, depending on specialization:
