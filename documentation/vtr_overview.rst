@@ -37,104 +37,68 @@ Vtr Overview
 Vectorized Topology Representation (Vtr)
 ========================================
 
-This document is written to accompany the opensubdiv/vtr source.  It is intended
-to give a high level overview of the organization of the source, the rationale
-for various decisions, as well as highlight open issues or situations where the
-choices made thus far warrant further deliberation.
+Vtr consists of a suite of classes that collectively provide an intermediate
+representation of topology that supports efficient refinement.  Vtr is intended
+for internal use only and is currently accessed through the Far layer by the
+`FarTopologyRefiner <far_overview.html>`__, which assembles these Vtr classes to
+meet the topological and refinement needs of the Far layer.
 
-Vtr is the newly proposed layer to support the "vectorized topological
-representation" of a mesh and its associated refinement. Vtr is intended for
-internal use and is currently accessed through the public FarTopologyRefiner
-class and its Factory class that internally transforms an instance of a
-client's mesh into Vtr form.
+Vtr is vectorized in that its topological data is stored more as a collection of
+vectors of primitive elements rather than as the faces, vertices and edges that
+make up many other topological representations.  It is essentially a
+structure-of-arrays (SOA) approach to topology in contrast to the more common
+array-of-structures pattern found in many other topological representations.
+Vtr's use of vectors allows it to be fairly efficient in its use of memory and
+similarly efficient to refine, but the topology is fixed once defined.
 
-FarTopologyRefiner, in the Far API layer, is intended to be one of a set of
-modular, table-oriented classes made available for public use. As such, it is
-debatable whether the Vtr classes that support FarTopologyRefiner should be
-part of Far or the new Vtr layer. We are prepared to rename all Vtr classes as
-Far in future if necessary.
+Vtr classes are purely topological.  They are even more independent of the
+representation of vertices, faces, etc. than Hbr in that they are not even
+parameterized by an interface to such components.  So the same set of Vtr
+objects can eventually be used to serve more than one representation of these
+components.  The primary requirement is that a mesh be expressable as an
+indexable set (i.e. a vector or array) of vertices, edges and faces.  The index
+of a component uniquely identifies it and properties are retrieved by referring
+to it by index.
 
-The Vtr API can be broken into the following elements:
+The two primary classes in Vtr consist of:
 
-    * Common Vtr utilities
     * `VtrLevel <#vtrlevel>`__ - a class representing complete vertex topology
       for a level
     * `VtrRefinement <#vtrrefinement>`__ - a class mapping a parent VtrLevel
       to a child level
-    * VtrFVarLevel - a class representing complete face-varying topology for
-      a level
-    * VtrFVarRefinement - a class mapping a parent VtrFVarLevel to a child
-      level
 
-The following synopsis of each provides some of the motivation behind the
+Others exist to represent the following:
+
+    * selection and appropriate tagging of components for sparse refinement
+    * divergence of face-varying topology from the vertex topology
+    * mapping between face-varying topology at successive levels
+    * common low-level utilities, e.g. simple array classes
+
 contents along with current issues being addressed. More details may be
 provided in the headers themselves.
 
-Vtr is very much a work in progress. There is still considerable functionality
-to be added and potentially more performance tuning to be done. Work to be done
-includes:
 
+Alpha Notes
+===========
+
+Being intended for internal use, any changes to Vtr should not impact public
+interfaces.  Regardless, its worth noting some of the work planned:
+
+    * support for tri-split refinement required by Loop subdivision
     * addition of more per-component tags to propogate with refinement
       (e.g. holes, etc.)
-    * support for tri-split refinement required by Loop subdivision
-    * specializations for regular levels and refinements
+    * encapsulation of any scheme-specific code into classes specific to the
+      schemes
+    * potential nesting of FVar classes within Level and Refinement
+    * potential specializations for regular levels and refinements
 
-The `FarTopologyRefiner <far_overview.html>`__ class and its Factory class are
-the public interface to the functionality provided here.
-
-Common Vtr utilities
-====================
-
-Associated headers:
-
-    * `vtr/types.h`
-
-Synopsis
-********
-
-The style of the existing OpenSubdiv code is to nest the definitions of utility
-types and classes in other classes. There are several in Vtr that are used
-equally by multiple classes, and its debatable if they belong in one or
-another. So currently <vtr/types.h> includes a number of such declarations for
-public use within Vtr (or Far). These include:
-
-    * declarations of types used for component indices, sharpness, etc.
-    * constant and inline method for testing index validity
-    * declarations of commonly used array types
-
-Array Type
-**********
-
-With data in Vtr, `Far <far_overview.html>`__ and elsewhere stored as
-collections of arrays aggregated into much larger arrays, access to these sets
-of arrays within a larger context is frequent, and so making it both convenient
-and efficient is of value.
-
-A generic "array interface" class was made available to support this. This class
-is nothing more than a pair that defines the extent of an array along with a
-subset of the interface of std::vector for accessing its entries. It does not
-own the data that it refers to, but simply allows access to its elements.
-
-Arguably we could pass pairs of values around, either begin/end or begin/size,
-but the frequency of such occurrences is considerable and it doubles the number
-of function parameters in many cases (particularly those requiring more than
-one array) so declaring a simple class for this purpose makes a big difference
-to code readability.
-
-The term "Vector" is used for types defined in terms of std::vector and "Array"
-(or "Accessor" and "Modifier" for const/non-const interfaces. The two main Vtr
-classes described below make heavy use of these arrays.
+Priority will be given to satisfying functional needs.
 
 
 VtrLevel
 ========
 
-Associated headers:
-
-    * `vtr/level.h`
-
-Synopsis
-********
+See `vtr/level.h`
 
 VtrLevel is a complete topological description of a subdivision level, with the
 topological relations, sharpness values and component tags all stored in
@@ -210,19 +174,11 @@ strictly necessary after the refinement. Just as with construction, whatever
 classes are privileged to construct a VtrLevel are likely those that will be
 privileged to prune its contents when needed.
 
-Since VtrLevel is purely topological, there is no template parameter required.
-Other than the utility types defined in a separate header, this is true of all
-Vtr source.
-
 
 VtrRefinement
 =============
 
-Associated headers:
-    vtr/refinement.h:
-
-Synopsis
-********
+See `vtr/refinement.h`
 
 While `VtrLevel <#vtrlevel>`__ contains the topology for a subdivision level,
 VtrRefinement is responsible for creating a new level via refinement of an
@@ -232,26 +188,32 @@ with Vtr is a set of VtrLevels with a VtrRefinement between each successive
 pair.
 
 VtrRefinement is a friend of VtrLevel and will populate a child level from a
-parent given a set of refinement parameters (eventually). Feature-adaptive
-refinement is just one form of selective refinement, the criteria being the
+parent given a set of refinement parameters.  Aside from parameters related to
+data or depth, there are two kinds of refinement supported:  uniform and
+sparse.  The latter sparse refinement requires selection of an arbitrary set
+of components -- any dependent or "neighboring" components that are required
+for the limit will be automatically included.  So feature-adaptive refinement
+is just one form of this selective sparse refinement, the criteria being the
 topological features of interest (creases and extra-ordinary vertices).  The
-intent is to provide greater generality to facilitate the refinement of
-particular regions of interest or more dynamic/adaptive needs.
+intent is to eventually provide more flexibility to facilitate the refinement
+of particular regions of interest or more dynamic/adaptive needs.
 
-Parent-child relationships
-**************************
+Parent-child and child-parent relationships
+*******************************************
 
 While VtrRefinement populates a new child VtrLevel as part of its refinement
 operation, it also accumulates the relationships between the parent and child
 level (and as with VtrLevel, this data is stored in vectors indexable by the
-components). Currently the associations between components in the two levels
-is uni-directional: child components are associated with incident components
-of a parent component based on the parent components topology, so we have a
-parent-to-child mapping (one to many). We tried to avoid having a
-complementary child-to-parent mapping to reduce memory (particularly in the
-case of uniform refinement) as it often was not necessary, but there is a
-growing need for it in some cases once the hierarchy is constructed, so it is
-likely it will be eventually added.
+components).
+
+The associations between components in the two levels was initially only
+uni-directional:  child components were associated with incident components
+of a parent component based on the parent components topology, so we had a
+parent-to-child mapping (one to many).  Storing the reverse child-to-parent
+mapping was avoided to reduce memory (particularly in the case of uniform
+refinement) as it often was not necessary, but a growing need for it --
+particularly in the case of sparse feature-adaptive refinement -- lead to it
+being included.
 
 Data flexibility
 ****************
@@ -270,7 +232,5 @@ savings are considerable.
 Currently there is nothing specific to a subdivision scheme in the refinement
 other than the type of topological splitting to apply. The refinement does
 subdivide sharpness values for creasing, but that too is independent of scheme.
-
-Like VtrLevel, VtrRefinement is also purely topological, free of any template
-parameter for a vertex type, and so its source is defined in a .cpp file
-corresponding to its header.
+Tags were added to the base level that are propagated through the refinement
+and these too are dependent on the scheme, but are applied externally.
