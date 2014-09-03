@@ -36,11 +36,13 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
+
 //
 //  Simple classes supporting the interfaces required of generic types in the Scheme mask
 //  queries, e.g. <typename FACE, MASK, etc.>
 //
-//  These were added solely to support the temporary VtrRefinement::computeMasks(), which
+//  These were added solely to support the temporary Refinement::computeMasks(), which
 //  is not expected to persist in its current form.  So these are for illustration purposes
 //  now and may eventually be moved elsewhere (likely into Far).
 //
@@ -48,13 +50,13 @@ namespace OPENSUBDIV_VERSION {
 //
 //  For <typename MASK>, where the mask weights are stored:
 //
-class VtrMaskInterface {
+class MaskInterface {
 public:
     typedef float Weight;  //  Also part of the expected interface
 
 public:
-    VtrMaskInterface(Weight* v, Weight* e, Weight* f) : _vertWeights(v), _edgeWeights(e), _faceWeights(f) { }
-    ~VtrMaskInterface() { }
+    MaskInterface(Weight* v, Weight* e, Weight* f) : _vertWeights(v), _edgeWeights(e), _faceWeights(f) { }
+    ~MaskInterface() { }
 
 public:  //  Generic interface expected of <typename MASK>:
     int GetNumVertexWeights() const { return _vertCount; }
@@ -87,11 +89,11 @@ private:
 //
 //  For <typename FACE>, which provides information int the neighborhood of a face:
 //
-class VtrFaceInterface {
+class FaceInterface {
 public:
-    VtrFaceInterface() { }
-    VtrFaceInterface(int vertCount) : _vertCount(vertCount) { }
-    ~VtrFaceInterface() { }
+    FaceInterface() { }
+    FaceInterface(int vertCount) : _vertCount(vertCount) { }
+    ~FaceInterface() { }
 
 public:  //  Generic interface expected of <typename FACE>:
     int GetNumVertices() const { return _vertCount; }
@@ -104,11 +106,11 @@ private:
 //
 //  For <typename EDGE>, which provides information in the neighborhood of an edge:
 //
-class VtrEdgeInterface {
+class EdgeInterface {
 public:
-    VtrEdgeInterface() { }
-    VtrEdgeInterface(VtrLevel const& level) : _level(&level) { }
-    ~VtrEdgeInterface() { }
+    EdgeInterface() { }
+    EdgeInterface(Level const& level) : _level(&level) { }
+    ~EdgeInterface() { }
 
     void SetIndex(int edgeIndex) { _eIndex = edgeIndex; }
 
@@ -117,19 +119,19 @@ public:  //  Generic interface expected of <typename EDGE>:
     float GetSharpness() const { return _level->getEdgeSharpness(_eIndex); }
 
     void GetChildSharpnesses(Sdc::Crease const&, float s[2]) const {
-        //  Need to use the VtrRefinement here to identify the two child edges:
+        //  Need to use the Refinement here to identify the two child edges:
         s[0] = s[1] = GetSharpness() - 1.0f;
     }
 
     void GetNumVerticesPerFace(int vertsPerFace[]) const {
-        VtrIndexArray const eFaces = _level->getEdgeFaces(_eIndex);
+        IndexArray const eFaces = _level->getEdgeFaces(_eIndex);
         for (int i = 0; i < eFaces.size(); ++i) {
             vertsPerFace[i] = _level->getFaceVertices(eFaces[i]).size();
         }
     }
 
 private:
-    const VtrLevel* _level;
+    const Level* _level;
 
     int _eIndex;
 };
@@ -138,11 +140,11 @@ private:
 //
 //  For <typename VERTEX>, which provides information in the neighborhood of a vertex:
 //
-class VtrVertexInterface {
+class VertexInterface {
 public:
-    VtrVertexInterface() { }
-    VtrVertexInterface(VtrLevel const& parent, VtrLevel const& child) : _parent(&parent), _child(&child) { }
-    ~VtrVertexInterface() { }
+    VertexInterface() { }
+    VertexInterface(Level const& parent, Level const& child) : _parent(&parent), _child(&child) { }
+    ~VertexInterface() { }
 
     void SetIndex(int parentIndex, int childIndex) {
         _pIndex = parentIndex;
@@ -157,7 +159,7 @@ public:  //  Generic interface expected of <typename VERT>:
 
     float  GetSharpness() const { return _parent->getVertexSharpness(_pIndex); }
     float* GetSharpnessPerEdge(float pSharpness[]) const {
-        VtrIndexArray const pEdges = _parent->getVertexEdges(_pIndex);
+        IndexArray const pEdges = _parent->getVertexEdges(_pIndex);
         for (int i = 0; i < _eCount; ++i) {
             pSharpness[i] = _parent->getEdgeSharpness(pEdges[i]);
         }
@@ -173,8 +175,8 @@ public:  //  Generic interface expected of <typename VERT>:
     }
 
 private:
-    const VtrLevel* _parent;
-    const VtrLevel* _child;
+    const Level* _parent;
+    const Level* _child;
 
     int _pIndex;
     int _cIndex;
@@ -182,6 +184,7 @@ private:
     int _fCount;
 };
 
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

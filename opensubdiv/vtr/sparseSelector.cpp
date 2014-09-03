@@ -31,6 +31,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
 
 //
 //  Component selection methods:
@@ -41,7 +42,7 @@ namespace OPENSUBDIV_VERSION {
 //  level in order to fully define supported further refinement of selected components.
 //
 inline void
-VtrSparseSelector::markSelection() {
+SparseSelector::markSelection() {
 
     if (!_selected) {
         _refine->initializeSparseSelectionTags();
@@ -50,7 +51,7 @@ VtrSparseSelector::markSelection() {
 }
 
 void
-VtrSparseSelector::selectVertex(VtrIndex parentVertex) {
+SparseSelector::selectVertex(Index parentVertex) {
 
     markSelection();
 
@@ -59,13 +60,13 @@ VtrSparseSelector::selectVertex(VtrIndex parentVertex) {
 }
 
 void
-VtrSparseSelector::selectEdge(VtrIndex parentEdge) {
+SparseSelector::selectEdge(Index parentEdge) {
 
     markSelection();
 
     if (!wasEdgeSelected(parentEdge)) {
         //  Mark the two end vertices:
-        VtrIndexArray const eVerts = _refine->parent().getEdgeVertices(parentEdge);
+        IndexArray const eVerts = _refine->parent().getEdgeVertices(parentEdge);
         markVertexSelected(eVerts[0]);
         markVertexSelected(eVerts[1]);
 
@@ -74,14 +75,14 @@ VtrSparseSelector::selectEdge(VtrIndex parentEdge) {
 }
 
 void
-VtrSparseSelector::selectFace(VtrIndex parentFace) {
+SparseSelector::selectFace(Index parentFace) {
 
     markSelection();
 
     if (!wasFaceSelected(parentFace)) {
         //  Mark the face's incident verts and edges as selected:
-        VtrIndexArray const fEdges = _refine->parent().getFaceEdges(parentFace);
-        VtrIndexArray const fVerts = _refine->parent().getFaceVertices(parentFace);
+        IndexArray const fEdges = _refine->parent().getFaceEdges(parentFace);
+        IndexArray const fVerts = _refine->parent().getFaceVertices(parentFace);
 
         for (int i = 0; i < fVerts.size(); ++i) {
             markEdgeSelected(fEdges[i]);
@@ -92,7 +93,7 @@ VtrSparseSelector::selectFace(VtrIndex parentFace) {
 }
 
 void
-VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex) {
+SparseSelector::selectVertexFaces(Index parentVertex) {
 
     markSelection();
 
@@ -101,13 +102,15 @@ VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex) {
     //  vertex to distinguish it being selected by incidence of a selected face or
     //  selected explicitly here.
     //
-    VtrIndexArray const vertFaces = _refine->parent().getVertexFaces(parentVertex);
+    IndexArray const vertFaces = _refine->parent().getVertexFaces(parentVertex);
     for (int i = 0; i < vertFaces.size(); ++i) {
         if (wasFaceSelected(vertFaces[i])) continue;
 
         selectFace(vertFaces[i]);
     }
 }
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

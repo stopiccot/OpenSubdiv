@@ -202,8 +202,8 @@ FarTopologyRefinerFactory<Shape>::assignComponentTags(
 
             for (int j=0; j<(int)t->intargs.size()-1; j += 2) {
 
-                OpenSubdiv::VtrIndex edge = refiner.FindEdge(/*level*/0, t->intargs[j], t->intargs[j+1]);
-                if (edge==OpenSubdiv::VTR_INDEX_INVALID) {
+                OpenSubdiv::Vtr::Index edge = refiner.FindEdge(/*level*/0, t->intargs[j], t->intargs[j+1]);
+                if (edge==OpenSubdiv::Vtr::INDEX_INVALID) {
                     printf("cannot find edge for crease tag (%d,%d)\n", t->intargs[j], t->intargs[j+1] );
                 } else {
                     int nfloat = (int) t->floatargs.size();

@@ -33,15 +33,17 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
+
 //
 //  A few types (and constants) are declared here while Vtr is being
 //  developed.  These tend to be used by more than one Vtr class, i.e.
-//  both VtrLevel and VtrRefinement and are often present in their
+//  both Level and Refinement and are often present in their
 //  interfaces.
 //
 //  Is the sharpness overkill -- perhaps sdc should define this...
 //
-typedef float VtrSharpness;
+typedef float Sharpness;
 
 //
 //  Indices -- note we can't use sized integer types like uint32_t, etc. as use of
@@ -53,23 +55,25 @@ typedef float VtrSharpness;
 //  despite the fact that we lose half the range compared to using "uint" (with ~0
 //  as invalid).
 //
-typedef int            VtrIndex;      //  Used to index the vectors of components
-typedef unsigned char  VtrLocalIndex; //  Used to index one component within another
+typedef int            Index;      //  Used to index the vectors of components
+typedef unsigned char  LocalIndex; //  Used to index one component within another
 
-static const VtrIndex  VTR_INDEX_INVALID = -1;
+static const Index  INDEX_INVALID = -1;
 
-inline bool VtrIndexIsValid(VtrIndex index) { return (index != VTR_INDEX_INVALID); }
+inline bool IndexIsValid(Index index) { return (index != INDEX_INVALID); }
 
 //
 //  Note for aggregate types the use of "vector" wraps an std:;vector (typically a
 //  member variable) and is fully resizable and owns its own storage, whereas "array"
 //  is typically used in index a fixed subset of pre-allocated memory:
 //
-typedef std::vector<VtrIndex>  VtrIndexVector;
+typedef std::vector<Index>  IndexVector;
 
-typedef VtrArray<VtrIndex>       VtrIndexArray;
-typedef VtrArray<VtrLocalIndex>  VtrLocalIndexArray;
+typedef Array<Index>        IndexArray;
+typedef Array<LocalIndex>   LocalIndexArray;
 
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 

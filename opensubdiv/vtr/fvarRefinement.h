@@ -40,30 +40,32 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
+
 //
-//  VtrFVarRefinement:
+//  FVarRefinement:
 //      A face-varying refinement is the subset of face-varying data required to
-//  support a "channel" of face-varying data.  Just as VtrRefinement represents a
-//  mapping between a parent and child VtrLevel, the face-varying analog represents
-//  a mapping between a parent and child VtrFVarLevel.
+//  support a "channel" of face-varying data.  Just as Refinement represents a
+//  mapping between a parent and child Level, the face-varying analog represents
+//  a mapping between a parent and child FVarLevel.
 //
 //  Its looking like this class may not be necessary...  Enough information exits
-//  between the pair of VtrFVarLevels and their VtrLevels to do most of what we
+//  between the pair of FVarLevels and their Levels to do most of what we
 //  want without needing to retain state information within the FVarRefinement as
 //  is essential in Refinement (i.e. the parent-to-child mapping and vice versa).
 //
 
-class VtrFVarRefinement {
+class FVarRefinement {
 
 public:
-    VtrFVarRefinement(VtrRefinement const& refinement, VtrFVarLevel& parent, VtrFVarLevel& child);
-    ~VtrFVarRefinement();
+    FVarRefinement(Refinement const& refinement, FVarLevel& parent, FVarLevel& child);
+    ~FVarRefinement();
 
     //  Const methods:
-    VtrRefinement const& getRefinement() const { return _refinement; }
+    Refinement const& getRefinement() const { return _refinement; }
 
-    int getChildValueParentSource(VtrIndex vIndex, int sibling) const {
-        return _childValueParentSource[_child->getVertexValueIndex(vIndex, (VtrLocalIndex)sibling)];
+    int getChildValueParentSource(Index vIndex, int sibling) const {
+        return _childValueParentSource[_child->getVertexValueIndex(vIndex, (LocalIndex)sibling)];
     }
 
     //  Modifiers supporting application of the refinement:
@@ -71,8 +73,8 @@ public:
 
     void estimateAndAllocateChildValues();
     void populateChildValues();
-    int  populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEdge, int offset);
-    int  populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex pVert, int offset);
+    int  populateChildValuesForEdgeVertex(Index cVert, Index pEdge, int offset);
+    int  populateChildValuesForVertexVertex(Index cVert, Index pVert, int offset);
     void trimAndFinalizeChildValues();
 
     void propagateEdgeTags();
@@ -81,17 +83,17 @@ public:
 
 public:
     //  The Refinement and familiar parent/child levels:
-    VtrRefinement const & _refinement;
+    Refinement const & _refinement;
 
-    VtrFVarLevel * _parent;
-    VtrFVarLevel * _child;
+    FVarLevel * _parent;
+    FVarLevel * _child;
 
     //  When refinement is sparse, we need a mapping between siblings of a vertex
     //  value in the parent and child -- and for some child values, there will not
     //  be a parent value, in which case the source of the parent component will
     //  be stored.  So we refer to the parent "source" rather than "sibling":
     //
-    std::vector<VtrLocalIndex> _childValueParentSource;
+    std::vector<LocalIndex> _childValueParentSource;
 
     //
     //  These members are needed during refine() but currently serve no purpose
@@ -101,6 +103,7 @@ public:
     int _childSiblingFromVertCount;
 };
 
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

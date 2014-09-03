@@ -327,8 +327,7 @@ FarTopologyRefinerFactory<Converter>::assignComponentTopology(
         }
     }
 
-    // XXXX manuelk this should be exposed through FarTopologyRefinerFactory
-    refiner.getBaseLevel().populateLocalIndices();
+    refiner.populateLocalIndices();
 };
 
 template <>

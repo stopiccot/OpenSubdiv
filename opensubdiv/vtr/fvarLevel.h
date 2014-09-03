@@ -40,10 +40,12 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
+
 //
-//  VtrFVarLevel:
+//  FVarLevel:
 //      A "face-varying channel" includes the topology for a set of face-varying
-//  data, relative to the topology of the VtrLevel with which it is associated.
+//  data, relative to the topology of the Level with which it is associated.
 //
 //  Analogous to a set of vertices and face-vertices that define the topology for
 //  the geometry, a channel requires a set of "values" and "face-values".  The
@@ -68,18 +70,18 @@ namespace OPENSUBDIV_VERSION {
 //
 //  Regarding scope and access...
 //      Unclear at this early state, but leaning towards nesting this class within
-//  VtrLevel, given the intimate dependency between the two.
+//  Level, given the intimate dependency between the two.
 //      Everything is being declared public for now to facilitate access until its
 //  clearer how this functionality will be provided.
 //
 
-class VtrFVarLevel {
+class FVarLevel {
 
 public:
     typedef Sdc::Options::FVarBoundaryInterpolation   BoundaryInterpolation;
 
-    typedef VtrLocalIndex      Sibling;
-    typedef VtrLocalIndexArray SiblingArray;
+    typedef LocalIndex      Sibling;
+    typedef LocalIndexArray SiblingArray;
 
 public:
     //
@@ -131,13 +133,13 @@ public:
     };
 
 public:
-    VtrFVarLevel(VtrLevel const& level);
-    ~VtrFVarLevel();
+    FVarLevel(Level const& level);
+    ~FVarLevel();
 
     //  Const methods:
     //
     //  Inventory of the face-varying level itself:
-    VtrLevel const& getLevel() const { return _level; }
+    Level const& getLevel() const { return _level; }
 
     int getDepth() const       { return _level.getDepth(); }
     int getNumFaces() const    { return _level.getNumFaces(); }
@@ -148,29 +150,29 @@ public:
     int getNumFaceValuesTotal() const { return (int) _faceVertValues.size(); }
 
     //  Queries per face:
-    VtrIndexArray const getFaceValues(VtrIndex fIndex) const;
+    IndexArray const getFaceValues(Index fIndex) const;
 
     //  Queries per vertex (and its potential sibling values):
-    bool vertexTopologyMatches(VtrIndex vIndex) const { return !_vertValueTags[vIndex]._mismatch; }
+    bool vertexTopologyMatches(Index vIndex) const { return !_vertValueTags[vIndex]._mismatch; }
 
-    int      getNumVertexValues(VtrIndex vIndex) const;
-    VtrIndex getVertexValueIndex(VtrIndex vIndex, Sibling sibling = 0) const;
-    VtrIndex getVertexValue(VtrIndex vIndex, Sibling sibling = 0) const;
+    int      getNumVertexValues(Index vIndex) const;
+    Index getVertexValueIndex(Index vIndex, Sibling sibling = 0) const;
+    Index getVertexValue(Index vIndex, Sibling sibling = 0) const;
 
-//    int                 getNumVertexSiblings(VtrIndex vIndex) const;
-//    VtrIndexArray const getVertexSiblingValues(VtrIndex vIndex) const;
+//    int                 getNumVertexSiblings(Index vIndex) const;
+//    IndexArray const getVertexSiblingValues(Index vIndex) const;
 
-    SiblingArray const getVertexFaceSiblings(VtrIndex faceIndex) const;
+    SiblingArray const getVertexFaceSiblings(Index faceIndex) const;
 
     //  Higher-level topological queries, i.e. values in a neighborhood:
-    void getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex valuesPerVert[2]) const;
-    void getVertexEdgeValues(VtrIndex vIndex, VtrIndex valuesPerEdge[]) const;
+    void getEdgeFaceValues(Index eIndex, int fIncToEdge, Index valuesPerVert[2]) const;
+    void getVertexEdgeValues(Index vIndex, Index valuesPerEdge[]) const;
 
     //  Non-const methods -- modifiers to be protected:
     //
     //  Array modifiers for the per-face and vertex-face data:
-    VtrIndexArray getFaceValues(VtrIndex fIndex);
-    SiblingArray  getVertexFaceSiblings(VtrIndex vIndex);
+    IndexArray getFaceValues(Index fIndex);
+    SiblingArray  getVertexFaceSiblings(Index vIndex);
 
     void setOptions(Sdc::Options const& options);
     void resizeValues(int numValues);
@@ -185,7 +187,7 @@ public:
     void print() const;
 
 public:
-    VtrLevel const & _level;
+    Level const & _level;
 
     //
     //  It's a little bit unclear at present how FVarBoundaryInterpolation works.
@@ -296,7 +298,7 @@ public:
     //            ? how quickly can we look this up instead?
     //
     //  Per-face:
-    std::vector<VtrIndex> _faceVertValues;     // matches face-verts of level (16*N)
+    std::vector<Index> _faceVertValues;     // matches face-verts of level (16*N)
 
     //  Per-edge:
     std::vector<ETag>     _edgeTags;           // 1 per edge (2*N)
@@ -307,37 +309,37 @@ public:
     std::vector<Sibling>  _vertFaceSiblings;   // matches face-verts of level (4*N)
 
     //  Per-value:
-    std::vector<VtrIndex> _vertValueIndices;   // variable per vertex (4*M>N)
+    std::vector<Index> _vertValueIndices;   // variable per vertex (4*M>N)
     std::vector<ValueTag> _vertValueTags;      // variable per vertex (1*M>N)
 };
 
 //
 //  Access/modify the values associated with each face:
 //
-inline VtrIndexArray const
-VtrFVarLevel::getFaceValues(VtrIndex fIndex) const {
+inline IndexArray const
+FVarLevel::getFaceValues(Index fIndex) const {
 
     int vCount  = _level._faceVertCountsAndOffsets[fIndex*2];
     int vOffset = _level._faceVertCountsAndOffsets[fIndex*2+1];
-    return VtrIndexArray(&_faceVertValues[vOffset], vCount);
+    return IndexArray(&_faceVertValues[vOffset], vCount);
 }
-inline VtrIndexArray
-VtrFVarLevel::getFaceValues(VtrIndex fIndex) {
+inline IndexArray
+FVarLevel::getFaceValues(Index fIndex) {
 
     int vCount  = _level._faceVertCountsAndOffsets[fIndex*2];
     int vOffset = _level._faceVertCountsAndOffsets[fIndex*2+1];
-    return VtrIndexArray(&_faceVertValues[vOffset], vCount);
+    return IndexArray(&_faceVertValues[vOffset], vCount);
 }
 
-inline VtrFVarLevel::SiblingArray const
-VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) const {
+inline FVarLevel::SiblingArray const
+FVarLevel::getVertexFaceSiblings(Index vIndex) const {
 
     int vCount  = _level._vertFaceCountsAndOffsets[vIndex*2];
     int vOffset = _level._vertFaceCountsAndOffsets[vIndex*2+1];
     return SiblingArray(&_vertFaceSiblings[vOffset], vCount);
 }
-inline VtrFVarLevel::SiblingArray
-VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) {
+inline FVarLevel::SiblingArray
+FVarLevel::getVertexFaceSiblings(Index vIndex) {
 
     int vCount  = _level._vertFaceCountsAndOffsets[vIndex*2];
     int vOffset = _level._vertFaceCountsAndOffsets[vIndex*2+1];
@@ -349,30 +351,32 @@ VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) {
 //
 /*
 inline int
-VtrFVarLevel::getNumVertexSiblings(VtrIndex vertexIndex) const
+FVarLevel::getNumVertexSiblings(Index vertexIndex) const
 {
     return _vertSiblingCounts[vertexIndex];
 }
-inline VtrIndexArray const
-VtrFVarLevel::getVertexSiblingValues(VtrIndex vIndex) const
+inline IndexArray const
+FVarLevel::getVertexSiblingValues(Index vIndex) const
 {
     int vCount  = _vertSiblingCounts[vIndex];
     int vOffset = _vertSiblingOffsets[vIndex];
-    return VtrIndexArray(&_vertValueIndices[vOffset], vCount);
+    return IndexArray(&_vertValueIndices[vOffset], vCount);
 }
 */
 inline int
-VtrFVarLevel::getNumVertexValues(VtrIndex vertexIndex) const {
+FVarLevel::getNumVertexValues(Index vertexIndex) const {
     return 1 + _vertSiblingCounts[vertexIndex];
 }
-inline VtrIndex
-VtrFVarLevel::getVertexValueIndex(VtrIndex vIndex, Sibling vSibling) const {
+inline Index
+FVarLevel::getVertexValueIndex(Index vIndex, Sibling vSibling) const {
     return vSibling ? (_vertSiblingOffsets[vIndex] + vSibling - 1) : vIndex;
 }
-inline VtrIndex
-VtrFVarLevel::getVertexValue(VtrIndex vIndex, Sibling vSibling) const {
+inline Index
+FVarLevel::getVertexValue(Index vIndex, Sibling vSibling) const {
     return _vertValueIndices[getVertexValueIndex(vIndex, vSibling)];
 }
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

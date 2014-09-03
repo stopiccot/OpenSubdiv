@@ -35,7 +35,7 @@
 
 
 //
-//  VtrFVarLevel:
+//  FVarLevel:
 //      Simple container of face-varying topology, associated with a particular
 //  level.  It is typically constructed and initialized similarly to levels -- the
 //  base level in a Factory and subsequent levels by refinement.
@@ -43,31 +43,32 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
 
 //
 //  Simple (for now) constructor and destructor:
 //
-VtrFVarLevel::VtrFVarLevel(VtrLevel const& level) :
+FVarLevel::FVarLevel(Level const& level) :
     _level(level), _isLinear(false), _valueCount(0) {
 }
 
-VtrFVarLevel::~VtrFVarLevel() {
+FVarLevel::~FVarLevel() {
 }
 
 //
 //  Initialization and sizing methods to allocate space:
 //
 void
-VtrFVarLevel::setOptions(Sdc::Options const& options) {
+FVarLevel::setOptions(Sdc::Options const& options) {
     _options = options;
 }
 void
-VtrFVarLevel::resizeValues(int valueCount) {
+FVarLevel::resizeValues(int valueCount) {
     _valueCount = valueCount;
 }
 
 void
-VtrFVarLevel::resizeComponents() {
+FVarLevel::resizeComponents() {
 
     //  Per-face members:
     _faceVertValues.resize(_level.getNumFaceVerticesTotal());
@@ -149,7 +150,7 @@ VtrFVarLevel::resizeComponents() {
 //          - second (sparse) will analyze local topology
 //
 void
-VtrFVarLevel::completeTopologyFromFaceValues() {
+FVarLevel::completeTopologyFromFaceValues() {
 
     //
     //  REMEMBER!!!
@@ -199,7 +200,7 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
 
     int const maxValence = _level.getMaxValence();
 
-    VtrIndex * indexBuffer   = (VtrIndex *)alloca(maxValence*sizeof(VtrIndex));
+    Index * indexBuffer   = (Index *)alloca(maxValence*sizeof(Index));
     int *      valueBuffer   = (int *)alloca(maxValence*sizeof(int));
     Sibling  * siblingBuffer = (Sibling *)alloca(maxValence*sizeof(Sibling));
 
@@ -207,15 +208,15 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
 
     int totalValueCount = _level.getNumVertices();
     for (int vIndex = 0; vIndex < _level.getNumVertices(); ++vIndex) {
-        VtrIndexArray const      vEdges  = _level.getVertexEdges(vIndex);
-        VtrLocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
+        IndexArray const      vEdges  = _level.getVertexEdges(vIndex);
+        LocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
 
-        VtrIndexArray const      vFaces  = _level.getVertexFaces(vIndex);
-        VtrLocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
+        IndexArray const      vFaces  = _level.getVertexFaces(vIndex);
+        LocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
 
         //  Store the value for each vert-face locally -- we will identify the index
         //  of its sibling as we inspect them:
-        VtrIndex * vValues = indexBuffer;
+        Index * vValues = indexBuffer;
         Sibling * vSiblings = siblingBuffer;
         for (int i = 0; i < vFaces.size(); ++i) {
             vValues[i] = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[i]) + vInFace[i]];
@@ -236,7 +237,7 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
                 }
             } else {
                 //  Tag the corresponding edge as discts:
-                VtrIndex eIndex = vEdges[i];
+                Index eIndex = vEdges[i];
                 ETag&    eTag   = _edgeTags[eIndex];
 
                 if (vInEdge[i] == 0) {
@@ -247,7 +248,7 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
                 eTag._mismatch = true;
 
                 //  Tag both end vertices as not matching topology:
-                VtrIndexArray const eVerts = _level.getEdgeVertices(eIndex);
+                IndexArray const eVerts = _level.getEdgeVertices(eIndex);
                 _vertValueTags[eVerts[0]] = valueTagMismatch;
                 _vertValueTags[eVerts[1]] = valueTagMismatch;
 
@@ -281,7 +282,7 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
         //
         int siblingCount = uniqueValueCount - 1;
 
-        _vertSiblingCounts[vIndex]  = (VtrLocalIndex) siblingCount;
+        _vertSiblingCounts[vIndex]  = (LocalIndex) siblingCount;
         _vertSiblingOffsets[vIndex] = totalValueCount;
 
         totalValueCount += siblingCount;
@@ -317,8 +318,8 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
     for (int vIndex = 0; vIndex < _level.getNumVertices(); ++vIndex) {
         ValueTag& vTag = _vertValueTags[vIndex];
 
-        VtrIndexArray const      vFaces  = _level.getVertexFaces(vIndex);
-        VtrLocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
+        IndexArray const      vFaces  = _level.getVertexFaces(vIndex);
+        LocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
 
         //
         //  At this point, mismatches have only been determined by the presence of edges
@@ -366,8 +367,8 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
         //
         //  For now, make each unique value a hard corner to get something working:
         //
-        VtrIndexArray const      vEdges  = _level.getVertexEdges(vIndex);
-        VtrLocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
+        IndexArray const      vEdges  = _level.getVertexEdges(vIndex);
+        LocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
 
         int vSiblingCount  = _vertSiblingCounts[vIndex];
         int vSiblingOffset = _vertSiblingOffsets[vIndex];
@@ -380,14 +381,14 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
         int * vvIndices = indexBuffer;
         //int vvSrcFaces[vvCount];
 
-        VtrIndex lastValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[0]) + vInFace[0]];
+        Index lastValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[0]) + vInFace[0]];
 
         vvCount = 1;
         vvIndices[0]  = lastValue;
         //vvSrcFaces[0] = 0;
 
         for (int i = 1; i < vFaces.size(); ++i) {
-            VtrIndex nextValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[i]) + vInFace[i]];
+            Index nextValue = _faceVertValues[_level.getOffsetOfFaceVertices(vFaces[i]) + vInFace[i]];
 
             if (lastValue != nextValue) {
                 bool nextValueIsNew = (vvCount == 1) || ((vvCount == 2) && (vvIndices[0] != nextValue)) ||
@@ -428,7 +429,7 @@ VtrFVarLevel::completeTopologyFromFaceValues() {
 //  Debugging aids...
 //
 bool
-VtrFVarLevel::validate() const {
+FVarLevel::validate() const {
 
     //
     //  Verify that member sizes match sizes for the associated level:
@@ -460,14 +461,14 @@ VtrFVarLevel::validate() const {
     buildFaceVertexSiblingsFromVertexFaceSiblings(fvSiblingVector);
 
     for (int fIndex = 0; fIndex < _level.getNumFaces(); ++fIndex) {
-        VtrIndexArray const fVerts    = _level.getFaceVertices(fIndex);
-        VtrIndexArray const fValues   = getFaceValues(fIndex);
+        IndexArray const fVerts    = _level.getFaceVertices(fIndex);
+        IndexArray const fValues   = getFaceValues(fIndex);
         Sibling const*      fSiblings = &fvSiblingVector[_level.getOffsetOfFaceVertices(fIndex)];
 
         for (int fvIndex = 0; fvIndex < fVerts.size(); ++fvIndex) {
-            VtrIndex vIndex = fVerts[fvIndex];
+            Index vIndex = fVerts[fvIndex];
 
-            VtrIndex fvValue   = fValues[fvIndex];
+            Index fvValue   = fValues[fvIndex];
             Sibling  fvSibling = fSiblings[fvIndex];
             //  Remember the "sibling count" is 0 when a single value, i.e. no siblings
             if (fvSibling > _vertSiblingCounts[vIndex]) {
@@ -475,7 +476,7 @@ VtrFVarLevel::validate() const {
                 return false;
             }
 
-            VtrIndex testValue = getVertexValue(vIndex, fvSibling);
+            Index testValue = getVertexValue(vIndex, fvSibling);
             if (testValue != fvValue) {
                 printf("Error:  unexpected value %d for sibling %d of face-vert %d.%d = %d (expecting %d)\n",
                         testValue, fvSibling, fIndex, fvIndex, vIndex, fvValue);
@@ -488,8 +489,8 @@ VtrFVarLevel::validate() const {
     //  Verify that the vert-face siblings yield the expected value:
     //
     for (int vIndex = 0; vIndex < _level.getNumVertices(); ++vIndex) {
-        VtrIndexArray const      vFaces    = _level.getVertexFaces(vIndex);
-        VtrLocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
+        IndexArray const      vFaces    = _level.getVertexFaces(vIndex);
+        LocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
         SiblingArray const       vSiblings = getVertexFaceSiblings(vIndex);
 
         for (int j = 0; j < vFaces.size(); ++j) {
@@ -500,11 +501,11 @@ VtrFVarLevel::validate() const {
                 return false;
             }
 
-            VtrIndex fIndex  = vFaces[j];
+            Index fIndex  = vFaces[j];
             int      fvIndex = vInFace[j];
-            VtrIndex fvValue = getFaceValues(fIndex)[fvIndex];
+            Index fvValue = getFaceValues(fIndex)[fvIndex];
 
-            VtrIndex vValue = getVertexValue(vIndex, vSibling);
+            Index vValue = getVertexValue(vIndex, vSibling);
             if (vValue != fvValue) {
                 printf("Error:  value mismatch between face-vert %d.%d and vert-face %d.%d (%d != %d)\n",
                         fIndex, fvIndex, vIndex, j, fvValue, vValue);
@@ -516,7 +517,7 @@ VtrFVarLevel::validate() const {
 }
 
 void
-VtrFVarLevel::print() const {
+FVarLevel::print() const {
 
     std::vector<Sibling> fvSiblingVector;
     buildFaceVertexSiblingsFromVertexFaceSiblings(fvSiblingVector);
@@ -529,8 +530,8 @@ VtrFVarLevel::print() const {
 
     printf("  Face values:\n");
     for (int i = 0; i < _level.getNumFaces(); ++i) {
-        VtrIndexArray const fVerts = _level.getFaceVertices(i);
-        VtrIndexArray const fValues = getFaceValues(i);
+        IndexArray const fVerts = _level.getFaceVertices(i);
+        IndexArray const fValues = getFaceValues(i);
         Sibling const*      fSiblings = &fvSiblingVector[_level.getOffsetOfFaceVertices(i)];
 
         printf("    face%4d:  ", i);
@@ -568,7 +569,7 @@ VtrFVarLevel::print() const {
     for (int i = 0; i < _level.getNumEdges(); ++i) {
         ETag const& eTag = _edgeTags[i];
         if (eTag._mismatch) {
-            VtrIndexArray eVerts = _level.getEdgeVertices(i);
+            IndexArray eVerts = _level.getEdgeVertices(i);
             printf("    edge%4d:  verts = [%4d%4d], discts = [%d,%d]\n", i, eVerts[0], eVerts[1],
                     eTag._disctsV0, eTag._disctsV1);
         }
@@ -578,17 +579,17 @@ VtrFVarLevel::print() const {
 
 
 void
-VtrFVarLevel::initializeFaceValuesFromFaceVertices() {
+FVarLevel::initializeFaceValuesFromFaceVertices() {
 
-    VtrIndex const* srcFaceVerts  = &_level._faceVertIndices[0];
-    VtrIndex *      dstFaceValues = &_faceVertValues[0];
+    Index const* srcFaceVerts  = &_level._faceVertIndices[0];
+    Index *      dstFaceValues = &_faceVertValues[0];
 
-    std::memcpy(dstFaceValues, srcFaceVerts, getNumFaceValuesTotal() * sizeof(VtrIndex));
+    std::memcpy(dstFaceValues, srcFaceVerts, getNumFaceValuesTotal() * sizeof(Index));
 }
 
 
 void
-VtrFVarLevel::initializeFaceValuesFromVertexFaceSiblings(int vFirstSibling)
+FVarLevel::initializeFaceValuesFromVertexFaceSiblings(int vFirstSibling)
 {
     //
     //  Now use the vert-face-siblings to populate the face-siblings and face-values:
@@ -613,8 +614,8 @@ VtrFVarLevel::initializeFaceValuesFromVertexFaceSiblings(int vFirstSibling)
         int vSiblingCount = _vertSiblingCounts[vIndex];
         if (vSiblingCount) {
             SiblingArray const       vSiblings = getVertexFaceSiblings(vIndex);
-            VtrIndexArray const      vFaces    = _level.getVertexFaces(vIndex);
-            VtrLocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
+            IndexArray const      vFaces    = _level.getVertexFaces(vIndex);
+            LocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
 
             for (int j = 0; j < vFaces.size(); ++j) {
                 if (vSiblings[j]) {
@@ -626,7 +627,7 @@ VtrFVarLevel::initializeFaceValuesFromVertexFaceSiblings(int vFirstSibling)
 }
 
 void
-VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>& fvSiblings) const {
+FVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>& fvSiblings) const {
 
     fvSiblings.resize(_level.getNumFaceVerticesTotal());
     std::memset(&fvSiblings[0], 0, _level.getNumFaceVerticesTotal() * sizeof(Sibling));
@@ -635,8 +636,8 @@ VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>
         int vSiblingCount = _vertSiblingCounts[vIndex];
         if (vSiblingCount) {
             SiblingArray const       vSiblings = getVertexFaceSiblings(vIndex);
-            VtrIndexArray const      vFaces    = _level.getVertexFaces(vIndex);
-            VtrLocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
+            IndexArray const      vFaces    = _level.getVertexFaces(vIndex);
+            LocalIndexArray const vInFace   = _level.getVertexFaceLocalIndices(vIndex);
 
             for (int j = 0; j < vFaces.size(); ++j) {
                 if (vSiblings[j]) {
@@ -654,18 +655,18 @@ VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>
 //    - given a vertex, return values corresponding to verts at the ends of its edges
 //
 void
-VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex valuesPerVert[2]) const {
+FVarLevel::getEdgeFaceValues(Index eIndex, int fIncToEdge, Index valuesPerVert[2]) const {
 
-    VtrIndexArray const eVerts = _level.getEdgeVertices(eIndex);
+    IndexArray const eVerts = _level.getEdgeVertices(eIndex);
     if (_vertSiblingCounts[eVerts[0]] || _vertSiblingCounts[eVerts[1]]) {
-        VtrIndex eFace = _level.getEdgeFaces(eIndex)[fIncToEdge];
+        Index eFace = _level.getEdgeFaces(eIndex)[fIncToEdge];
 
         //  This is another of those irritating times where I want to have the edge-in-face
         //  local indices stored with each edge-face...
         /*
-        VtrIndexArray const fEdges  = _level.getFaceEdges(eFace);
-        VtrIndexArray const fVerts  = _level.getFaceVertices(eFace);
-        VtrIndexArray const fValues = getFaceValues(eFace);
+        IndexArray const fEdges  = _level.getFaceEdges(eFace);
+        IndexArray const fVerts  = _level.getFaceVertices(eFace);
+        IndexArray const fValues = getFaceValues(eFace);
 
         for (int i = 0; i < fEdges.size(); ++i) {
             if (fEdges[i] == eIndex) {
@@ -686,8 +687,8 @@ VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex values
         //  this function showing a considerable part of edge-vertex interpolation (down
         //  from 40% to 25%)...
         //
-        VtrIndexArray const fEdges  = _level.getFaceEdges(eFace);
-        VtrIndexArray const fValues = getFaceValues(eFace);
+        IndexArray const fEdges  = _level.getFaceEdges(eFace);
+        IndexArray const fValues = getFaceValues(eFace);
 
         if (fEdges.size() == 4) {
             if (fEdges[0] == eIndex) {
@@ -724,20 +725,20 @@ VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex values
 }
 
 void
-VtrFVarLevel::getVertexEdgeValues(VtrIndex vIndex, VtrIndex valuesPerEdge[]) const {
+FVarLevel::getVertexEdgeValues(Index vIndex, Index valuesPerEdge[]) const {
 
-    VtrIndexArray const      vEdges  = _level.getVertexEdges(vIndex);
-    VtrLocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
+    IndexArray const      vEdges  = _level.getVertexEdges(vIndex);
+    LocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
 
-    VtrIndexArray const      vFaces  = _level.getVertexFaces(vIndex);
-    VtrLocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
+    IndexArray const      vFaces  = _level.getVertexFaces(vIndex);
+    LocalIndexArray const vInFace = _level.getVertexFaceLocalIndices(vIndex);
 
     bool vIsBoundary = (vEdges.size() > vFaces.size());
 
 //printf("                    Gathering edge-values for vertex %d:\n", vIndex);
     for (int i = 0; i < vEdges.size(); ++i) {
-        VtrIndex            eIndex = vEdges[i];
-        VtrIndexArray const eVerts = _level.getEdgeVertices(eIndex);
+        Index            eIndex = vEdges[i];
+        IndexArray const eVerts = _level.getEdgeVertices(eIndex);
 //printf("                      edge %d - boundary = %d\n", eIndex, _level._edgeTags[eIndex]._boundary);
 
         //  Remember this method is for presumed continuous edges around the vertex:
@@ -748,7 +749,7 @@ printf("    edge[] tag mismatch = %d\n", _edgeTags[eIndex]._mismatch);
         }
         assert(_edgeTags[eIndex]._mismatch == false);
 
-        VtrIndex vOther = eVerts[!vInEdge[i]];
+        Index vOther = eVerts[!vInEdge[i]];
         if (_vertSiblingCounts[vOther] == 0) {
 //printf("                        singular\n");
             valuesPerEdge[i] = _vertValueIndices[vOther];
@@ -772,8 +773,8 @@ printf("    edge[] tag mismatch = %d\n", _edgeTags[eIndex]._mismatch);
                     valuesPerEdge[i] = getFaceValues(vFaces[i])[(vInFace[i] + 1) % 4];
                 }
             } else {
-                VtrIndex            eFace  = _level.getEdgeFaces(eIndex)[0];
-                VtrIndexArray const fVerts = _level.getFaceVertices(eFace);
+                Index            eFace  = _level.getEdgeFaces(eIndex)[0];
+                IndexArray const fVerts = _level.getFaceVertices(eFace);
                 for (int j = 0; j < fVerts.size(); ++j) {
                     if (fVerts[j] == vOther) {
                         valuesPerEdge[i] = getFaceValues(eFace)[j];
@@ -785,6 +786,8 @@ printf("    edge[] tag mismatch = %d\n", _edgeTags[eIndex]._mismatch);
 //printf("                            edge-value[%d] = %4d\n", i, valuesPerEdge[i]);
     }
 }
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

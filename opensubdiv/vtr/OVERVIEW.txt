@@ -14,8 +14,8 @@ are prepared to rename all Vtr classes as Far in future if necessary.
 Currently there are three header files containing the following:
 
     1) Common Vtr utilities
-    2) VtrLevel - a class representing complete topology for a level
-    3) VtrRefinement - a class mapping a parent to a child level
+    2) Level - a class representing complete topology for a level
+    3) Refinement - a class mapping a parent to a child level
 
 which will be reviewed below.  A synopsis of each provides some of the motivation behind the
 contents along with current issues being addressed.  More details may be provided in the header
@@ -52,7 +52,7 @@ such declarations for public use within Vtr (or Far).  These include:
     - constant and inline method for testing index validity
     - declarations of commonly used array types
 
-These could arguably be moved into the next class discussed (i.e. VtrLevel), but as with the choice
+These could arguably be moved into the next class discussed (i.e. Level), but as with the choice
 of whether functionality belongs in Vtr or Far or not, but bigger issue at hand is the nature of
 the functionality itself.
 
@@ -74,17 +74,17 @@ below make heavy use of these.
 
 Questions:
     - what definitions really need to be separate from other Vtr classes?
-    - use of "int" versus "unsigned" int for VtrIndex (unsigned allows twice the size)?
+    - use of "int" versus "unsigned" int for Index (unsigned allows twice the size)?
     - usefulness and location of "array interface" types?
 
 
-2) VtrLevel:
+2) Level:
 
 Header:
     vtr/level.h
 
 Synopsis:
-    VtrLevel is a complete topological description of a subdivision level, with the topological
+    Level is a complete topological description of a subdivision level, with the topological
 relations, sharpness values and component tags all stored in vectors (literally std::vectors,
 but easily changed via typedefs).  There are no classes or objects for the mesh component types
 (i.e. faces, edges and vertices) but simply an integer index to identify each.  It can be viewed
@@ -93,16 +93,16 @@ component is stored in an array and accessible using the index identifying that 
 with no classes the for the components, its difficult to say what constitutes a "vertex" or a
 "face" -- they are each the sum of all the fields scattered amongst the many vectors included.
 
-VtrLevel represents a single level of a potential hierarchy and is capable of representing the
+Level represents a single level of a potential hierarchy and is capable of representing the
 complete base mesh.  There are no members that relate data in one level to any other, either below
-or above.  As such, any VtrLevel can be used as the base level for a new subdivision hierarchy
+or above.  As such, any Level can be used as the base level for a new subdivision hierarchy
 (potentially more than one).  All relationships between separate levels are maintained in the
-VtrRefinement class that follows.
+Refinement class that follows.
 
-VtrLevel requires the definition of and associations between a fixed set of indexable components
+Level requires the definition of and associations between a fixed set of indexable components
 for all three component types, i.e. an explicit edge list in addition to the expected set of
 vertices and faces.  There are no explicit component objects in the representation -- only an
-integer index (VtrIndex) identifying each component within the set and data associated with that
+integer index (Index) identifying each component within the set and data associated with that
 component in the various vectors.  The topology is stored as six sets of incident relations
 between the components -- two each for the two other component types incident each component
 type, i.e.:
@@ -136,16 +136,16 @@ differ from FarSubdivisionTables in that:
     - there is no sorting or other permutation based on any computation kernels required
 
 It was mentioned that there is no data relating a level to any other, but that is not yet entirely
-true. The only suggestion that an instance of VtrLevel is part of any greater collection is an
+true. The only suggestion that an instance of Level is part of any greater collection is an
 integer "_depth" member.  This was included to indicate when the topology of a level might be
 regular or not wrt some subdivision scheme (knowing that all faces in a level are quads or tris
 can allow us to specialize and reduce memory).  While useful, there are other ways to indicate
 this and so "_depth" is likely to be replaced with other members that serve the same purpose.
 
-A VtrLevel is really just a container for data in a subdivision level, and so its public methods
+A Level is really just a container for data in a subdivision level, and so its public methods
 are primarily to access that data.  Modification of the data is protected and only made available
-to classes that are intended to construct VtrLevels -- currently the Far factor class that is
-responsible for building the base level, and the VtrRefinement class that constructs subsequent
+to classes that are intended to construct Levels -- currently the Far factor class that is
+responsible for building the base level, and the Refinement class that constructs subsequent
 levels during refinement.
 
 One of the advantages in storing data in what is essentially a structure-of-arrays, rather than
@@ -154,12 +154,12 @@ selective about memory usage in some cases.  Particularly in the case of uniform
 the data in subsequent levels is typically 4x its predecessor, we can minimize what we either
 generate or keep around at each level.  For instance, if only a face-list is required at the
 finest level, we only need to generate one of the six topological relations -- the vertices
-incident each face.  So when we do keep VtrLevels around in memory (as is the case with the
+incident each face.  So when we do keep Levels around in memory (as is the case with the
 FarTopologyRefiner) we do have do have the opportunity to prune what is not strictly necessary
 after the refinement.  Just as with construction, whatever classes are privileged to construct
-a VtrLevel are likely those that will be privileged to prune its contents when needed.
+a Level are likely those that will be privileged to prune its contents when needed.
 
-Since VtrLevel is purely topological, there is no template parameter required as with the case
+Since Level is purely topological, there is no template parameter required as with the case
 of HbrMesh<T>.  With no template instantiation required, the source is defined in a .cpp file
 corresponding to the header, rather than in the header itself.  Other than the utility types
 defined in a separate header, this is true of all Vtr source.
@@ -174,37 +174,37 @@ Questions:
       so using the array interface for the many members sharing the same vector)?
 
 
-3)  VtrRefinement:
+3)  Refinement:
 
 Associated headers:
     vtr/refinement.h:
 
 Synopsis:
-    While VtrLevel contains the topology for a subdivision level, VtrRefinement is responsible
+    While Level contains the topology for a subdivision level, Refinement is responsible
 for creating a new level via refinement of an existing one, and for maintaining the relationships
 between the components in the parent and child levels.  So a simplified view of a subdivision
-hierarchy with Vtr is a set of VtrLevels with a VtrRefinement between each successive pair.
+hierarchy with Vtr is a set of Levels with a Refinement between each successive pair.
 
-VtrRefinement is a friend of VtrLevel and will populate a child level from a parent given a set of
+Refinement is a friend of Level and will populate a child level from a parent given a set of
 refinement parameters (eventually).  Currently only uniform refinement is implemented, but work to
 support more general "selective" refinement is underway.  Feature-adaptive refinement is just one
 form of selective refinement -- the criteria being the topological features of interest (creases
 and extra-ordinary vertices).  The intent is to provide greater generality to facilitate the
 refinement of particular regions of interest or more dynamic/adaptive needs.
 
-The topology of the refinement, or rather the topology of both the refinement and the VtrLevel 
+The topology of the refinement, or rather the topology of both the refinement and the Level 
 level that it populates, is determined by a trait of the desired subdivision scheme applied --
 currently only quad-splitting is supported for Catmark and Bilinear, but tri-splitting will
 eventually need to be added for Loop.  So there is no specializing the refinement in terms of
 subdivision scheme, only in terms of the topological splitting associated with it.  There are
-opportunities to reduce both the storage of topology in VtrLevel and the expense of refinement
+opportunities to reduce both the storage of topology in Level and the expense of refinement
 in VtrRefinment for cases when the mesh has become regular wrt the subdivided topology (i.e. all
-quads or all tris) but these are not yet being explored.  Subclassing VtrRefinement for the two
+quads or all tris) but these are not yet being explored.  Subclassing Refinement for the two
 current topological splitting types is currently under consideration, but more immediate needs
 for feature-adaptive support for Catmark will likely defer any efforts in support of Loop.
 
-While VtrRefinement populates a new child VtrLevel as part of its refinement operation, it also
-accumulates the relationships between the parent and child level (and as with VtrLevel, this data
+While Refinement populates a new child Level as part of its refinement operation, it also
+accumulates the relationships between the parent and child level (and as with Level, this data
 is stored in vectors indexable by the components).  Currently the associations between components
 in the two levels is uni-directional -- child components are associated with incident components
 of a parent component based on the parent components topology, so we have a parent-to-child
@@ -213,10 +213,10 @@ reduce memory (particularly in the case of uniform refinement) as it often was n
 but there is a growing need for it in some cases once the hierarchy is constructed, so it is
 likely it will be added.
 
-One of the advantages of the structure-of-arrays representation in both VtrLevel and Refinement
+One of the advantages of the structure-of-arrays representation in both Level and Refinement
 is that we can make more dynamic choices about what type of data we choose to allocate and use
 based on needs.  For instance, we can choose between maintaining the parent-child or child-parent
-mapping in VtrRefinement, or both if needed, and we can remove one if no longer necessary.  An
+mapping in Refinement, or both if needed, and we can remove one if no longer necessary.  An
 active example of this is uniform refinement -- if we only require the face-vertex list at the
 finest subdivision level, there is no need to generate a complete topological description of that
 level (as would be required of more traditional representations), and given that level is 4x the
@@ -232,7 +232,7 @@ two areas where specialization according to scheme may be necessary are:
 
 In both cases though, these specializations may end up external to Vtr.  Stencil weights may only
 be needed once for application to a single set of data, and that may be managed by a separate
-class in Far.  (Currently I optionally compute and store them in VtrRefinement as part of an
+class in Far.  (Currently I optionally compute and store them in Refinement as part of an
 experiment for Manuel, but they are not intended to persist, and so are hard-coded to be for
 Catmark only for the duration of the experiment.)  If stencil weights are to be computed and
 stored -- as with FarSubdivisionTables -- that may also be done where needed.  Similarly, the
@@ -240,9 +240,9 @@ feature-adaptive analysis is also likely to be part of the FarTopologyRefiner, w
 parameters are publicly specified and internally translated into Vtr operations to be applied.
 
 Given that Vtr and Far might eventually be merged, whether these specializations for scheme occur
-in Vtr or Far is less important -- the point here is that VtrRefinement should not require them.
+in Vtr or Far is less important -- the point here is that Refinement should not require them.
 
-Like VtrLevel, VtrRefinement is also purely topological, free of any template parameter for a
+Like Level, Refinement is also purely topological, free of any template parameter for a
 vertex type, and so its source is defined in a .cpp file corresponding to its header.
 
 Upcoming work:

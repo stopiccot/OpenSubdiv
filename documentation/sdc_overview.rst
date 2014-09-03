@@ -67,13 +67,13 @@ a general framework for defining customized subdivision schemes.
 
         * note change in creasing method from *"Normal"* to *"Uniform"* and
           related use of *"Uniform"*
-        * all boundary interpolation choices in SdcOptions are subject to change
+        * all boundary interpolation choices in Sdc::Options are subject to change
 
     Other changes under consideration:
 
         * *<MASK>* face-weights to support face-centers and/or original vertices
-        * merging *SdcTypeTraits<T>* into *SdcScheme<T>* as static methods
-        * should we nest the various enums of SdcOptions within SdcOptions?
+        * merging *Sdc::TypeTraits<T>* into *Sdc::Scheme<T>* as static methods
+        * should we nest the various enums of Sdc::Options within Sdc::Options?
         * static initialization of creasing constants (for smooth and
           infinitely sharp)
         * how to document template paremeter interfaces, e.g. *<MASK>*,
@@ -164,12 +164,12 @@ a single vertex at a new subdivision level is typically referred to as a
 *"mask"*.  The primary purpose of the Scheme class is to provide such masks in a
 manner both general and efficient.
 
-Each subdivision scheme has its own values for its masks, and each are provided as
-specializations of the template class *Scheme<SdcType TYPE>*.  The intent is to
-minimize the amount of code specific to each scheme.
+Each subdivision scheme has its own values for its masks, and each are provided
+as specializations of the template class *Sdc::Scheme<Sdc::Type TYPE>*. The
+intent is to minimize the amount of code specific to each scheme.
 
 The computation of mask weights for subdivided vertices is the most significant
-contribution of Sdc.  The use of semi-sharp creasing with each
+contribution of Sdc. The use of semi-sharp creasing with each
 non-linear subdivision scheme complicates what are otherwise simple
 masks detemined solely by the topology, and packaging that functionality to
 achieve both the generality and efficiency desired has been a challenge.

@@ -40,7 +40,7 @@ namespace OPENSUBDIV_VERSION {
 void
 FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefiner& refiner) {
 
-    VtrLevel& baseLevel = refiner.getBaseLevel();
+    Vtr::Level& baseLevel = refiner.getBaseLevel();
 
     int vCount = baseLevel.getNumVertices();
     int eCount = baseLevel.getNumEdges();
@@ -52,7 +52,7 @@ FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefine
     //  This still needs a little work -- currently we are assuming all counts and offsets
     //  have been assigned, but eventually only the counts will be assigined (in arbitrary
     //  order) and we will need to accumulate the offsets to get the total sizes.  That
-    //  will require new methods on VtrLevel -- we do not want direct member access here.
+    //  will require new methods on Vtr::Level -- we do not want direct member access here.
     //
     int fVertCount = 0;
     for (int i = 0; i < fCount; ++i) {
@@ -79,7 +79,7 @@ FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefine
 void
 FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopologyRefiner& refiner) {
 
-    VtrLevel& baseLevel = refiner.getBaseLevel();
+    Vtr::Level& baseLevel = refiner.getBaseLevel();
 
     //
     //  In future we may want the ability to complete aspects of the topology that are incovenient
@@ -89,7 +89,7 @@ FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopo
     //
     bool completeMissingTopology = (baseLevel.getNumEdges() == 0);
     if (completeMissingTopology) {
-        //  Need to invoke some VtrLevel method to "fill in" the missing topology...
+        //  Need to invoke some Vtr::Level method to "fill in" the missing topology...
         baseLevel.completeTopologyFromFaceVertices();
     }
 
@@ -121,7 +121,7 @@ FarTopologyRefinerFactoryBase::validateFaceVaryingComponentTopologyAssignment(Fa
 void
 FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopologyRefiner& refiner) {
 
-    VtrLevel&  baseLevel = refiner.getBaseLevel();
+    Vtr::Level&  baseLevel = refiner.getBaseLevel();
 
     assert((int)baseLevel._edgeTags.size() == baseLevel.getNumEdges());
     assert((int)baseLevel._vertTags.size() == baseLevel.getNumVertices());
@@ -137,8 +137,8 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
     //  Process the Edge tags first, as Vertex tags (notably the Rule) are dependent on
     //  properties of their incident edges.
     //
-    for (VtrIndex eIndex = 0; eIndex < baseLevel.getNumEdges(); ++eIndex) {
-        VtrLevel::ETag& eTag       = baseLevel._edgeTags[eIndex];
+    for (Vtr::Index eIndex = 0; eIndex < baseLevel.getNumEdges(); ++eIndex) {
+        Vtr::Level::ETag& eTag       = baseLevel._edgeTags[eIndex];
         float&          eSharpness = baseLevel._edgeSharpness[eIndex];
 
         eTag._boundary = (baseLevel._edgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
@@ -153,12 +153,12 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
     //  Process the Vertex tags now -- for some tags (semi-sharp and its rule) we need
     //  to inspect all incident edges:
     //
-    for (VtrIndex vIndex = 0; vIndex < baseLevel.getNumVertices(); ++vIndex) {
-        VtrLevel::VTag& vTag       = baseLevel._vertTags[vIndex];
+    for (Vtr::Index vIndex = 0; vIndex < baseLevel.getNumVertices(); ++vIndex) {
+        Vtr::Level::VTag& vTag       = baseLevel._vertTags[vIndex];
         float&          vSharpness = baseLevel._vertSharpness[vIndex];
 
-        VtrIndexArray const vEdges = baseLevel.getVertexEdges(vIndex);
-        VtrIndexArray const vFaces = baseLevel.getVertexFaces(vIndex);
+        Vtr::IndexArray const vEdges = baseLevel.getVertexEdges(vIndex);
+        Vtr::IndexArray const vFaces = baseLevel.getVertexFaces(vIndex);
 
         //
         //  Take inventory of properties of incident edges that affect this vertex:
@@ -167,7 +167,7 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
         int semiSharpEdgeCount   = 0;
         int nonManifoldEdgeCount = 0;
         for (int i = 0; i < vEdges.size(); ++i) {
-            VtrLevel::ETag const& eTag = baseLevel._edgeTags[vEdges[i]];
+            Vtr::Level::ETag const& eTag = baseLevel._edgeTags[vEdges[i]];
 
             infSharpEdgeCount    += eTag._infSharp;
             semiSharpEdgeCount   += eTag._semiSharp;
@@ -193,7 +193,7 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
 
         vTag._semiSharp = Sdc::Crease::IsSemiSharp(vSharpness) || (semiSharpEdgeCount > 0);
 
-        vTag._rule = (VtrLevel::VTag::VTagSize)creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
+        vTag._rule = (Vtr::Level::VTag::VTagSize)creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
 
         //
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
@@ -214,7 +214,7 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
     //
     //  Anything more to be done with Face tags? (eventually when processing edits perhaps)
     //
-    //  for (VtrIndex fIndex = 0; fIndex < baseLevel.getNumFaces(); ++fIndex) {
+    //  for (Vtr::Index fIndex = 0; fIndex < baseLevel.getNumFaces(); ++fIndex) {
     //  }
 }
 
@@ -295,7 +295,7 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
 
             FarIndex idx = refiner.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
 
-            if (idx!=VTR_INDEX_INVALID) {
+            if (idx!=Vtr::INDEX_INVALID) {
                 refiner.baseEdgeSharpness(idx) = desc.creaseWeights[edge];
             } else {
                 // XXXX report error !

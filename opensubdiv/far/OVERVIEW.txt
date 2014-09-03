@@ -52,7 +52,7 @@ One public usage I would like to see of FarTopologyRefiner is the ability to re-
 for one purpose to satisfy another.  With Vtr its a simple matter to "slice" off any set of lower
 levels in the hierarchy and regenerate them differently -- the base level and all specification of
 edits are const once created and don't need to be regenerated from the clients mesh.  With
-appropriate use of shared pointers, its also possible to share VtrLevel's between instances of
+appropriate use of shared pointers, its also possible to share Vtr::Level's between instances of
 FarTopologyRefiner, e.g. share the base level between two instances and selectively (potentially
 adaptively) refine different areas of the mesh independently.
 

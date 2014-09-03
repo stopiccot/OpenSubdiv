@@ -35,11 +35,11 @@ namespace OPENSUBDIV_VERSION {
 //
 //  Typedef's for indices we want at the Far level -- need to go elsewhere eventually...
 //
-typedef VtrIndex       FarIndex;
-typedef VtrLocalIndex  FarLocalIndex;
+typedef Vtr::Index       FarIndex;
+typedef Vtr::LocalIndex  FarLocalIndex;
 
-typedef VtrIndexArray      FarIndexArray;
-typedef VtrLocalIndexArray FarLocalIndexArray;
+typedef Vtr::IndexArray       FarIndexArray;
+typedef Vtr::LocalIndexArray  FarLocalIndexArray;
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

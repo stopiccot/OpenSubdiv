@@ -111,13 +111,13 @@ FarTopologyRefiner::GetNumFVarValuesTotal(int channel) const {
 
 
 template <Sdc::Type SCHEME_TYPE> void
-computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices) {
+computePtexIndices(Vtr::Level const & coarseLevel, std::vector<int> & ptexIndices) {
     int nfaces = coarseLevel.getNumFaces();
     ptexIndices.resize(nfaces+1);
     int ptexID=0;
     for (int i = 0; i < nfaces; ++i) {
         ptexIndices[i] = ptexID;
-        VtrIndexArray fverts = coarseLevel.getFaceVertices(i);
+        Vtr::IndexArray fverts = coarseLevel.getFaceVertices(i);
         ptexID += fverts.size()==Sdc::TypeTraits<SCHEME_TYPE>::RegularFaceValence() ? 1 : fverts.size();
     }
     // last entry contains the number of ptex texture faces
@@ -176,7 +176,7 @@ FarTopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
     //
     //  Initialize refinement options for Vtr -- adjusting full-topology for the last level:
     //
-    VtrRefinement::Options refineOptions;
+    Vtr::Refinement::Options refineOptions;
     refineOptions._sparse = false;
 
     for (int i = 1; i <= maxLevel; ++i) {
@@ -208,7 +208,7 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
     //
     //  Initialize refinement options for Vtr:
     //
-    VtrRefinement::Options refineOptions;
+    Vtr::Refinement::Options refineOptions;
 
     refineOptions._sparse           = true;
     refineOptions._faceTopologyOnly = !fullTopology;
@@ -218,9 +218,9 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
         //  its topology if we don't use the full depth
         refineOptions._faceTopologyOnly = false;
 
-        VtrLevel& parentLevel     = _levels[i-1];
-        VtrLevel& childLevel      = _levels[i];
-        VtrRefinement& refinement = _refinements[i-1];
+        Vtr::Level& parentLevel     = _levels[i-1];
+        Vtr::Level& childLevel      = _levels[i];
+        Vtr::Refinement& refinement = _refinements[i-1];
 
         refinement.setScheme(_subdivType, _subdivOptions);
         refinement.initialize(parentLevel, childLevel);
@@ -230,7 +230,7 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
         //  previous refinement may include tags on its child components that are relevant,
         //  which is why the Selector identifies it.
         //
-        VtrSparseSelector selector(refinement);
+        Vtr::SparseSelector selector(refinement);
         selector.setPreviousRefinement((i-1) ? &_refinements[i-2] : 0);
 
         catmarkFeatureAdaptiveSelectorByFace(selector);
@@ -261,7 +261,7 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 
 //
 //   Below is a prototype of a method to select features for sparse refinement at each level.
-//   It assumes we have a freshly initialized VtrSparseSelector (i.e. nothing already selected)
+//   It assumes we have a freshly initialized Vtr::SparseSelector (i.e. nothing already selected)
 //   and will select all relevant topological features for inclusion in the subsequent sparse
 //   refinement.
 //
@@ -297,9 +297,9 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 //  that work should be minimal.
 //
 void
-FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) {
+FarTopologyRefiner::catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector) {
 
-    VtrLevel const& level = selector.getRefinement().parent();
+    Vtr::Level const& level = selector.getRefinement().parent();
 
     //
     //  For faces, we only need to select irregular faces from level 0 -- which will
@@ -337,13 +337,13 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
     //  as both the extraordinary smooth, or the regular sharp cases need isolation.
     //
     if (level.getDepth() == 0) {
-        for (VtrIndex face = 0; face < level.getNumFaces(); ++face) {
-            VtrIndexArray const faceVerts = level.getFaceVertices(face);
+        for (Vtr::Index face = 0; face < level.getNumFaces(); ++face) {
+            Vtr::IndexArray const faceVerts = level.getFaceVertices(face);
 
             if (faceVerts.size() != 4) {
                 selector.selectFace(face);
             } else {
-                VtrIndexArray const faceEdges = level.getFaceEdges(face);
+                Vtr::IndexArray const faceEdges = level.getFaceEdges(face);
 
                 int boundaryEdgeSum = (level.getEdgeFaces(faceEdges[0]).size() == 1) +
                                       (level.getEdgeFaces(faceEdges[1]).size() == 1) +
@@ -386,7 +386,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
     //      - regular (wrt both subdiv scheme and topology)
     //      - manifold
     //
-    for (VtrIndex vert = 0; vert < level.getNumVertices(); ++vert) {
+    for (Vtr::Index vert = 0; vert < level.getNumVertices(); ++vert) {
         if (selector.isVertexIncomplete(vert)) continue;
 
         bool selectVertex = false;
@@ -397,8 +397,8 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
         } else if (level.getVertexRule(vert) == Sdc::Crease::RULE_DART) {
             selectVertex = true;
         } else {
-            VtrIndexArray const vertFaces = level.getVertexFaces(vert);
-            VtrIndexArray const vertEdges = level.getVertexEdges(vert);
+            Vtr::IndexArray const vertFaces = level.getVertexFaces(vert);
+            Vtr::IndexArray const vertEdges = level.getVertexEdges(vert);
 
             //  Should be non-manifold test -- remaining cases assume manifold...
             if (vertFaces.size() == vertEdges.size()) {
@@ -429,9 +429,9 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
     //
     //  And as for vertices, skip incomplete neighboring vertices from the previous level.
     //
-    for (VtrIndex edge = 0; edge < level.getNumEdges(); ++edge) {
+    for (Vtr::Index edge = 0; edge < level.getNumEdges(); ++edge) {
         float               edgeSharpness = level.getEdgeSharpness(edge);
-        VtrIndexArray const edgeFaces     = level.getEdgeFaces(edge);
+        Vtr::IndexArray const edgeFaces     = level.getEdgeFaces(edge);
 
         if ((edgeSharpness <= 0.0) || (edgeFaces.size() < 2)) continue;
 
@@ -440,7 +440,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
             //  Semi-sharp -- definitely mark both end vertices (will have been marked above
             //  in future when semi-sharp vertex tag in place):
             //
-            VtrIndexArray const edgeVerts = level.getEdgeVertices(edge);
+            Vtr::IndexArray const edgeVerts = level.getEdgeVertices(edge);
             if (!selector.isVertexIncomplete(edgeVerts[0])) {
                 selector.selectVertexFaces(edgeVerts[0]);
             }
@@ -455,7 +455,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
             bool edgeFacesAreRegular = true;
 
             for (int i = 0; i < edgeFaces.size(); ++i) {
-                VtrIndexArray const faceEdges = level.getFaceEdges(edgeFaces[i]);
+                Vtr::IndexArray const faceEdges = level.getFaceEdges(edgeFaces[i]);
 
                 bool edgeFaceIsRegular = false;
                 if (faceEdges.size() == 4) {
@@ -476,7 +476,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
                 //  We need to select this edge, but only select the end vertices that are not
                 //  creases -- a crease vertex that needs isolation will be identified by other
                 //  means (e.g. a semi-sharp edge on the other side)
-                VtrIndexArray const edgeVerts = level.getEdgeVertices(edge);
+                Vtr::IndexArray const edgeVerts = level.getEdgeVertices(edge);
                 for (int i = 0; i < 2; ++i) {
                     if (!selector.isVertexIncomplete(edgeVerts[i]) &&
                         (level.getVertexRule(edgeVerts[i]) != Sdc::Crease::RULE_CREASE)) {
@@ -489,12 +489,12 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
 }
 
 void
-FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector) {
+FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(Vtr::SparseSelector& selector) {
 
-    VtrLevel const& level = selector.getRefinement().parent();
+    Vtr::Level const& level = selector.getRefinement().parent();
 
-    for (VtrIndex face = 0; face < level.getNumFaces(); ++face) {
-        VtrIndexArray const faceVerts = level.getFaceVertices(face);
+    for (Vtr::Index face = 0; face < level.getNumFaces(); ++face) {
+        Vtr::IndexArray const faceVerts = level.getFaceVertices(face);
 
         bool selectFace = false;
         if (faceVerts.size() != 4) {
@@ -508,12 +508,12 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& sele
             //  but this case may ultimiately force us to do so, or pay the price
             //  of such faces being selected twice in level 0.
             //
-            VtrIndexArray const fVerts = level.getFaceVertices(face);
+            Vtr::IndexArray const fVerts = level.getFaceVertices(face);
             for (int i = 0; i < fVerts.size(); ++i) {
                 selector.selectVertexFaces(fVerts[i]);
             }
         } else {
-            VtrLevel::VTag compFaceTag = level.getFaceCompositeVTag(faceVerts);
+            Vtr::Level::VTag compFaceTag = level.getFaceCompositeVTag(faceVerts);
 
             if (compFaceTag._xordinary || compFaceTag._semiSharp) {
                 selectFace = true;

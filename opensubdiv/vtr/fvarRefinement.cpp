@@ -36,22 +36,24 @@
 
 
 //
-//  VtrFVarRefinement:
-//      Analogous to VtrRefinement -- retains data to facilitate refinement and
+//  FVarRefinement:
+//      Analogous to Refinement -- retains data to facilitate refinement and
 //  population of refined face-varying data channels.
 //
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-typedef VtrFVarLevel::Sibling      Sibling;
-typedef VtrFVarLevel::SiblingArray SiblingArray;
+namespace Vtr {
+
+typedef FVarLevel::Sibling      Sibling;
+typedef FVarLevel::SiblingArray SiblingArray;
 
 //
 //  Simple (for now) constructor and destructor:
 //
-VtrFVarRefinement::VtrFVarRefinement(VtrRefinement const& refinement,
-                                     VtrFVarLevel&        parentFVarLevel,
-                                     VtrFVarLevel&        childFVarLevel) :
+FVarRefinement::FVarRefinement(Refinement const& refinement,
+                                     FVarLevel&        parentFVarLevel,
+                                     FVarLevel&        childFVarLevel) :
     _refinement(refinement),
     _parent(&parentFVarLevel),
     _child(&childFVarLevel),
@@ -59,17 +61,18 @@ VtrFVarRefinement::VtrFVarRefinement(VtrRefinement const& refinement,
     _childSiblingFromVertCount(0) {
 }
 
-VtrFVarRefinement::~VtrFVarRefinement() {
+FVarRefinement::~FVarRefinement() {
 }
 
 
 //
-//  Methods supporting the refinement of face-varying data that has previously been
-//  applied to the VtrRefinment member.  So these methods already have access to
-//  fully refined child components.
+// Methods supporting the refinement of face-varying data that has previously
+// been applied to the Refinment member. So these methods already have access
+// to fully refined child components.
 //
+
 void
-VtrFVarRefinement::applyRefinement() {
+FVarRefinement::applyRefinement() {
 
     //
     //  Transfer basic properties from the parent to child level:
@@ -114,13 +117,13 @@ VtrFVarRefinement::applyRefinement() {
 //  sparse boundary components generally occur where face-varying data is continuous.
 //
 void
-VtrFVarRefinement::estimateAndAllocateChildValues() {
+FVarRefinement::estimateAndAllocateChildValues() {
 
     int maxVertexValueCount = _refinement._childVertFromFaceCount;
 
-    VtrIndex cVert = _refinement._childVertFromFaceCount;
+    Index cVert = _refinement._childVertFromFaceCount;
     for (int i = 0; i < _refinement._childVertFromEdgeCount; ++i, ++cVert) {
-        VtrIndex pEdge = _refinement.getChildVertexParentIndex(cVert);
+        Index pEdge = _refinement.getChildVertexParentIndex(cVert);
 
         if ( _parent->_edgeTags[pEdge]._mismatch) {
             maxVertexValueCount += _refinement._parent->getEdgeFaces(pEdge).size();
@@ -130,7 +133,7 @@ VtrFVarRefinement::estimateAndAllocateChildValues() {
     }
     for (int i = 0; i < _refinement._childVertFromVertCount; ++i, ++cVert) {
         assert(!_refinement._childVertexTag[cVert]._incomplete);
-        VtrIndex pVert = _refinement.getChildVertexParentIndex(cVert);
+        Index pVert = _refinement.getChildVertexParentIndex(cVert);
 
         if (_parent->_vertValueTags[pVert]._mismatch) {
             maxVertexValueCount += _parent->getNumVertexValues(pVert);
@@ -156,7 +159,7 @@ VtrFVarRefinement::estimateAndAllocateChildValues() {
 }
 
 void
-VtrFVarRefinement::trimAndFinalizeChildValues() {
+FVarRefinement::trimAndFinalizeChildValues() {
 
     _child->_valueCount = _child->getNumVertices() + _childSiblingFromEdgeCount + _childSiblingFromVertCount;
 
@@ -174,19 +177,19 @@ VtrFVarRefinement::trimAndFinalizeChildValues() {
 }
 
 inline int
-VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEdge, int siblingOffset) {
+FVarRefinement::populateChildValuesForEdgeVertex(Index cVert, Index pEdge, int siblingOffset) {
 
     //  If we have a boundary edge with a mismatched end vertex, we only have one
     //  value and such cases were already initialized on construction, so return:
     //
-    VtrIndexArray const pEdgeFaces = _refinement._parent->getEdgeFaces(pEdge);
+    IndexArray const pEdgeFaces = _refinement._parent->getEdgeFaces(pEdge);
 
     if (pEdgeFaces.size() == 1) return 0;
     assert(pEdgeFaces.size() == 2);
 
     //  Determine the number of sibling values for the child vertex:
     //
-    VtrIndexArray const cVertFaces = _refinement._child->getVertexFaces(cVert);
+    IndexArray const cVertFaces = _refinement._child->getVertexFaces(cVert);
 
     int cSiblingCount = 0;
     if (cVertFaces.size() > 2) {
@@ -206,12 +209,12 @@ VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEd
         assert (cSiblingCount == 1);
 
         //  Update the count/offset:
-        _child->_vertSiblingCounts[cVert]  = (VtrLocalIndex) cSiblingCount;
+        _child->_vertSiblingCounts[cVert]  = (LocalIndex) cSiblingCount;
         _child->_vertSiblingOffsets[cVert] = siblingOffset;
 
         //  Update the parent-source of any siblings (typically one):
         for (int j = 0; j < cSiblingCount; ++j) {
-            _childValueParentSource[siblingOffset + j] = (VtrLocalIndex) (j + 1);
+            _childValueParentSource[siblingOffset + j] = (LocalIndex) (j + 1);
         }
 
         //  Update the vertex-face siblings:
@@ -226,7 +229,7 @@ VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEd
 }
 
 inline int
-VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex pVert, int siblingOffset) {
+FVarRefinement::populateChildValuesForVertexVertex(Index cVert, Index pVert, int siblingOffset) {
 
     //
     //  We should not be getting incomplete vertex-vertices from feature-adaptive
@@ -238,12 +241,12 @@ VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex p
 
     int cSiblingCount = _parent->_vertSiblingCounts[pVert];
     if (cSiblingCount) {
-        _child->_vertSiblingCounts[cVert]  = (VtrLocalIndex) cSiblingCount;
+        _child->_vertSiblingCounts[cVert]  = (LocalIndex) cSiblingCount;
         _child->_vertSiblingOffsets[cVert] = siblingOffset;
 
         // Update the parent source:
         for (int j = 0; j < cSiblingCount; ++j) {
-            _childValueParentSource[siblingOffset + j] = (VtrLocalIndex)(j + 1);
+            _childValueParentSource[siblingOffset + j] = (LocalIndex)(j + 1);
         }
 
         // Update the vertex-face siblings:
@@ -257,7 +260,7 @@ VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex p
 }
 
 void
-VtrFVarRefinement::populateChildValues() {
+FVarRefinement::populateChildValues() {
 
     //  For values from face-vertices, they are guaranteed to be continuous, so there is
     //  nothing we need do here -- other than skipping them and starting with the first
@@ -273,10 +276,10 @@ VtrFVarRefinement::populateChildValues() {
     //
     int siblingValueOffset = _child->getNumVertices();
 
-    VtrIndex cVert = _refinement._childVertFromFaceCount;
+    Index cVert = _refinement._childVertFromFaceCount;
 
     for (int i = 0; i < _refinement._childVertFromEdgeCount; ++i, ++cVert) {
-        VtrIndex pEdge = _refinement.getChildVertexParentIndex(cVert);
+        Index pEdge = _refinement.getChildVertexParentIndex(cVert);
         if (_parent->_edgeTags[pEdge]._mismatch) {
             int cSiblingCount = populateChildValuesForEdgeVertex(cVert, pEdge, siblingValueOffset);
 
@@ -285,7 +288,7 @@ VtrFVarRefinement::populateChildValues() {
         }
     }
     for (int i = 0; i < _refinement._childVertFromVertCount; ++i, ++cVert) {
-        VtrIndex pVert = _refinement.getChildVertexParentIndex(cVert);
+        Index pVert = _refinement.getChildVertexParentIndex(cVert);
         if (_parent->_vertValueTags[pVert]._mismatch) {
             int cSiblingCount = populateChildValuesForVertexVertex(cVert, pVert, siblingValueOffset);
 
@@ -296,7 +299,7 @@ VtrFVarRefinement::populateChildValues() {
 }
 
 void
-VtrFVarRefinement::propagateEdgeTags() {
+FVarRefinement::propagateEdgeTags() {
 
     //
     //  Edge tags correspond to child edges and originate from faces or edges:
@@ -309,20 +312,20 @@ VtrFVarRefinement::propagateEdgeTags() {
     //              - child edge for the matching end inherits tag
     //              - child edge at the other end is doubly discts
     //
-    VtrFVarLevel::ETag eTagMatch(false);
+    FVarLevel::ETag eTagMatch(false);
 
     for (int eIndex = 0; eIndex < _refinement._childEdgeFromFaceCount; ++eIndex) {
         _child->_edgeTags[eIndex] = eTagMatch;
     }
     for (int eIndex = _refinement._childEdgeFromFaceCount; eIndex < _child->getNumEdges(); ++eIndex) {
-        VtrIndex pEdge = _refinement.getChildEdgeParentIndex(eIndex);
+        Index pEdge = _refinement.getChildEdgeParentIndex(eIndex);
 
         _child->_edgeTags[eIndex] = _parent->_edgeTags[pEdge];
     }
 }
 
 void
-VtrFVarRefinement::propagateValueTags() {
+FVarRefinement::propagateValueTags() {
 
     //
     //  Value tags correspond to vertex-values and originate from all three sources:
@@ -335,19 +338,19 @@ VtrFVarRefinement::propagateValueTags() {
     //          - if complete, trivially propagated/inherited
     //          - if incomplete, need to map to child subset
     //
-    VtrFVarLevel::ValueTag valTagMatch(false);
-    VtrFVarLevel::ValueTag valTagMismatch(true);
+    FVarLevel::ValueTag valTagMatch(false);
+    FVarLevel::ValueTag valTagMismatch(true);
     valTagMismatch._corner = true;
 
-    VtrIndex cVert = 0;
+    Index cVert = 0;
     for (cVert = 0; cVert < _refinement._childVertFromFaceCount; ++cVert) {
         _child->_vertValueTags[cVert] = valTagMatch;
     }
     for (int i = 0; i < _refinement._childVertFromEdgeCount; ++i, ++cVert) {
-        VtrIndex pEdge = _refinement.getChildVertexParentIndex(cVert);
+        Index pEdge = _refinement.getChildVertexParentIndex(cVert);
         bool pEdgeIsSplit = _parent->_edgeTags[pEdge]._mismatch;
 
-        VtrFVarLevel::ValueTag const& cValueTag = pEdgeIsSplit ? valTagMismatch : valTagMatch;
+        FVarLevel::ValueTag const& cValueTag = pEdgeIsSplit ? valTagMismatch : valTagMatch;
 
         _child->_vertValueTags[cVert] = cValueTag;
 
@@ -362,7 +365,7 @@ VtrFVarRefinement::propagateValueTags() {
     for (int i = 0; i < _refinement._childVertFromVertCount; ++i, ++cVert) {
         assert(!_refinement._childVertexTag[cVert]._incomplete);
 
-        VtrIndex pVert = _refinement.getChildVertexParentIndex(cVert);
+        Index pVert = _refinement.getChildVertexParentIndex(cVert);
 
         _child->_vertValueTags[cVert] = _parent->_vertValueTags[pVert];
 
@@ -376,6 +379,8 @@ VtrFVarRefinement::propagateValueTags() {
         }
     }
 }
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

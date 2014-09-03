@@ -424,7 +424,7 @@ FarPatchTablesFactory::pushPatchArray( FarPatchTables::Descriptor desc,
 //
 FarPatchParam *
 FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
-                                         int depth, VtrIndex faceIndex, int rotation,
+                                         int depth, Vtr::Index faceIndex, int rotation,
                                          FarPatchParam *coord) {
 
     if (coord == NULL) return NULL;
@@ -438,10 +438,10 @@ FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
     bool nonquad = (refiner.GetFaceVertices(depth, faceIndex).size() != 4);
 
     for (int i = depth; i > 0; --i) {
-        VtrRefinement const& refinement  = refiner.getRefinement(i-1);
-        VtrLevel const&      parentLevel = refiner.getLevel(i-1);
+        Vtr::Refinement const& refinement  = refiner.getRefinement(i-1);
+        Vtr::Level const&      parentLevel = refiner.getLevel(i-1);
 
-        VtrIndex parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
+        Vtr::Index parentFaceIndex    = refinement.getChildFaceParentFace(faceIndex);
                  childIndexInParent = refinement.getChildFaceInParentFace(faceIndex);
 
         if (parentLevel.getFaceVertices(parentFaceIndex).size() == 4) {
@@ -456,7 +456,7 @@ FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
             nonquad = true;
             // If the root face is not a quad, we need to offset the ptex index
             // CCW to match the correct child face
-            VtrIndexArray children = refinement.getFaceChildFaces(parentFaceIndex);
+            Vtr::IndexArray children = refinement.getFaceChildFaces(parentFaceIndex);
             for (int j=0; j<children.size(); ++j) {
                 if (children[j]==faceIndex) {
                     childIndexInParent = j;
@@ -467,7 +467,7 @@ FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
         faceIndex = parentFaceIndex;
     }
 
-    VtrIndex ptexIndex = refiner.GetPtexIndex(faceIndex);
+    Vtr::Index ptexIndex = refiner.GetPtexIndex(faceIndex);
     assert(ptexIndex!=-1);
 
     if (nonquad) {
@@ -484,14 +484,14 @@ FarPatchTablesFactory::computePatchParam(FarTopologyRefiner const & refiner,
 //  Populate the quad-offsets table used by Gregory patches
 //
 void
-FarPatchTablesFactory::getQuadOffsets(VtrLevel const& level, VtrIndex fIndex, unsigned int offsets[]) {
+FarPatchTablesFactory::getQuadOffsets(Vtr::Level const& level, Vtr::Index fIndex, unsigned int offsets[]) {
 
-    VtrIndexArray fVerts = level.getFaceVertices(fIndex);
+    Vtr::IndexArray fVerts = level.getFaceVertices(fIndex);
 
     for (int i = 0; i < 4; ++i) {
 
-        VtrIndex      vIndex = fVerts[i];
-        VtrIndexArray vFaces = level.getVertexFaces(vIndex),
+        Vtr::Index      vIndex = fVerts[i];
+        Vtr::IndexArray vFaces = level.getVertexFaces(vIndex),
                       vEdges = level.getVertexEdges(vIndex);
 
         int thisFaceInVFaces = -1;
@@ -759,7 +759,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refin
     PatchFaceTag * levelPatchTags = &patchTags[0];
 
     for (int i = 0; i < (int)refiner.getNumLevels(); ++i) {
-        VtrLevel const * level = &refiner.getLevel(i);
+        Vtr::Level const * level = &refiner.getLevel(i);
 
         //
         //  Given components at Level[i], we need to be looking at Refinement[i] -- and not
@@ -776,13 +776,13 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refin
         bool isLevelFirst = (i == 0);
         bool isLevelLast  = (i == ((int)refiner.getNumLevels() - 1));
 
-        VtrRefinement const * refinePrev = isLevelFirst ? 0 : &refiner.getRefinement(i-1);
-        VtrRefinement const * refineNext = isLevelLast  ? 0 : &refiner.getRefinement(i);
+        Vtr::Refinement const * refinePrev = isLevelFirst ? 0 : &refiner.getRefinement(i-1);
+        Vtr::Refinement const * refineNext = isLevelLast  ? 0 : &refiner.getRefinement(i);
 
-        VtrRefinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0;
+        Vtr::Refinement::SparseTag const * vtrFaceTags = refineNext ? &refineNext->_parentFaceTag[0] : 0;
 
         for (int faceIndex = 0; faceIndex < level->getNumFaces(); ++faceIndex) {
-            VtrRefinement::SparseTag vtrFaceTag = vtrFaceTags ? vtrFaceTags[faceIndex] : VtrRefinement::SparseTag();
+            Vtr::Refinement::SparseTag vtrFaceTag = vtrFaceTags ? vtrFaceTags[faceIndex] : Vtr::Refinement::SparseTag();
             PatchFaceTag&            patchTag   = levelPatchTags[faceIndex];
 
             patchTag.clear();
@@ -806,7 +806,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refin
                 continue;
             }
 
-            VtrIndexArray const& fVerts = level->getFaceVertices(faceIndex);
+            Vtr::IndexArray const& fVerts = level->getFaceVertices(faceIndex);
             assert(fVerts.size() == 4);
 
             if (!isLevelFirst and (refinePrev->_childVertexTag[fVerts[0]]._incomplete or
@@ -841,7 +841,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refin
             //  rather than just boundary edges -- there is a similar tag per edge.  That
             //  should allow us to generate regular patches for interior hard features.
             //
-            VtrLevel::VTag compFaceVertTag = level->getFaceCompositeVTag(fVerts);
+            Vtr::Level::VTag compFaceVertTag = level->getFaceCompositeVTag(fVerts);
 
             //  Patches for non-manifold faces not yet supported (see above note)
             assert(!compFaceVertTag._nonManifold);
@@ -853,7 +853,7 @@ FarPatchTablesFactory::identifyAdaptivePatches( FarTopologyRefiner const & refin
 
             bool hasBoundaryVertex = compFaceVertTag._boundary;
             if (hasBoundaryVertex) {
-                VtrIndexArray const& fEdges = level->getFaceEdges(faceIndex);
+                Vtr::IndexArray const& fEdges = level->getFaceEdges(faceIndex);
 
                 boundaryEdgeMask = ((level->_edgeTags[fEdges[0]]._boundary) << 0) |
                                    ((level->_edgeTags[fEdges[1]]._boundary) << 1) |
@@ -996,7 +996,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarTopologyRefiner const & refin
     }
 
     for (int i = 0; i < (int)refiner.getNumLevels(); ++i) {
-        VtrLevel const * level = &refiner.getLevel(i);
+        Vtr::Level const * level = &refiner.getLevel(i);
 
         const PatchFaceTag * levelPatchTags = &patchTags[levelFaceOffset];
 
@@ -1075,7 +1075,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarTopologyRefiner const & refin
             } else {
                 if (patchTag._boundaryCount == 0) {
                     // Gregory Regular Patch (4 CVs + quad-offsets / valence tables)
-                    VtrIndexArray const faceVerts = level->getFaceVertices(faceIndex);
+                    Vtr::IndexArray const faceVerts = level->getFaceVertices(faceIndex);
                     for (int j = 0; j < 4; ++j) {
                         iptrs.G[j] = faceVerts[j] + levelVertOffset;
                         gregoryVertexFlags[iptrs.G[j]] = true;
@@ -1092,7 +1092,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarTopologyRefiner const & refin
                     }
                 } else {
                     // Gregory Boundary Patch (4 CVs + quad-offsets / valence tables)
-                    VtrIndexArray const faceVerts = level->getFaceVertices(faceIndex);
+                    Vtr::IndexArray const faceVerts = level->getFaceVertices(faceIndex);
                     for (int j = 0; j < 4; ++j) {
                         iptrs.GB[j] = faceVerts[j] + levelVertOffset;
                         gregoryVertexFlags[iptrs.GB[j]] = true;
@@ -1141,7 +1141,7 @@ FarPatchTablesFactory::populateAdaptivePatches( FarTopologyRefiner const & refin
         int levelLast = (int)refiner.getNumLevels() - 1;
         for (int i = 0; i <= levelLast; ++i) {
 
-            VtrLevel const * level = &refiner.getLevel(i);
+            Vtr::Level const * level = &refiner.getLevel(i);
 
             if (i == levelLast) {
 

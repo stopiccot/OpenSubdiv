@@ -33,10 +33,10 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 //  Forward declarations (for internal implementation purposes):
+namespace Vtr { class Level; }
 class FarTopologyRefiner;
-class VtrLevel;
-struct PatchFaceTag;
 template <typename T> struct PatchTypes;
+struct PatchFaceTag;
 
 
 /// \brief A specialized factory for feature adaptive FarPatchTables
@@ -102,7 +102,7 @@ private:
     static FarPatchParam * computePatchParam( FarTopologyRefiner const & refiner, int level,
                                               int face, int rotation, FarPatchParam * coord );
 
-    static void getQuadOffsets(VtrLevel const & level, int face, unsigned int * result);
+    static void getQuadOffsets(Vtr::Level const & level, int face, unsigned int * result);
 
 private:
 };

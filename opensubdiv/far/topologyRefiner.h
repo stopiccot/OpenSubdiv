@@ -44,13 +44,13 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 template <class MESH> class FarTopologyRefinerFactory;
-class VtrSparseSelector;
+class Vtr::SparseSelector;
 
 ///
 ///  \brief Stores topology data for a specified set of refinement options.
 ///
-class FarTopologyRefiner
-{
+class FarTopologyRefiner {
+
 public:
 
     //  Local typedef's for local notational convenience:
@@ -397,10 +397,10 @@ protected:
     friend class FarPatchTablesFactory;
 
     int                   getNumLevels() const { return (int)_levels.size(); }
-    VtrLevel            & getBaseLevel() { return _levels.front(); }
-    VtrLevel            & getLevel(int l) { return _levels[l]; }
-    VtrLevel const      & getLevel(int l) const { return _levels[l]; }
-    VtrRefinement const & getRefinement(int l) const { return _refinements[l]; }
+    Vtr::Level            & getBaseLevel() { return _levels.front(); }
+    Vtr::Level            & getLevel(int l) { return _levels[l]; }
+    Vtr::Level const      & getLevel(int l) const { return _levels[l]; }
+    Vtr::Refinement const & getRefinement(int l) const { return _refinements[l]; }
 
     int getNumBaseFaces() const    { return GetNumFaces(0); }
     int getNumBaseEdges() const    { return GetNumEdges(0); }
@@ -443,23 +443,26 @@ protected:
 
     IndexArray getBaseFVarFaceValues(Index face, int channel = 0) { return _levels[0].getFVarFaceValues(face, channel); }
 
+    void populateLocalIndices() {
+        getBaseLevel(),populateLocalIndices();
+    }
 
 private:
     //  Prototype -- mainly for illustrative purposes right now...
-    void catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector);
-    void catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& selector);
+    void catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector);
+    void catmarkFeatureAdaptiveSelectorByFace(Vtr::SparseSelector& selector);
 
-    template <class T, class U> void interpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
-    template <class T, class U> void interpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
-    template <class T, class U> void interpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
+    template <class T, class U> void interpolateChildVertsFromFaces(Vtr::Refinement const &, T const * src, U * dst) const;
+    template <class T, class U> void interpolateChildVertsFromEdges(Vtr::Refinement const &, T const * src, U * dst) const;
+    template <class T, class U> void interpolateChildVertsFromVerts(Vtr::Refinement const &, T const * src, U * dst) const;
 
-    template <class T, class U> void varyingInterpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst) const;
-    template <class T, class U> void varyingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst) const;
-    template <class T, class U> void varyingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst) const;
+    template <class T, class U> void varyingInterpolateChildVertsFromFaces(Vtr::Refinement const &, T const * src, U * dst) const;
+    template <class T, class U> void varyingInterpolateChildVertsFromEdges(Vtr::Refinement const &, T const * src, U * dst) const;
+    template <class T, class U> void varyingInterpolateChildVertsFromVerts(Vtr::Refinement const &, T const * src, U * dst) const;
 
-    template <class T, class U> void faceVaryingInterpolateChildVertsFromFaces(VtrRefinement const &, T const * src, U * dst, int channel) const;
-    template <class T, class U> void faceVaryingInterpolateChildVertsFromEdges(VtrRefinement const &, T const * src, U * dst, int channel) const;
-    template <class T, class U> void faceVaryingInterpolateChildVertsFromVerts(VtrRefinement const &, T const * src, U * dst, int channel) const;
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromFaces(Vtr::Refinement const &, T const * src, U * dst, int channel) const;
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromEdges(Vtr::Refinement const &, T const * src, U * dst, int channel) const;
+    template <class T, class U> void faceVaryingInterpolateChildVertsFromVerts(Vtr::Refinement const &, T const * src, U * dst, int channel) const;
 
 
     void initializePtexIndices() const;
@@ -472,8 +475,8 @@ private:
     bool _isUniform;
     int  _maxLevel;
 
-    std::vector<VtrLevel>      _levels;
-    std::vector<VtrRefinement> _refinements;
+    std::vector<Vtr::Level>      _levels;
+    std::vector<Vtr::Refinement> _refinements;
 
     std::vector<Index>         _ptexIndices;
 };
@@ -499,7 +502,7 @@ FarTopologyRefiner::Interpolate(int level, T const * src, U * dst) const {
 
     assert(level>0 and level<=(int)_refinements.size());
 
-    VtrRefinement const & refinement = _refinements[level-1];
+    Vtr::Refinement const & refinement = _refinements[level-1];
 
     interpolateChildVertsFromFaces(refinement, src, dst);
     interpolateChildVertsFromEdges(refinement, src, dst);
@@ -509,27 +512,27 @@ FarTopologyRefiner::Interpolate(int level, T const * src, U * dst) const {
 template <class T, class U>
 inline void
 FarTopologyRefiner::interpolateChildVertsFromFaces(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
+    const Vtr::Level& parent = refinement.parent();
 
     float * fVertWeights = (float *)alloca(parent.getMaxValence()*sizeof(float));
 
     for (int face = 0; face < parent.getNumFaces(); ++face) {
 
-        VtrIndex cVert = refinement.getFaceChildVertex(face);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getFaceChildVertex(face);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent face:
-        VtrIndexArray const fVerts = parent.getFaceVertices(face);
+        Vtr::IndexArray const fVerts = parent.getFaceVertices(face);
 
         float fVaryingWeight = 1.0f / (float) fVerts.size();
 
-        VtrMaskInterface fMask(fVertWeights, 0, 0);
-        VtrFaceInterface fHood(fVerts.size());
+        Vtr::MaskInterface fMask(fVertWeights, 0, 0);
+        Vtr::FaceInterface fHood(fVerts.size());
 
         scheme.ComputeFaceVertexMask(fHood, fMask);
 
@@ -550,30 +553,30 @@ FarTopologyRefiner::interpolateChildVertsFromFaces(
 template <class T, class U>
 inline void
 FarTopologyRefiner::interpolateChildVertsFromEdges(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
-    const VtrLevel& child  = refinement.child();
+    const Vtr::Level& parent = refinement.parent();
+    const Vtr::Level& child  = refinement.child();
 
-    VtrEdgeInterface eHood(parent);
+    Vtr::EdgeInterface eHood(parent);
 
     float   eVertWeights[2],
           * eFaceWeights = (float *)alloca(parent.getMaxEdgeFaces()*sizeof(float));
 
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 
-        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getEdgeChildVertex(edge);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent edge:
-        VtrIndexArray const eVerts = parent.getEdgeVertices(edge);
-        VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
+        Vtr::IndexArray const eVerts = parent.getEdgeVertices(edge);
+        Vtr::IndexArray const eFaces = parent.getEdgeFaces(edge);
 
-        VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
+        Vtr::MaskInterface eMask(eVertWeights, 0, eFaceWeights);
 
         eHood.SetIndex(edge);
 
@@ -597,8 +600,8 @@ FarTopologyRefiner::interpolateChildVertsFromEdges(
 
             for (int i = 0; i < eFaces.size(); ++i) {
 
-                VtrIndex cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
-                assert(VtrIndexIsValid(cVertOfFace));
+                Vtr::Index cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
+                assert(Vtr::IndexIsValid(cVertOfFace));
                 vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
             }
         }
@@ -608,33 +611,33 @@ FarTopologyRefiner::interpolateChildVertsFromEdges(
 template <class T, class U>
 inline void
 FarTopologyRefiner::interpolateChildVertsFromVerts(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
-    const VtrLevel& child  = refinement.child();
+    const Vtr::Level& parent = refinement.parent();
+    const Vtr::Level& child  = refinement.child();
 
-    VtrVertexInterface vHood(parent, child);
+    Vtr::VertexInterface vHood(parent, child);
 
     float * weightBuffer = (float *)alloca(2*parent.getMaxValence()*sizeof(float));
 
     for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
 
-        VtrIndex cVert = refinement.getVertexChildVertex(vert);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getVertexChildVertex(vert);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent edge:
-        VtrIndexArray const vEdges = parent.getVertexEdges(vert);
-        VtrIndexArray const vFaces = parent.getVertexFaces(vert);
+        Vtr::IndexArray const vEdges = parent.getVertexEdges(vert);
+        Vtr::IndexArray const vFaces = parent.getVertexFaces(vert);
 
         float   vVertWeight,
               * vEdgeWeights = weightBuffer,
               * vFaceWeights = vEdgeWeights + vEdges.size();
 
-        VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
+        Vtr::MaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
 
         vHood.SetIndex(vert, cVert);
 
@@ -655,8 +658,8 @@ FarTopologyRefiner::interpolateChildVertsFromVerts(
 
             for (int i = 0; i < vEdges.size(); ++i) {
 
-                VtrIndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
-                VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+                Vtr::IndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
+                Vtr::Index pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
 
                 vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
             }
@@ -665,8 +668,8 @@ FarTopologyRefiner::interpolateChildVertsFromVerts(
 
             for (int i = 0; i < vFaces.size(); ++i) {
 
-                VtrIndex cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
-                assert(VtrIndexIsValid(cVertOfFace));
+                Vtr::Index cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
+                assert(Vtr::IndexIsValid(cVertOfFace));
                 vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
             }
         }
@@ -698,7 +701,7 @@ FarTopologyRefiner::InterpolateVarying(int level, T const * src, U * dst) const 
 
     assert(level>0 and level<=(int)_refinements.size());
 
-    VtrRefinement const & refinement = _refinements[level-1];
+    Vtr::Refinement const & refinement = _refinements[level-1];
 
     varyingInterpolateChildVertsFromFaces(refinement, src, dst);
     varyingInterpolateChildVertsFromEdges(refinement, src, dst);
@@ -708,17 +711,17 @@ FarTopologyRefiner::InterpolateVarying(int level, T const * src, U * dst) const 
 template <class T, class U>
 inline void
 FarTopologyRefiner::varyingInterpolateChildVertsFromFaces(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
-    const VtrLevel& parent = refinement.parent();
+    const Vtr::Level& parent = refinement.parent();
 
     for (int face = 0; face < parent.getNumFaces(); ++face) {
 
-        VtrIndex cVert = refinement.getFaceChildVertex(face);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getFaceChildVertex(face);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
-        VtrIndexArray const fVerts = parent.getFaceVertices(face);
+        Vtr::IndexArray const fVerts = parent.getFaceVertices(face);
 
         float fVaryingWeight = 1.0f / (float) fVerts.size();
 
@@ -736,20 +739,20 @@ FarTopologyRefiner::varyingInterpolateChildVertsFromFaces(
 template <class T, class U>
 inline void
 FarTopologyRefiner::varyingInterpolateChildVertsFromEdges(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
 
-    const VtrLevel& parent = refinement.parent();
+    const Vtr::Level& parent = refinement.parent();
 
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 
-        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getEdgeChildVertex(edge);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  Declare and compute mask weights for this vertex relative to its parent edge:
-        VtrIndexArray const eVerts = parent.getEdgeVertices(edge);
+        Vtr::IndexArray const eVerts = parent.getEdgeVertices(edge);
 
         //  Apply the weights to the parent edges's vertices
         U & vdst = dst[cVert];
@@ -764,16 +767,16 @@ FarTopologyRefiner::varyingInterpolateChildVertsFromEdges(
 template <class T, class U>
 inline void
 FarTopologyRefiner::varyingInterpolateChildVertsFromVerts(
-    VtrRefinement const & refinement, T const * src, U * dst) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
 
-    const VtrLevel& parent = refinement.parent();
+    const Vtr::Level& parent = refinement.parent();
 
     for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
 
-        VtrIndex cVert = refinement.getVertexChildVertex(vert);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getVertexChildVertex(vert);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  Apply the weights to the parent vertex
@@ -810,7 +813,7 @@ FarTopologyRefiner::InterpolateFaceVarying(int level, T const * src, U * dst, in
 
     assert(level>0 and level<=(int)_refinements.size());
 
-    VtrRefinement const & refinement = _refinements[level-1];
+    Vtr::Refinement const & refinement = _refinements[level-1];
 
     faceVaryingInterpolateChildVertsFromFaces(refinement, src, dst, channel);
     faceVaryingInterpolateChildVertsFromEdges(refinement, src, dst, channel);
@@ -820,18 +823,18 @@ FarTopologyRefiner::InterpolateFaceVarying(int level, T const * src, U * dst, in
 template <class T, class U>
 inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromFaces(
-    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst, int channel) const {
 
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
+    const Vtr::Level& parent = refinement.parent();
 
     float * fValueWeights = (float *)alloca(parent.getMaxValence()*sizeof(float));
 
     for (int face = 0; face < parent.getNumFaces(); ++face) {
 
-        VtrIndex cVert = refinement.getFaceChildVertex(face);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getFaceChildVertex(face);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         //  The only difference for face-varying here is that we get the values associated
@@ -840,10 +843,10 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromFaces(
         //  get the wrong one using the face-vertex index directly.
 
         //  Declare and compute mask weights for this vertex relative to its parent face:
-        VtrIndexArray const fValues = parent.getFVarFaceValues(face, channel);
+        Vtr::IndexArray const fValues = parent.getFVarFaceValues(face, channel);
 
-        VtrMaskInterface fMask(fValueWeights, 0, 0);
-        VtrFaceInterface fHood(fValues.size());
+        Vtr::MaskInterface fMask(fValueWeights, 0, 0);
+        Vtr::FaceInterface fHood(fValues.size());
 
         scheme.ComputeFaceVertexMask(fHood, fMask);
 
@@ -861,17 +864,17 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromFaces(
 template <class T, class U>
 inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
-    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst, int channel) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
-    const VtrLevel& child  = refinement.child();
+    const Vtr::Level& parent = refinement.parent();
+    const Vtr::Level& child  = refinement.child();
 
-    const VtrFVarRefinement& refineFVar = *refinement._fvarChannels[channel];
-    const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
-    const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
+    const Vtr::FVarRefinement& refineFVar = *refinement._fvarChannels[channel];
+    const Vtr::FVarLevel&      parentFVar = *parent._fvarChannels[channel];
+    const Vtr::FVarLevel&      childFVar  = *child._fvarChannels[channel];
 
     //
     //  Allocate and intialize (if linearly interpolated) interpolation weights for
@@ -880,7 +883,7 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
     float   eVertWeights[2],
           * eFaceWeights = (float *)alloca(parent.getMaxEdgeFaces()*sizeof(float));
 
-    VtrMaskInterface eMask(eVertWeights, 0, eFaceWeights);
+    Vtr::MaskInterface eMask(eVertWeights, 0, eFaceWeights);
 
     bool isLinearFVar = parentFVar._isLinear;
     if (isLinearFVar) {
@@ -892,12 +895,12 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
         eVertWeights[1] = 0.5f;
     }
 
-    VtrEdgeInterface eHood(parent);
+    Vtr::EdgeInterface eHood(parent);
 
     for (int edge = 0; edge < parent.getNumEdges(); ++edge) {
 
-        VtrIndex cVert = refinement.getEdgeChildVertex(edge);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getEdgeChildVertex(edge);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         bool fvarEdgeVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
@@ -934,12 +937,12 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
             //  indirection is necessary.  We can use a vertex index directly for "dst" when
             //  it matches.
             //
-            VtrIndex eVertValues[2];
+            Vtr::Index eVertValues[2];
 
             //  WORK-IN-PROGRESS -- using this switch for comparative purposes only...
             bool assumeMatchingNeighborhood = false;
             if (assumeMatchingNeighborhood) {
-                VtrIndexArray eVerts = parent.getEdgeVertices(edge);
+                Vtr::IndexArray eVerts = parent.getEdgeVertices(edge);
                 eVertValues[0] = eVerts[0];
                 eVertValues[1] = eVerts[1];
             } else {
@@ -954,12 +957,12 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
 
             if (eMask.GetNumFaceWeights() > 0) {
 
-                VtrIndexArray const eFaces = parent.getEdgeFaces(edge);
+                Vtr::IndexArray const eFaces = parent.getEdgeFaces(edge);
 
                 for (int i = 0; i < eFaces.size(); ++i) {
 
-                    VtrIndex cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
-                    assert(VtrIndexIsValid(cVertOfFace));
+                    Vtr::Index cVertOfFace = refinement.getFaceChildVertex(eFaces[i]);
+                    assert(Vtr::IndexIsValid(cVertOfFace));
                     vdst.AddWithWeight(dst[cVertOfFace], eFaceWeights[i]);
                 }
             }
@@ -973,7 +976,7 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
             //  will eventually need to update this to account for > 3 incident faces.
             //
             for (int i = 0; i < childFVar.getNumVertexValues(cVert); ++i) {
-                VtrIndex eVertValues[2];
+                Vtr::Index eVertValues[2];
                 int      eFaceIndex = refineFVar.getChildValueParentSource(cVert, i);
                 assert(eFaceIndex == i);
 
@@ -992,36 +995,36 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
 template <class T, class U>
 inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
-    VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
+    Vtr::Refinement const & refinement, T const * src, U * dst, int channel) const {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
     Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
-    const VtrLevel& parent = refinement.parent();
-    const VtrLevel& child  = refinement.child();
+    const Vtr::Level& parent = refinement.parent();
+    const Vtr::Level& child  = refinement.child();
 
-    const VtrFVarRefinement& refineFVar = *refinement._fvarChannels[channel];
-    const VtrFVarLevel&      parentFVar = *parent._fvarChannels[channel];
-    const VtrFVarLevel&      childFVar  = *child._fvarChannels[channel];
+    const Vtr::FVarRefinement& refineFVar = *refinement._fvarChannels[channel];
+    const Vtr::FVarLevel&      parentFVar = *parent._fvarChannels[channel];
+    const Vtr::FVarLevel&      childFVar  = *child._fvarChannels[channel];
 
     bool isLinearFVar = parentFVar._isLinear;
 
     float * weightBuffer = (float *)alloca(2*parent.getMaxValence()*sizeof(float));
 
-    VtrIndex * vEdgeValues = (VtrIndex *)alloca(parent.getMaxValence()*sizeof(VtrIndex));
+    Vtr::Index * vEdgeValues = (Vtr::Index *)alloca(parent.getMaxValence()*sizeof(Vtr::Index));
 
-    VtrVertexInterface vHood(parent, child);
+    Vtr::VertexInterface vHood(parent, child);
 
     for (int vert = 0; vert < parent.getNumVertices(); ++vert) {
 
-        VtrIndex cVert = refinement.getVertexChildVertex(vert);
-        if (!VtrIndexIsValid(cVert))
+        Vtr::Index cVert = refinement.getVertexChildVertex(vert);
+        if (!Vtr::IndexIsValid(cVert))
             continue;
 
         bool fvarVertVertMatchesVertex = childFVar.vertexTopologyMatches(cVert);
         if (isLinearFVar && fvarVertVertMatchesVertex) {
-            VtrIndex pVertValue = parentFVar.getVertexValue(vert);
-            VtrIndex cVertValue = cVert;
+            Vtr::Index pVertValue = parentFVar.getVertexValue(vert);
+            Vtr::Index cVertValue = cVert;
 
             U & vdst = dst[cVertValue];
 
@@ -1037,13 +1040,13 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
             //  (We really need to encapsulate this somewhere else for use here and in the
             //  general case)
             //
-            VtrIndexArray const vEdges = parent.getVertexEdges(vert);
+            Vtr::IndexArray const vEdges = parent.getVertexEdges(vert);
 
             float   vVertWeight;
             float * vEdgeWeights = weightBuffer;
             float * vFaceWeights = vEdgeWeights + vEdges.size();
 
-            VtrMaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
+            Vtr::MaskInterface vMask(&vVertWeight, vEdgeWeights, vFaceWeights);
 
             vHood.SetIndex(vert, cVert);
 
@@ -1072,8 +1075,8 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
             //  indirection is necessary.  We can use a vertex index directly for "dst" when
             //  it matches.
             //
-            VtrIndex pVertValue = parentFVar.getVertexValue(vert);
-            VtrIndex cVertValue = cVert;
+            Vtr::Index pVertValue = parentFVar.getVertexValue(vert);
+            Vtr::Index cVertValue = cVert;
 
             U & vdst = dst[cVertValue];
 
@@ -1086,8 +1089,8 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
                 bool assumeMatchingNeighborhood = false;
                 if (assumeMatchingNeighborhood) {
                     for (int i = 0; i < vEdges.size(); ++i) {
-                        VtrIndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
-                        VtrIndex pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+                        Vtr::IndexArray const eVerts = parent.getEdgeVertices(vEdges[i]);
+                        Vtr::Index pVertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
 
                         vdst.AddWithWeight(src[pVertOppositeEdge], vEdgeWeights[i]);
                     }
@@ -1102,12 +1105,12 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
             }
             if (vMask.GetNumFaceWeights() > 0) {
 
-                VtrIndexArray const vFaces = parent.getVertexFaces(vert);
+                Vtr::IndexArray const vFaces = parent.getVertexFaces(vert);
 
                 for (int i = 0; i < vFaces.size(); ++i) {
 
-                    VtrIndex cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
-                    assert(VtrIndexIsValid(cVertOfFace));
+                    Vtr::Index cVertOfFace = refinement.getFaceChildVertex(vFaces[i]);
+                    assert(Vtr::IndexIsValid(cVertOfFace));
                     vdst.AddWithWeight(dst[cVertOfFace], vFaceWeights[i]);
                 }
             }
@@ -1120,8 +1123,8 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
                 int pSibling = refineFVar.getChildValueParentSource(cVert, cSibling);
                 assert(pSibling == cSibling);
 
-                VtrIndex pVertValue = parentFVar.getVertexValue(vert, pSibling);
-                VtrIndex cVertValue = childFVar.getVertexValue(cVert, cSibling);
+                Vtr::Index pVertValue = parentFVar.getVertexValue(vert, pSibling);
+                Vtr::Index cVertValue = childFVar.getVertexValue(cVert, cSibling);
 
                 U & vdst = dst[cVertValue];
 

@@ -34,16 +34,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class VtrRefinement;
+namespace Vtr {
+
+class Refinement;
 
 //
-//  VtrSparseSelector:
+//  SparseSelector:
 //      This is experimental at present -- just keeping all of the functionality related to sparse
-//  refinment out of VtrRefinement for now until it matures.
+//  refinment out of Refinement for now until it matures.
 //
 //  Expected usage is as follows:
 //
-//          VtrSparseSelector selector(refinement);
+//          SparseSelector selector(refinement);
 //
 //          selector.selectFace(i);
 //          selector.selectFace(j);
@@ -55,11 +57,11 @@ class VtrRefinement;
 //  Since it is expected this will be protected or integrated elsewhere into another Vtr class --
 //  which will be similarly protected -- all methods intentionally begin with lower case.
 //
-class VtrSparseSelector {
+class SparseSelector {
 
 public:
-    VtrSparseSelector(VtrRefinement& refine) : _refine(&refine), _prevRefine(0), _selected(false) { }
-    ~VtrSparseSelector() { }
+    SparseSelector(Refinement& refine) : _refine(&refine), _prevRefine(0), _selected(false) { }
+    ~SparseSelector() { }
 
     //
     //  A previous refinement may be used to indicate whether components are fully defined or
@@ -69,52 +71,54 @@ public:
     //  It is (increasingly) possible that this property ends up in the tags for the parent level,
     //  in which case this refinement that generated the parent will not be necessary
     //
-    void           setRefinement(VtrRefinement& refine) { _refine = &refine; }
-    VtrRefinement& getRefinement() const                { return *_refine; }
+    void           setRefinement(Refinement& refine) { _refine = &refine; }
+    Refinement& getRefinement() const                { return *_refine; }
 
-    void                 setPreviousRefinement(VtrRefinement const* refine) { _prevRefine = refine; }
-    VtrRefinement const* getPreviousRefinement() const                      { return _prevRefine; }
+    void                 setPreviousRefinement(Refinement const* refine) { _prevRefine = refine; }
+    Refinement const* getPreviousRefinement() const                      { return _prevRefine; }
 
     //
     //  Methods for selecting (and marking) components for refinement.  All component indices
     //  refer to components in the parent:
     //
-    void selectVertex(VtrIndex pVertex);
-    void selectEdge(  VtrIndex pEdge);
-    void selectFace(  VtrIndex pFace);
+    void selectVertex(Index pVertex);
+    void selectEdge(  Index pEdge);
+    void selectFace(  Index pFace);
 
     //  Mark all incident faces of a vertex -- common in the original feature-adaptive scheme
     //  to warrant inclusion, but may not be necessary if it is switch to being face-driven
-    void selectVertexFaces(VtrIndex pVertex);
+    void selectVertexFaces(Index pVertex);
 
     //
     //  Useful queries during or after selection:
     //
     bool isSelectionEmpty() const { return !_selected; }
 
-    bool isVertexIncomplete(VtrIndex pVertex) const {
+    bool isVertexIncomplete(Index pVertex) const {
         //  A parent of this refinement was child of the previous refinement:
         return _prevRefine && _prevRefine->_childVertexTag[pVertex]._incomplete;
     }
 
 private:
-    VtrSparseSelector() { }
+    SparseSelector() { }
 
-    bool wasVertexSelected(VtrIndex pVertex) const { return _refine->_parentVertexTag[pVertex]._selected; }
-    bool wasEdgeSelected(  VtrIndex pEdge) const   { return _refine->_parentEdgeTag[pEdge]._selected; }
-    bool wasFaceSelected(  VtrIndex pFace) const   { return _refine->_parentFaceTag[pFace]._selected; }
+    bool wasVertexSelected(Index pVertex) const { return _refine->_parentVertexTag[pVertex]._selected; }
+    bool wasEdgeSelected(  Index pEdge) const   { return _refine->_parentEdgeTag[pEdge]._selected; }
+    bool wasFaceSelected(  Index pFace) const   { return _refine->_parentFaceTag[pFace]._selected; }
 
-    void markVertexSelected(VtrIndex pVertex) const { _refine->_parentVertexTag[pVertex]._selected = true; }
-    void markEdgeSelected(  VtrIndex pEdge) const   { _refine->_parentEdgeTag[pEdge]._selected = true; }
-    void markFaceSelected(  VtrIndex pFace) const   { _refine->_parentFaceTag[pFace]._selected = true; }
+    void markVertexSelected(Index pVertex) const { _refine->_parentVertexTag[pVertex]._selected = true; }
+    void markEdgeSelected(  Index pEdge) const   { _refine->_parentEdgeTag[pEdge]._selected = true; }
+    void markFaceSelected(  Index pFace) const   { _refine->_parentFaceTag[pFace]._selected = true; }
 
     void markSelection();
 
 private:
-    VtrRefinement*       _refine;
-    VtrRefinement const* _prevRefine;
+    Refinement*       _refine;
+    Refinement const* _prevRefine;
     bool _selected;
 };
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

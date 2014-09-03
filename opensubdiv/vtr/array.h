@@ -29,6 +29,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Vtr {
+
 //
 //  This class provides a simple array-like interface -- a subset std::vector's interface -- for
 //  a sequence of elements stored in contiguous memory.  It provides a unified representation for
@@ -46,7 +48,7 @@ namespace OPENSUBDIV_VERSION {
 //  own memory and is simply an interface to memory stored elsewhere.
 //
 template <typename TYPE>
-class VtrArray {
+class Array {
 
 public:
     typedef TYPE value_type;
@@ -59,12 +61,12 @@ public:
     typedef TYPE* iterator;
 
 public:
-    VtrArray() : _begin(0), _size(0) { }
-    VtrArray(const VtrArray<value_type>& array) : _begin(array._begin),
+    Array() : _begin(0), _size(0) { }
+    Array(const Array<value_type>& array) : _begin(array._begin),
                                                   _size(array._size) { }
-    VtrArray(const value_type* ptr, size_type size) : _begin(const_cast<value_type*>(ptr)),
+    Array(const value_type* ptr, size_type size) : _begin(const_cast<value_type*>(ptr)),
                                                       _size(size) { }
-    ~VtrArray() { }
+    ~Array() { }
 
     size_type size() const { return _size; }
 
@@ -80,6 +82,8 @@ protected:
     value_type* _begin;
     size_type   _size;
 };
+
+} // end namespace Vtr
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
