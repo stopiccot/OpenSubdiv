@@ -35,23 +35,25 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-typedef OsdMeshInterface<OsdD3D11DrawContext> OsdD3D11MeshInterface;
+namespace Osd {
+
+typedef MeshInterface<D3D11DrawContext> D3D11MeshInterface;
 
 template <class VERTEX_BUFFER, class COMPUTE_CONTROLLER>
-class OsdMesh<VERTEX_BUFFER, COMPUTE_CONTROLLER, OsdD3D11DrawContext> : public OsdD3D11MeshInterface {
+class Mesh<VERTEX_BUFFER, COMPUTE_CONTROLLER, D3D11DrawContext> : public D3D11MeshInterface {
 public:
     typedef VERTEX_BUFFER VertexBuffer;
     typedef COMPUTE_CONTROLLER ComputeController;
     typedef typename ComputeController::ComputeContext ComputeContext;
-    typedef OsdD3D11DrawContext DrawContext;
+    typedef D3D11DrawContext DrawContext;
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
-            OsdMeshBitset bits,
+            MeshBitset bits,
             ID3D11DeviceContext *d3d11DeviceContext) :
 
             _refiner(refiner),
@@ -63,7 +65,7 @@ public:
             _drawContext(0),
             _d3d11DeviceContext(d3d11DeviceContext)
     {
-        OsdD3D11MeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
+        D3D11MeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
 
         int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
@@ -73,7 +75,7 @@ public:
         initializeDrawContext(numElements, bits);
     }
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
@@ -92,7 +94,7 @@ public:
         _drawContext->UpdateVertexTexture(_vertexBuffer, _d3d11DeviceContext);
     }
 
-    virtual ~OsdMesh() {
+    virtual ~Mesh() {
         delete _refiner;
         delete _patchTables;
         delete _vertexBuffer;
@@ -103,7 +105,7 @@ public:
 
     virtual int GetNumVertices() const {
         assert(_refiner);
-        return OsdD3D11MeshInterface::getNumVertices(*_refiner);
+        return D3D11MeshInterface::getNumVertices(*_refiner);
     }
 
     virtual void UpdateVertexBuffer(float const *vertexData, int startVertex, int numVerts) {
@@ -115,8 +117,8 @@ public:
     virtual void Refine() {
         _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer);
     }
-    virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc,
-                        OsdVertexBufferDescriptor const *varyingDesc,
+    virtual void Refine(VertexBufferDescriptor const *vertexDesc,
+                        VertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
@@ -187,7 +189,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, MeshBitset bits) {
 
         assert(_refiner and _vertexBuffer);
 
@@ -203,12 +205,12 @@ private:
     }
 
     int initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements, OsdMeshBitset bits) {
+        int numVaryingElements, MeshBitset bits) {
 
         ID3D11Device * pd3d11Device;
         _d3d11DeviceContext->GetDevice(&pd3d11Device);
 
-        int numVertices = OsdD3D11MeshInterface::getNumVertices(*_refiner);
+        int numVertices = D3D11MeshInterface::getNumVertices(*_refiner);
 
         int numElements = numVertexElements +
             (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
@@ -241,20 +243,20 @@ private:
 };
 
 template <>
-class OsdMesh<OsdD3D11VertexBuffer, OsdD3D11ComputeController, OsdD3D11DrawContext> : public OsdD3D11MeshInterface {
+class Mesh<D3D11VertexBuffer, D3D11ComputeController, D3D11DrawContext> : public D3D11MeshInterface {
 public:
-    typedef OsdD3D11VertexBuffer VertexBuffer;
-    typedef OsdD3D11ComputeController ComputeController;
+    typedef D3D11VertexBuffer VertexBuffer;
+    typedef D3D11ComputeController ComputeController;
     typedef ComputeController::ComputeContext ComputeContext;
-    typedef OsdD3D11DrawContext DrawContext;
+    typedef D3D11DrawContext DrawContext;
     typedef DrawContext::VertexBufferBinding VertexBufferBinding;
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
-            OsdMeshBitset bits,
+            MeshBitset bits,
             ID3D11DeviceContext *d3d11DeviceContext) :
 
             _refiner(refiner),
@@ -266,7 +268,7 @@ public:
             _drawContext(0),
             _d3d11DeviceContext(d3d11DeviceContext)
     {
-        OsdD3D11MeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
+        D3D11MeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
 
         int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
@@ -276,7 +278,7 @@ public:
         initializeDrawContext(numElements, bits);
     }
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
@@ -295,7 +297,7 @@ public:
         _drawContext->UpdateVertexTexture(_vertexBuffer, _d3d11DeviceContext);
     }
 
-    virtual ~OsdMesh() {
+    virtual ~Mesh() {
         delete _refiner;
         delete _patchTables;
         delete _vertexBuffer;
@@ -315,8 +317,8 @@ public:
     virtual void Refine() {
         _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer);
     }
-    virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc,
-                        OsdVertexBufferDescriptor const *varyingDesc,
+    virtual void Refine(VertexBufferDescriptor const *vertexDesc,
+                        VertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
@@ -389,7 +391,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, MeshBitset bits) {
 
         assert(_refiner and _vertexBuffer);
 
@@ -405,12 +407,12 @@ private:
     }
 
     int initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements, OsdMeshBitset bits) {
+        int numVaryingElements, MeshBitset bits) {
 
         ID3D11Device * pd3d11Device;
         _d3d11DeviceContext->GetDevice(&pd3d11Device);
 
-        int numVertices = OsdD3D11MeshInterface::getNumVertices(*_refiner);
+        int numVertices = D3D11MeshInterface::getNumVertices(*_refiner);
 
         int numElements = numVertexElements +
             (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
@@ -442,7 +444,9 @@ private:
 };
 
 
-}  // end namespace OPENSUBDIV_VERSION
+} // end namespace Osd
+
+} // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 }  // end namespace OpenSubdiv

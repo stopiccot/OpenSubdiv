@@ -36,33 +36,35 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class OsdGLSLTransformFeedbackKernelBundle;
+namespace Osd {
+
+class GLSLTransformFeedbackKernelBundle;
 
 /// \brief Compute controller for launching GLSLTransformFeedback transform feedback
 /// subdivision kernels.
 ///
-/// OsdGLSLTransformFeedbackComputeController is a compute controller class to launch
+/// GLSLTransformFeedbackComputeController is a compute controller class to launch
 /// GLSLTransformFeedback transfrom feedback subdivision kernels. It requires
-/// OsdGLVertexBufferInterface as arguments of Refine function.
+/// GLVertexBufferInterface as arguments of Refine function.
 ///
 /// Controller entities execute requests from Context instances that they share
 /// common interfaces with. Controllers are attached to discrete compute devices
 /// and share the devices resources with Context entities.
 ///
-class OsdGLSLTransformFeedbackComputeController {
+class GLSLTransformFeedbackComputeController {
 public:
-    typedef OsdGLSLTransformFeedbackComputeContext ComputeContext;
+    typedef GLSLTransformFeedbackComputeContext ComputeContext;
 
     /// Constructor.
-    OsdGLSLTransformFeedbackComputeController();
+    GLSLTransformFeedbackComputeController();
 
     /// Destructor.
-    ~OsdGLSLTransformFeedbackComputeController();
+    ~GLSLTransformFeedbackComputeController();
 
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdGLSLTransformFeedbackComputeContext to apply
+    /// @param  context       The GLSLTransformFeedbackComputeContext to apply
     ///                       refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
@@ -81,12 +83,12 @@ public:
     ///                       will be refined.
     ///
     template<class VERTEX_BUFFER, class VARYING_BUFFER>
-        void Compute( OsdGLSLTransformFeedbackComputeContext const * context,
+        void Compute( GLSLTransformFeedbackComputeContext const * context,
                       Far::KernelBatchVector const & batches,
                       VERTEX_BUFFER  * vertexBuffer,
                       VARYING_BUFFER * varyingBuffer,
-                      OsdVertexBufferDescriptor const * vertexDesc=NULL,
-                      OsdVertexBufferDescriptor const * varyingDesc=NULL ){
+                      VertexBufferDescriptor const * vertexDesc=NULL,
+                      VertexBufferDescriptor const * varyingDesc=NULL ){
 
         if (batches.empty()) return;
 
@@ -112,7 +114,7 @@ public:
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdGLSLTransformFeedbackComputeContext to apply
+    /// @param  context       The GLSLTransformFeedbackComputeContext to apply
     ///                       refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
@@ -121,7 +123,7 @@ public:
     /// @param  vertexBuffer  Vertex-interpolated data buffer
     ///
     template<class VERTEX_BUFFER>
-        void Compute(OsdGLSLTransformFeedbackComputeContext const * context,
+        void Compute(GLSLTransformFeedbackComputeContext const * context,
                      Far::KernelBatchVector const & batches,
                      VERTEX_BUFFER *vertexBuffer) {
 
@@ -139,7 +141,7 @@ protected:
         ComputeContext const *context) const;
 
     template<class BUFFER>
-        void bind( BUFFER * buffer, OsdVertexBufferDescriptor const * desc,
+        void bind( BUFFER * buffer, VertexBufferDescriptor const * desc,
             GLuint feedbackTexture ) {
 
         assert(buffer);
@@ -151,7 +153,7 @@ protected:
         } else {
             int numElements = buffer ? buffer->GetNumElements() : 0;
             _currentBindState.desc =
-                OsdVertexBufferDescriptor(0, numElements, numElements);
+                VertexBufferDescriptor(0, numElements, numElements);
         }
 
         _currentBindState.buffer = buffer->BindVBO();
@@ -194,7 +196,7 @@ private:
 
         GLuint buffer;
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
 
         KernelBundle const * kernelBundle;
     };
@@ -203,7 +205,7 @@ private:
 
     typedef std::vector<KernelBundle *> KernelRegistry;
 
-    KernelBundle const * getKernel(OsdVertexBufferDescriptor const &desc);
+    KernelBundle const * getKernel(VertexBufferDescriptor const &desc);
 
     KernelRegistry _kernelRegistry;
 
@@ -211,6 +213,8 @@ private:
            _varyingTexture,
            _vao;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

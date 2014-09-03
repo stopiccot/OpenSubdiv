@@ -140,11 +140,11 @@ GLhud g_hud;
 
 //------------------------------------------------------------------------------
 static int
-createRandomSamples( int nfaces, int nsamples, std::vector<OsdEvalCoords> & coords ) {
+createRandomSamples( int nfaces, int nsamples, std::vector<Osd::EvalCoords> & coords ) {
 
     coords.resize(nfaces * nsamples);
 
-    OsdEvalCoords * coord = &coords[0];
+    Osd::EvalCoords * coord = &coords[0];
 
     // large Pell prime number
     srand( static_cast<int>(2147483647) );
@@ -222,28 +222,28 @@ getNumPtexFaces(OpenSubdiv::Far::TopologyRefiner const & refiner) {
 }
 
 //------------------------------------------------------------------------------
-OsdCpuVertexBuffer * g_vertexData=0,
+Osd::CpuVertexBuffer * g_vertexData=0,
                    * g_varyingData=0;
 
-OsdCpuComputeContext * g_computeCtx = 0;
+Osd::CpuComputeContext * g_computeCtx = 0;
 
-OsdCpuComputeController g_computeCtrl;
+Osd::CpuComputeController g_computeCtrl;
 
 Far::KernelBatchVector  g_kernelBatches;
 
-OsdCpuEvalLimitContext * g_evalCtx = 0;
+Osd::CpuEvalLimitContext * g_evalCtx = 0;
 
-OsdCpuEvalLimitController g_evalCtrl;
+Osd::CpuEvalLimitController g_evalCtrl;
 
-OsdVertexBufferDescriptor g_idesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 3 ),
+Osd::VertexBufferDescriptor g_idesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 3 ),
                           g_odesc( /*offset*/ 0, /*legnth*/ 3, /*stride*/ 6 ),
                           g_vdesc( /*offset*/ 3, /*legnth*/ 3, /*stride*/ 6 ),
                           g_fvidesc( /*offset*/ 0, /*legnth*/ 2, /*stride*/ 2 ),
                           g_fvodesc( /*offset*/ 3, /*legnth*/ 2, /*stride*/ 6 );
 
-std::vector<OsdEvalCoords> g_coords;
+std::vector<Osd::EvalCoords> g_coords;
 
-OsdCpuGLVertexBuffer * g_Q=0,
+Osd::CpuGLVertexBuffer * g_Q=0,
                      * g_dQu=0,
                      * g_dQv=0;
 
@@ -398,37 +398,37 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         // Create a Compute context, used to "pose" the vertices
         delete g_computeCtx;
-        g_computeCtx = OsdCpuComputeContext::Create(vertexStencils, varyingStencils);
+        g_computeCtx = Osd::CpuComputeContext::Create(vertexStencils, varyingStencils);
 
         // Create a limit Eval context
         delete g_evalCtx;
-        g_evalCtx = OsdCpuEvalLimitContext::Create(*patchTables);
+        g_evalCtx = Osd::CpuEvalLimitContext::Create(*patchTables);
     }
 
     delete refiner;
 
     {   // Create vertex data buffer & populate w/ positions
         delete g_vertexData;
-        g_vertexData = OsdCpuVertexBuffer::Create(3, nverts);
+        g_vertexData = Osd::CpuVertexBuffer::Create(3, nverts);
 
         // Create primvar v-buffer & populate w/ colors or (u,v) data
         delete g_varyingData; g_varyingData = 0;
         if (g_drawMode==kVARYING) {
-            g_varyingData = OsdCpuVertexBuffer::Create(3, nverts);
+            g_varyingData = Osd::CpuVertexBuffer::Create(3, nverts);
             g_varyingData->UpdateData( &g_varyingColors[0], 0, nverts);
         }
 
         // Create output data buffers
         delete g_Q;
-        g_Q = OsdCpuGLVertexBuffer::Create(6,nsamples);
+        g_Q = Osd::CpuGLVertexBuffer::Create(6,nsamples);
         memset( g_Q->BindCpuBuffer(), 0, nsamples*6*sizeof(float));
 
         delete g_dQu;
-        g_dQu = OsdCpuGLVertexBuffer::Create(6,nsamples);
+        g_dQu = Osd::CpuGLVertexBuffer::Create(6,nsamples);
         memset( g_dQu->BindCpuBuffer(), 0, nsamples*6*sizeof(float));
 
         delete g_dQv;
-        g_dQv = OsdCpuGLVertexBuffer::Create(6,nsamples);
+        g_dQv = Osd::CpuGLVertexBuffer::Create(6,nsamples);
         memset( g_dQv->BindCpuBuffer(), 0, nsamples*6*sizeof(float));
 
     }
@@ -840,7 +840,7 @@ keyboard(GLFWwindow *, int key, int /* scancode */, int event, int /* mods */) {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
+callbackError(OpenSubdiv::Osd::ErrorType err, const char *message)
 {
     printf("OsdError: %d\n", err);
     printf("%s", message);
@@ -1006,7 +1006,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    OsdSetErrorCallback(callbackError);
+    Osd::SetErrorCallback(callbackError);
 
 
     initShapes();

@@ -88,7 +88,7 @@ computeStencils(float const * cvs, float * vbuffer,
 
         DeviceVertex<NUM_ELEMENTS> dst;
         dst.clear();
-        
+
         for (int j=0; j<sizes[i]; ++j) {
             dst.addWithWeight(src[lindices[j]], lweights[j]);
         }
@@ -114,11 +114,11 @@ computeStencils(float const * cvs, float * dst,
 
         float * dstVert = dst + i*stride;
         clear(dstVert, length);
-        
+
         for (int j=0; j<sizes[i]; ++j) {
-            
+
             float const * srcVert = cvs + lindices[j]*stride;
-            
+
             addWithWeight(dstVert, srcVert, lweights[j], length);
         }
     }
@@ -137,20 +137,20 @@ computeStencils(float const * cvs, float * dst,
 extern "C" {
 
 void
-OsdCudaComputeStencils(float const *cvs, float * dst,
-                       int length, int stride,
-                       unsigned char const * sizes,
-                       int const * offsets,
-                       int const * indices,
-                       float const * weights,
-                       int start, int end)
+CudaComputeStencils(float const *cvs, float * dst,
+                    int length, int stride,
+                    unsigned char const * sizes,
+                    int const * offsets,
+                    int const * indices,
+                    float const * weights,
+                    int start, int end)
 {
     assert(cvs and dst and sizes and offsets and indices and weights and (end>=start));
 
     if (length==0 or stride==0) {
         return;
     }
-    
+
     OPT_KERNEL(3, computeStencils, 512, 32, (cvs, dst, sizes, offsets, indices, weights, start, end));
     OPT_KERNEL(4, computeStencils, 512, 32, (cvs, dst, sizes, offsets, indices, weights, start, end));
 

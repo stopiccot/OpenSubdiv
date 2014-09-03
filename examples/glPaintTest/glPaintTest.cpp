@@ -50,10 +50,10 @@ GLFWmonitor* g_primary=0;
 #include <osd/cpuGLVertexBuffer.h>
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
-OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
+OpenSubdiv::Osd::CpuComputeController *g_cpuComputeController = NULL;
 
 #include <osd/glMesh.h>
-OpenSubdiv::OsdGLMeshInterface *g_mesh;
+OpenSubdiv::Osd::GLMeshInterface *g_mesh;
 
 #include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
@@ -234,16 +234,16 @@ createOsdMesh() {
     g_mesh = NULL;
 
     bool doAdaptive = true;
-    OpenSubdiv::OsdMeshBitset bits;
-    bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
-    bits.set(OpenSubdiv::MeshPtexData, true);
+    OpenSubdiv::Osd::MeshBitset bits;
+    bits.set(OpenSubdiv::Osd::MeshAdaptive, doAdaptive);
+    bits.set(OpenSubdiv::Osd::MeshPtexData, true);
 
     if (not g_cpuComputeController) {
-        g_cpuComputeController = new OpenSubdiv::OsdCpuComputeController();
+        g_cpuComputeController = new OpenSubdiv::Osd::CpuComputeController();
     }
-    g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
-        OpenSubdiv::OsdCpuComputeController,
-        OpenSubdiv::OsdGLDrawContext>(
+    g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
+        OpenSubdiv::Osd::CpuComputeController,
+        OpenSubdiv::Osd::GLDrawContext>(
             g_cpuComputeController,
             refiner, 3, 0, g_level, bits);
 
@@ -344,9 +344,9 @@ union Effect {
     }
 };
 
-typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor,Effect> EffectDesc;
+typedef std::pair<OpenSubdiv::Osd::DrawContext::PatchDescriptor,Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc> {
+class EffectDrawRegistry : public OpenSubdiv::Osd::GLDrawRegistry<EffectDesc> {
 
 protected:
     virtual ConfigType *
@@ -465,7 +465,7 @@ EffectDrawRegistry effectRegistry;
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
+bindProgram(Effect effect, OpenSubdiv::Osd::DrawContext::PatchArray const & patch)
 {
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
     EffectDrawRegistry::ConfigType *
@@ -639,13 +639,13 @@ display() {
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+    OpenSubdiv::Osd::DrawContext::PatchArrayVector const & patches =
         g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
 
         GLenum primType = GL_PATCHES;
         glPatchParameteri(GL_PATCH_VERTICES, desc.GetNumControlVertices());
@@ -806,14 +806,14 @@ drawStroke(int x, int y)
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+    OpenSubdiv::Osd::DrawContext::PatchArrayVector const & patches =
         g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {
 
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
 
         GLenum primType = GL_PATCHES;
         glPatchParameteri(GL_PATCH_VERTICES, desc.GetNumControlVertices());
@@ -1091,7 +1091,7 @@ idle() {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
+callbackError(OpenSubdiv::Osd::ErrorType err, const char *message)
 {
     printf("OsdError: %d\n", err);
     printf("%s", message);
@@ -1139,7 +1139,7 @@ int main(int argc, char ** argv)
         }
     }
     initShapes();
-    OsdSetErrorCallback(callbackError);
+    OpenSubdiv::Osd::SetErrorCallback(callbackError);
 
     if (not glfwInit()) {
         printf("Failed to initialize GLFW\n");

@@ -27,7 +27,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCpuSmoothNormalContext::OsdCpuSmoothNormalContext(
+namespace Osd {
+
+CpuSmoothNormalContext::CpuSmoothNormalContext(
     Far::PatchTables const *patchTables, bool resetMemory) :
         _numVertices(0), _resetMemory(resetMemory) {
 
@@ -37,12 +39,13 @@ OsdCpuSmoothNormalContext::OsdCpuSmoothNormalContext(
     _patchArrays = patchTables->GetPatchArrayVector();
 }
 
-OsdCpuSmoothNormalContext *
-OsdCpuSmoothNormalContext::Create(Far::PatchTables const *patchTables, bool resetMemory) {
+CpuSmoothNormalContext *
+CpuSmoothNormalContext::Create(Far::PatchTables const *patchTables, bool resetMemory) {
 
-    return new OsdCpuSmoothNormalContext(patchTables, resetMemory);
+    return new CpuSmoothNormalContext(patchTables, resetMemory);
 }
 
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

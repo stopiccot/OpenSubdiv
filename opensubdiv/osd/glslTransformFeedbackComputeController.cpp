@@ -42,6 +42,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 static const char *shaderSource =
 #include "../osd/glslTransformFeedbackKernel.gen.h"
 ;
@@ -72,8 +74,8 @@ bindTexture(GLint sampler, GLuint texture, int unit) {
 
 // ----------------------------------------------------------------------------
 
-class OsdGLSLTransformFeedbackComputeController::KernelBundle :
-    OsdNonCopyable<OsdGLSLTransformFeedbackComputeController::KernelBundle> {
+class GLSLTransformFeedbackComputeController::KernelBundle :
+    NonCopyable<GLSLTransformFeedbackComputeController::KernelBundle> {
 
 public:
 
@@ -98,9 +100,9 @@ public:
         glUniform1i(_uniformOffset, primvarOffset);
     }
 
-    bool Compile(OsdVertexBufferDescriptor const & desc) {
+    bool Compile(VertexBufferDescriptor const & desc) {
 
-        _desc = OsdVertexBufferDescriptor(0, desc.length, desc.stride);
+        _desc = VertexBufferDescriptor(0, desc.length, desc.stride);
 
         if (_program) {
             glDeleteProgram(_program);
@@ -163,10 +165,10 @@ public:
         if (linked == GL_FALSE) {
             char buffer[1024];
             glGetShaderInfoLog(shader, 1024, NULL, buffer);
-            OsdError(OSD_GLSL_LINK_ERROR, buffer);
+            Error(OSD_GLSL_LINK_ERROR, buffer);
 
             glGetProgramInfoLog(_program, 1024, NULL, buffer);
-            OsdError(OSD_GLSL_LINK_ERROR, buffer);
+            Error(OSD_GLSL_LINK_ERROR, buffer);
 
             glDeleteProgram(_program);
             _program = 0;
@@ -252,14 +254,14 @@ public:
 
     struct Match {
 
-        Match(OsdVertexBufferDescriptor const & d) : desc(d) { }
+        Match(VertexBufferDescriptor const & d) : desc(d) { }
 
         bool operator() (KernelBundle const * kernel) {
             return (desc.length==kernel->_desc.length and
                     desc.stride==kernel->_desc.stride);
         }
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
     };
 
 private:
@@ -280,12 +282,12 @@ private:
 
           _uniformOffset;    // GL primvar buffer descriptor
 
-    OsdVertexBufferDescriptor _desc; // primvar buffer descriptor
+    VertexBufferDescriptor _desc; // primvar buffer descriptor
 };
 
 // ----------------------------------------------------------------------------
 void
-OsdGLSLTransformFeedbackComputeController::bindBufferAndProgram(
+GLSLTransformFeedbackComputeController::bindBufferAndProgram(
     GLuint & feedbackTexture) {
 
     glEnable(GL_RASTERIZER_DISCARD);
@@ -319,7 +321,7 @@ OsdGLSLTransformFeedbackComputeController::bindBufferAndProgram(
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLTransformFeedbackComputeController::bindContextStencilTables(
+GLSLTransformFeedbackComputeController::bindContextStencilTables(
     ComputeContext const *context, bool varying) {
 
     GLint sizesLocation   = _currentBindState.kernelBundle->GetSizesLocation(),
@@ -343,7 +345,7 @@ OsdGLSLTransformFeedbackComputeController::bindContextStencilTables(
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLTransformFeedbackComputeController::unbindResources() {
+GLSLTransformFeedbackComputeController::unbindResources() {
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -358,9 +360,9 @@ OsdGLSLTransformFeedbackComputeController::unbindResources() {
 
 // ----------------------------------------------------------------------------
 
-OsdGLSLTransformFeedbackComputeController::KernelBundle const *
-OsdGLSLTransformFeedbackComputeController::getKernel(
-    OsdVertexBufferDescriptor const &desc) {
+GLSLTransformFeedbackComputeController::KernelBundle const *
+GLSLTransformFeedbackComputeController::getKernel(
+    VertexBufferDescriptor const &desc) {
 
     KernelRegistry::iterator it =
         std::find_if(_kernelRegistry.begin(), _kernelRegistry.end(),
@@ -379,9 +381,9 @@ OsdGLSLTransformFeedbackComputeController::getKernel(
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLTransformFeedbackComputeController::ApplyStencilTableKernel(
+GLSLTransformFeedbackComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch,
-        OsdGLSLTransformFeedbackComputeContext const *context) const {
+        GLSLTransformFeedbackComputeContext const *context) const {
 
     assert(context);
 
@@ -393,11 +395,11 @@ OsdGLSLTransformFeedbackComputeController::ApplyStencilTableKernel(
 
 // ----------------------------------------------------------------------------
 
-OsdGLSLTransformFeedbackComputeController::OsdGLSLTransformFeedbackComputeController() :
+GLSLTransformFeedbackComputeController::GLSLTransformFeedbackComputeController() :
     _vertexTexture(0), _varyingTexture(0), _vao(0) {
 }
 
-OsdGLSLTransformFeedbackComputeController::~OsdGLSLTransformFeedbackComputeController() {
+GLSLTransformFeedbackComputeController::~GLSLTransformFeedbackComputeController() {
 
     for (KernelRegistry::iterator it = _kernelRegistry.begin();
         it != _kernelRegistry.end(); ++it) {
@@ -414,11 +416,13 @@ OsdGLSLTransformFeedbackComputeController::~OsdGLSLTransformFeedbackComputeContr
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLTransformFeedbackComputeController::Synchronize() {
+GLSLTransformFeedbackComputeController::Synchronize() {
     glFinish();
 }
 
 
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

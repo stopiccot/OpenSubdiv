@@ -35,7 +35,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class Far::StencilTables;
+namespace Far{ class StencilTables; }
+
+namespace Osd {
 
 ///
 /// \brief GLSL-Compute Refine Context
@@ -46,10 +48,10 @@ class Far::StencilTables;
 /// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
-class OsdGLSLComputeContext {
+class GLSLComputeContext {
 
 public:
-    /// Creates an OsdGLSLComputeContext instance
+    /// Creates an GLSLComputeContext instance
     ///
     /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
@@ -57,11 +59,11 @@ public:
     /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
-    static OsdGLSLComputeContext * Create(Far::StencilTables const * vertexStencilTables,
+    static GLSLComputeContext * Create(Far::StencilTables const * vertexStencilTables,
                                           Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
-    virtual ~OsdGLSLComputeContext();
+    virtual ~GLSLComputeContext();
 
     /// Returns true if the Context has a 'vertex' interpolation stencil table
     bool HasVertexStencilTables() const;
@@ -91,7 +93,7 @@ public:
 
 protected:
 
-    explicit OsdGLSLComputeContext(Far::StencilTables const * vertexStencilTables,
+    explicit GLSLComputeContext(Far::StencilTables const * vertexStencilTables,
                                    Far::StencilTables const * varyingStencilTables);
 
 private:
@@ -103,6 +105,8 @@ private:
 
     int _numControlVertices;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

@@ -33,6 +33,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 // -----------------------------------------------------------------------------
 
 template <class T> GLuint
@@ -76,7 +78,7 @@ createGLTextureBuffer(std::vector<T> const & src, GLenum type) {
 
 // -----------------------------------------------------------------------------
 
-class OsdGLSLTransformFeedbackComputeContext::GLStencilTables {
+class GLSLTransformFeedbackComputeContext::GLStencilTables {
 
 public:
 
@@ -124,7 +126,7 @@ private:
 
 // -----------------------------------------------------------------------------
 
-OsdGLSLTransformFeedbackComputeContext::OsdGLSLTransformFeedbackComputeContext(
+GLSLTransformFeedbackComputeContext::GLSLTransformFeedbackComputeContext(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
@@ -146,7 +148,7 @@ OsdGLSLTransformFeedbackComputeContext::OsdGLSLTransformFeedbackComputeContext(
     }
 }
 
-OsdGLSLTransformFeedbackComputeContext::~OsdGLSLTransformFeedbackComputeContext() {
+GLSLTransformFeedbackComputeContext::~GLSLTransformFeedbackComputeContext() {
     delete _vertexStencilTables;
     delete _varyingStencilTables;
 }
@@ -154,69 +156,69 @@ OsdGLSLTransformFeedbackComputeContext::~OsdGLSLTransformFeedbackComputeContext(
 // ----------------------------------------------------------------------------
 
 bool
-OsdGLSLTransformFeedbackComputeContext::HasVertexStencilTables() const {
+GLSLTransformFeedbackComputeContext::HasVertexStencilTables() const {
     return _vertexStencilTables ? _vertexStencilTables->IsValid() : false;
 }
 
 bool
-OsdGLSLTransformFeedbackComputeContext::HasVaryingStencilTables() const {
+GLSLTransformFeedbackComputeContext::HasVaryingStencilTables() const {
     return _varyingStencilTables ? _varyingStencilTables->IsValid() : false;
 }
 
 // ----------------------------------------------------------------------------
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVertexStencilTablesSizes() const {
+GLSLTransformFeedbackComputeContext::GetVertexStencilTablesSizes() const {
     return _vertexStencilTables ? _vertexStencilTables->GetSizes() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVertexStencilTablesOffsets() const {
+GLSLTransformFeedbackComputeContext::GetVertexStencilTablesOffsets() const {
     return _vertexStencilTables ? _vertexStencilTables->GetOffsets() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVertexStencilTablesIndices() const {
+GLSLTransformFeedbackComputeContext::GetVertexStencilTablesIndices() const {
     return _vertexStencilTables ? _vertexStencilTables->GetIndices() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVertexStencilTablesWeights() const {
+GLSLTransformFeedbackComputeContext::GetVertexStencilTablesWeights() const {
     return _vertexStencilTables ? _vertexStencilTables->GetWeights() : 0;
 }
 
 // ----------------------------------------------------------------------------
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVaryingStencilTablesSizes() const {
+GLSLTransformFeedbackComputeContext::GetVaryingStencilTablesSizes() const {
     return _varyingStencilTables ? _varyingStencilTables->GetSizes() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVaryingStencilTablesOffsets() const {
+GLSLTransformFeedbackComputeContext::GetVaryingStencilTablesOffsets() const {
     return _varyingStencilTables ? _varyingStencilTables->GetOffsets() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVaryingStencilTablesIndices() const {
+GLSLTransformFeedbackComputeContext::GetVaryingStencilTablesIndices() const {
     return _varyingStencilTables ? _varyingStencilTables->GetIndices() : 0;
 }
 
 GLuint
-OsdGLSLTransformFeedbackComputeContext::GetVaryingStencilTablesWeights() const {
+GLSLTransformFeedbackComputeContext::GetVaryingStencilTablesWeights() const {
     return _varyingStencilTables ? _varyingStencilTables->GetWeights() : 0;
 }
 
 
 // -----------------------------------------------------------------------------
 
-OsdGLSLTransformFeedbackComputeContext *
-OsdGLSLTransformFeedbackComputeContext::Create(
+GLSLTransformFeedbackComputeContext *
+GLSLTransformFeedbackComputeContext::Create(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) {
 
-    OsdGLSLTransformFeedbackComputeContext *result =
-        new OsdGLSLTransformFeedbackComputeContext(
+    GLSLTransformFeedbackComputeContext *result =
+        new GLSLTransformFeedbackComputeContext(
             vertexStencilTables, varyingStencilTables);
 
     return result;
@@ -224,6 +226,8 @@ OsdGLSLTransformFeedbackComputeContext::Create(
 
 
 // -----------------------------------------------------------------------------
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

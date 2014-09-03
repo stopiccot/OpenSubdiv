@@ -38,7 +38,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class OsdCpuEvalLimitContext : public OsdEvalLimitContext {
+namespace Osd {
+
+class CpuEvalLimitContext : public EvalLimitContext {
 public:
 
     /// \brief Factory
@@ -50,10 +52,10 @@ public:
     ///
     /// @param requireFVarData  flag for generating face-varying data
     ///
-    static OsdCpuEvalLimitContext * Create(Far::PatchTables const &patchTables,
+    static CpuEvalLimitContext * Create(Far::PatchTables const &patchTables,
                                            bool requireFVarData=false);
 
-    virtual ~OsdCpuEvalLimitContext();
+    virtual ~CpuEvalLimitContext();
 
 
     /// Returns the vector of patch arrays
@@ -102,7 +104,7 @@ public:
     }
 
 protected:
-    explicit OsdCpuEvalLimitContext(Far::PatchTables const & patchTables, bool requireFVarData);
+    explicit CpuEvalLimitContext(Far::PatchTables const & patchTables, bool requireFVarData);
 
 private:
 
@@ -122,6 +124,8 @@ private:
         _fvarwidth;
 };
 
+
+} // end namespace Osd
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

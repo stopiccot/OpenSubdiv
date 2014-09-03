@@ -30,13 +30,15 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdGLDrawContext::OsdGLDrawContext() :
+namespace Osd {
+
+GLDrawContext::GLDrawContext() :
     _patchIndexBuffer(0), _patchParamTextureBuffer(0), _fvarDataTextureBuffer(0),
     _vertexTextureBuffer(0), _vertexValenceTextureBuffer(0), _quadOffsetsTextureBuffer(0)
 {
 }
 
-OsdGLDrawContext::~OsdGLDrawContext()
+GLDrawContext::~GLDrawContext()
 {
     glDeleteBuffers(1, &_patchIndexBuffer);
     glDeleteTextures(1, &_vertexTextureBuffer);
@@ -47,7 +49,7 @@ OsdGLDrawContext::~OsdGLDrawContext()
 }
 
 bool
-OsdGLDrawContext::SupportsAdaptiveTessellation()
+GLDrawContext::SupportsAdaptiveTessellation()
 {
 #ifdef OSD_USES_GLEW
     // XXX: uncomment here to try tessellation on OSX
@@ -95,12 +97,12 @@ createTextureBuffer(T const &data, GLint format, int offset=0)
     return texture;
 }
 
-OsdGLDrawContext *
-OsdGLDrawContext::Create(Far::PatchTables const * patchTables, int numVertexElements) {
+GLDrawContext *
+GLDrawContext::Create(Far::PatchTables const * patchTables, int numVertexElements) {
 
     if (patchTables) {
 
-        OsdGLDrawContext * result = new OsdGLDrawContext();
+        GLDrawContext * result = new GLDrawContext();
 
         if (result->create(*patchTables, numVertexElements)) {
             return result;
@@ -112,7 +114,7 @@ OsdGLDrawContext::Create(Far::PatchTables const * patchTables, int numVertexElem
 }
 
 bool
-OsdGLDrawContext::create(Far::PatchTables const & patchTables, int numVertexElements) {
+GLDrawContext::create(Far::PatchTables const & patchTables, int numVertexElements) {
 
     _isAdaptive = patchTables.IsFeatureAdaptive();
 
@@ -135,7 +137,7 @@ OsdGLDrawContext::create(Far::PatchTables const & patchTables, int numVertexElem
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    OsdDrawContext::ConvertPatchArrays(patchTables.GetPatchArrayVector(),
+    DrawContext::ConvertPatchArrays(patchTables.GetPatchArrayVector(),
         _patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
     // allocate and initialize additional buffer data
@@ -175,7 +177,7 @@ OsdGLDrawContext::create(Far::PatchTables const & patchTables, int numVertexElem
 }
 
 bool
-OsdGLDrawContext::SetFVarDataTexture(
+GLDrawContext::SetFVarDataTexture(
     Far::PatchTables const & patchTables, int fvarWidth, FVarData const & fvarData) {
 
     if (not fvarData.empty()) {
@@ -192,7 +194,7 @@ OsdGLDrawContext::SetFVarDataTexture(
 }
 
 void
-OsdGLDrawContext::updateVertexTexture(GLuint vbo)
+GLDrawContext::updateVertexTexture(GLuint vbo)
 {
 #if defined(GL_ARB_texture_buffer_object) || defined(GL_VERSION_3_1)
 
@@ -212,5 +214,7 @@ OsdGLDrawContext::updateVertexTexture(GLuint vbo)
 }
 
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

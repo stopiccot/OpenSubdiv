@@ -36,6 +36,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 static const char *clSource =
 #include "clKernel.gen.h"
 ;
@@ -48,23 +50,23 @@ static cl_kernel buildKernel(cl_program prog, const char * name) {
     cl_kernel k = clCreateKernel(prog, name, &errNum);
 
     if (errNum != CL_SUCCESS) {
-        OsdError(OSD_CL_KERNEL_CREATE_ERROR, "buildKernel '%s' (%d)\n", name, errNum);
+        Error(OSD_CL_KERNEL_CREATE_ERROR, "buildKernel '%s' (%d)\n", name, errNum);
     }
     return k;
 }
 
 // -----------------------------------------------------------------------------
 
-class OsdCLComputeController::KernelBundle :
-    OsdNonCopyable<OsdCLComputeController::KernelBundle> {
+class CLComputeController::KernelBundle :
+    NonCopyable<CLComputeController::KernelBundle> {
 
 public:
 
-    bool Compile(cl_context clContext, OsdVertexBufferDescriptor const & desc) {
+    bool Compile(cl_context clContext, VertexBufferDescriptor const & desc) {
 
         cl_int errNum;
 
-        _desc = OsdVertexBufferDescriptor(0, desc.length, desc.stride);
+        _desc = VertexBufferDescriptor(0, desc.length, desc.stride);
 
         std::ostringstream defines;
         defines << "#define OFFSET " << _desc.offset << "\n"
@@ -75,13 +77,13 @@ public:
         const char *sources[] = { defineStr.c_str(), clSource };
         _program = clCreateProgramWithSource(clContext, 2, sources, 0, &errNum);
         if (errNum!=CL_SUCCESS) {
-            OsdError(OSD_CL_PROGRAM_BUILD_ERROR,
+            Error(OSD_CL_PROGRAM_BUILD_ERROR,
                 "clCreateProgramWithSource (%d)", errNum);
         }
 
         errNum = clBuildProgram(_program, 0, NULL, NULL, NULL, NULL);
         if (errNum != CL_SUCCESS) {
-            OsdError(OSD_CL_PROGRAM_BUILD_ERROR, "clBuildProgram (%d) \n", errNum);
+            Error(OSD_CL_PROGRAM_BUILD_ERROR, "clBuildProgram (%d) \n", errNum);
 
             cl_int numDevices = 0;
             clGetContextInfo(clContext,
@@ -95,7 +97,7 @@ public:
                 char cBuildLog[10240];
                 clGetProgramBuildInfo(_program, devices[i],
                     CL_PROGRAM_BUILD_LOG, sizeof(cBuildLog), cBuildLog, NULL);
-                OsdError(OSD_CL_PROGRAM_BUILD_ERROR, cBuildLog);
+                Error(OSD_CL_PROGRAM_BUILD_ERROR, cBuildLog);
             }
             delete[] devices;
 
@@ -114,14 +116,14 @@ public:
 
     struct Match {
 
-        Match(OsdVertexBufferDescriptor const & d) : desc(d) { }
+        Match(VertexBufferDescriptor const & d) : desc(d) { }
 
         bool operator() (KernelBundle const * kernel) {
             return (desc.length==kernel->_desc.length and
                     desc.stride==kernel->_desc.stride);
         }
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
     };
 
 private:
@@ -130,13 +132,13 @@ private:
 
     cl_kernel _stencilsKernel;
 
-    OsdVertexBufferDescriptor _desc;
+    VertexBufferDescriptor _desc;
 };
 
 // ----------------------------------------------------------------------------
 
 void
-OsdCLComputeController::ApplyStencilTableKernel(
+CLComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch, ComputeContext const *context) {
 
     assert(context);
@@ -174,7 +176,7 @@ OsdCLComputeController::ApplyStencilTableKernel(
         errNum = clEnqueueNDRangeKernel(
             _clQueue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, NULL);
         if (errNum!=CL_SUCCESS) {
-            OsdError(OSD_CL_RUNTIME_ERROR,
+            Error(OSD_CL_RUNTIME_ERROR,
                 "ApplyStencilTableKernel (%d) ", errNum);
         }
     }
@@ -206,7 +208,7 @@ OsdCLComputeController::ApplyStencilTableKernel(
         errNum = clEnqueueNDRangeKernel(
             _clQueue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, NULL);
         if (errNum!=CL_SUCCESS) {
-            OsdError(OSD_CL_RUNTIME_ERROR,
+            Error(OSD_CL_RUNTIME_ERROR,
                 "ApplyStencilTableKernel (%d)", errNum);
         }
     }
@@ -215,8 +217,8 @@ OsdCLComputeController::ApplyStencilTableKernel(
 
 // ----------------------------------------------------------------------------
 
-OsdCLComputeController::KernelBundle const *
-OsdCLComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
+CLComputeController::KernelBundle const *
+CLComputeController::getKernel(VertexBufferDescriptor const &desc) {
 
     KernelRegistry::iterator it =
         std::find_if(_kernelRegistry.begin(), _kernelRegistry.end(),
@@ -234,12 +236,12 @@ OsdCLComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
 
 // ----------------------------------------------------------------------------
 
-OsdCLComputeController::OsdCLComputeController(
+CLComputeController::CLComputeController(
     cl_context clContext, cl_command_queue queue) :
          _clContext(clContext), _clQueue(queue) {
 }
 
-OsdCLComputeController::~OsdCLComputeController() {
+CLComputeController::~CLComputeController() {
     for (KernelRegistry::iterator it = _kernelRegistry.begin();
         it != _kernelRegistry.end(); ++it) {
         delete *it;
@@ -249,13 +251,15 @@ OsdCLComputeController::~OsdCLComputeController() {
 // ----------------------------------------------------------------------------
 
 void
-OsdCLComputeController::Synchronize() {
+CLComputeController::Synchronize() {
 
     clFinish(_clQueue);
 }
 
 
 // -----------------------------------------------------------------------------
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

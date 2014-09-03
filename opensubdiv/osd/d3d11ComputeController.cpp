@@ -38,6 +38,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
 static const char *shaderSource =
@@ -60,8 +62,8 @@ struct KernelUniformArgs {
 
 // ----------------------------------------------------------------------------
 
-class OsdD3D11ComputeController::KernelBundle :
-    OsdNonCopyable<OsdD3D11ComputeController::KernelBundle> {
+class D3D11ComputeController::KernelBundle :
+    NonCopyable<D3D11ComputeController::KernelBundle> {
 
 public:
 
@@ -81,9 +83,9 @@ public:
 
 
     bool Compile(ID3D11DeviceContext *deviceContext,
-        OsdVertexBufferDescriptor const &desc) {
+        VertexBufferDescriptor const &desc) {
 
-        _desc = OsdVertexBufferDescriptor(0, desc.length, desc.stride);
+        _desc = VertexBufferDescriptor(0, desc.length, desc.stride);
 
         DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
     #ifdef _DEBUG
@@ -114,7 +116,7 @@ public:
                                 &computeShaderBuffer, &errorBuffer);
         if (FAILED(hr)) {
             if (errorBuffer != NULL) {
-                OsdError(OSD_D3D11_COMPILE_ERROR,
+                Error(OSD_D3D11_COMPILE_ERROR,
                          "Error compiling HLSL shader: %s\n",
                          (CHAR*)errorBuffer->GetBufferPointer());
                 errorBuffer->Release();
@@ -167,14 +169,14 @@ public:
 
     struct Match {
 
-        Match(OsdVertexBufferDescriptor const & d) : desc(d) { }
+        Match(VertexBufferDescriptor const & d) : desc(d) { }
 
         bool operator() (KernelBundle const * kernel) {
             return (desc.length==kernel->_desc.length and
                     desc.stride==kernel->_desc.stride);
         }
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
     };
 
 private:
@@ -226,14 +228,14 @@ private:
 
     ID3D11Buffer * _uniformArgs; // uniform paramaeters for kernels
 
-    OsdVertexBufferDescriptor _desc; // primvar buffer descriptor
+    VertexBufferDescriptor _desc; // primvar buffer descriptor
 
     int _workGroupSize;
 };
 
 // ----------------------------------------------------------------------------
 void
-OsdD3D11ComputeController::Synchronize() {
+D3D11ComputeController::Synchronize() {
 
     if (not _query) {
         ID3D11Device *device = NULL;
@@ -252,8 +254,8 @@ OsdD3D11ComputeController::Synchronize() {
 
 // ----------------------------------------------------------------------------
 
-OsdD3D11ComputeController::KernelBundle const *
-OsdD3D11ComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
+D3D11ComputeController::KernelBundle const *
+D3D11ComputeController::getKernel(VertexBufferDescriptor const &desc) {
 
     KernelRegistry::iterator it =
         std::find_if(_kernelRegistry.begin(), _kernelRegistry.end(),
@@ -271,7 +273,7 @@ OsdD3D11ComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
 }
 
 void
-OsdD3D11ComputeController::bindBuffer() {
+D3D11ComputeController::bindBuffer() {
 
     // Unbind the vertexBuffer from the input assembler
     ID3D11Buffer *NULLBuffer = 0;
@@ -287,7 +289,7 @@ OsdD3D11ComputeController::bindBuffer() {
 }
 
 void
-OsdD3D11ComputeController::unbindBuffer() {
+D3D11ComputeController::unbindBuffer() {
     assert(_deviceContext);
     ID3D11UnorderedAccessView *UAViews[] = { 0 };
     _deviceContext->CSSetUnorderedAccessViews(0, 1, UAViews, 0); // u0
@@ -296,14 +298,14 @@ OsdD3D11ComputeController::unbindBuffer() {
 // ----------------------------------------------------------------------------
 
 void
-OsdD3D11ComputeController::ApplyStencilTableKernel(
-    Far::KernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+D3D11ComputeController::ApplyStencilTableKernel(
+    Far::KernelBatch const &batch, D3D11ComputeContext const *context) const {
 
     assert(context);
 
     // XXXX manuelk messy const drop forced by D3D API - could use better solution
-    OsdD3D11ComputeController::KernelBundle * bundle =
-        const_cast<OsdD3D11ComputeController::KernelBundle *>(_currentBindState.kernelBundle);
+    D3D11ComputeController::KernelBundle * bundle =
+        const_cast<D3D11ComputeController::KernelBundle *>(_currentBindState.kernelBundle);
 
     bundle->ApplyStencilTableKernel(_deviceContext,
         batch, _currentBindState.desc.offset, context->GetNumControlVertices());
@@ -312,12 +314,12 @@ OsdD3D11ComputeController::ApplyStencilTableKernel(
 
 // ----------------------------------------------------------------------------
 
-OsdD3D11ComputeController::OsdD3D11ComputeController(
+D3D11ComputeController::D3D11ComputeController(
     ID3D11DeviceContext *deviceContext)
     : _deviceContext(deviceContext), _query(0) {
 }
 
-OsdD3D11ComputeController::~OsdD3D11ComputeController() {
+D3D11ComputeController::~D3D11ComputeController() {
 
     for (KernelRegistry::iterator it = _kernelRegistry.begin();
         it != _kernelRegistry.end(); ++it) {
@@ -325,6 +327,8 @@ OsdD3D11ComputeController::~OsdD3D11ComputeController() {
     }
     SAFE_RELEASE(_query);
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

@@ -62,7 +62,7 @@ getAdaptivePatchColor(FarPatchTables::Descriptor const & desc) {
 }
 
 float const *
-getAdaptivePatchColor(OpenSubdiv::OsdDrawContext::PatchDescriptor const & desc) {
+getAdaptivePatchColor(OpenSubdiv::Osd::DrawContext::PatchDescriptor const & desc) {
 
     if (desc.GetPattern()==FarPatchTables::NON_TRANSITION) {
         return _colors[0][(int)(desc.GetType()-FarPatchTables::REGULAR)];

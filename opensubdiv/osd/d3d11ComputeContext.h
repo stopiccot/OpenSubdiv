@@ -34,7 +34,9 @@ struct ID3D11DeviceContext;
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class Far::StencilTables;
+namespace Far{ class StencilTables; }
+
+namespace Osd {
 
 ///
 /// \brief D3D Refine Context
@@ -45,10 +47,10 @@ class Far::StencilTables;
 /// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
-class OsdD3D11ComputeContext : public OsdNonCopyable<OsdD3D11ComputeContext> {
+class D3D11ComputeContext : public NonCopyable<D3D11ComputeContext> {
 public:
 
-    /// Creates an OsdD3D11ComputeContext instance
+    /// Creates an D3D11ComputeContext instance
     ///
     /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
@@ -58,12 +60,12 @@ public:
     ///
     /// @param deviceContext         The D3D device
     ///
-    static OsdD3D11ComputeContext * Create(ID3D11DeviceContext *deviceContext,
+    static D3D11ComputeContext * Create(ID3D11DeviceContext *deviceContext,
                                            Far::StencilTables const * vertexStencilTables,
                                            Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
-    virtual ~OsdD3D11ComputeContext();
+    virtual ~D3D11ComputeContext();
 
     /// Returns true if the Context has a 'vertex' interpolation stencil table
     bool HasVertexStencilTables() const;
@@ -96,7 +98,7 @@ public:
 
 protected:
 
-    explicit OsdD3D11ComputeContext(ID3D11DeviceContext *deviceContext,
+    explicit D3D11ComputeContext(ID3D11DeviceContext *deviceContext,
                                     Far::StencilTables const * vertexStencilTables,
                                     Far::StencilTables const * varyingStencilTables);
 
@@ -109,6 +111,8 @@ private:
 
     int _numControlVertices;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

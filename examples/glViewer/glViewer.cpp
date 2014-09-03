@@ -50,7 +50,7 @@ GLFWmonitor* g_primary=0;
 #include <osd/cpuGLVertexBuffer.h>
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
-OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
+OpenSubdiv::Osd::CpuComputeController *g_cpuComputeController = NULL;
 
 #ifdef OPENSUBDIV_HAS_OPENMP
     #include <osd/ompComputeController.h>
@@ -59,7 +59,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 
 #ifdef OPENSUBDIV_HAS_TBB
     #include <osd/tbbComputeController.h>
-    OpenSubdiv::OsdTbbComputeController *g_tbbComputeController = NULL;
+    OpenSubdiv::Osd::TbbComputeController *g_tbbComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_OPENCL
@@ -71,7 +71,7 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 
     cl_context g_clContext;
     cl_command_queue g_clQueue;
-    OpenSubdiv::OsdCLComputeController *g_clComputeController = NULL;
+    OpenSubdiv::Osd::CLComputeController *g_clComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
@@ -85,25 +85,25 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
     #include "../common/cudaInit.h"
 
     bool g_cudaInitialized = false;
-    OpenSubdiv::OsdCudaComputeController *g_cudaComputeController = NULL;
+    OpenSubdiv::Osd::CudaComputeController *g_cudaComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     #include <osd/glslTransformFeedbackComputeContext.h>
     #include <osd/glslTransformFeedbackComputeController.h>
     #include <osd/glVertexBuffer.h>
-    OpenSubdiv::OsdGLSLTransformFeedbackComputeController *g_glslTransformFeedbackComputeController = NULL;
+    OpenSubdiv::Osd::GLSLTransformFeedbackComputeController *g_glslTransformFeedbackComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     #include <osd/glslComputeContext.h>
     #include <osd/glslComputeController.h>
     #include <osd/glVertexBuffer.h>
-    OpenSubdiv::OsdGLSLComputeController *g_glslComputeController = NULL;
+    OpenSubdiv::Osd::GLSLComputeController *g_glslComputeController = NULL;
 #endif
 
 #include <osd/glMesh.h>
-OpenSubdiv::OsdGLMeshInterface *g_mesh;
+OpenSubdiv::Osd::GLMeshInterface *g_mesh;
 
 #include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
@@ -433,8 +433,8 @@ updateGeom() {
     s.Start();
 
     if (g_displayStyle == kInterleavedVaryingColor) {
-        OpenSubdiv::OsdVertexBufferDescriptor vertexDesc(0, 3, 7);
-        OpenSubdiv::OsdVertexBufferDescriptor varyingDesc(3, 4, 7);
+        OpenSubdiv::Osd::VertexBufferDescriptor vertexDesc(0, 3, 7);
+        OpenSubdiv::Osd::VertexBufferDescriptor varyingDesc(3, 4, 7);
         g_mesh->Refine(&vertexDesc, &varyingDesc, true);
     } else {
         g_mesh->Refine();
@@ -525,10 +525,10 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark),
          interleaveVarying = g_displayStyle == kInterleavedVaryingColor;
 
-    OpenSubdiv::OsdMeshBitset bits;
-    bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
-    bits.set(OpenSubdiv::MeshInterleaveVarying, interleaveVarying);
-    bits.set(OpenSubdiv::MeshFVarData, g_displayStyle == kFaceVaryingColor);
+    OpenSubdiv::Osd::MeshBitset bits;
+    bits.set(OpenSubdiv::Osd::MeshAdaptive, doAdaptive);
+    bits.set(OpenSubdiv::Osd::MeshInterleaveVarying, interleaveVarying);
+    bits.set(OpenSubdiv::Osd::MeshFVarData, g_displayStyle == kFaceVaryingColor);
 
     int numVertexElements = 3;
     int numVaryingElements =
@@ -536,11 +536,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 
     if (kernel == kCPU) {
         if (not g_cpuComputeController) {
-            g_cpuComputeController = new OpenSubdiv::OsdCpuComputeController();
+            g_cpuComputeController = new OpenSubdiv::Osd::CpuComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
-                                         OpenSubdiv::OsdCpuComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
+                                         OpenSubdiv::Osd::CpuComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                                 g_cpuComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -551,9 +551,9 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
         if (not g_ompComputeController) {
             g_ompComputeController = new OpenSubdiv::OsdOmpComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
                                          OpenSubdiv::OsdOmpComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                                 g_ompComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -563,11 +563,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_TBB
     } else if (kernel == kTBB) {
         if (not g_tbbComputeController) {
-            g_tbbComputeController = new OpenSubdiv::OsdTbbComputeController();
+            g_tbbComputeController = new OpenSubdiv::Osd::TbbComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
-                                         OpenSubdiv::OsdTbbComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
+                                         OpenSubdiv::Osd::TbbComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                                 g_tbbComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -577,11 +577,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if(kernel == kCL) {
         if (not g_clComputeController) {
-            g_clComputeController = new OpenSubdiv::OsdCLComputeController(g_clContext, g_clQueue);
+            g_clComputeController = new OpenSubdiv::Osd::CLComputeController(g_clContext, g_clQueue);
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCLGLVertexBuffer,
-                                         OpenSubdiv::OsdCLComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CLGLVertexBuffer,
+                                         OpenSubdiv::Osd::CLComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                                 g_clComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -591,11 +591,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if(kernel == kCUDA) {
         if (not g_cudaComputeController) {
-            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController();
+            g_cudaComputeController = new OpenSubdiv::Osd::CudaComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCudaGLVertexBuffer,
-                                         OpenSubdiv::OsdCudaComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CudaGLVertexBuffer,
+                                         OpenSubdiv::Osd::CudaComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                          g_cudaComputeController,
                                          refiner,
                                          numVertexElements,
@@ -605,11 +605,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     } else if(kernel == kGLSL) {
         if (not g_glslTransformFeedbackComputeController) {
-            g_glslTransformFeedbackComputeController = new OpenSubdiv::OsdGLSLTransformFeedbackComputeController();
+            g_glslTransformFeedbackComputeController = new OpenSubdiv::Osd::GLSLTransformFeedbackComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdGLVertexBuffer,
-                                         OpenSubdiv::OsdGLSLTransformFeedbackComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::GLVertexBuffer,
+                                         OpenSubdiv::Osd::GLSLTransformFeedbackComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                                 g_glslTransformFeedbackComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -619,11 +619,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_GLSL_COMPUTE
     } else if(kernel == kGLSLCompute) {
         if (not g_glslComputeController) {
-            g_glslComputeController = new OpenSubdiv::OsdGLSLComputeController();
+            g_glslComputeController = new OpenSubdiv::Osd::GLSLComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdGLVertexBuffer,
-                                         OpenSubdiv::OsdGLSLComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::GLVertexBuffer,
+                                         OpenSubdiv::Osd::GLSLComputeController,
+                                         OpenSubdiv::Osd::GLDrawContext>(
                                          g_glslComputeController,
                                          refiner,
                                          numVertexElements,
@@ -820,9 +820,9 @@ union Effect {
     }
 };
 
-typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
+typedef std::pair<OpenSubdiv::Osd::DrawContext::PatchDescriptor, Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc> {
+class EffectDrawRegistry : public OpenSubdiv::Osd::GLDrawRegistry<EffectDesc> {
 
 protected:
     virtual ConfigType *
@@ -1000,7 +1000,7 @@ GetEffect()
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch)
+bindProgram(Effect effect, OpenSubdiv::Osd::DrawContext::PatchArray const & patch)
 {
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
     EffectDrawRegistry::ConfigType *
@@ -1144,7 +1144,7 @@ display() {
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+    OpenSubdiv::Osd::DrawContext::PatchArrayVector const & patches =
         g_mesh->GetDrawContext()->GetPatchArrays();
 
     // patch drawing
@@ -1158,9 +1158,9 @@ display() {
 #endif
 
     for (int i=0; i<(int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
 
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
         OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
         int patchPattern = desc.GetPattern();
         int patchRotation = desc.GetRotation();
@@ -1513,7 +1513,7 @@ callbackModel(int m)
 static void
 callbackAdaptive(bool checked, int /* a */)
 {
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation()) {
+    if (OpenSubdiv::Osd::GLDrawContext::SupportsAdaptiveTessellation()) {
         g_adaptive = checked;
         rebuildOsdMesh();
     }
@@ -1614,7 +1614,7 @@ initHUD()
         g_hud.AddPullDownButton(compute_pulldown, "GLSL Compute", kGLSLCompute);
     }
 #endif
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation())
+    if (OpenSubdiv::Osd::GLDrawContext::SupportsAdaptiveTessellation())
         g_hud.AddCheckBox("Adaptive (`)", g_adaptive!=0, 10, 190, callbackAdaptive, 0, '`');
 
     for (int i = 1; i < 11; ++i) {
@@ -1663,7 +1663,7 @@ idle() {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message)
+callbackError(OpenSubdiv::Osd::ErrorType err, const char *message)
 {
     printf("OsdError: %d\n", err);
     printf("%s", message);
@@ -1734,7 +1734,7 @@ int main(int argc, char ** argv)
 
     g_fpsTimer.Start();
 
-    OsdSetErrorCallback(callbackError);
+    OpenSubdiv::Osd::SetErrorCallback(callbackError);
 
     if (not glfwInit()) {
         printf("Failed to initialize GLFW\n");
@@ -1802,7 +1802,7 @@ int main(int argc, char ** argv)
 #endif
 
     // activate feature adaptive tessellation if OSD supports it
-    g_adaptive = OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation();
+    g_adaptive = OpenSubdiv::Osd::GLDrawContext::SupportsAdaptiveTessellation();
 
     initGL();
     linkDefaultProgram();

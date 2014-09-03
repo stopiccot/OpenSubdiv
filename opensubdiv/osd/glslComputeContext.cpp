@@ -32,6 +32,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 // -----------------------------------------------------------------------------
 
 template <class T> GLuint
@@ -61,7 +63,7 @@ createGLSLBuffer(std::vector<T> const & src) {
 
 // -----------------------------------------------------------------------------
 
-class OsdGLSLComputeContext::GLSLStencilTables {
+class GLSLComputeContext::GLSLStencilTables {
 
 public:
 
@@ -125,7 +127,7 @@ private:
 
 // -----------------------------------------------------------------------------
 
-OsdGLSLComputeContext::OsdGLSLComputeContext(
+GLSLComputeContext::GLSLComputeContext(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
@@ -147,7 +149,7 @@ OsdGLSLComputeContext::OsdGLSLComputeContext(
     }
 }
 
-OsdGLSLComputeContext::~OsdGLSLComputeContext() {
+GLSLComputeContext::~GLSLComputeContext() {
     delete _vertexStencilTables;
     delete _varyingStencilTables;
 }
@@ -155,12 +157,12 @@ OsdGLSLComputeContext::~OsdGLSLComputeContext() {
 // ----------------------------------------------------------------------------
 
 bool
-OsdGLSLComputeContext::HasVertexStencilTables() const {
+GLSLComputeContext::HasVertexStencilTables() const {
     return _vertexStencilTables ? _vertexStencilTables->IsValid() : false;
 }
 
 bool
-OsdGLSLComputeContext::HasVaryingStencilTables() const {
+GLSLComputeContext::HasVaryingStencilTables() const {
     return _varyingStencilTables ? _varyingStencilTables->IsValid() : false;
 }
 
@@ -168,38 +170,40 @@ OsdGLSLComputeContext::HasVaryingStencilTables() const {
 
 
 void
-OsdGLSLComputeContext::BindVertexStencilTables() const {
+GLSLComputeContext::BindVertexStencilTables() const {
     if (_vertexStencilTables) {
         _vertexStencilTables->Bind();
     }
 }
 
 void
-OsdGLSLComputeContext::BindVaryingStencilTables() const {
+GLSLComputeContext::BindVaryingStencilTables() const {
     if (_varyingStencilTables) {
         _varyingStencilTables->Bind();
     }
 }
 
 void
-OsdGLSLComputeContext::UnbindStencilTables() const {
+GLSLComputeContext::UnbindStencilTables() const {
     GLSLStencilTables::Unbind();
 }
 
 
 // -----------------------------------------------------------------------------
 
-OsdGLSLComputeContext *
-OsdGLSLComputeContext::Create(Far::StencilTables const * vertexStencilTables,
+GLSLComputeContext *
+GLSLComputeContext::Create(Far::StencilTables const * vertexStencilTables,
                               Far::StencilTables const * varyingStencilTables) {
 
-    OsdGLSLComputeContext *result =
-        new OsdGLSLComputeContext(vertexStencilTables, varyingStencilTables);
+    GLSLComputeContext *result =
+        new GLSLComputeContext(vertexStencilTables, varyingStencilTables);
 
     return result;
 }
 
 // -----------------------------------------------------------------------------
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

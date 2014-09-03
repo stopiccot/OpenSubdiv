@@ -29,7 +29,7 @@
 
 extern "C" {
 
-    void OsdCudaComputeStencils(float const *src, float * dst,
+    void CudaComputeStencils(float const *src, float * dst,
                                 int length, int stride,
                                 unsigned char const * sizes,
                                 int const * offsets,
@@ -42,8 +42,10 @@ extern "C" {
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 void
-OsdCudaComputeController::ApplyStencilTableKernel(
+CudaComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
@@ -58,7 +60,7 @@ OsdCudaComputeController::ApplyStencilTableKernel(
         float * dst = const_cast<float *>(src) +
             context->GetNumControlVertices() * stride;
 
-        OsdCudaComputeStencils(src, dst, length, stride,
+        CudaComputeStencils(src, dst, length, stride,
                                (unsigned char const *)context->GetVertexStencilTablesSizes(),
                                (int const *)context->GetVertexStencilTablesOffsets(),
                                (int const *)context->GetVertexStencilTablesIndices(),
@@ -77,7 +79,7 @@ OsdCudaComputeController::ApplyStencilTableKernel(
         float * dst = const_cast<float *>(src) +
             context->GetNumControlVertices() * stride;
 
-        OsdCudaComputeStencils(src, dst, length, stride,
+        CudaComputeStencils(src, dst, length, stride,
                                (unsigned char const *)context->GetVaryingStencilTablesSizes(),
                                (int const *)context->GetVaryingStencilTablesOffsets(),
                                (int const *)context->GetVaryingStencilTablesIndices(),
@@ -87,17 +89,19 @@ OsdCudaComputeController::ApplyStencilTableKernel(
     }
 }
 
-OsdCudaComputeController::OsdCudaComputeController() {
+CudaComputeController::CudaComputeController() {
 }
 
-OsdCudaComputeController::~OsdCudaComputeController() {
+CudaComputeController::~CudaComputeController() {
 }
 
 void
-OsdCudaComputeController::Synchronize() {
+CudaComputeController::Synchronize() {
 
     cudaThreadSynchronize();
 }
+
+} // end namespace Osd
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

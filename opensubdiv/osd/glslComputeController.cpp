@@ -36,14 +36,16 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 static const char *shaderSource =
 #include "../osd/glslComputeKernel.gen.h"
 ;
 
 // ----------------------------------------------------------------------------
 
-class OsdGLSLComputeController::KernelBundle :
-    OsdNonCopyable<OsdGLSLComputeController::KernelBundle> {
+class GLSLComputeController::KernelBundle :
+    NonCopyable<GLSLComputeController::KernelBundle> {
 
 public:
 
@@ -72,9 +74,9 @@ public:
         //OSD_DEBUG_CHECK_GL_ERROR("UseProgram");
     }
 
-    bool Compile(OsdVertexBufferDescriptor const & desc) {
+    bool Compile(VertexBufferDescriptor const & desc) {
 
-        _desc = OsdVertexBufferDescriptor(0, desc.length, desc.stride);
+        _desc = VertexBufferDescriptor(0, desc.length, desc.stride);
 
         if (_program) {
             glDeleteProgram(_program);
@@ -105,10 +107,10 @@ public:
         if (linked == GL_FALSE) {
             char buffer[1024];
             glGetShaderInfoLog(shader, 1024, NULL, buffer);
-            OsdError(OSD_GLSL_LINK_ERROR, buffer);
+            Error(OSD_GLSL_LINK_ERROR, buffer);
 
             glGetProgramInfoLog(_program, 1024, NULL, buffer);
-            OsdError(OSD_GLSL_LINK_ERROR, buffer);
+            Error(OSD_GLSL_LINK_ERROR, buffer);
 
             glDeleteProgram(_program);
             _program = 0;
@@ -146,14 +148,14 @@ public:
 
     struct Match {
 
-        Match(OsdVertexBufferDescriptor const & d) : desc(d) { }
+        Match(VertexBufferDescriptor const & d) : desc(d) { }
 
         bool operator() (KernelBundle const * kernel) {
             return (desc.length==kernel->_desc.length and 
                     desc.stride==kernel->_desc.stride);
         }
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
     };
 
 protected:
@@ -203,7 +205,7 @@ private:
            _uniformNumCVs;    // number of const control vertices padded at
                               // the beginning of the buffer
 
-    OsdVertexBufferDescriptor _desc; // primvar buffer descriptor
+    VertexBufferDescriptor _desc; // primvar buffer descriptor
 
     int _workGroupSize;
 };
@@ -211,7 +213,7 @@ private:
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLComputeController::ApplyStencilTableKernel(
+GLSLComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
@@ -222,9 +224,9 @@ OsdGLSLComputeController::ApplyStencilTableKernel(
 
 // ----------------------------------------------------------------------------
 
-OsdGLSLComputeController::OsdGLSLComputeController() { }
+GLSLComputeController::GLSLComputeController() { }
 
-OsdGLSLComputeController::~OsdGLSLComputeController() {
+GLSLComputeController::~GLSLComputeController() {
     for (KernelRegistry::iterator it = _kernelRegistry.begin();
         it != _kernelRegistry.end(); ++it) {
         delete *it;
@@ -234,14 +236,14 @@ OsdGLSLComputeController::~OsdGLSLComputeController() {
 // ----------------------------------------------------------------------------
 
 void
-OsdGLSLComputeController::Synchronize() {
+GLSLComputeController::Synchronize() {
 
     glFinish();
 }
 
 // ----------------------------------------------------------------------------
-OsdGLSLComputeController::KernelBundle const *
-OsdGLSLComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
+GLSLComputeController::KernelBundle const *
+GLSLComputeController::getKernel(VertexBufferDescriptor const &desc) {
 
     KernelRegistry::iterator it =
         std::find_if(_kernelRegistry.begin(), _kernelRegistry.end(),
@@ -258,7 +260,7 @@ OsdGLSLComputeController::getKernel(OsdVertexBufferDescriptor const &desc) {
 }
 
 void
-OsdGLSLComputeController::bindBufferAndProgram() {
+GLSLComputeController::bindBufferAndProgram() {
 
     if (_currentBindState.buffer)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _currentBindState.buffer);
@@ -269,7 +271,7 @@ OsdGLSLComputeController::bindBufferAndProgram() {
 }
 
 void
-OsdGLSLComputeController::unbindBufferAndProgram() {
+GLSLComputeController::unbindBufferAndProgram() {
 
     glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
@@ -277,6 +279,8 @@ OsdGLSLComputeController::unbindBufferAndProgram() {
 }
 
 // ----------------------------------------------------------------------------
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

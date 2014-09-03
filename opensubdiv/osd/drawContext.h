@@ -35,21 +35,23 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 /// \brief Base DrawContext class
 ///
-/// OsdDrawContext derives several sub-classes with API specific functionality
+/// DrawContext derives several sub-classes with API specific functionality
 /// (GL, D3D11, ...).
 ///
 /// Current specificiation GPU hardware tessellation limitations require transition
 /// patches to be split-up into several triangular bi-cubic sub-patches.
-/// OsdDrawContext processes FarPatchArrays from Far::PatchTables and generates the
+/// DrawContext processes FarPatchArrays from Far::PatchTables and generates the
 /// additional sets of sub-patches.
 ///
 /// Contexts interface the serialized topological data pertaining to the
 /// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
-class OsdDrawContext {
+class DrawContext {
 
 public:
 
@@ -193,10 +195,10 @@ public:
     };
 
     /// Constructor
-    OsdDrawContext() : _isAdaptive(false) {}
+    DrawContext() : _isAdaptive(false) {}
 
     /// Descrtuctor
-    virtual ~OsdDrawContext();
+    virtual ~DrawContext();
 
     /// Returns true if the primitive attached to the context uses feature adaptive
     /// subdivision
@@ -213,7 +215,7 @@ public:
     // processes FarPatchArrays and inserts requisite sub-patches for the arrays
     // containing transition patches
     static void ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &farPatchArrays,
-                                   OsdDrawContext::PatchArrayVector &osdPatchArrays,
+                                   DrawContext::PatchArrayVector &osdPatchArrays,
                                    int maxValence, int numElements);
 
 
@@ -232,7 +234,7 @@ protected:
 
 // Allows ordering of patches by type
 inline bool
-OsdDrawContext::PatchDescriptor::operator < ( PatchDescriptor const other ) const
+DrawContext::PatchDescriptor::operator < ( PatchDescriptor const other ) const
 {
     return _farDesc < other._farDesc or (_farDesc == other._farDesc and
           (_subPatch < other._subPatch or ((_subPatch == other._subPatch) and
@@ -242,7 +244,7 @@ OsdDrawContext::PatchDescriptor::operator < ( PatchDescriptor const other ) cons
 
 // True if the descriptors are identical
 inline bool
-OsdDrawContext::PatchDescriptor::operator == ( PatchDescriptor const other ) const
+DrawContext::PatchDescriptor::operator == ( PatchDescriptor const other ) const
 {
     return _farDesc == other._farDesc and
            _subPatch == other._subPatch and
@@ -252,7 +254,9 @@ OsdDrawContext::PatchDescriptor::operator == ( PatchDescriptor const other ) con
 
 
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 } // end namespace OpenSubdiv

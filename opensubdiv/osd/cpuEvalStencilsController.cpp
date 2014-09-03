@@ -29,14 +29,16 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCpuEvalStencilsController::OsdCpuEvalStencilsController() {
+namespace Osd {
+
+CpuEvalStencilsController::CpuEvalStencilsController() {
 }
 
-OsdCpuEvalStencilsController::~OsdCpuEvalStencilsController() {
+CpuEvalStencilsController::~CpuEvalStencilsController() {
 }
 
-int 
-OsdCpuEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context ) {
+int
+CpuEvalStencilsController::_UpdateValues( CpuEvalStencilsContext * context ) {
 
     int result=0;
 
@@ -45,10 +47,10 @@ OsdCpuEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
     int nstencils = stencils->GetNumStencils();
     if (not nstencils)
         return result;
-    
-    OsdVertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
+
+    VertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
                               outDesc = _currentBindState.outputDataDesc;
-    
+
     // make sure that we have control data to work with
     if (not ctrlDesc.CanEval(outDesc))
         return 0;
@@ -62,15 +64,15 @@ OsdCpuEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
 
     int const * sizes = &stencils->GetSizes().at(0),
               * index = &stencils->GetControlIndices().at(0);
-    
+
     float const * weight = &stencils->GetWeights().at(0);
 
     for (int i=0; i<nstencils; ++i) {
 
         memset(out, 0, outDesc.length*sizeof(float));
-        
+
         for (int j=0; j<sizes[i]; ++j, ++index, ++weight) {
-        
+
             float const * cv = ctrl + (*index)*ctrlDesc.stride;
 
             for (int k=0; k<outDesc.length; ++k) {
@@ -79,12 +81,12 @@ OsdCpuEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
         }
         out += outDesc.stride;
     }
-    
+
     return nstencils;
 }
 
-int 
-OsdCpuEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context ) {
+int
+CpuEvalStencilsController::_UpdateDerivs( CpuEvalStencilsContext * context ) {
 
     int result=0;
 
@@ -93,11 +95,11 @@ OsdCpuEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
     int nstencils = stencils->GetNumStencils();
     if (not nstencils)
         return result;
-    
-    OsdVertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
+
+    VertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
                               duDesc = _currentBindState.outputDuDesc,
                               dvDesc = _currentBindState.outputDvDesc;
-    
+
     // make sure that we have control data to work with
     if (not (ctrlDesc.CanEval(duDesc) and ctrlDesc.CanEval(dvDesc)))
         return 0;
@@ -112,19 +114,19 @@ OsdCpuEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
 
     int const * sizes = &stencils->GetSizes().at(0),
               * index = &stencils->GetControlIndices().at(0);
-    
+
     float const * duweight = &stencils->GetDuWeights().at(0),
                 * dvweight = &stencils->GetDvWeights().at(0);
-                           
+
     for (int i=0; i<nstencils; ++i) {
 
         memset(du, 0, duDesc.length*sizeof(float));
         memset(dv, 0, dvDesc.length*sizeof(float));
-        
+
         for (int j=0; j<sizes[i]; ++j, ++index, ++duweight, ++dvweight) {
-        
+
             float const * cv = ctrl + (*index)*ctrlDesc.stride;
-        
+
             for (int k=0; k<duDesc.length; ++k) {
                 du[k] += cv[k] * (*duweight);
                 dv[k] += cv[k] * (*dvweight);
@@ -133,14 +135,15 @@ OsdCpuEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
         du += duDesc.stride;
         dv += dvDesc.stride;
     }
-    
+
     return nstencils;
 }
 
 void
-OsdCpuEvalStencilsController::Synchronize() {
+CpuEvalStencilsController::Synchronize() {
 }
 
+} // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

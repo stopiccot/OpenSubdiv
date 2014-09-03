@@ -32,19 +32,20 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
 
-OsdCpuComputeController::OsdCpuComputeController() {
+CpuComputeController::CpuComputeController() {
 }
 
-OsdCpuComputeController::~OsdCpuComputeController() {
-}
-
-void
-OsdCpuComputeController::Synchronize() {
+CpuComputeController::~CpuComputeController() {
 }
 
 void
-OsdCpuComputeController::ApplyStencilTableKernel(
+CpuComputeController::Synchronize() {
+}
+
+void
+CpuComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
@@ -53,14 +54,14 @@ OsdCpuComputeController::ApplyStencilTableKernel(
 
     if (vertexStencils and _currentBindState.vertexBuffer) {
 
-        OsdVertexBufferDescriptor const & desc = _currentBindState.vertexDesc;
+        VertexBufferDescriptor const & desc = _currentBindState.vertexDesc;
 
         float const * srcBuffer = _currentBindState.vertexBuffer + desc.offset;
 
         float * destBuffer = _currentBindState.vertexBuffer + desc.offset +
             vertexStencils->GetNumControlVertices() * desc.stride;
 
-        OsdCpuComputeStencils(_currentBindState.vertexDesc,
+        CpuComputeStencils(_currentBindState.vertexDesc,
                               srcBuffer, destBuffer,
                               &vertexStencils->GetSizes().at(0),
                               &vertexStencils->GetOffsets().at(0),
@@ -74,14 +75,14 @@ OsdCpuComputeController::ApplyStencilTableKernel(
 
     if (varyingStencils and _currentBindState.varyingBuffer) {
 
-        OsdVertexBufferDescriptor const & desc = _currentBindState.varyingDesc;
+        VertexBufferDescriptor const & desc = _currentBindState.varyingDesc;
 
         float const * srcBuffer = _currentBindState.varyingBuffer + desc.offset;
 
         float * destBuffer = _currentBindState.varyingBuffer + desc.offset +
             varyingStencils->GetNumControlVertices() * desc.stride;
 
-        OsdCpuComputeStencils(_currentBindState.varyingDesc,
+        CpuComputeStencils(_currentBindState.varyingDesc,
                               srcBuffer, destBuffer,
                               &varyingStencils->GetSizes().at(0),
                               &varyingStencils->GetOffsets().at(0),
@@ -92,6 +93,8 @@ OsdCpuComputeController::ApplyStencilTableKernel(
     }
 }
 
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

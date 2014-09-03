@@ -30,6 +30,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 // -----------------------------------------------------------------------------
 
 template <class T> cl_mem
@@ -41,7 +43,7 @@ createCLBuffer(std::vector<T> const & src, cl_context clContext) {
             src.size()*sizeof(T), (void*)(&src.at(0)), &errNum);
 
     if (errNum!=CL_SUCCESS) {
-        OsdError(OSD_CL_RUNTIME_ERROR, "clCreateBuffer: %d", errNum);
+        Error(OSD_CL_RUNTIME_ERROR, "clCreateBuffer: %d", errNum);
     }
 
     return devicePtr;
@@ -49,7 +51,7 @@ createCLBuffer(std::vector<T> const & src, cl_context clContext) {
 
 // -----------------------------------------------------------------------------
 
-class OsdCLComputeContext::CLStencilTables {
+class CLComputeContext::CLStencilTables {
 
 public:
 
@@ -97,7 +99,7 @@ private:
 
 // -----------------------------------------------------------------------------
 
-OsdCLComputeContext::OsdCLComputeContext(
+CLComputeContext::CLComputeContext(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables,
             cl_context clContext) :
@@ -120,7 +122,7 @@ OsdCLComputeContext::OsdCLComputeContext(
     }
 }
 
-OsdCLComputeContext::~OsdCLComputeContext() {
+CLComputeContext::~CLComputeContext() {
     delete _vertexStencilTables;
     delete _varyingStencilTables;
 }
@@ -128,75 +130,76 @@ OsdCLComputeContext::~OsdCLComputeContext() {
 // ----------------------------------------------------------------------------
 
 bool
-OsdCLComputeContext::HasVertexStencilTables() const {
+CLComputeContext::HasVertexStencilTables() const {
     return _vertexStencilTables ? _vertexStencilTables->IsValid() : false;
 }
 
 bool
-OsdCLComputeContext::HasVaryingStencilTables() const {
+CLComputeContext::HasVaryingStencilTables() const {
     return _varyingStencilTables ? _varyingStencilTables->IsValid() : false;
 }
 
 // ----------------------------------------------------------------------------
 
 cl_mem
-OsdCLComputeContext::GetVertexStencilTablesSizes() const {
+CLComputeContext::GetVertexStencilTablesSizes() const {
     return _vertexStencilTables ? _vertexStencilTables->GetSizes() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVertexStencilTablesOffsets() const {
+CLComputeContext::GetVertexStencilTablesOffsets() const {
     return _vertexStencilTables ? _vertexStencilTables->GetOffsets() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVertexStencilTablesIndices() const {
+CLComputeContext::GetVertexStencilTablesIndices() const {
     return _vertexStencilTables ? _vertexStencilTables->GetIndices() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVertexStencilTablesWeights() const {
+CLComputeContext::GetVertexStencilTablesWeights() const {
     return _vertexStencilTables ? _vertexStencilTables->GetWeights() : 0;
 }
 
 // ----------------------------------------------------------------------------
 
 cl_mem
-OsdCLComputeContext::GetVaryingStencilTablesSizes() const {
+CLComputeContext::GetVaryingStencilTablesSizes() const {
     return _varyingStencilTables ? _varyingStencilTables->GetSizes() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVaryingStencilTablesOffsets() const {
+CLComputeContext::GetVaryingStencilTablesOffsets() const {
     return _varyingStencilTables ? _varyingStencilTables->GetOffsets() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVaryingStencilTablesIndices() const {
+CLComputeContext::GetVaryingStencilTablesIndices() const {
     return _varyingStencilTables ? _varyingStencilTables->GetIndices() : 0;
 }
 
 cl_mem
-OsdCLComputeContext::GetVaryingStencilTablesWeights() const {
+CLComputeContext::GetVaryingStencilTablesWeights() const {
     return _varyingStencilTables ? _varyingStencilTables->GetWeights() : 0;
 }
 
 
 // -----------------------------------------------------------------------------
 
-OsdCLComputeContext *
-OsdCLComputeContext::Create(cl_context clContext,
+CLComputeContext *
+CLComputeContext::Create(cl_context clContext,
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) {
 
-    OsdCLComputeContext *result =
-        new OsdCLComputeContext(
+    CLComputeContext *result =
+        new CLComputeContext(
             vertexStencilTables, varyingStencilTables, clContext);
 
     return result;
 }
 
 // -----------------------------------------------------------------------------
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

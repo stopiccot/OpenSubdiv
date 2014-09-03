@@ -32,23 +32,25 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-struct OsdVertexDescriptor;
+namespace Osd {
+
+struct VertexDescriptor;
 
 
 
 void
-OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
-                      float const * vertexSrc,
-                      float * vertexDst,
-                      unsigned char const * sizes,
-                      int const * offsets,
-                      int const * indices,
-                      float const * weights,
-                      int start, int end);
+CpuComputeStencils(VertexBufferDescriptor const &vertexDesc,
+                   float const * vertexSrc,
+                   float * vertexDst,
+                   unsigned char const * sizes,
+                   int const * offsets,
+                   int const * indices,
+                   float const * weights,
+                   int start, int end);
 
 //
 // SIMD ICC optimization of the stencil kernel
-// 
+//
 
 #if defined ( __INTEL_COMPILER ) or defined ( __ICC )
     #define __ALIGN_DATA __declspec(align(32))
@@ -109,6 +111,8 @@ ComputeStencilKernel(float const * vertexSrc,
         memcpy(dst, result1, numElems*sizeof(float));
     }
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

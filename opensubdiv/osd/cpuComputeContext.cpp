@@ -33,9 +33,11 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext::OsdCpuComputeContext(
+CpuComputeContext::CpuComputeContext(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0) {
@@ -53,7 +55,7 @@ OsdCpuComputeContext::OsdCpuComputeContext(
 
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext::~OsdCpuComputeContext() { 
+CpuComputeContext::~CpuComputeContext() { 
 
     delete _vertexStencilTables;
     delete _varyingStencilTables;
@@ -61,13 +63,15 @@ OsdCpuComputeContext::~OsdCpuComputeContext() {
 
 // ----------------------------------------------------------------------------
 
-OsdCpuComputeContext *
-OsdCpuComputeContext::Create(
+CpuComputeContext *
+CpuComputeContext::Create(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) {
 
-    return new OsdCpuComputeContext(vertexStencilTables, varyingStencilTables);
+    return new CpuComputeContext(vertexStencilTables, varyingStencilTables);
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

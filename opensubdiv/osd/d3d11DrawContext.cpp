@@ -31,7 +31,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdD3D11DrawContext::OsdD3D11DrawContext() :
+namespace Osd {
+
+D3D11DrawContext::D3D11DrawContext() :
     patchIndexBuffer(NULL),
     ptexCoordinateBuffer(NULL),
     ptexCoordinateBufferSRV(NULL),
@@ -45,7 +47,7 @@ OsdD3D11DrawContext::OsdD3D11DrawContext() :
 {
 }
 
-OsdD3D11DrawContext::~OsdD3D11DrawContext()
+D3D11DrawContext::~D3D11DrawContext()
 {
     if (patchIndexBuffer) patchIndexBuffer->Release();
     if (ptexCoordinateBuffer) ptexCoordinateBuffer->Release();
@@ -59,12 +61,12 @@ OsdD3D11DrawContext::~OsdD3D11DrawContext()
     if (quadOffsetBufferSRV) quadOffsetBufferSRV->Release();
 };
 
-OsdD3D11DrawContext *
-OsdD3D11DrawContext::Create(Far::PatchTables const *patchTables,
+D3D11DrawContext *
+D3D11DrawContext::Create(Far::PatchTables const *patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int numVertexElements)
 {
-    OsdD3D11DrawContext * result = new OsdD3D11DrawContext();
+    D3D11DrawContext * result = new D3D11DrawContext();
     if (result->create(*patchTables, pd3d11DeviceContext, numVertexElements))
         return result;
 
@@ -73,7 +75,7 @@ OsdD3D11DrawContext::Create(Far::PatchTables const *patchTables,
 }
 
 bool
-OsdD3D11DrawContext::create(Far::PatchTables const &patchTables,
+D3D11DrawContext::create(Far::PatchTables const &patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int numVertexElements)
 {
@@ -210,7 +212,7 @@ OsdD3D11DrawContext::create(Far::PatchTables const &patchTables,
 }
 
 bool
-OsdD3D11DrawContext::SetFVarDataTexture(Far::PatchTables const & patchTables,
+D3D11DrawContext::SetFVarDataTexture(Far::PatchTables const & patchTables,
                                         ID3D11DeviceContext *pd3d11DeviceContext,
                                         int fvarWidth, FVarData const & fvarData) {
 
@@ -253,7 +255,7 @@ OsdD3D11DrawContext::SetFVarDataTexture(Far::PatchTables const & patchTables,
 }
 
 void
-OsdD3D11DrawContext::updateVertexTexture(ID3D11Buffer *vbo,
+D3D11DrawContext::updateVertexTexture(ID3D11Buffer *vbo,
                                          ID3D11DeviceContext *pd3d11DeviceContext,
                                          int numVertices,
                                          int numVertexElements)
@@ -274,5 +276,7 @@ OsdD3D11DrawContext::updateVertexTexture(ID3D11Buffer *vbo,
     }
 }
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

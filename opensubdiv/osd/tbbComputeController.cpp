@@ -36,8 +36,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
 
-OsdTbbComputeController::OsdTbbComputeController(int numThreads)
+TbbComputeController::TbbComputeController(int numThreads)
     : _numThreads(numThreads) {
 
     if(_numThreads == -1)
@@ -47,7 +48,7 @@ OsdTbbComputeController::OsdTbbComputeController(int numThreads)
 }
 
 void
-OsdTbbComputeController::ApplyStencilTableKernel(
+TbbComputeController::ApplyStencilTableKernel(
     Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
@@ -56,14 +57,14 @@ OsdTbbComputeController::ApplyStencilTableKernel(
 
     if (vertexStencils and _currentBindState.vertexBuffer) {
 
-        OsdVertexBufferDescriptor const & desc = _currentBindState.vertexDesc;
+        VertexBufferDescriptor const & desc = _currentBindState.vertexDesc;
 
         float const * srcBuffer = _currentBindState.vertexBuffer + desc.offset;
 
         float * destBuffer = _currentBindState.vertexBuffer + desc.offset +
             vertexStencils->GetNumControlVertices() * desc.stride;
 
-        OsdTbbComputeStencils(_currentBindState.vertexDesc,
+        TbbComputeStencils(_currentBindState.vertexDesc,
                               srcBuffer, destBuffer,
                               &vertexStencils->GetSizes().at(0),
                               &vertexStencils->GetOffsets().at(0),
@@ -77,14 +78,14 @@ OsdTbbComputeController::ApplyStencilTableKernel(
 
     if (varyingStencils and _currentBindState.varyingBuffer) {
 
-        OsdVertexBufferDescriptor const & desc = _currentBindState.varyingDesc;
+        VertexBufferDescriptor const & desc = _currentBindState.varyingDesc;
 
         float const * srcBuffer = _currentBindState.varyingBuffer + desc.offset;
 
         float * destBuffer = _currentBindState.varyingBuffer + desc.offset +
             varyingStencils->GetNumControlVertices() * desc.stride;
 
-        OsdTbbComputeStencils(_currentBindState.varyingDesc,
+        TbbComputeStencils(_currentBindState.varyingDesc,
                               srcBuffer, destBuffer,
                               &varyingStencils->GetSizes().at(0),
                               &varyingStencils->GetOffsets().at(0),
@@ -96,9 +97,11 @@ OsdTbbComputeController::ApplyStencilTableKernel(
 }
 
 void
-OsdTbbComputeController::Synchronize() {
+TbbComputeController::Synchronize() {
     // XXX:
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

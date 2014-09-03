@@ -29,16 +29,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdOmpEvalStencilsController::OsdOmpEvalStencilsController(int numThreads) {
+namespace Osd {
+
+OmpEvalStencilsController::OmpEvalStencilsController(int numThreads) {
 
     _numThreads = (numThreads == -1) ? omp_get_num_procs() : numThreads;
 }
 
-OsdOmpEvalStencilsController::~OsdOmpEvalStencilsController() {
+OmpEvalStencilsController::~OmpEvalStencilsController() {
 }
 
 int
-OsdOmpEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context ) {
+OmpEvalStencilsController::_UpdateValues( CpuEvalStencilsContext * context ) {
 
     int result=0;
 
@@ -48,9 +50,9 @@ OsdOmpEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
     if (not nstencils)
         return result;
 
-    OsdVertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
+    VertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
                               outDesc = _currentBindState.outputDataDesc;
-    
+
     // make sure that we have control data to work with
     if (not ctrlDesc.CanEval(outDesc))
         return 0;
@@ -88,7 +90,7 @@ OsdOmpEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
 }
 
 int
-OsdOmpEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context ) {
+OmpEvalStencilsController::_UpdateDerivs( CpuEvalStencilsContext * context ) {
 
     int result=0;
 
@@ -98,10 +100,10 @@ OsdOmpEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
     if (not nstencils)
         return result;
 
-    OsdVertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
+    VertexBufferDescriptor ctrlDesc = _currentBindState.controlDataDesc,
                               duDesc = _currentBindState.outputDuDesc,
                               dvDesc = _currentBindState.outputDvDesc;
-    
+
     // make sure that we have control data to work with
     if (not (ctrlDesc.CanEval(duDesc) and ctrlDesc.CanEval(dvDesc)))
         return 0;
@@ -143,9 +145,11 @@ OsdOmpEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
 }
 
 void
-OsdOmpEvalStencilsController::Synchronize() {
+OmpEvalStencilsController::Synchronize() {
 }
 
+
+} // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

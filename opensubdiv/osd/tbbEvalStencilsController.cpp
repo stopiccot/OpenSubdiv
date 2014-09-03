@@ -32,16 +32,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 #define grain_size  200
 
-OsdTbbEvalStencilsController::OsdTbbEvalStencilsController(int numThreads) {
+TbbEvalStencilsController::TbbEvalStencilsController(int numThreads) {
 
     _numThreads = numThreads > 0 ? numThreads : tbb::task_scheduler_init::automatic;
 
    tbb::task_scheduler_init init(numThreads);
 }
 
-OsdTbbEvalStencilsController::~OsdTbbEvalStencilsController() {
+TbbEvalStencilsController::~TbbEvalStencilsController() {
 }
 
 
@@ -51,7 +53,7 @@ public:
     enum Mode { UNDEFINED, POINT, U_DERIV, V_DERIV };
 
     StencilKernel( Far::StencilTables const * stencils,
-                   OsdVertexBufferDescriptor ctrlDesc,
+                   VertexBufferDescriptor ctrlDesc,
                    float const * ctrlData ) :
         _stencils(stencils),
         _mode(UNDEFINED),
@@ -63,7 +65,7 @@ public:
         _ctrlData = ctrlData + ctrlDesc.offset;
     }
 
-    bool SetOutput(Mode mode, OsdVertexBufferDescriptor outDesc, float * outData) {
+    bool SetOutput(Mode mode, VertexBufferDescriptor outDesc, float * outData) {
 
         if (_ctrlDesc.CanEval(outDesc)) {
             _mode = mode;
@@ -118,7 +120,7 @@ private:
 
     Mode _mode;
 
-    OsdVertexBufferDescriptor _ctrlDesc;
+    VertexBufferDescriptor _ctrlDesc;
     float const * _ctrlData;
 
     int _length,
@@ -128,7 +130,7 @@ private:
 };
 
 int
-OsdTbbEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context ) {
+TbbEvalStencilsController::_UpdateValues( CpuEvalStencilsContext * context ) {
 
     Far::StencilTables const * stencils = context->GetStencilTables();
     if (not stencils)
@@ -155,7 +157,7 @@ OsdTbbEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
 }
 
 int
-OsdTbbEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context ) {
+TbbEvalStencilsController::_UpdateDerivs( CpuEvalStencilsContext * context ) {
 
     Far::StencilTables const * stencils = context->GetStencilTables();
     if (not stencils)
@@ -188,9 +190,10 @@ OsdTbbEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
 }
 
 void
-OsdTbbEvalStencilsController::Synchronize() {
+TbbEvalStencilsController::Synchronize() {
 }
 
+} // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

@@ -40,32 +40,34 @@ struct ID3D11UnorderedAccessView;
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 /// \brief Compute controller for launching D3D11 Compute subdivision kernels.
 ///
-/// OsdD3D11ComputeController is a compute controller class to launch
+/// D3D11ComputeController is a compute controller class to launch
 /// D3D11Compute transfrom feedback subdivision kernels. It requires
-/// OsdGLVertexBufferInterface as arguments of Refine function.
+/// GLVertexBufferInterface as arguments of Refine function.
 ///
 /// Controller entities execute requests from Context instances that they share
 /// common interfaces with. Controllers are attached to discrete compute devices
 /// and share the devices resources with Context entities.
 ///
-class OsdD3D11ComputeController {
+class D3D11ComputeController {
 public:
-    typedef OsdD3D11ComputeContext ComputeContext;
+    typedef D3D11ComputeContext ComputeContext;
 
     /// Constructor.
     ///
     /// @param deviceContext  a valid instanciated D3D11 device context
     ///
-    OsdD3D11ComputeController(ID3D11DeviceContext *deviceContext);
+    D3D11ComputeController(ID3D11DeviceContext *deviceContext);
 
     /// Destructor.
-    ~OsdD3D11ComputeController();
+    ~D3D11ComputeController();
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdD3D11Context to apply refinement operations to
+    /// @param  context       The D3D11Context to apply refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
@@ -83,12 +85,12 @@ public:
     ///                       will be refined.
     ///
     template<class VERTEX_BUFFER, class VARYING_BUFFER>
-        void Compute( OsdD3D11ComputeContext const * context,
+        void Compute( D3D11ComputeContext const * context,
                       Far::KernelBatchVector const & batches,
                       VERTEX_BUFFER  * vertexBuffer,
                       VARYING_BUFFER * varyingBuffer,
-                      OsdVertexBufferDescriptor const * vertexDesc=NULL,
-                      OsdVertexBufferDescriptor const * varyingDesc=NULL ){
+                      VertexBufferDescriptor const * vertexDesc=NULL,
+                      VertexBufferDescriptor const * varyingDesc=NULL ){
 
         if (batches.empty()) return;
 
@@ -115,7 +117,7 @@ public:
 
     /// Execute subdivision kernels and apply to given vertex buffers.
     ///
-    /// @param  context       The OsdD3D11Context to apply refinement operations to
+    /// @param  context       The D3D11Context to apply refinement operations to
     ///
     /// @param  batches       Vector of batches of vertices organized by operative
     ///                       kernel
@@ -123,7 +125,7 @@ public:
     /// @param  vertexBuffer  Vertex-interpolated data buffer
     ///
     template<class VERTEX_BUFFER>
-        void Compute(OsdD3D11ComputeContext const * context,
+        void Compute(D3D11ComputeContext const * context,
                      Far::KernelBatchVector const & batches,
                      VERTEX_BUFFER *vertexBuffer) {
 
@@ -142,7 +144,7 @@ protected:
 
     template<class BUFFER>
         void bind( BUFFER * buffer,
-                   OsdVertexBufferDescriptor const * desc ) {
+                   VertexBufferDescriptor const * desc ) {
 
         assert(buffer);
 
@@ -153,7 +155,7 @@ protected:
         } else {
             int numElements = buffer ? buffer->GetNumElements() : 0;
             _currentBindState.desc =
-                OsdVertexBufferDescriptor(0, numElements, numElements);
+                VertexBufferDescriptor(0, numElements, numElements);
         }
 
         _currentBindState.buffer = buffer->BindD3D11UAV(_deviceContext);
@@ -198,7 +200,7 @@ private:
 
         ID3D11UnorderedAccessView * buffer;
 
-        OsdVertexBufferDescriptor desc;
+        VertexBufferDescriptor desc;
 
         KernelBundle const * kernelBundle;
     };
@@ -207,10 +209,12 @@ private:
 
     typedef std::vector<KernelBundle *> KernelRegistry;
 
-    KernelBundle const * getKernel(OsdVertexBufferDescriptor const &desc);
+    KernelBundle const * getKernel(VertexBufferDescriptor const &desc);
 
     KernelRegistry _kernelRegistry;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

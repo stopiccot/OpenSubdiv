@@ -29,11 +29,13 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdDrawContext::~OsdDrawContext() {}
+namespace Osd {
+
+DrawContext::~DrawContext() {}
 
 void
-OsdDrawContext::ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &farPatchArrays,
-                                   OsdDrawContext::PatchArrayVector &osdPatchArrays,
+DrawContext::ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &farPatchArrays,
+                                   DrawContext::PatchArrayVector &osdPatchArrays,
                                    int maxValence, int numElements) {
 
     // create patch arrays for drawing (while duplicating subpatches for transition patch arrays)
@@ -65,7 +67,7 @@ OsdDrawContext::ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &far
 }
 
 void
-OsdDrawContext::packFVarData(Far::PatchTables const & patchTables,
+DrawContext::packFVarData(Far::PatchTables const & patchTables,
                              int fvarWidth, FVarData const & src, FVarData & dst) {
 
     assert(fvarWidth and (not src.empty()));
@@ -89,5 +91,7 @@ OsdDrawContext::packFVarData(Far::PatchTables const & patchTables,
     }
 }
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

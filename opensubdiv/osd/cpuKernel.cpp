@@ -33,14 +33,16 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 template <class T> T *
-elementAtIndex(T * src, int index, OsdVertexBufferDescriptor const &desc) {
+elementAtIndex(T * src, int index, VertexBufferDescriptor const &desc) {
 
     return src + index * desc.stride;
 }
 
 static inline void
-clear(float *dst, OsdVertexBufferDescriptor const &desc) {
+clear(float *dst, VertexBufferDescriptor const &desc) {
 
     assert(dst);
     memset(dst, 0, desc.length*sizeof(float));
@@ -48,7 +50,7 @@ clear(float *dst, OsdVertexBufferDescriptor const &desc) {
 
 static inline void
 addWithWeight(float *dst, const float *src, int srcIndex, float weight,
-              OsdVertexBufferDescriptor const &desc) {
+              VertexBufferDescriptor const &desc) {
 
     assert(src and dst);
     src = elementAtIndex(src, srcIndex, desc);
@@ -59,7 +61,7 @@ addWithWeight(float *dst, const float *src, int srcIndex, float weight,
 
 static inline void
 copy(float *dst, int dstIndex, const float *src,
-     OsdVertexBufferDescriptor const &desc) {
+     VertexBufferDescriptor const &desc) {
 
     assert(src and dst);
 
@@ -68,14 +70,14 @@ copy(float *dst, int dstIndex, const float *src,
 }
 
 void
-OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
-                      float const * vertexSrc,
-                      float * vertexDst,
-                      unsigned char const * sizes,
-                      int const * offsets,
-                      int const * indices,
-                      float const * weights,
-                      int start, int end) {
+CpuComputeStencils(VertexBufferDescriptor const &vertexDesc,
+                   float const * vertexSrc,
+                   float * vertexDst,
+                   unsigned char const * sizes,
+                   int const * offsets,
+                   int const * indices,
+                   float const * weights,
+                   int start, int end) {
 
     assert(start>=0 and start<end);
 
@@ -115,6 +117,8 @@ OsdCpuComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
         }
     }
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

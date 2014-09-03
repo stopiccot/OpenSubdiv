@@ -44,25 +44,27 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-enum OsdMeshBits {
+namespace Osd {
+
+enum MeshBits {
     MeshAdaptive          = 0,
     MeshInterleaveVarying = 1,
     MeshPtexData          = 2,
     MeshFVarData          = 3,
     NUM_MESH_BITS         = 4,
 };
-typedef std::bitset<NUM_MESH_BITS> OsdMeshBitset;
+typedef std::bitset<NUM_MESH_BITS> MeshBitset;
 
 template <class DRAW_CONTEXT>
-class OsdMeshInterface {
+class MeshInterface {
 public:
     typedef DRAW_CONTEXT DrawContext;
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
 public:
-    OsdMeshInterface() { }
+    MeshInterface() { }
 
-    virtual ~OsdMeshInterface() { }
+    virtual ~MeshInterface() { }
 
     virtual int GetNumVertices() const = 0;
 
@@ -72,8 +74,8 @@ public:
 
     virtual void Refine() = 0;
 
-    virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc,
-                        OsdVertexBufferDescriptor const *varyingDesc,
+    virtual void Refine(VertexBufferDescriptor const *vertexDesc,
+                        VertexBufferDescriptor const *varyingDesc,
                         bool interleaved) = 0;
 
     virtual void Synchronize() = 0;
@@ -109,7 +111,7 @@ protected:
 
 
 template <class VERTEX_BUFFER, class COMPUTE_CONTROLLER, class DRAW_CONTEXT>
-class OsdMesh : public OsdMeshInterface<DRAW_CONTEXT> {
+class Mesh : public MeshInterface<DRAW_CONTEXT> {
 public:
     typedef VERTEX_BUFFER VertexBuffer;
     typedef COMPUTE_CONTROLLER ComputeController;
@@ -117,12 +119,12 @@ public:
     typedef DRAW_CONTEXT DrawContext;
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
-            OsdMeshBitset bits = OsdMeshBitset()) :
+            MeshBitset bits = MeshBitset()) :
 
             _refiner(refiner),
             _vertexBuffer(0),
@@ -133,7 +135,7 @@ public:
 
         assert(_refiner);
 
-        OsdMeshInterface<DRAW_CONTEXT>::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
+        MeshInterface<DRAW_CONTEXT>::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
 
         initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
 
@@ -142,7 +144,7 @@ public:
         initializeDrawContext(numVertexElements, bits);
     }
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
@@ -156,7 +158,7 @@ public:
             _computeController(computeController),
             _drawContext(drawContext) { }
 
-    virtual ~OsdMesh() {
+    virtual ~Mesh() {
         delete _refiner;
         delete _patchTables;
         delete _vertexBuffer;
@@ -167,7 +169,7 @@ public:
 
     virtual int GetNumVertices() const {
         assert(_refiner);
-        return OsdMeshInterface<DRAW_CONTEXT>::getNumVertices(*_refiner);
+        return MeshInterface<DRAW_CONTEXT>::getNumVertices(*_refiner);
     }
 
     virtual void UpdateVertexBuffer(float const *vertexData, int startVertex, int numVerts) {
@@ -182,7 +184,7 @@ public:
         _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer);
     }
 
-    virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc, OsdVertexBufferDescriptor const *varyingDesc) {
+    virtual void Refine(VertexBufferDescriptor const *vertexDesc, VertexBufferDescriptor const *varyingDesc) {
         _computeController->Refine(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer, vertexDesc, varyingDesc);
     }
 
@@ -241,7 +243,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, MeshBitset bits) {
 
         assert(_refiner and _vertexBuffer);
 
@@ -257,9 +259,9 @@ private:
     }
 
     int initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements, OsdMeshBitset bits) {
+        int numVaryingElements, MeshBitset bits) {
 
-        int numVertices = OsdMeshInterface<DRAW_CONTEXT>::getNumVertices(*_refiner);
+        int numVertices = MeshInterface<DRAW_CONTEXT>::getNumVertices(*_refiner);
 
         int numElements = numVertexElements +
             (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
@@ -288,7 +290,9 @@ private:
     DrawContext *_drawContext;
 };
 
-}  // end namespace OPENSUBDIV_VERSION
+} // end namespace Osd
+
+} // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 }  // end namespace OpenSubdiv

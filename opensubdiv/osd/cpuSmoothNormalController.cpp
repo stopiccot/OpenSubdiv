@@ -30,6 +30,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 inline void
 cross(float *n, const float *p0, const float *p1, const float *p2) {
 
@@ -45,10 +47,10 @@ cross(float *n, const float *p0, const float *p1, const float *p2) {
     n[2] *= rn;
 }
 
-void OsdCpuSmoothNormalController::_smootheNormals(
-    OsdCpuSmoothNormalContext * context) {
+void CpuSmoothNormalController::_smootheNormals(
+    CpuSmoothNormalContext * context) {
 
-    OsdVertexBufferDescriptor const & iDesc = context->GetInputVertexDescriptor(),
+    VertexBufferDescriptor const & iDesc = context->GetInputVertexDescriptor(),
                                     & oDesc = context->GetOutputVertexDescriptor();
 
     assert(iDesc.length==3 and oDesc.length==3);
@@ -109,15 +111,17 @@ void OsdCpuSmoothNormalController::_smootheNormals(
 
 }
 
-OsdCpuSmoothNormalController::OsdCpuSmoothNormalController() {
+CpuSmoothNormalController::CpuSmoothNormalController() {
 }
 
-OsdCpuSmoothNormalController::~OsdCpuSmoothNormalController() {
+CpuSmoothNormalController::~CpuSmoothNormalController() {
 }
 
 void
-OsdCpuSmoothNormalController::Synchronize() {
+CpuSmoothNormalController::Synchronize() {
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

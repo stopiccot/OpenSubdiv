@@ -36,6 +36,8 @@ namespace OPENSUBDIV_VERSION {
 
 namespace Far{ class StencilTables; }
 
+namespace Osd {
+
 ///
 /// \brief CPU Compute Context
 ///
@@ -47,10 +49,10 @@ namespace Far{ class StencilTables; }
 /// Contexts provide an interface between the serialized topological data
 /// of a geometric primitive and the computation resources of a compute device.
 ///
-class OsdCpuComputeContext : private OsdNonCopyable<OsdCpuComputeContext> {
+class CpuComputeContext : private NonCopyable<CpuComputeContext> {
 
 public:
-    /// Creates an OsdCpuComputeContext instance
+    /// Creates an CpuComputeContext instance
     ///
     /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
@@ -58,11 +60,11 @@ public:
     /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
-    static OsdCpuComputeContext * Create(Far::StencilTables const * vertexStencilTables,
+    static CpuComputeContext * Create(Far::StencilTables const * vertexStencilTables,
                                          Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
-    virtual ~OsdCpuComputeContext();
+    virtual ~CpuComputeContext();
 
     /// Returns the stencils data applied by this context for vertex interpolation
     Far::StencilTables const * GetVertexStencilTables() const {
@@ -76,7 +78,7 @@ public:
 
 protected:
 
-    explicit OsdCpuComputeContext(Far::StencilTables const * vertexStencilTables,
+    explicit CpuComputeContext(Far::StencilTables const * vertexStencilTables,
                                   Far::StencilTables const * varyingStencilTables=0);
 
 private:
@@ -84,6 +86,8 @@ private:
     Far::StencilTables const * _vertexStencilTables,
                            * _varyingStencilTables;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

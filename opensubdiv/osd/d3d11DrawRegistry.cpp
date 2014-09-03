@@ -33,7 +33,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdD3D11DrawConfig::~OsdD3D11DrawConfig()
+namespace Osd {
+
+D3D11DrawConfig::~D3D11DrawConfig()
 {
     if (vertexShader) vertexShader->Release();
     if (hullShader) hullShader->Release();
@@ -58,13 +60,13 @@ static const char *transitionShaderSource =
 #include "hlslPatchTransition.gen.h"
 ;
 
-OsdD3D11DrawRegistryBase::~OsdD3D11DrawRegistryBase() {}
+D3D11DrawRegistryBase::~D3D11DrawRegistryBase() {}
 
-OsdD3D11DrawSourceConfig *
-OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
-    OsdDrawContext::PatchDescriptor const & desc, ID3D11Device * pd3dDevice)
+D3D11DrawSourceConfig *
+D3D11DrawRegistryBase::_CreateDrawSourceConfig(
+    DrawContext::PatchDescriptor const & desc, ID3D11Device * pd3dDevice)
 {
-    OsdD3D11DrawSourceConfig * sconfig = _NewDrawSourceConfig();
+    D3D11DrawSourceConfig * sconfig = _NewDrawSourceConfig();
 
     sconfig->commonShader.source = commonShaderSource;
 
@@ -189,8 +191,8 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
 
 static ID3DBlob *
 _CompileShader(
-        OsdDrawShaderSource const & common,
-        OsdDrawShaderSource const & source)
+        DrawShaderSource const & common,
+        DrawShaderSource const & source)
 {
     DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
@@ -226,7 +228,7 @@ _CompileShader(
                             dwShaderFlags, 0, &pBlob, &pBlobError);
     if (FAILED(hr)) {
         if ( pBlobError != NULL ) {
-            OsdError(OSD_D3D11_COMPILE_ERROR,
+            Error(OSD_D3D11_COMPILE_ERROR,
                      "Error compiling HLSL shader: %s\n",
                      (CHAR*)pBlobError->GetBufferPointer());
             pBlobError->Release();
@@ -239,8 +241,8 @@ _CompileShader(
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
-OsdD3D11DrawConfig*
-OsdD3D11DrawRegistryBase::_CreateDrawConfig(
+D3D11DrawConfig*
+D3D11DrawRegistryBase::_CreateDrawConfig(
         DescType const & desc,
         SourceConfigType const * sconfig,
         ID3D11Device * pd3dDevice,
@@ -316,7 +318,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawConfig(
         SAFE_RELEASE(pBlob);
     }
 
-    OsdD3D11DrawConfig * config = _NewDrawConfig();
+    D3D11DrawConfig * config = _NewDrawConfig();
 
     config->vertexShader = vertexShader;
     config->hullShader = hullShader;
@@ -327,5 +329,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawConfig(
     return config;
 }
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

@@ -35,18 +35,20 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 ///
 /// \brief CPU stencils evaluation context
 ///
 ///
-class OsdCpuEvalStencilsContext : private OsdNonCopyable<OsdCpuEvalStencilsContext> {
+class CpuEvalStencilsContext : private NonCopyable<CpuEvalStencilsContext> {
 
 public:
-    /// \brief Creates an OsdCpuEvalStencilsContext instance
+    /// \brief Creates an CpuEvalStencilsContext instance
     ///
     /// @param stencils  a pointer to the Far::StencilTables
     ///
-    static OsdCpuEvalStencilsContext * Create(Far::StencilTables const *stencils);
+    static CpuEvalStencilsContext * Create(Far::StencilTables const *stencils);
 
     /// \brief Returns the Far::StencilTables applied
     Far::StencilTables const * GetStencilTables() const {
@@ -55,12 +57,14 @@ public:
 
 protected:
 
-    OsdCpuEvalStencilsContext(Far::StencilTables const *stencils);
+    CpuEvalStencilsContext(Far::StencilTables const *stencils);
 
 private:
-    
+
     Far::StencilTables const * _stencils;
 };
+
+} // end namespace Osd
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

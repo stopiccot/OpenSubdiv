@@ -33,16 +33,16 @@
 #include <osd/cpuD3D11VertexBuffer.h>
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
-OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
+OpenSubdiv::Osd::CpuComputeController * g_cpuComputeController = NULL;
 
 #ifdef OPENSUBDIV_HAS_OPENMP
     #include <osd/ompComputeController.h>
-    OpenSubdiv::OsdOmpComputeController * g_ompComputeController = NULL;
+    OpenSubdiv::Osd::OmpComputeController * g_ompComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_TBB
     #include <osd/tbbComputeController.h>
-    OpenSubdiv::OsdTbbComputeController *g_tbbComputeController = NULL;
+    OpenSubdiv::Osd::TbbComputeController *g_tbbComputeController = NULL;
 #endif
 
 #undef OPENSUBDIV_HAS_OPENCL    // XXX: dyu OpenCL D3D11 interop needs work...
@@ -55,7 +55,7 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
 
     cl_context g_clContext;
     cl_command_queue g_clQueue;
-    OpenSubdiv::OsdCLComputeController * g_clComputeController = NULL;
+    OpenSubdiv::Osd::CLComputeController * g_clComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
@@ -67,16 +67,16 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
     #include <cuda_d3d11_interop.h>
 
     bool g_cudaInitialized = false;
-    OpenSubdiv::OsdCudaComputeController * g_cudaComputeController = NULL;
+    OpenSubdiv::Osd::CudaComputeController * g_cudaComputeController = NULL;
 #endif
 
 #include <osd/d3d11VertexBuffer.h>
 #include <osd/d3d11ComputeContext.h>
 #include <osd/d3d11ComputeController.h>
-OpenSubdiv::OsdD3D11ComputeController * g_d3d11ComputeController = NULL;
+OpenSubdiv::Osd::D3D11ComputeController * g_d3d11ComputeController = NULL;
 
 #include <osd/d3d11Mesh.h>
-OpenSubdiv::OsdD3D11MeshInterface *g_mesh;
+OpenSubdiv::Osd::D3D11MeshInterface *g_mesh;
 
 #include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
@@ -315,19 +315,19 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     // Adaptive refinement currently supported only for catmull-clark scheme
     bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark);
 
-    OpenSubdiv::OsdMeshBitset bits;
-    bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
+    OpenSubdiv::Osd::MeshBitset bits;
+    bits.set(OpenSubdiv::Osd::MeshAdaptive, doAdaptive);
 
     int numVertexElements = 6;
     int numVaryingElements = 0;
 
     if (g_kernel == kCPU) {
         if (not g_cpuComputeController) {
-            g_cpuComputeController = new OpenSubdiv::OsdCpuComputeController();
+            g_cpuComputeController = new OpenSubdiv::Osd::CpuComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuD3D11VertexBuffer,
-                                         OpenSubdiv::OsdCpuComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::CpuComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_cpuComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -336,11 +336,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_OPENMP
     } else if (kernel == kOPENMP) {
         if (not g_ompComputeController) {
-            g_ompComputeController = new OpenSubdiv::OsdOmpComputeController();
+            g_ompComputeController = new OpenSubdiv::Osd::OmpComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuD3D11VertexBuffer,
-                                         OpenSubdiv::OsdOmpComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::OmpComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_ompComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -350,11 +350,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_TBB
     } else if (kernel == kTBB) {
         if (not g_tbbComputeController) {
-            g_tbbComputeController = new OpenSubdiv::OsdTbbComputeController();
+            g_tbbComputeController = new OpenSubdiv::Osd::TbbComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuD3D11VertexBuffer,
-                                         OpenSubdiv::OsdTbbComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::TbbComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_tbbComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -364,11 +364,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if(kernel == kCL) {
         if (not g_clComputeController) {
-            g_clComputeController = new OpenSubdiv::OsdCLComputeController(g_clContext, g_clQueue);
+            g_clComputeController = new OpenSubdiv::Osd::CLComputeController(g_clContext, g_clQueue);
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCLD3D11VertexBuffer,
-                                         OpenSubdiv::OsdCLComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CLD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::CLComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_clComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -378,11 +378,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if (g_kernel == kCUDA) {
         if (not g_cudaComputeController) {
-            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController();
+            g_cudaComputeController = new OpenSubdiv::Osd::CudaComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCudaD3D11VertexBuffer,
-                                         OpenSubdiv::OsdCudaComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::OsdCudaD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::CudaComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_cudaComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -391,11 +391,11 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #endif
     } else if (g_kernel == kDirectCompute) {
         if (not g_d3d11ComputeController) {
-            g_d3d11ComputeController = new OpenSubdiv::OsdD3D11ComputeController(g_pd3dDeviceContext);
+            g_d3d11ComputeController = new OpenSubdiv::Osd::D3D11ComputeController(g_pd3dDeviceContext);
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdD3D11VertexBuffer,
-                                         OpenSubdiv::OsdD3D11ComputeController,
-                                         OpenSubdiv::OsdD3D11DrawContext>(
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::OsdD3D11VertexBuffer,
+                                         OpenSubdiv::Osd::D3D11ComputeController,
+                                         OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_d3d11ComputeController,
                                                 refiner,
                                                 numVertexElements,
@@ -459,9 +459,9 @@ union Effect {
 };
 
 
-typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
+typedef std::pair<OpenSubdiv::Osd::DrawContext::PatchDescriptor, Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdD3D11DrawRegistry<EffectDesc> {
+class EffectDrawRegistry : public OpenSubdiv::Osd::D3D11DrawRegistry<EffectDesc> {
 
 protected:
     virtual ConfigType *
@@ -622,7 +622,7 @@ GetEffect() {
 
 //------------------------------------------------------------------------------
 static void
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch) {
+bindProgram(Effect effect, OpenSubdiv::Osd::DrawContext::PatchArray const & patch) {
 
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
 
@@ -802,7 +802,7 @@ display() {
     UINT hOffsets = 0;
     g_pd3dDeviceContext->IASetVertexBuffers(0, 1, &buffer, &hStrides, &hOffsets);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->GetPatchArrays();
+    OpenSubdiv::Osd::DrawContext::PatchArrayVector const & patches = g_mesh->GetDrawContext()->GetPatchArrays();
 
     g_pd3dDeviceContext->IASetIndexBuffer(g_mesh->GetDrawContext()->patchIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
@@ -811,13 +811,13 @@ display() {
 
     if (g_drawPatchCVs) {
 
-        bindProgram(kPoint, OpenSubdiv::OsdDrawContext::PatchArray());
+        bindProgram(kPoint, OpenSubdiv::Osd::DrawContext::PatchArray());
 
         g_pd3dDeviceContext->IASetPrimitiveTopology(
                                 D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
         for (int i=0; i<(int)patches.size(); ++i) {
-            OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+            OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
 
             g_pd3dDeviceContext->DrawIndexed(patch.GetNumIndices(),
                                              patch.GetVertIndex(), 0);
@@ -827,13 +827,13 @@ display() {
 
     // patch drawing
     for (int i=0; i<(int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
 
         D3D11_PRIMITIVE_TOPOLOGY topology;
 
         if (g_mesh->GetDrawContext()->IsAdaptive()) {
 
-            OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+            OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
 
             switch (desc.GetNumControlVertices()) {
             case 4:
@@ -1347,7 +1347,7 @@ updateRenderTarget(HWND hWnd) {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
+callbackError(OpenSubdiv::Osd::ErrorType err, const char *message) {
 
     std::ostringstream s;
     s << "OsdError: " << err << "\n";
@@ -1476,7 +1476,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmd
 
     initShapes();
 
-    OsdSetErrorCallback(callbackError);
+    OpenSubdiv::Osd::SetErrorCallback(callbackError);
 
     initD3D11(hWnd);
 

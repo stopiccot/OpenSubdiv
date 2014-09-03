@@ -73,7 +73,7 @@ int main(int, char **) {
         nCoarseVerts=0,
         nRefinedVerts=0;
 
-    OsdCpuComputeContext * context=0;
+    Osd::CpuComputeContext * context=0;
 
     Far::KernelBatchVector batches;
 
@@ -96,7 +96,7 @@ int main(int, char **) {
         batches.push_back(Far::StencilTablesFactory::Create(*stencilTables));
 
         // Create an Osd Compute Context from the stencil tables
-        context = OsdCpuComputeContext::Create(stencilTables);
+        context = Osd::CpuComputeContext::Create(stencilTables);
 
         nCoarseVerts = refiner->GetNumVertices(0);
         nRefinedVerts = stencilTables->GetNumStencils();
@@ -107,11 +107,11 @@ int main(int, char **) {
     }
 
     // Setup Controller
-    OsdCpuComputeController controller;
+    Osd::CpuComputeController controller;
 
     // Setup a buffer for vertex primvar data:
-    OsdCpuVertexBuffer * vbuffer =
-        OsdCpuVertexBuffer::Create(3, nCoarseVerts + nRefinedVerts);
+    Osd::CpuVertexBuffer * vbuffer =
+        Osd::CpuVertexBuffer::Create(3, nCoarseVerts + nRefinedVerts);
 
     //
     // Execution phase (every frame)

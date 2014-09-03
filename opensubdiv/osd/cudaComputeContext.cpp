@@ -32,6 +32,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 // ----------------------------------------------------------------------------
 
 template <class T> void *
@@ -56,7 +58,7 @@ createCudaBuffer(std::vector<T> const & src) {
 
 // ----------------------------------------------------------------------------
 
-class OsdCudaComputeContext::CudaStencilTables {
+class CudaComputeContext::CudaStencilTables {
 
 public:
 
@@ -103,7 +105,7 @@ private:
 
 // ----------------------------------------------------------------------------
 
-OsdCudaComputeContext::OsdCudaComputeContext(
+CudaComputeContext::CudaComputeContext(
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
@@ -125,7 +127,7 @@ OsdCudaComputeContext::OsdCudaComputeContext(
     }
 }
 
-OsdCudaComputeContext::~OsdCudaComputeContext() {
+CudaComputeContext::~CudaComputeContext() {
     delete _vertexStencilTables;
     delete _varyingStencilTables;
 }
@@ -133,70 +135,72 @@ OsdCudaComputeContext::~OsdCudaComputeContext() {
 // ----------------------------------------------------------------------------
 
 bool
-OsdCudaComputeContext::HasVertexStencilTables() const {
+CudaComputeContext::HasVertexStencilTables() const {
     return _vertexStencilTables ? _vertexStencilTables->IsValid() : false;
 }
 
 bool
-OsdCudaComputeContext::HasVaryingStencilTables() const {
+CudaComputeContext::HasVaryingStencilTables() const {
     return _varyingStencilTables ? _varyingStencilTables->IsValid() : false;
 }
 
 // ----------------------------------------------------------------------------
 
 void *
-OsdCudaComputeContext::GetVertexStencilTablesSizes() const {
+CudaComputeContext::GetVertexStencilTablesSizes() const {
     return _vertexStencilTables ? _vertexStencilTables->GetSizes() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVertexStencilTablesOffsets() const {
+CudaComputeContext::GetVertexStencilTablesOffsets() const {
     return _vertexStencilTables ? _vertexStencilTables->GetOffsets() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVertexStencilTablesIndices() const {
+CudaComputeContext::GetVertexStencilTablesIndices() const {
     return _vertexStencilTables ? _vertexStencilTables->GetIndices() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVertexStencilTablesWeights() const {
+CudaComputeContext::GetVertexStencilTablesWeights() const {
     return _vertexStencilTables ? _vertexStencilTables->GetWeights() : 0;
 }
 
 // ----------------------------------------------------------------------------
 
 void *
-OsdCudaComputeContext::GetVaryingStencilTablesSizes() const {
+CudaComputeContext::GetVaryingStencilTablesSizes() const {
     return _varyingStencilTables ? _varyingStencilTables->GetSizes() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVaryingStencilTablesOffsets() const {
+CudaComputeContext::GetVaryingStencilTablesOffsets() const {
     return _varyingStencilTables ? _varyingStencilTables->GetOffsets() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVaryingStencilTablesIndices() const {
+CudaComputeContext::GetVaryingStencilTablesIndices() const {
     return _varyingStencilTables ? _varyingStencilTables->GetIndices() : 0;
 }
 
 void *
-OsdCudaComputeContext::GetVaryingStencilTablesWeights() const {
+CudaComputeContext::GetVaryingStencilTablesWeights() const {
     return _varyingStencilTables ? _varyingStencilTables->GetWeights() : 0;
 }
 
 // ----------------------------------------------------------------------------
 
-OsdCudaComputeContext *
-OsdCudaComputeContext::Create(Far::StencilTables const * vertexStencilTables,
+CudaComputeContext *
+CudaComputeContext::Create(Far::StencilTables const * vertexStencilTables,
                               Far::StencilTables const * varyingStencilTables) {
 
-    OsdCudaComputeContext *result =
-        new OsdCudaComputeContext(vertexStencilTables, varyingStencilTables);
+    CudaComputeContext *result =
+        new CudaComputeContext(vertexStencilTables, varyingStencilTables);
 
     return result;
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

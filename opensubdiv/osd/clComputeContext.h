@@ -35,7 +35,9 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class Far::StencilTables;
+namespace Far{ class StencilTables; }
+
+namespace Osd {
 
 ///
 /// \brief OpenCL Refine Context
@@ -46,10 +48,10 @@ class Far::StencilTables;
 /// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
-class OsdCLComputeContext : public OsdNonCopyable<OsdCLComputeContext> {
+class CLComputeContext : public NonCopyable<CLComputeContext> {
 
 public:
-    /// Creates an OsdCLComputeContext instance
+    /// Creates an CLComputeContext instance
     ///
     /// @param clContext             An active OpenCL compute context
     ///
@@ -59,12 +61,12 @@ public:
     /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
-    static OsdCLComputeContext * Create(cl_context clContext,
+    static CLComputeContext * Create(cl_context clContext,
                                         Far::StencilTables const * vertexStencilTables,
                                         Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
-    virtual ~OsdCLComputeContext();
+    virtual ~CLComputeContext();
 
 
     /// Returns true if the Context has a 'vertex' interpolation stencil table
@@ -105,7 +107,7 @@ public:
 
 
 protected:
-    explicit OsdCLComputeContext(Far::StencilTables const * vertexStencilTables,
+    explicit CLComputeContext(Far::StencilTables const * vertexStencilTables,
                                  Far::StencilTables const * varyingStencilTables,
                                  cl_context clContext);
 
@@ -118,6 +120,8 @@ private:
 
     int _numControlVertices;
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

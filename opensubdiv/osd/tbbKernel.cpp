@@ -33,16 +33,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 #define grain_size  200
 
 template <class T> T *
-elementAtIndex(T * src, int index, OsdVertexBufferDescriptor const &desc) {
+elementAtIndex(T * src, int index, VertexBufferDescriptor const &desc) {
 
     return src + index * desc.stride;
 }
 
 static inline void
-clear(float *dst, OsdVertexBufferDescriptor const &desc) {
+clear(float *dst, VertexBufferDescriptor const &desc) {
 
     assert(dst);
     memset(dst, 0, desc.length*sizeof(float));
@@ -50,7 +52,7 @@ clear(float *dst, OsdVertexBufferDescriptor const &desc) {
 
 static inline void
 addWithWeight(float *dst, const float *src, int srcIndex, float weight,
-              OsdVertexBufferDescriptor const &desc) {
+              VertexBufferDescriptor const &desc) {
 
     assert(src and dst);
     src = elementAtIndex(src, srcIndex, desc);
@@ -61,7 +63,7 @@ addWithWeight(float *dst, const float *src, int srcIndex, float weight,
 
 static inline void
 copy(float *dst, int dstIndex, const float *src,
-     OsdVertexBufferDescriptor const &desc) {
+     VertexBufferDescriptor const &desc) {
 
     assert(src and dst);
 
@@ -72,7 +74,7 @@ copy(float *dst, int dstIndex, const float *src,
 
 class TBBStencilKernel {
 
-    OsdVertexBufferDescriptor _vertexDesc;
+    VertexBufferDescriptor _vertexDesc;
     float const * _vertexSrc;
 
     float * _vertexDst;
@@ -84,7 +86,7 @@ class TBBStencilKernel {
 
 
 public:
-    TBBStencilKernel(OsdVertexBufferDescriptor vertexDesc, float const * vertexSrc,
+    TBBStencilKernel(VertexBufferDescriptor vertexDesc, float const * vertexSrc,
         float * vertexDst, unsigned char const * sizes, int const * offsets,
             int const * indices, float const * weights ) :
          _vertexDesc(vertexDesc),
@@ -154,7 +156,7 @@ public:
 };
 
 void
-OsdTbbComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
+TbbComputeStencils(VertexBufferDescriptor const &vertexDesc,
                       float const * vertexSrc,
                       float * vertexDst,
                       unsigned char const * sizes,
@@ -172,6 +174,8 @@ OsdTbbComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
 
     tbb::parallel_for(range, kernel);
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

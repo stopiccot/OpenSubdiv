@@ -36,11 +36,13 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class OsdCpuSmoothNormalContext :  private OsdNonCopyable<OsdCpuSmoothNormalContext> {
+namespace Osd {
+
+class CpuSmoothNormalContext :  private NonCopyable<CpuSmoothNormalContext> {
 
 public:
 
-    /// Creates an OsdCpuComputeContext instance
+    /// Creates an CpuComputeContext instance
     ///
     /// @param patchTables  The Far::PatchTables used for this Context.
     ///
@@ -50,7 +52,7 @@ public:
     ///                     Controller, then the vertex buffer will already have
     ///                     been reset and this step can be skipped to save time.
     ///
-    static OsdCpuSmoothNormalContext * Create(
+    static CpuSmoothNormalContext * Create(
         Far::PatchTables const *patchTables, bool resetMemory=false);
 
     /// Binds a vertex and a varying data buffers to the context. Binding ensures
@@ -76,8 +78,8 @@ public:
         _iBuffer = in ? in->BindCpuBuffer() : 0;
         _oBuffer = out ? out->BindCpuBuffer() : 0;
 
-        _iDesc = OsdVertexBufferDescriptor( iOfs, 3, in->GetNumElements() );
-        _oDesc = OsdVertexBufferDescriptor( oOfs, 3, out->GetNumElements() );
+        _iDesc = VertexBufferDescriptor( iOfs, 3, in->GetNumElements() );
+        _oDesc = VertexBufferDescriptor( oOfs, 3, out->GetNumElements() );
 
         _numVertices = out->GetNumVertices();
     }
@@ -111,14 +113,14 @@ public:
         return _oBuffer;
     }
 
-    /// Returns an OsdVertexDescriptor for the input vertex data
-    OsdVertexBufferDescriptor const & GetInputVertexDescriptor() const {
+    /// Returns an VertexDescriptor for the input vertex data
+    VertexBufferDescriptor const & GetInputVertexDescriptor() const {
         return _iDesc;
     }
 
-    /// Returns an OsdVertexDescriptor for the buffer where the normals data
+    /// Returns an VertexDescriptor for the buffer where the normals data
     /// will be stored
-    OsdVertexBufferDescriptor const & GetOutputVertexDescriptor() const {
+    VertexBufferDescriptor const & GetOutputVertexDescriptor() const {
         return _oDesc;
     }
 
@@ -141,7 +143,7 @@ public:
 
 protected:
     // Constructor
-    explicit OsdCpuSmoothNormalContext(
+    explicit CpuSmoothNormalContext(
         Far::PatchTables const *patchTables, bool resetMemory);
 
 private:
@@ -150,7 +152,7 @@ private:
     Far::PatchTables::PatchArrayVector     _patchArrays;    // patch descriptor for each patch in the mesh
     Far::PatchTables::PTable               _patches;        // patch control vertices
 
-    OsdVertexBufferDescriptor _iDesc,
+    VertexBufferDescriptor _iDesc,
                               _oDesc;
 
     int _numVertices;
@@ -161,6 +163,8 @@ private:
     bool _resetMemory;  // set to true if the output buffer needs to be reset to 0
 };
 
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

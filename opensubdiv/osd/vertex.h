@@ -30,27 +30,31 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 class FarVertexEdit;
 
 //!
 /*! 
  */
-class OsdVertex {
+class Vertex {
 public:
-    OsdVertex() {}
+    Vertex() {}
 
-    OsdVertex(int /* index */) {}
+    Vertex(int /* index */) {}
 
-    OsdVertex(OsdVertex const & /* src */) {}
+    Vertex(Vertex const & /* src */) {}
 
-    void AddWithWeight(OsdVertex const & /* i */, float /* weight */, void * = 0) {}
+    void AddWithWeight(Vertex const & /* i */, float /* weight */, void * = 0) {}
 
-    void AddVaryingWithWeight(const OsdVertex & /* i */, float /* weight */, void * = 0) {}
+    void AddVaryingWithWeight(const Vertex & /* i */, float /* weight */, void * = 0) {}
 
     void Clear(void * = 0) {}
 
     void ApplyVertexEdit(FarVertexEdit const &) { }
 };
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

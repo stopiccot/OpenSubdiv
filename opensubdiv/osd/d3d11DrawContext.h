@@ -47,9 +47,11 @@ struct ID3D11DeviceContext;
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 /// \brief D3D11 specialized DrawContext class
 ///
-/// OsdD3D11DrawContext implements the OSD drawing interface with Microsoft(c)
+/// D3D11DrawContext implements the OSD drawing interface with Microsoft(c)
 /// DirectX D3D11 API.
 /// Some functionality may be disabled depending on compile and run-time driver
 /// support.
@@ -58,13 +60,13 @@ namespace OPENSUBDIV_VERSION {
 /// geometric primitives with the capabilities of the selected discrete
 /// compute device.
 ///
-class OsdD3D11DrawContext : public OsdDrawContext {
+class D3D11DrawContext : public DrawContext {
 public:
     typedef ID3D11Buffer * VertexBufferBinding;
 
-    virtual ~OsdD3D11DrawContext();
+    virtual ~D3D11DrawContext();
 
-    /// \brief Create an OsdD3D11DrawContext from Far::PatchTables
+    /// \brief Create an D3D11DrawContext from Far::PatchTables
     ///
     /// @param patchTables          A valid set of Far::PatchTables
     ///
@@ -72,7 +74,7 @@ public:
     ///
     /// @param numVertexElements    The number of vertex elements
     ///
-    static OsdD3D11DrawContext *Create(Far::PatchTables const *patchTables,
+    static D3D11DrawContext *Create(Far::PatchTables const *patchTables,
                                        ID3D11DeviceContext *pd3d11DeviceContext,
                                        int numVertexElements);
 
@@ -122,7 +124,7 @@ public:
                             int fvarWidth, FVarData const & fvarData);
 
 private:
-    OsdD3D11DrawContext();
+    D3D11DrawContext();
 
 
     // allocate buffers from patchTables
@@ -138,7 +140,9 @@ private:
     int _numVertices;
 };
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 } // end namespace OpenSubdiv

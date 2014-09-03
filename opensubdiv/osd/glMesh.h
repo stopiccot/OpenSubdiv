@@ -39,23 +39,25 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-typedef OsdMeshInterface<OsdGLDrawContext> OsdGLMeshInterface;
+namespace Osd {
+
+typedef MeshInterface<GLDrawContext> GLMeshInterface;
 
 template <class VERTEX_BUFFER, class COMPUTE_CONTROLLER>
-class OsdMesh<VERTEX_BUFFER, COMPUTE_CONTROLLER, OsdGLDrawContext> : public OsdGLMeshInterface {
+class Mesh<VERTEX_BUFFER, COMPUTE_CONTROLLER, GLDrawContext> : public GLMeshInterface {
 public:
     typedef VERTEX_BUFFER VertexBuffer;
     typedef COMPUTE_CONTROLLER ComputeController;
     typedef typename ComputeController::ComputeContext ComputeContext;
-    typedef OsdGLDrawContext DrawContext;
+    typedef GLDrawContext DrawContext;
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
-            OsdMeshBitset bits) :
+            MeshBitset bits) :
 
             _refiner(refiner),
             _patchTables(0),
@@ -66,7 +68,7 @@ public:
             _drawContext(0)
     {
 
-        OsdGLMeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
+        GLMeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
 
         int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
@@ -76,7 +78,7 @@ public:
         initializeDrawContext(numElements, bits);
     }
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
@@ -93,7 +95,7 @@ public:
         _drawContext->UpdateVertexTexture(_vertexBuffer);
     }
 
-    virtual ~OsdMesh() {
+    virtual ~Mesh() {
         delete _refiner;
         delete _patchTables;
         delete _vertexBuffer;
@@ -104,7 +106,7 @@ public:
 
     virtual int GetNumVertices() const {
         assert(_refiner);
-        return OsdGLMeshInterface::getNumVertices(*_refiner);
+        return GLMeshInterface::getNumVertices(*_refiner);
     }
 
 
@@ -120,8 +122,8 @@ public:
         _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer);
     }
 
-    virtual void Refine(OsdVertexBufferDescriptor const * vertexDesc,
-                        OsdVertexBufferDescriptor const * varyingDesc,
+    virtual void Refine(VertexBufferDescriptor const * vertexDesc,
+                        VertexBufferDescriptor const * varyingDesc,
                         bool interleaved) {
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
@@ -195,7 +197,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, MeshBitset bits) {
 
         assert(_refiner and _vertexBuffer);
         
@@ -210,9 +212,9 @@ private:
     }
 
     int initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements, OsdMeshBitset bits) {
+        int numVaryingElements, MeshBitset bits) {
 
-        int numVertices = OsdGLMeshInterface::getNumVertices(*_refiner);
+        int numVertices = GLMeshInterface::getNumVertices(*_refiner);
 
         int numElements = numVertexElements +
             (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
@@ -244,20 +246,20 @@ private:
 #ifdef OPENSUBDIV_HAS_OPENCL
 
 template <class VERTEX_BUFFER>
-class OsdMesh<VERTEX_BUFFER, OsdCLComputeController, OsdGLDrawContext> : public OsdGLMeshInterface {
+class Mesh<VERTEX_BUFFER, CLComputeController, GLDrawContext> : public GLMeshInterface {
 public:
     typedef VERTEX_BUFFER VertexBuffer;
-    typedef OsdCLComputeController ComputeController;
+    typedef CLComputeController ComputeController;
     typedef typename ComputeController::ComputeContext ComputeContext;
-    typedef OsdGLDrawContext DrawContext;
+    typedef GLDrawContext DrawContext;
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
-            OsdMeshBitset bits,
+            MeshBitset bits,
             cl_context clContext,
             cl_command_queue clQueue) :
 
@@ -272,7 +274,7 @@ public:
     {
         assert(_refiner);
 
-        OsdGLMeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
+        GLMeshInterface::refineMesh(*_refiner, level, bits.test(MeshAdaptive));
 
         int numElements =
             initializeVertexBuffers(numVertexElements, numVaryingElements, bits);
@@ -282,7 +284,7 @@ public:
         initializeDrawContext(numElements, bits);
     }
 
-    OsdMesh(ComputeController * computeController,
+    Mesh(ComputeController * computeController,
             Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
@@ -303,7 +305,7 @@ public:
         _drawContext->UpdateVertexTexture(_vertexBuffer);
     }
 
-    virtual ~OsdMesh() {
+    virtual ~Mesh() {
         delete _refiner;
         delete _patchTables;
         delete _vertexBuffer;
@@ -326,8 +328,8 @@ public:
         _computeController->Compute(_computeContext, _kernelBatches, _vertexBuffer, _varyingBuffer);
     }
 
-    virtual void Refine(OsdVertexBufferDescriptor const *vertexDesc,
-                        OsdVertexBufferDescriptor const *varyingDesc,
+    virtual void Refine(VertexBufferDescriptor const *vertexDesc,
+                        VertexBufferDescriptor const *varyingDesc,
                         bool interleaved) {
         _computeController->Compute(_computeContext, _kernelBatches,
                                     _vertexBuffer, (interleaved ? _vertexBuffer : _varyingBuffer),
@@ -401,7 +403,7 @@ private:
         delete varyingStencils;
     }
 
-    void initializeDrawContext(int numElements, OsdMeshBitset bits) {
+    void initializeDrawContext(int numElements, MeshBitset bits) {
 
         assert(_refiner and _vertexBuffer);
 
@@ -416,9 +418,9 @@ private:
     }
 
     int initializeVertexBuffers(int numVertexElements,
-        int numVaryingElements, OsdMeshBitset bits) {
+        int numVaryingElements, MeshBitset bits) {
 
-        int numVertices = OsdGLMeshInterface::getNumVertices(*_refiner);
+        int numVertices = GLMeshInterface::getNumVertices(*_refiner);
 
         int numElements = numVertexElements +
             (bits.test(MeshInterleaveVarying) ? numVaryingElements : 0);
@@ -451,7 +453,9 @@ private:
 };
 #endif
 
-}  // end namespace OPENSUBDIV_VERSION
+} // end namespace Osd
+
+} // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 }  // end namespace OpenSubdiv

@@ -39,9 +39,11 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 /// \brief OpenGL specialized DrawContext class
 ///
-/// OsdGLDrawContext implements the OSD drawing interface with the OpenGL API.
+/// GLDrawContext implements the OSD drawing interface with the OpenGL API.
 /// Some functionality may be disabled depending on compile and run-time driver
 /// support.
 ///
@@ -49,19 +51,19 @@ namespace OPENSUBDIV_VERSION {
 /// geometric primitives with the capabilities of the selected discrete 
 /// compute device.
 ///
-class OsdGLDrawContext : public OsdDrawContext {
+class GLDrawContext : public DrawContext {
 public:
     typedef GLuint VertexBufferBinding;
 
-    virtual ~OsdGLDrawContext();
+    virtual ~GLDrawContext();
 
-    /// \brief Create an OsdGLDraContext from Far::PatchTables
+    /// \brief Create an GLDraContext from Far::PatchTables
     ///
     /// @param patchTables          a valid set of Far::PatchTables
     ///
     /// @param numVertexElements    the number of vertex elements
     ///
-    static OsdGLDrawContext * Create(Far::PatchTables const * patchTables, int numVertexElements);
+    static GLDrawContext * Create(Far::PatchTables const * patchTables, int numVertexElements);
 
     /// Set vbo as a vertex texture (for gregory patch drawing)
     ///
@@ -133,7 +135,7 @@ protected:
     GLuint _vertexValenceTextureBuffer;
     GLuint _quadOffsetsTextureBuffer;
 
-    OsdGLDrawContext();
+    GLDrawContext();
 
     // allocate buffers from patchTables
     bool create(Far::PatchTables const & patchTables, int numElements);
@@ -141,7 +143,9 @@ protected:
     void updateVertexTexture(GLuint vbo);
 };
 
-} // end namespace OPENSUBDIV_VERSION
+}  // end namespace Osd
+
+}  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;
 
 } // end namespace OpenSubdiv

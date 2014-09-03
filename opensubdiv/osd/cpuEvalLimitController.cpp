@@ -29,16 +29,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCpuEvalLimitController::OsdCpuEvalLimitController() {
+namespace Osd {
+
+CpuEvalLimitController::CpuEvalLimitController() {
 }
 
-OsdCpuEvalLimitController::~OsdCpuEvalLimitController() {
+CpuEvalLimitController::~CpuEvalLimitController() {
 }
 
 
 // normalize & rotate (u,v) to the sub-patch
 inline void
-computeSubPatchCoords( OsdCpuEvalLimitContext * context, unsigned int patchIdx, float & u, float & v ) {
+computeSubPatchCoords( CpuEvalLimitContext * context, unsigned int patchIdx, float & u, float & v ) {
 
     Far::PatchParam::BitField bits = context->GetPatchBitFields()[ patchIdx ];
 
@@ -49,12 +51,12 @@ computeSubPatchCoords( OsdCpuEvalLimitContext * context, unsigned int patchIdx, 
 
 // Vertex interpolation of a sample at the limit
 int
-OsdCpuEvalLimitController::EvalLimitSample( OpenSubdiv::OsdEvalCoords const & coord,
-                                            OsdCpuEvalLimitContext * context,
-                                            OsdVertexBufferDescriptor const & outDesc,
-                                            float * outQ,
-                                            float * outDQU,
-                                            float * outDQV ) const {
+CpuEvalLimitController::EvalLimitSample( EvalCoords const & coord,
+                                         CpuEvalLimitContext * context,
+                                         VertexBufferDescriptor const & outDesc,
+                                         float * outQ,
+                                         float * outDQU,
+                                         float * outDQV ) const {
 
     float u=coord.u,
           v=coord.v;
@@ -132,9 +134,9 @@ OsdCpuEvalLimitController::EvalLimitSample( OpenSubdiv::OsdEvalCoords const & co
 
 // Vertex interpolation of samples at the limit
 int
-OsdCpuEvalLimitController::_EvalLimitSample( OpenSubdiv::OsdEvalCoords const & coords,
-                                             OsdCpuEvalLimitContext * context,
-                                             unsigned int index ) const {
+CpuEvalLimitController::_EvalLimitSample( EvalCoords const & coords,
+                                          CpuEvalLimitContext * context,
+                                          unsigned int index ) const {
     float u=coords.u,
           v=coords.v;
 
@@ -265,6 +267,8 @@ OsdCpuEvalLimitController::_EvalLimitSample( OpenSubdiv::OsdEvalCoords const & c
     }
     return 1;
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv

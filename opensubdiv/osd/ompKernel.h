@@ -32,10 +32,12 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-struct OsdVertexDescriptor;
+namespace Osd {
+
+struct VertexDescriptor;
 
 void
-OsdOmpComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
+OmpComputeStencils(VertexBufferDescriptor const &vertexDesc,
                       float const * vertexSrc,
                       float * vertexDst,
                       unsigned char const * sizes,
@@ -43,6 +45,8 @@ OsdOmpComputeStencils(OsdVertexBufferDescriptor const &vertexDesc,
                       int const * indices,
                       float const * weights,
                       int start, int end);
+
+} // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

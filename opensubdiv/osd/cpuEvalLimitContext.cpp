@@ -33,18 +33,20 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCpuEvalLimitContext *
-OsdCpuEvalLimitContext::Create(Far::PatchTables const & patchTables, bool requireFVarData) {
+namespace Osd {
+
+CpuEvalLimitContext *
+CpuEvalLimitContext::Create(Far::PatchTables const & patchTables, bool requireFVarData) {
 
     // there is no limit with uniform subdivision
     if (not patchTables.IsFeatureAdaptive())
         return NULL;
                                           
-    return new OsdCpuEvalLimitContext(patchTables, requireFVarData);
+    return new CpuEvalLimitContext(patchTables, requireFVarData);
 }
 
-OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(Far::PatchTables const & patchTables, bool requireFVarData) :
-    OsdEvalLimitContext(patchTables) {
+CpuEvalLimitContext::CpuEvalLimitContext(Far::PatchTables const & patchTables, bool requireFVarData) :
+    EvalLimitContext(patchTables) {
     
     // copy the data from the FarTables
     _patches = patchTables.GetPatchTable();
@@ -92,9 +94,11 @@ OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(Far::PatchTables const & patchTab
     _patchMap = new Far::PatchMap( patchTables );
 }
 
-OsdCpuEvalLimitContext::~OsdCpuEvalLimitContext() {
+CpuEvalLimitContext::~CpuEvalLimitContext() {
     delete _patchMap;
 }
+
+} // end namespace Osd
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

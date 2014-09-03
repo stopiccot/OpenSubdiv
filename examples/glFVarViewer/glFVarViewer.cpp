@@ -50,10 +50,10 @@ GLFWmonitor* g_primary = 0;
 #include <osd/cpuGLVertexBuffer.h>
 #include <osd/cpuComputeContext.h>
 #include <osd/cpuComputeController.h>
-OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
+OpenSubdiv::Osd::CpuComputeController *g_cpuComputeController = NULL;
 
 #include <osd/glMesh.h>
-OpenSubdiv::OsdGLMeshInterface *g_mesh = NULL;
+OpenSubdiv::Osd::GLMeshInterface *g_mesh = NULL;
 
 #include <common/vtr_utils.h>
 #include "../common/stopwatch.h"
@@ -353,22 +353,22 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
     // Adaptive refinement currently supported only for catmull-clark scheme
     bool doAdaptive = (g_adaptive!=0 and g_scheme==kCatmark);
 
-    OpenSubdiv::OsdMeshBitset bits;
-    bits.set(OpenSubdiv::MeshAdaptive, doAdaptive);
-    bits.set(OpenSubdiv::MeshFVarData, 1);
+    OpenSubdiv::Osd::MeshBitset bits;
+    bits.set(OpenSubdiv::Osd::MeshAdaptive, doAdaptive);
+    bits.set(OpenSubdiv::Osd::MeshFVarData, 1);
 
     int numVertexElements = 3;
     int numVaryingElements = 0;
 
     if (not g_cpuComputeController) {
-        g_cpuComputeController = new OpenSubdiv::OsdCpuComputeController();
+        g_cpuComputeController = new OpenSubdiv::Osd::CpuComputeController();
     }
 
     delete g_mesh;
 
-    g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
-        OpenSubdiv::OsdCpuComputeController,
-        OpenSubdiv::OsdGLDrawContext>(
+    g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
+        OpenSubdiv::Osd::CpuComputeController,
+        OpenSubdiv::Osd::GLDrawContext>(
             g_cpuComputeController,
             refiner,
             numVertexElements,
@@ -538,9 +538,9 @@ union Effect {
     }
 };
 
-typedef std::pair<OpenSubdiv::OsdDrawContext::PatchDescriptor, Effect> EffectDesc;
+typedef std::pair<OpenSubdiv::Osd::DrawContext::PatchDescriptor, Effect> EffectDesc;
 
-class EffectDrawRegistry : public OpenSubdiv::OsdGLDrawRegistry<EffectDesc> {
+class EffectDrawRegistry : public OpenSubdiv::Osd::GLDrawRegistry<EffectDesc> {
 
   protected:
     virtual ConfigType *
@@ -697,7 +697,7 @@ GetEffect(bool uvDraw = false) {
 
 //------------------------------------------------------------------------------
 static GLuint
-bindProgram(Effect effect, OpenSubdiv::OsdDrawContext::PatchArray const & patch) {
+bindProgram(Effect effect, OpenSubdiv::Osd::DrawContext::PatchArray const & patch) {
 
     EffectDesc effectDesc(patch.GetDescriptor(), effect);
     EffectDrawRegistry::ConfigType *
@@ -807,7 +807,7 @@ display() {
 
     glBindVertexArray(g_vao);
 
-    OpenSubdiv::OsdDrawContext::PatchArrayVector const & patches =
+    OpenSubdiv::Osd::DrawContext::PatchArrayVector const & patches =
         g_mesh->GetDrawContext()->GetPatchArrays();
 
     if (g_displayStyle == kWire)
@@ -815,9 +815,9 @@ display() {
 
     // patch drawing
     for (int i = 0; i < (int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
 
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
         OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
@@ -880,9 +880,9 @@ display() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     for (int i = 0; i < (int)patches.size(); ++i) {
-        OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
+        OpenSubdiv::Osd::DrawContext::PatchArray const & patch = patches[i];
 
-        OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
+        OpenSubdiv::Osd::DrawContext::PatchDescriptor desc = patch.GetDescriptor();
         OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
@@ -1084,7 +1084,7 @@ callbackModel(int m) {
 static void
 callbackAdaptive(bool checked, int /* a */) {
 
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation()) {
+    if (OpenSubdiv::Osd::GLDrawContext::SupportsAdaptiveTessellation()) {
         g_adaptive = checked;
         rebuildOsdMesh();
     }
@@ -1126,7 +1126,7 @@ initHUD() {
     g_hud.AddPullDownButton(shading_pulldown, "Shaded", kShaded, g_displayStyle==kShaded);
     g_hud.AddPullDownButton(shading_pulldown, "Wire+Shaded", kWireShaded, g_displayStyle==kWireShaded);
 
-    if (OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation())
+    if (OpenSubdiv::Osd::GLDrawContext::SupportsAdaptiveTessellation())
         g_hud.AddCheckBox("Adaptive (`)", g_adaptive != 0, 10, 250, callbackAdaptive, 0, '`');
 
     for (int i = 1; i < 11; ++i) {
@@ -1191,7 +1191,7 @@ idle() {
 
 //------------------------------------------------------------------------------
 static void
-callbackError(OpenSubdiv::OsdErrorType err, const char *message) {
+callbackError(OpenSubdiv::Osd::ErrorType err, const char *message) {
 
     printf("OsdError: %d\n", err);
     printf("%s", message);
@@ -1242,7 +1242,7 @@ int main(int argc, char ** argv) {
 
     initShapes();
 
-    OsdSetErrorCallback(callbackError);
+    OpenSubdiv::Osd::SetErrorCallback(callbackError);
 
     if (not glfwInit()) {
         printf("Failed to initialize GLFW\n");

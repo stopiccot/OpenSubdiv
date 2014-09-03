@@ -33,6 +33,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Osd {
+
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
 // ----------------------------------------------------------------------------
@@ -78,7 +80,7 @@ struct D3D11Table {
 
         HRESULT hr = device->CreateBuffer(&bd, &initData, &buffer);
         if (FAILED(hr)) {
-            OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
+            Error(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
                      "Error creating compute table buffer\n");
             return;
         }
@@ -92,7 +94,7 @@ struct D3D11Table {
 
         hr = device->CreateShaderResourceView(buffer, &srvd, &srv);
         if (FAILED(hr)) {
-            OsdError(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
+            Error(OSD_D3D11_COMPUTE_BUFFER_CREATE_ERROR,
                      "Error creating compute table shader resource view\n");
             return;
         }
@@ -105,7 +107,7 @@ struct D3D11Table {
 
 // ----------------------------------------------------------------------------
 
-class OsdD3D11ComputeContext::D3D11StencilTables {
+class D3D11ComputeContext::D3D11StencilTables {
 
 public:
 
@@ -172,7 +174,7 @@ private:
 
 // ----------------------------------------------------------------------------
 
-OsdD3D11ComputeContext::OsdD3D11ComputeContext(
+D3D11ComputeContext::D3D11ComputeContext(
     ID3D11DeviceContext *deviceContext,
         Far::StencilTables const * vertexStencilTables,
             Far::StencilTables const * varyingStencilTables) :
@@ -197,7 +199,7 @@ OsdD3D11ComputeContext::OsdD3D11ComputeContext(
     }
 }
 
-OsdD3D11ComputeContext::~OsdD3D11ComputeContext() {
+D3D11ComputeContext::~D3D11ComputeContext() {
     delete _vertexStencilTables;
     delete _varyingStencilTables;
 }
@@ -206,49 +208,51 @@ OsdD3D11ComputeContext::~OsdD3D11ComputeContext() {
 // ----------------------------------------------------------------------------
 
 bool
-OsdD3D11ComputeContext::HasVertexStencilTables() const {
+D3D11ComputeContext::HasVertexStencilTables() const {
     return _vertexStencilTables ? _vertexStencilTables->IsValid() : false;
 }
 
 bool
-OsdD3D11ComputeContext::HasVaryingStencilTables() const {
+D3D11ComputeContext::HasVaryingStencilTables() const {
     return _varyingStencilTables ? _varyingStencilTables->IsValid() : false;
 }
 
 // ----------------------------------------------------------------------------
 
 void
-OsdD3D11ComputeContext::BindVertexStencilTables(ID3D11DeviceContext *deviceContext) const {
+D3D11ComputeContext::BindVertexStencilTables(ID3D11DeviceContext *deviceContext) const {
     if (_vertexStencilTables) {
         _vertexStencilTables->Bind(deviceContext);
     }
 }
 
 void
-OsdD3D11ComputeContext::BindVaryingStencilTables(ID3D11DeviceContext *deviceContext) const {
+D3D11ComputeContext::BindVaryingStencilTables(ID3D11DeviceContext *deviceContext) const {
     if (_varyingStencilTables) {
         _varyingStencilTables->Bind(deviceContext);
     }
 }
 
 void
-OsdD3D11ComputeContext::UnbindStencilTables(ID3D11DeviceContext *deviceContext) const {
+D3D11ComputeContext::UnbindStencilTables(ID3D11DeviceContext *deviceContext) const {
     D3D11StencilTables::Unbind(deviceContext);
 }
 
 
 // ----------------------------------------------------------------------------
 
-OsdD3D11ComputeContext *
-OsdD3D11ComputeContext::Create(ID3D11DeviceContext *deviceContext,
+D3D11ComputeContext *
+D3D11ComputeContext::Create(ID3D11DeviceContext *deviceContext,
     Far::StencilTables const * vertexStencilTables,
         Far::StencilTables const * varyingStencilTables) {
 
-    OsdD3D11ComputeContext *result =
-        new OsdD3D11ComputeContext(deviceContext, vertexStencilTables, varyingStencilTables);
+    D3D11ComputeContext *result =
+        new D3D11ComputeContext(deviceContext, vertexStencilTables, varyingStencilTables);
 
     return result;
 }
+
+}  // end namespace Osd
 
 }  // end namespace OPENSUBDIV_VERSION
 }  // end namespace OpenSubdiv
