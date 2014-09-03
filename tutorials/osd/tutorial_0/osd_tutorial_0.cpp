@@ -64,7 +64,7 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarTopologyRefiner const * createTopologyRefiner(int maxlevel);
+static Far::TopologyRefiner const * createTopologyRefiner(int maxlevel);
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
@@ -75,25 +75,25 @@ int main(int, char **) {
 
     OsdCpuComputeContext * context=0;
 
-    FarKernelBatchVector batches;
+    Far::KernelBatchVector batches;
 
     //
     // Setup phase
-    //  
+    //
     { // Setup Context
-        FarTopologyRefiner const * refiner = createTopologyRefiner(maxlevel);
+        Far::TopologyRefiner const * refiner = createTopologyRefiner(maxlevel);
 
         // Setup a factory to create FarStencilTables (for more details see
         // Far tutorials)
-        FarStencilTablesFactory::Options options;
+        Far::StencilTablesFactory::Options options;
         options.generateOffsets=true;
         options.generateAllLevels=false;
 
-        FarStencilTables const * stencilTables =
-            FarStencilTablesFactory::Create(*refiner, options);
+        Far::StencilTables const * stencilTables =
+            Far::StencilTablesFactory::Create(*refiner, options);
 
         // We need a kernel batch to dispatch Compute launches
-        batches.push_back(FarStencilTablesFactory::Create(*stencilTables));
+        batches.push_back(Far::StencilTablesFactory::Create(*stencilTables));
 
         // Create an Osd Compute Context from the stencil tables
         context = OsdCpuComputeContext::Create(stencilTables);
@@ -124,7 +124,7 @@ int main(int, char **) {
         // Launch the computation
         controller.Compute(context, batches, vbuffer);
     }
-    
+
     { // Visualization with Maya : print a MEL script that generates particles
       // at the location of the refined vertices
 
@@ -136,18 +136,18 @@ int main(int, char **) {
         }
         printf("-c 1;\n");
     }
-    
+
     delete vbuffer;
     delete context;
 }
 
 //------------------------------------------------------------------------------
-static FarTopologyRefiner const *
+static Far::TopologyRefiner const *
 createTopologyRefiner(int maxlevel) {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -161,7 +161,8 @@ createTopologyRefiner(int maxlevel) {
     desc.vertIndices  = g_vertIndices;
 
     // Instantiate a FarTopologyRefiner from the descriptor
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    Far::TopologyRefiner * refiner =
+        Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     // Uniformly refine the topolgy up to 'maxlevel'
     refiner->RefineUniform( maxlevel );

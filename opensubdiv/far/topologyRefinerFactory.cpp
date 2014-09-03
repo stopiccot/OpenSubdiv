@@ -31,6 +31,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 //
 //  Methods for the Factory base class -- general enough to warrant including in
 //  the base class rather than the subclass template (and so replicated for each
@@ -38,7 +40,7 @@ namespace OPENSUBDIV_VERSION {
 //
 //
 void
-FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefiner& refiner) {
+TopologyRefinerFactoryBase::validateComponentTopologySizing(TopologyRefiner& refiner) {
 
     Vtr::Level& baseLevel = refiner.getBaseLevel();
 
@@ -77,7 +79,7 @@ FarTopologyRefinerFactoryBase::validateComponentTopologySizing(FarTopologyRefine
 }
 
 void
-FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopologyRefiner& refiner) {
+TopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(TopologyRefiner& refiner) {
 
     Vtr::Level& baseLevel = refiner.getBaseLevel();
 
@@ -96,7 +98,7 @@ FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopo
     bool applyValidation = false;
     if (applyValidation) {
         if (!baseLevel.validateTopology()) {
-            printf("Invalid topology detected in FarTopologyRefinerFactory (%s)\n",
+            printf("Invalid topology detected in TopologyRefinerFactory (%s)\n",
                 completeMissingTopology ? "partially specified and completed" : "fully specified");
             //baseLevel.print();
             assert(false);
@@ -105,7 +107,7 @@ FarTopologyRefinerFactoryBase::validateVertexComponentTopologyAssignment(FarTopo
 }
 
 void
-FarTopologyRefinerFactoryBase::validateFaceVaryingComponentTopologyAssignment(FarTopologyRefiner& refiner) {
+TopologyRefinerFactoryBase::validateFaceVaryingComponentTopologyAssignment(TopologyRefiner& refiner) {
 
     for (int channel=0; channel<refiner.GetNumFVarChannels(); ++channel) {
         refiner.completeFVarChannelTopology(channel);
@@ -119,7 +121,7 @@ FarTopologyRefinerFactoryBase::validateFaceVaryingComponentTopologyAssignment(Fa
 //  to do both at once...
 //
 void
-FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopologyRefiner& refiner) {
+TopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(TopologyRefiner& refiner) {
 
     Vtr::Level&  baseLevel = refiner.getBaseLevel();
 
@@ -223,8 +225,8 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
 //
 template <>
 void
-FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::resizeComponentTopology(
-    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
+TopologyRefinerFactory<TopologyRefinerFactoryBase::TopologyDescriptor>::resizeComponentTopology(
+    TopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
     refiner.setNumBaseVertices(desc.numVertices);
     refiner.setNumBaseFaces(desc.numFaces);
@@ -237,12 +239,12 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::re
 
 template <>
 void
-FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTopology(
-    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
+TopologyRefinerFactory<TopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTopology(
+    TopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
     for (int face=0, idx=0; face<desc.numFaces; ++face) {
 
-        FarIndexArray dstFaceVerts = refiner.setBaseFaceVertices(face);
+        IndexArray dstFaceVerts = refiner.setBaseFaceVertices(face);
 
         for (int vert=0; vert<dstFaceVerts.size(); ++vert) {
 
@@ -253,8 +255,8 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
 
 template <>
 void
-FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignFaceVaryingTopology(
-    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
+TopologyRefinerFactory<TopologyRefinerFactoryBase::TopologyDescriptor>::assignFaceVaryingTopology(
+    TopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
     if (desc.numFVarChannels>0) {
 
@@ -271,7 +273,7 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
 #endif
             for (int face=0, idx=0; face<desc.numFaces; ++face) {
 
-                FarIndexArray dstFaceValues = refiner.getBaseFVarFaceValues(face, channel);
+                IndexArray dstFaceValues = refiner.getBaseFVarFaceValues(face, channel);
 
                 for (int vert=0; vert<dstFaceValues.size(); ++vert) {
 
@@ -284,8 +286,8 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
 
 template <>
 void
-FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTags(
-    FarTopologyRefiner & refiner, TopologyDescriptor const & desc) {
+TopologyRefinerFactory<TopologyRefinerFactoryBase::TopologyDescriptor>::assignComponentTags(
+    TopologyRefiner & refiner, TopologyDescriptor const & desc) {
 
 
     if ((desc.numCreases>0) and desc.creaseVertexIndexPairs and desc.creaseWeights) {
@@ -293,7 +295,7 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
         int const * vertIndexPairs = desc.creaseVertexIndexPairs;
         for (int edge=0; edge<desc.numCreases; ++edge, vertIndexPairs+=2) {
 
-            FarIndex idx = refiner.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
+            Index idx = refiner.FindEdge(0, vertIndexPairs[0], vertIndexPairs[1]);
 
             if (idx!=Vtr::INDEX_INVALID) {
                 refiner.baseEdgeSharpness(idx) = desc.creaseWeights[edge];
@@ -319,12 +321,14 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
 
 }
 
-FarTopologyRefinerFactoryBase::TopologyDescriptor::TopologyDescriptor() :
+TopologyRefinerFactoryBase::TopologyDescriptor::TopologyDescriptor() :
     numVertices(0), numFaces(0), vertsPerFace(0), vertIndices(0),
         numCreases(0), creaseVertexIndexPairs(0), creaseWeights(0),
             numCorners(0), cornerVertexIndices(0), cornerWeights(0),
                 numFVarChannels(0), fvarChannels(0) {
 }
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

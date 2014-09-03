@@ -96,7 +96,7 @@ createTextureBuffer(T const &data, GLint format, int offset=0)
 }
 
 OsdGLDrawContext *
-OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElements) {
+OsdGLDrawContext::Create(Far::PatchTables const * patchTables, int numVertexElements) {
 
     if (patchTables) {
 
@@ -112,12 +112,12 @@ OsdGLDrawContext::Create(FarPatchTables const * patchTables, int numVertexElemen
 }
 
 bool
-OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElements) {
+OsdGLDrawContext::create(Far::PatchTables const & patchTables, int numVertexElements) {
 
     _isAdaptive = patchTables.IsFeatureAdaptive();
 
     // Process PTable
-    FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
+    Far::PatchTables::PTable const & ptables = patchTables.GetPatchTable();
 
     glGenBuffers(1, &_patchIndexBuffer);
 
@@ -142,7 +142,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
 
 #if defined(GL_ARB_texture_buffer_object) || defined(GL_VERSION_3_1)
     // create vertex valence buffer and vertex texture
-    FarPatchTables::VertexValenceTable const &
+    Far::PatchTables::VertexValenceTable const &
         valenceTable = patchTables.GetVertexValenceTable();
 
     if (not valenceTable.empty()) {
@@ -154,7 +154,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
 
 
     // create quad offset table buffer
-    FarPatchTables::QuadOffsetTable const &
+    Far::PatchTables::QuadOffsetTable const &
         quadOffsetTable = patchTables.GetQuadOffsetTable();
 
     if (not quadOffsetTable.empty())
@@ -162,7 +162,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
 
 
     // create ptex coordinate buffer
-    FarPatchTables::PatchParamTable const &
+    Far::PatchTables::PatchParamTable const &
         patchParamTables = patchTables.GetPatchParamTable();
 
     if (not patchParamTables.empty())
@@ -176,7 +176,7 @@ OsdGLDrawContext::create(FarPatchTables const & patchTables, int numVertexElemen
 
 bool
 OsdGLDrawContext::SetFVarDataTexture(
-    FarPatchTables const & patchTables, int fvarWidth, FVarData const & fvarData) {
+    Far::PatchTables const & patchTables, int fvarWidth, FVarData const & fvarData) {
 
     if (not fvarData.empty()) {
 

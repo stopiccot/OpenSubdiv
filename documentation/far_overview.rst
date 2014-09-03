@@ -42,54 +42,48 @@ The Far classes package up the functionality provided in Vtr for public use,
 either directly within Far or indirectly eventually though Osd. The two classes
 classes are as follows:
 
-+----------------------------------+---------------------------------------------------+
-| FarTopologyRefiner               | A class encapsulating the topology of a refined   |
-|                                  | mesh.                                             |
-+----------------------------------+---------------------------------------------------+
-| FarTopologyRefinerFactory<MESH>  | A factory class template specialized by users (in |
-|                                  | terms of their mesh class) to construct           |
-|                                  | FarTopologyRefiner as quickly as possible.        |
-+----------------------------------+---------------------------------------------------+
++-------------------------------+---------------------------------------------------+
+| TopologyRefiner               | A class encapsulating the topology of a refined   |
+|                               | mesh.                                             |
++-------------------------------+---------------------------------------------------+
+| TopologyRefinerFactory<MESH>  | A factory class template specialized by users (in |
+|                               | terms of their mesh class) to construct           |
+|                               | FarTopologyRefiner as quickly as possible.        |
++-------------------------------+---------------------------------------------------+
 
 These classes are the least well defined of the API, but given they provide the
 public interface to all of the improvements proposed, they potentially warrant
-the most attention. FarTopologyRefiner is purely topological and it is the
+the most attention. Far::TopologyRefiner is purely topological and it is the
 backbone used to construct or be associated with the other table classes in Far.
 
 Topology Refiner
 ================
 
-Associated headers:
-    `far/topologyRefiner.h`
-
 Synopsis
 ********
 
-FarTopologyRefiner is the building block for many other useful classes in
+TopologyRefiner is the building block for many other useful classes in
 OpenSubdiv, but its purpose is more specific.  It is intended to store the
 topology of an arbitrarily refined subdivision hierarchy to support the
 construction of `stencil tables <#patch-tables>`__, `patch tables
 <#patch-tables>`__,  etc.
 
-Aside from public access to topology, *FarTopologyRefiner::Refine(...)* is
+Aside from public access to topology, *TopologyRefiner::Refine(...)* is
 internally where simple specifications of refinement (currently uniform or
 feature-adaptive with a level argument) will be translated into refinement
 operations within Vtr. Feature-adaptive refinement is a special case of
 *"sparse"* or *"selective"* refinement, and so the feature-adaptive logic
-exists internal to FarTopologyRefiner and translate the feature-analysis into a
+exists internal to TopologyRefiner and translate the feature-analysis into a
 simpler topological specification of refinement to Vtr.
 
 The longer term intent is that the public Refine(...) operation eventually be
 overloaded to allow clients more selective control of refinement. While
-FarTopologyRefiner is a purely topological class, and so free of any
-definitions of vertex data, the public inteface has been extended to include
-templated functors that allow clients to interpolate primitive variable data.
+TopologyRefiner is a purely topological class, and so free of any definitions
+of vertex data, the public inteface has been extended to include templated
+functors that allow clients to interpolate primitive variable data. 
 
 Topology Refiner Factory
 ========================
-
-Associated headers:
-    `far/topologyRefinerFactory.h`
 
 Synopsis
 ********
@@ -103,15 +97,15 @@ provide a location to store it, rather than trying to define a suite of mesh
 traversal utilities that the client would need to define to do so.
 
 So the approach taken was to follow a common pattern in OpenSubdiv, and use
-Factory classes to construct instances of FarTopologyRefiner and provide some
+Factory classes to construct instances of TopologyRefiner and provide some
 kind of derivation or specialization by the client to optimize the process for
-their representation. The FarTopologyRefiner's Factory class will construct its
+their representation. The TopologyRefiner's Factory class will construct its
 instances from a client's mesh (of unknown type). Given the need to manage an
 instance of a client's mesh type in the Factory, the simplest solution is for
 client-code to specialize a templated interface in the Factory.
 
-The FarTopologyRefinerFactory class is a class template parameterized by and
-specialized for the client's mesh class, i.e. FarTopologyRefinerFactory<MESH>.
+The TopologyRefinerFactory class is a class template parameterized by and
+specialized for the client's mesh class, i.e. TopologyRefinerFactory<MESH>.
 The template provides the high-level construction of the tables, with the
 requirement that two methods will be specialized.  These two methods serve the
 following two purposes:
@@ -143,7 +137,7 @@ A common base class has been created for the factory class, i.e.:
 .. code:: c++
 
     template <class MESH>
-    class FarTopologyRefinerFactory : public FarTopologyRefinerFactoryBase
+    class TopologyRefinerFactory : public TopologyRefinerFactoryBase
 
 both to provide common code independent of <MESH> and also potentially to
 protect core code from unwanted specialization.
@@ -170,9 +164,9 @@ Stencil Tables
 
 .. include:: under_development.rst
 
-The base container for stencil data is the FarStencilTables class. As with most
-other Far entities, it has an associated FarStencilTablesFactory that requires
-a FarTopologyRefiner:
+The base container for stencil data is the StencilTables class. As with most
+other Far entities, it has an associated StencilTablesFactory that requires
+a TopologyRefiner:
 
 .. image:: images/far_stencil5.png
    :align: center
@@ -180,7 +174,7 @@ a FarTopologyRefiner:
 Principles
 **********
 
-Iterative subdivision algorithms such as the one used in `FarSubdivisionTables
+Iterative subdivision algorithms such as the one used in `SubdivisionTables
 <#subdivision-tables>`__ converge towards the limit surface by sucessively
 refining the vertices of the coarse control cage.
 

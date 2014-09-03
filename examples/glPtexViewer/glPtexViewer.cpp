@@ -368,10 +368,10 @@ checkGLErrors(std::string const & where = "") {
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OpenSubdiv::FarTopologyRefiner * refiner,
+calcNormals(OpenSubdiv::Far::TopologyRefiner * refiner,
     std::vector<float> const & pos, std::vector<float> & result ) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // calc normal vectors
     int nverts = refiner->GetNumVertices(0),
@@ -740,14 +740,14 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc) {
 #endif
 
     int nverts = 4;
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS) {
         sconfig->vertexShader.source = g_shaderSource;
         sconfig->vertexShader.version = glslVersion;
         sconfig->vertexShader.AddDefine("VERTEX_SHADER");
         if (effect.displacement) {
             sconfig->geometryShader.AddDefine("FLAT_NORMALS");
         }
-    } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::LINES) {
+    } else if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::LINES) {
         nverts = 2;
         sconfig->vertexShader.source = g_shaderSource;
         sconfig->vertexShader.version = glslVersion;
@@ -1010,14 +1010,14 @@ createOsdMesh(int level, int kernel) {
 
     g_positions=shape->verts;
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // create Vtr mesh (topology)
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
 
@@ -1590,14 +1590,14 @@ drawModel() {
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
 
         OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        OpenSubdiv::FarPatchTables::Type patchType = desc.GetType();
+        OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
         switch (patchType) {
-        case OpenSubdiv::FarPatchTables::QUADS:
+        case OpenSubdiv::Far::PatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case OpenSubdiv::FarPatchTables::TRIANGLES:
+        case OpenSubdiv::Far::PatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:
@@ -1762,8 +1762,8 @@ drawCageEdges() {
     Effect effect;
     effect.value = 0;
     OpenSubdiv::OsdDrawContext::PatchDescriptor desc(
-        OpenSubdiv::FarPatchTables::Descriptor(OpenSubdiv::FarPatchTables::LINES,
-            OpenSubdiv::FarPatchTables::NON_TRANSITION, 0),
+        OpenSubdiv::Far::PatchTables::Descriptor(OpenSubdiv::Far::PatchTables::LINES,
+            OpenSubdiv::Far::PatchTables::NON_TRANSITION, 0),
                     0, 0, 0);
     EffectDrawRegistry::ConfigType *config = getInstance(effect, desc);
     glUseProgram(config->program);

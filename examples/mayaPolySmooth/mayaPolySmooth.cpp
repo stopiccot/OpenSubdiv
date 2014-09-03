@@ -184,7 +184,7 @@ createComp(MFnMeshData &dataCreator, MFn::Type compType, unsigned compId, MIntAr
 // OpenSubdiv Functions
 // ====================================
 
-typedef OpenSubdiv::FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+typedef OpenSubdiv::Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
 // Reference: OSD shape_utils.h:: applyTags() "crease"
 static float
@@ -300,7 +300,7 @@ getMayaFvarFieldParams(
 
 
 //! Caller is expected to delete the returned value
-static OpenSubdiv::FarTopologyRefiner *
+static OpenSubdiv::Far::TopologyRefiner *
 gatherTopology( MFnMesh const & inMeshFn,
                 MItMeshPolygon & inMeshItPolygon,
                 OpenSubdiv::Sdc::Type type,
@@ -377,8 +377,8 @@ gatherTopology( MFnMesh const & inMeshFn,
 
     float maxVertexCrease = getCreaseVertices( inMeshFn, desc );
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     delete [] desc.vertsPerFace;
     delete [] desc.vertIndices;
@@ -510,13 +510,13 @@ struct Vertex {
 };
 
 static MStatus
-convertToMayaMeshData(OpenSubdiv::FarTopologyRefiner const & refiner,
+convertToMayaMeshData(OpenSubdiv::Far::TopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer, MFnMesh const & inMeshFn,
         MObject newMeshDataObj) {
 
     MStatus status;
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     int maxlevel = refiner.GetMaxLevel(),
         nfaces = refiner.GetNumFaces(maxlevel);
@@ -635,7 +635,7 @@ MayaPolySmooth::compute( const MPlug& plug, MDataBlock& data ) {
                  OpenSubdiv::Sdc::Options::TRI_SUB_NEW : OpenSubdiv::Sdc::Options::TRI_SUB_OLD);
 
             float maxCreaseSharpness=0.0f;
-            OpenSubdiv::FarTopologyRefiner * refiner =
+            OpenSubdiv::Far::TopologyRefiner * refiner =
                 gatherTopology(inMeshFn, inMeshItPolygon, type, options, &maxCreaseSharpness);
 
             assert(refiner);

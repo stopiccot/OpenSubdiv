@@ -475,7 +475,7 @@ getKernelName(int kernel) {
 static void
 createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=kCatmark) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     bool doAnim = g_objAnim and g_currentShape==0;
 
@@ -490,8 +490,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
     int nedges = refiner->GetNumEdges(0),
@@ -848,8 +848,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     const char *glslVersion = "#version 330\n";
 #endif
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS or
-        desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS or
+        desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         sconfig->vertexShader.source = shaderSource;
         sconfig->vertexShader.version = glslVersion;
         sconfig->vertexShader.AddDefine("VERTEX_SHADER");
@@ -865,12 +865,12 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     sconfig->fragmentShader.version = glslVersion;
     sconfig->fragmentShader.AddDefine("FRAGMENT_SHADER");
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS) {
         // uniform catmark, bilinear
         sconfig->geometryShader.AddDefine("PRIM_QUAD");
         sconfig->fragmentShader.AddDefine("PRIM_QUAD");
         sconfig->commonShader.AddDefine("UNIFORM_SUBDIVISION");
-    } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    } else if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         // uniform loop
         sconfig->geometryShader.AddDefine("PRIM_TRI");
         sconfig->fragmentShader.AddDefine("PRIM_TRI");
@@ -1161,7 +1161,7 @@ display() {
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
 
         OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        OpenSubdiv::FarPatchTables::Type patchType = desc.GetType();
+        OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
         int patchPattern = desc.GetPattern();
         int patchRotation = desc.GetRotation();
         int subPatch = desc.GetSubPatch();
@@ -1173,10 +1173,10 @@ display() {
         GLenum primType;
 
         switch(patchType) {
-        case OpenSubdiv::FarPatchTables::QUADS:
+        case OpenSubdiv::Far::PatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case OpenSubdiv::FarPatchTables::TRIANGLES:
+        case OpenSubdiv::Far::PatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:
@@ -1270,35 +1270,35 @@ display() {
 
         int x = -280;
         g_hud.DrawString(x, -360, "NonPatch         : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::QUADS][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::QUADS][0][0]);
         g_hud.DrawString(x, -340, "Regular          : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][0][0]);
         g_hud.DrawString(x, -320, "Boundary         : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::BOUNDARY][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::BOUNDARY][0][0]);
         g_hud.DrawString(x, -300, "Corner           : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::CORNER][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::CORNER][0][0]);
         g_hud.DrawString(x, -280, "Gregory          : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::GREGORY][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::GREGORY][0][0]);
         g_hud.DrawString(x, -260, "Boundary Gregory : %d",
-                         patchCount[OpenSubdiv::FarPatchTables::GREGORY_BOUNDARY][0][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::GREGORY_BOUNDARY][0][0]);
         g_hud.DrawString(x, -240, "Trans. Regular   : %d %d %d %d %d",
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][OpenSubdiv::FarPatchTables::PATTERN0][0],
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][OpenSubdiv::FarPatchTables::PATTERN1][0],
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][OpenSubdiv::FarPatchTables::PATTERN2][0],
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][OpenSubdiv::FarPatchTables::PATTERN3][0],
-                         patchCount[OpenSubdiv::FarPatchTables::REGULAR][OpenSubdiv::FarPatchTables::PATTERN4][0]);
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][OpenSubdiv::Far::PatchTables::PATTERN0][0],
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][OpenSubdiv::Far::PatchTables::PATTERN1][0],
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][OpenSubdiv::Far::PatchTables::PATTERN2][0],
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][OpenSubdiv::Far::PatchTables::PATTERN3][0],
+                         patchCount[OpenSubdiv::Far::PatchTables::REGULAR][OpenSubdiv::Far::PatchTables::PATTERN4][0]);
         for (int i=0; i < 5; i++)
             g_hud.DrawString(x, -220+i*20, "Trans. Boundary%d : %d %d %d %d", i,
-                             patchCount[OpenSubdiv::FarPatchTables::BOUNDARY][i+1][0],
-                             patchCount[OpenSubdiv::FarPatchTables::BOUNDARY][i+1][1],
-                             patchCount[OpenSubdiv::FarPatchTables::BOUNDARY][i+1][2],
-                             patchCount[OpenSubdiv::FarPatchTables::BOUNDARY][i+1][3]);
+                             patchCount[OpenSubdiv::Far::PatchTables::BOUNDARY][i+1][0],
+                             patchCount[OpenSubdiv::Far::PatchTables::BOUNDARY][i+1][1],
+                             patchCount[OpenSubdiv::Far::PatchTables::BOUNDARY][i+1][2],
+                             patchCount[OpenSubdiv::Far::PatchTables::BOUNDARY][i+1][3]);
         for (int i=0; i < 5; i++)
             g_hud.DrawString(x, -100+i*20, "Trans. Corner%d  : %d %d %d %d", i,
-                             patchCount[OpenSubdiv::FarPatchTables::CORNER][i+1][0],
-                             patchCount[OpenSubdiv::FarPatchTables::CORNER][i+1][1],
-                             patchCount[OpenSubdiv::FarPatchTables::CORNER][i+1][2],
-                             patchCount[OpenSubdiv::FarPatchTables::CORNER][i+1][3]);
+                             patchCount[OpenSubdiv::Far::PatchTables::CORNER][i+1][0],
+                             patchCount[OpenSubdiv::Far::PatchTables::CORNER][i+1][1],
+                             patchCount[OpenSubdiv::Far::PatchTables::CORNER][i+1][2],
+                             patchCount[OpenSubdiv::Far::PatchTables::CORNER][i+1][3]);
 
         g_hud.DrawString(10, -180, "Tess level : %d", g_tessLevel);
         g_hud.DrawString(10, -160, "Primitives : %d", numPrimsGenerated);

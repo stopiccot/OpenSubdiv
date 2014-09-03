@@ -41,9 +41,12 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 //  Forward declarations for friends:
-template <class MESH> class FarTopologyRefinerFactory;
-class FarTopologyRefinerFactoryBase;
-class FarTopologyRefiner;
+namespace Far {
+    template <class MESH> class TopologyRefinerFactory;
+    class TopologyRefinerFactoryBase;
+    class TopologyRefiner;
+    class PatchTablesFactory;
+}
 
 namespace Vtr {
 
@@ -236,15 +239,14 @@ public:
 
 protected:
 
-    template <class MESH>
-    friend class FarTopologyRefinerFactory;
-    friend class FarTopologyRefinerFactoryBase;
-    friend class FarTopologyRefiner;
-    friend class FarPatchTablesFactory;
-
     friend class Refinement;
     friend class FVarRefinement;
     friend class FVarLevel;
+
+    template <class MESH> friend class Far::TopologyRefinerFactory;
+    friend class Far::TopologyRefinerFactoryBase;
+    friend class Far::TopologyRefiner;
+    friend class Far::PatchTablesFactory;
 
     //  Sizing methods used to construct a level to populate:
     void resizeFaces(       int numFaces);

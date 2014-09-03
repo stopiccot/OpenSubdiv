@@ -35,6 +35,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 /// \brief Subdivision refinement encapsulation layer.
 ///
 /// The kernel dispatcher allows client code to customize parts or the entire
@@ -46,11 +48,10 @@ namespace OPENSUBDIV_VERSION {
 /// - derive a dispatcher class from this one
 /// - override the virtual functions
 /// - pass the derived dispatcher to the factory (one instance can be shared by many meshes)
-/// - call the FarMesh::Subdivide() to trigger computations
 ///
 /// Note : the caller is responsible for deleting a custom dispatcher
 ///
-class FarKernelBatchDispatcher {
+class KernelBatchDispatcher {
 public:
 
     /// \brief Launches the processing of a vector of kernel batches
@@ -66,7 +67,7 @@ public:
     /// @param maxlevel    process vertex batches up to this level
     ///
     template <class CONTROLLER, class CONTEXT> static void Apply(
-        CONTROLLER *controller, CONTEXT *context, FarKernelBatchVector const & batches, int maxlevel);
+        CONTROLLER *controller, CONTEXT *context, KernelBatchVector const & batches, int maxlevel);
 
 protected:
 
@@ -80,7 +81,7 @@ protected:
     /// @param batch       a batch of kernel that need to be processed
     ///
     template <class CONTROLLER, class CONTEXT> static bool ApplyKernel(
-        CONTROLLER *controller, CONTEXT *context, FarKernelBatch const &batch);
+        CONTROLLER *controller, CONTEXT *context, KernelBatch const &batch);
 
 };
 
@@ -89,19 +90,19 @@ protected:
 ///
 /// This is Far's default implementation of a kernal batch controller.
 ///
-class FarDefaultController {
+class DefaultController {
 public:
 
     template <class CONTEXT> void ApplyStencilTableKernel(
-        FarKernelBatch const &batch, CONTEXT *context) const;
+        KernelBatch const &batch, CONTEXT *context) const;
 
 };
 
 
 // Launches the processing of a kernel batch
 template <class CONTROLLER, class CONTEXT> bool
-FarKernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
-    FarKernelBatch const &batch) {
+KernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
+    KernelBatch const &batch) {
 
     if (batch.end==0) {
         return true;
@@ -109,10 +110,10 @@ FarKernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
 
     switch(batch.kernelType) {
 
-        case FarKernelBatch::KERNEL_UNKNOWN:
+        case KernelBatch::KERNEL_UNKNOWN:
             assert(0);
 
-        case FarKernelBatch::KERNEL_STENCIL_TABLE:
+        case KernelBatch::KERNEL_STENCIL_TABLE:
             controller->ApplyStencilTableKernel(batch, context);
             break;
 
@@ -125,12 +126,12 @@ FarKernelBatchDispatcher::ApplyKernel(CONTROLLER *controller, CONTEXT *context,
 
 // Launches the processing of a vector of kernel batches
 template <class CONTROLLER, class CONTEXT> void
-FarKernelBatchDispatcher::Apply(CONTROLLER *controller, CONTEXT *context,
-    FarKernelBatchVector const & batches, int maxlevel) {
+KernelBatchDispatcher::Apply(CONTROLLER *controller, CONTEXT *context,
+    KernelBatchVector const & batches, int maxlevel) {
 
     for (int i = 0; i < (int)batches.size(); ++i) {
 
-        const FarKernelBatch &batch = batches[i];
+        const KernelBatch &batch = batches[i];
 
         if (maxlevel>=0 and batch.level>=maxlevel) {
             continue;
@@ -141,10 +142,10 @@ FarKernelBatchDispatcher::Apply(CONTROLLER *controller, CONTEXT *context,
 }
 
 template <class CONTEXT> void
-FarDefaultController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, CONTEXT *context) const {
+DefaultController::ApplyStencilTableKernel(
+    KernelBatch const &batch, CONTEXT *context) const {
 
-    FarStencilTables const * stencilTables = context->GetStencilTables();
+    StencilTables const * stencilTables = context->GetStencilTables();
     assert(stencilTables);
 
     typename CONTEXT::VertexType *vsrc = &context->GetVertices().at(0),
@@ -152,6 +153,8 @@ FarDefaultController::ApplyStencilTableKernel(
 
     stencilTables->UpdateValues(vsrc, vdst, batch.start, batch.end);
 }
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

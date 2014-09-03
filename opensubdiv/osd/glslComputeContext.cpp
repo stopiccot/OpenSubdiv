@@ -65,7 +65,7 @@ class OsdGLSLComputeContext::GLSLStencilTables {
 
 public:
 
-    GLSLStencilTables(FarStencilTables const & stencilTables) {
+    GLSLStencilTables(Far::StencilTables const & stencilTables) {
         _sizes = createGLSLBuffer(stencilTables.GetSizes());
         _offsets = createGLSLBuffer(stencilTables.GetOffsets());
         _indices = createGLSLBuffer(stencilTables.GetControlIndices());
@@ -126,8 +126,8 @@ private:
 // -----------------------------------------------------------------------------
 
 OsdGLSLComputeContext::OsdGLSLComputeContext(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) :
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
                 _numControlVertices(0) {
 
@@ -190,8 +190,8 @@ OsdGLSLComputeContext::UnbindStencilTables() const {
 // -----------------------------------------------------------------------------
 
 OsdGLSLComputeContext *
-OsdGLSLComputeContext::Create(FarStencilTables const * vertexStencilTables,
-                              FarStencilTables const * varyingStencilTables) {
+OsdGLSLComputeContext::Create(Far::StencilTables const * vertexStencilTables,
+                              Far::StencilTables const * varyingStencilTables) {
 
     OsdGLSLComputeContext *result =
         new OsdGLSLComputeContext(vertexStencilTables, varyingStencilTables);

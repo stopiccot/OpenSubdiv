@@ -82,7 +82,7 @@ public:
     ///
     template<class VERTEX_BUFFER, class VARYING_BUFFER>
         void Compute( OsdGLSLTransformFeedbackComputeContext const * context,
-                      FarKernelBatchVector const & batches,
+                      Far::KernelBatchVector const & batches,
                       VERTEX_BUFFER  * vertexBuffer,
                       VARYING_BUFFER * varyingBuffer,
                       OsdVertexBufferDescriptor const * vertexDesc=NULL,
@@ -96,7 +96,7 @@ public:
 
             bindContextStencilTables(context, false);
 
-            FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
+            Far::KernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
 
         if (varyingBuffer) {
@@ -105,7 +105,7 @@ public:
 
             bindContextStencilTables(context, true);
 
-            FarKernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
+            Far::KernelBatchDispatcher::Apply(this, context, batches, /*maxlevel*/ -1);
         }
         unbind();
     }
@@ -122,7 +122,7 @@ public:
     ///
     template<class VERTEX_BUFFER>
         void Compute(OsdGLSLTransformFeedbackComputeContext const * context,
-                     FarKernelBatchVector const & batches,
+                     Far::KernelBatchVector const & batches,
                      VERTEX_BUFFER *vertexBuffer) {
 
         Compute<VERTEX_BUFFER>(context, batches, vertexBuffer, (VERTEX_BUFFER*)0);
@@ -133,9 +133,9 @@ public:
 
 protected:
 
-    friend class FarKernelBatchDispatcher;
+    friend class Far::KernelBatchDispatcher;
 
-    void ApplyStencilTableKernel(FarKernelBatch const &batch,
+    void ApplyStencilTableKernel(Far::KernelBatch const &batch,
         ComputeContext const *context) const;
 
     template<class BUFFER>

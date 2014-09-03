@@ -82,9 +82,9 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
         sconfig->commonShader.AddDefine("OSD_NUM_ELEMENTS", ss.str());
     }
 
-    if (desc.GetPattern() == FarPatchTables::NON_TRANSITION) {
+    if (desc.GetPattern() == Far::PatchTables::NON_TRANSITION) {
         switch (desc.GetType()) {
-        case FarPatchTables::REGULAR:
+        case Far::PatchTables::REGULAR:
             sconfig->vertexShader.source = bsplineShaderSource;
             sconfig->vertexShader.target = "vs_5_0";
             sconfig->vertexShader.entry = "vs_main_patches";
@@ -95,7 +95,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
             sconfig->domainShader.target = "ds_5_0";
             sconfig->domainShader.entry = "ds_main_patches";
             break;
-        case FarPatchTables::BOUNDARY:
+        case Far::PatchTables::BOUNDARY:
             sconfig->vertexShader.source = bsplineShaderSource;
             sconfig->vertexShader.target = "vs_5_0";
             sconfig->vertexShader.entry = "vs_main_patches";
@@ -107,7 +107,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
             sconfig->domainShader.target = "ds_5_0";
             sconfig->domainShader.entry = "ds_main_patches";
             break;
-        case FarPatchTables::CORNER:
+        case Far::PatchTables::CORNER:
             sconfig->vertexShader.source = bsplineShaderSource;
             sconfig->vertexShader.target = "vs_5_0";
             sconfig->vertexShader.entry = "vs_main_patches";
@@ -119,7 +119,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
             sconfig->domainShader.target = "ds_5_0";
             sconfig->domainShader.entry = "ds_main_patches";
             break;
-        case FarPatchTables::GREGORY:
+        case Far::PatchTables::GREGORY:
             sconfig->vertexShader.source = gregoryShaderSource;
             sconfig->vertexShader.target = "vs_5_0";
             sconfig->vertexShader.entry = "vs_main_patches";
@@ -130,7 +130,7 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
             sconfig->domainShader.target = "ds_5_0";
             sconfig->domainShader.entry = "ds_main_patches";
             break;
-        case FarPatchTables::GREGORY_BOUNDARY:
+        case Far::PatchTables::GREGORY_BOUNDARY:
             sconfig->vertexShader.source = gregoryShaderSource;
             sconfig->vertexShader.target = "vs_5_0";
             sconfig->vertexShader.entry = "vs_main_patches";
@@ -177,9 +177,9 @@ OsdD3D11DrawRegistryBase::_CreateDrawSourceConfig(
         sconfig->hullShader.AddDefine("OSD_TRANSITION_ROTATE", ss.str());
         sconfig->domainShader.AddDefine("OSD_TRANSITION_ROTATE", ss.str());
 
-        if (desc.GetType() == FarPatchTables::BOUNDARY) {
+        if (desc.GetType() == Far::PatchTables::BOUNDARY) {
             sconfig->hullShader.AddDefine("OSD_PATCH_BOUNDARY");
-        } else if (desc.GetType() == FarPatchTables::CORNER) {
+        } else if (desc.GetType() == Far::PatchTables::CORNER) {
             sconfig->hullShader.AddDefine("OSD_PATCH_CORNER");
         }
     }

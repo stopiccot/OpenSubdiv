@@ -162,7 +162,7 @@ int main(int, char **) {
 
     int maxlevel = 3;
 
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -187,7 +187,7 @@ int main(int, char **) {
     desc.fvarChannels = & uvs;
 
     // Instantiate a FarTopologyRefiner from the descriptor
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    Far::TopologyRefiner * refiner = Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     // Uniformly refine the topolgy up to 'maxlevel'
     // note: fullTopologyInLastLevel must be true to work with face-varying data
@@ -254,7 +254,7 @@ int main(int, char **) {
         // Print faces
         for (int face=0; face<refiner->GetNumFaces(maxlevel); ++face) {
 
-            FarIndexArray fverts = refiner->GetFaceVertices(maxlevel, face),
+            Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, face),
                           fvverts = refiner->GetFVarFaceValues(maxlevel, face, channel);
 
             // all refined Catmark faces should be quads

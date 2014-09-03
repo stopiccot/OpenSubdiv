@@ -104,13 +104,13 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarTopologyRefiner * createTopologyRefiner();
+static Far::TopologyRefiner * createTopologyRefiner();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
     // Generate some FarTopologyRefiner (see far_tutorial_0 for details).
-    FarTopologyRefiner * refiner = createTopologyRefiner();
+    Far::TopologyRefiner * refiner = createTopologyRefiner();
 
 
     // Uniformly refine the topolgy up to 'maxlevel'.
@@ -120,12 +120,12 @@ int main(int, char **) {
 
     // Use the FarStencilTables factory to create discrete stencil tables
     // note: we only want stencils for the highest refinement level.
-    FarStencilTablesFactory::Options options;
+    Far::StencilTablesFactory::Options options;
     options.generateAllLevels=false;
     options.generateOffsets=true;
     
-    FarStencilTables const * stencilTables =
-        FarStencilTablesFactory::Create(*refiner, options);
+    Far::StencilTables const * stencilTables =
+        Far::StencilTablesFactory::Create(*refiner, options);
 
     // Allocate vertex primvar buffer (1 stencil for each vertex)
     int nstencils = stencilTables->GetNumStencils();
@@ -160,11 +160,11 @@ int main(int, char **) {
 }
 
 //------------------------------------------------------------------------------
-static FarTopologyRefiner *
+static Far::TopologyRefiner *
 createTopologyRefiner() {
 
     // Populate a topology descriptor with our raw data.
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -178,7 +178,7 @@ createTopologyRefiner() {
     desc.vertIndices  = g_vertIndices;
 
     // Instantiate a FarTopologyRefiner from the descriptor.
-    return FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    return Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
 }
 

@@ -273,7 +273,7 @@ getKernelName(int kernel) {
 static void
 createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=kCatmark) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
@@ -281,8 +281,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
     int nedges = refiner->GetNumEdges(0),
@@ -489,12 +489,12 @@ EffectDrawRegistry::_CreateDrawSourceConfig(
     sconfig->commonShader.AddDefine("OSD_ENABLE_SCREENSPACE_TESSELLATION");
 
     bool smoothNormals = false;
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS ||
-        desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS ||
+        desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         sconfig->vertexShader.source = shaderSource;
         sconfig->vertexShader.target = "vs_5_0";
         sconfig->vertexShader.entry = "vs_main";
-    } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    } else if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         if (effect.displayStyle == kQuadWire) effect.displayStyle = kTriWire;
         if (effect.displayStyle == kQuadFill) effect.displayStyle = kTriFill;
         if (effect.displayStyle == kQuadLine) effect.displayStyle = kTriLine;

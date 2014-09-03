@@ -120,10 +120,12 @@ GetSdcOptions(Shape const & shape) {
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 template <>
 inline void
-FarTopologyRefinerFactory<Shape>::resizeComponentTopology(
-    FarTopologyRefiner & refiner, Shape const & shape) {
+TopologyRefinerFactory<Shape>::resizeComponentTopology(
+    Far::TopologyRefiner & refiner, Shape const & shape) {
 
     int nfaces = shape.GetNumFaces(),
         nverts = shape.GetNumVertices();
@@ -142,10 +144,10 @@ FarTopologyRefinerFactory<Shape>::resizeComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarTopologyRefinerFactory<Shape>::assignComponentTopology(
-    FarTopologyRefiner & refiner, Shape const & shape) {
+TopologyRefinerFactory<Shape>::assignComponentTopology(
+    Far::TopologyRefiner & refiner, Shape const & shape) {
 
-    typedef FarTopologyRefiner::IndexArray IndexArray;
+    typedef Far::TopologyRefiner::IndexArray IndexArray;
 
     { // Face relations:
         int nfaces = refiner.getNumBaseFaces();
@@ -165,10 +167,10 @@ FarTopologyRefinerFactory<Shape>::assignComponentTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarTopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
-    FarTopologyRefiner & refiner, Shape const & shape) {
+TopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
+    Far::TopologyRefiner & refiner, Shape const & shape) {
 
-    typedef FarTopologyRefiner::IndexArray IndexArray;
+    typedef Far::TopologyRefiner::IndexArray IndexArray;
 
     // UV layyout (we only parse 1 channel)
     if (not shape.faceuvs.empty()) {
@@ -190,8 +192,8 @@ FarTopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
 //----------------------------------------------------------
 template <>
 inline void
-FarTopologyRefinerFactory<Shape>::assignComponentTags(
-    FarTopologyRefiner & refiner, Shape const & shape) {
+TopologyRefinerFactory<Shape>::assignComponentTags(
+    Far::TopologyRefiner & refiner, Shape const & shape) {
 
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
@@ -227,13 +229,15 @@ FarTopologyRefinerFactory<Shape>::assignComponentTags(
     }
 }
 
+} // namespace Far
+
 } // namespace OPENSUBDIV_VERSION
 } // namespace OpenSubdiv
 
 //------------------------------------------------------------------------------
 
 void
-InterpolateFVarData(OpenSubdiv::FarTopologyRefiner & refiner,
+InterpolateFVarData(OpenSubdiv::Far::TopologyRefiner & refiner,
     Shape const & shape, std::vector<float> & fvarData);
 
 //------------------------------------------------------------------------------

@@ -60,7 +60,7 @@ class OsdCudaComputeContext::CudaStencilTables {
 
 public:
 
-    CudaStencilTables(FarStencilTables const & stencilTables) {
+    CudaStencilTables(Far::StencilTables const & stencilTables) {
         _sizes = createCudaBuffer(stencilTables.GetSizes());
         _offsets = createCudaBuffer(stencilTables.GetOffsets());
         _indices = createCudaBuffer(stencilTables.GetControlIndices());
@@ -104,8 +104,8 @@ private:
 // ----------------------------------------------------------------------------
 
 OsdCudaComputeContext::OsdCudaComputeContext(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) :
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
                 _numControlVertices(0) {
 
@@ -189,8 +189,8 @@ OsdCudaComputeContext::GetVaryingStencilTablesWeights() const {
 // ----------------------------------------------------------------------------
 
 OsdCudaComputeContext *
-OsdCudaComputeContext::Create(FarStencilTables const * vertexStencilTables,
-                              FarStencilTables const * varyingStencilTables) {
+OsdCudaComputeContext::Create(Far::StencilTables const * vertexStencilTables,
+                              Far::StencilTables const * varyingStencilTables) {
 
     OsdCudaComputeContext *result =
         new OsdCudaComputeContext(vertexStencilTables, varyingStencilTables);

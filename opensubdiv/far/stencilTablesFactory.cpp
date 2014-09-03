@@ -33,8 +33,7 @@
 #include <vector>
 #include <map>
 
-namespace OpenSubdiv {
-namespace OPENSUBDIV_VERSION {
+namespace {
 
 class StencilAllocator;
 
@@ -113,8 +112,8 @@ class StencilAllocator {
 public:
 
     // Constructor
-    StencilAllocator(FarTopologyRefiner const & refiner,
-        FarStencilTablesFactory::Mode mode);
+    StencilAllocator(OpenSubdiv::Far::TopologyRefiner const & refiner,
+        OpenSubdiv::Far::StencilTablesFactory::Mode mode);
 
     // Destructor
     ~StencilAllocator() ;
@@ -323,22 +322,24 @@ Stencil::Print() const {
 }
 
 // Constructor
-StencilAllocator::StencilAllocator( FarTopologyRefiner const & refiner,
-    FarStencilTablesFactory::Mode mode) : _interpolateVarying(false) {
+StencilAllocator::StencilAllocator(
+    OpenSubdiv::Far::TopologyRefiner const & refiner,
+        OpenSubdiv::Far::StencilTablesFactory::Mode mode) :
+            _interpolateVarying(false) {
 
-    if (mode == FarStencilTablesFactory::INTERPOLATE_VARYING) {
+    if (mode == OpenSubdiv::Far::StencilTablesFactory::INTERPOLATE_VARYING) {
         _interpolateVarying = true;
     }
 
     // Make an educated guess as to what the max size should be
 
-    Sdc::Type type = refiner.GetSchemeType();
+    OpenSubdiv::Sdc::Type type = refiner.GetSchemeType();
     switch (type) {
-        case Sdc::TYPE_BILINEAR :
+        case OpenSubdiv::Sdc::TYPE_BILINEAR :
             _maxsize = _interpolateVarying ? 5 : 5; break;
-        case Sdc::TYPE_CATMARK :
+        case OpenSubdiv::Sdc::TYPE_CATMARK :
             _maxsize = _interpolateVarying ? 5 : 10; break;
-        case Sdc::TYPE_LOOP :
+        case OpenSubdiv::Sdc::TYPE_LOOP :
             _maxsize = _interpolateVarying ? 5 : 10; break;
         default:
             assert(0);
@@ -430,9 +431,18 @@ StencilAllocator::GetNumVertices() const {
     return nverts;
 }
 
-// Copy a stencil into FarStencilTables
+} // end namespace unnamed
+
+//------------------------------------------------------------------------------
+
+namespace OpenSubdiv {
+namespace OPENSUBDIV_VERSION {
+
+namespace Far {
+
+// Copy a stencil into StencilTables
 template <> void
-FarStencilTablesFactory::copyStencil(Stencil const & src, FarStencil & dst) {
+StencilTablesFactory::copyStencil(::Stencil const & src, Stencil & dst) {
 
     unsigned char size = (unsigned char)src.GetSize();
     int const * indices = src.GetIndices();
@@ -445,13 +455,13 @@ FarStencilTablesFactory::copyStencil(Stencil const & src, FarStencil & dst) {
     }
 }
 
-// (Sort &) Copy a vector of stencils into FarStencilTables
+// (Sort &) Copy a vector of stencils into StencilTables
 template <> void
-FarStencilTablesFactory::copyStencils(StencilVec & src,
-    FarStencil & dst, bool sortBySize) {
+StencilTablesFactory::copyStencils(::StencilVec & src,
+    Stencil & dst, bool sortBySize) {
 
     if (sortBySize) {
-        std::sort(src.begin(), src.end(), Stencil::CompareSize);
+        std::sort(src.begin(), src.end(), ::Stencil::CompareSize);
     }
 
     for (int i=0; i<(int)src.size(); ++i) {
@@ -461,17 +471,17 @@ FarStencilTablesFactory::copyStencils(StencilVec & src,
 }
 
 //
-// FarStencilTables factory
+// StencilTables factory
 //
-FarStencilTables const *
-FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
+StencilTables const *
+StencilTablesFactory::Create(TopologyRefiner const & refiner,
     Options options) {
 
 
     int maxlevel = refiner.GetMaxLevel();
 
     if (maxlevel==0) {
-        return new FarStencilTables;
+        return new StencilTables;
     }
 
     Mode mode = (Mode)options.interpolationMode;
@@ -490,7 +500,7 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
     }
 
     // Interpolate stencils for each refinement level using
-    // FarRefinteTables::InterpolateLevel<>()
+    // TopologyRefiner::InterpolateLevel<>()
 
     for (int level=1;level<=maxlevel; ++level) {
 
@@ -504,7 +514,7 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
                 srcStencils[i]=i;
             }
 
-            Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
+            ::Stencil * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
             if (mode==INTERPOLATE_VERTEX) {
                 refiner.Interpolate(level, srcStencils, dstStencils);
@@ -515,8 +525,8 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
             delete [] srcStencils;
         } else {
 
-            Stencil * srcStencils = &(srcAlloc->GetStencils()).at(0),
-                    * dstStencils = &(dstAlloc->GetStencils()).at(0);
+            ::Stencil * srcStencils = &(srcAlloc->GetStencils()).at(0),
+                      * dstStencils = &(dstAlloc->GetStencils()).at(0);
 
             if (mode==INTERPOLATE_VERTEX) {
                 refiner.Interpolate(level, srcStencils, dstStencils);
@@ -537,7 +547,7 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
 
     // Sort & Copy stencils into tables
 
-    FarStencilTables * result = new FarStencilTables;
+    StencilTables * result = new StencilTables;
     {
         result->_numControlVertices = refiner.GetNumVertices(0);
 
@@ -565,7 +575,7 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
         }
 
         // Copy stencils
-        FarStencil dst(&result->_sizes.at(0),
+        Stencil dst(&result->_sizes.at(0),
             &result->_indices.at(0), &result->_weights.at(0));
 
         bool doSort = options.sortBySize!=0;
@@ -590,13 +600,14 @@ FarStencilTablesFactory::Create(FarTopologyRefiner const & refiner,
     return result;
 }
 
-FarKernelBatch
-FarStencilTablesFactory::Create(FarStencilTables const &stencilTables) {
+KernelBatch
+StencilTablesFactory::Create(StencilTables const &stencilTables) {
 
-    return FarKernelBatch( FarKernelBatch::KERNEL_STENCIL_TABLE,
+    return KernelBatch( KernelBatch::KERNEL_STENCIL_TABLE,
         -1, 0, stencilTables.GetNumStencils());
 }
 
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

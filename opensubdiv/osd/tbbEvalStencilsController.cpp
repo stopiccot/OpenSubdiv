@@ -50,7 +50,7 @@ class StencilKernel {
 public:
     enum Mode { UNDEFINED, POINT, U_DERIV, V_DERIV };
 
-    StencilKernel( FarStencilTables const * stencils,
+    StencilKernel( Far::StencilTables const * stencils,
                    OsdVertexBufferDescriptor ctrlDesc,
                    float const * ctrlData ) :
         _stencils(stencils),
@@ -114,7 +114,7 @@ public:
     }
 
 private:
-    FarStencilTables const * _stencils;
+    Far::StencilTables const * _stencils;
 
     Mode _mode;
 
@@ -130,7 +130,7 @@ private:
 int
 OsdTbbEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context ) {
 
-    FarStencilTables const * stencils = context->GetStencilTables();
+    Far::StencilTables const * stencils = context->GetStencilTables();
     if (not stencils)
         return 0;
 
@@ -157,7 +157,7 @@ OsdTbbEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
 int
 OsdTbbEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context ) {
 
-    FarStencilTables const * stencils = context->GetStencilTables();
+    Far::StencilTables const * stencils = context->GetStencilTables();
     if (not stencils)
         return 0;
 

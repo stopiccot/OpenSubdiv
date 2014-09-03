@@ -88,13 +88,13 @@ public:
 
 protected:
 
-    static inline int getNumVertices(FarTopologyRefiner const & refiner) {
+    static inline int getNumVertices(Far::TopologyRefiner const & refiner) {
         return refiner.IsUniform() ?
             refiner.GetNumVertices(0) + refiner.GetNumVertices(refiner.GetMaxLevel()) :
                 refiner.GetNumVerticesTotal();
     }
 
-    static inline void refineMesh(FarTopologyRefiner & refiner, int level, bool adaptive) {
+    static inline void refineMesh(Far::TopologyRefiner & refiner, int level, bool adaptive) {
 
         bool fullTopologyInLastLevel = refiner.GetNumFVarChannels()>0;
 
@@ -118,7 +118,7 @@ public:
     typedef typename DrawContext::VertexBufferBinding VertexBufferBinding;
 
     OsdMesh(ComputeController * computeController,
-            FarTopologyRefiner * refiner,
+            Far::TopologyRefiner * refiner,
             int numVertexElements,
             int numVaryingElements,
             int level,
@@ -143,7 +143,7 @@ public:
     }
 
     OsdMesh(ComputeController * computeController,
-            FarTopologyRefiner * refiner,
+            Far::TopologyRefiner * refiner,
             VertexBuffer * vertexBuffer,
             VertexBuffer * varyingBuffer,
             ComputeContext * computeContext,
@@ -215,24 +215,24 @@ private:
 
         assert(_refiner);
 
-        FarStencilTablesFactory::Options options;
+        Far::StencilTablesFactory::Options options;
         options.generateOffsets=true;
         options.generateAllLevels=_refiner->IsUniform() ? false : true;
 
-        FarStencilTables const * vertexStencils=0, * varyingStencils=0;
+        Far::StencilTables const * vertexStencils=0, * varyingStencils=0;
 
         if (numVertexElements>0) {
 
-            vertexStencils = FarStencilTablesFactory::Create(*_refiner, options);
+            vertexStencils = Far::StencilTablesFactory::Create(*_refiner, options);
 
-            _kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+            _kernelBatches.push_back(Far::StencilTablesFactory::Create(*vertexStencils));
         }
 
         if (numVaryingElements>0) {
 
-            options.interpolationMode = FarStencilTablesFactory::INTERPOLATE_VARYING;
+            options.interpolationMode = Far::StencilTablesFactory::INTERPOLATE_VARYING;
 
-            varyingStencils = FarStencilTablesFactory::Create(*_refiner, options);
+            varyingStencils = Far::StencilTablesFactory::Create(*_refiner, options);
         }
 
         _computeContext = ComputeContext::Create(vertexStencils, varyingStencils);
@@ -245,10 +245,10 @@ private:
 
         assert(_refiner and _vertexBuffer);
 
-        FarPatchTablesFactory::Options options;
+        Far::PatchTablesFactory::Options options;
         options.generateFVarTables = bits.test(MeshFVarData);
 
-        _patchTables = FarPatchTablesFactory::Create(*_refiner);
+        _patchTables = Far::PatchTablesFactory::Create(*_refiner);
 
         _drawContext = DrawContext::Create(
             _patchTables, numElements, bits.test(MeshFVarData));
@@ -275,9 +275,9 @@ private:
         return numElements;
    }
 
-    FarTopologyRefiner * _refiner;
-    FarPatchTables * _patchTables;
-    FarKernelBatchVector _kernelBatches;
+    Far::TopologyRefiner * _refiner;
+    Far::PatchTables * _patchTables;
+    Far::KernelBatchVector _kernelBatches;
 
     VertexBuffer * _vertexBuffer,
                  * _varyingBuffer;

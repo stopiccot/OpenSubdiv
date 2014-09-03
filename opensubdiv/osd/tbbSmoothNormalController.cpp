@@ -153,7 +153,7 @@ void OsdTbbSmoothNormalController::_smootheNormals(
 
     std::vector<unsigned int> const & verts = context->GetControlVertices();
 
-    FarPatchTables::PatchArrayVector const & parrays = context->GetPatchArrayVector();
+    Far::PatchTables::PatchArrayVector const & parrays = context->GetPatchArrayVector();
 
     if (verts.empty() or parrays.empty() or (not iBuffer) or (not oBuffer)) {
         return;
@@ -161,11 +161,11 @@ void OsdTbbSmoothNormalController::_smootheNormals(
 
     for (int i=0; i<(int)parrays.size(); ++i) {
 
-        FarPatchTables::PatchArray const & pa = parrays[i];
+        Far::PatchTables::PatchArray const & pa = parrays[i];
 
-        FarPatchTables::Type type = pa.GetDescriptor().GetType();
+        Far::PatchTables::Type type = pa.GetDescriptor().GetType();
 
-        if (type==FarPatchTables::QUADS or type==FarPatchTables::TRIANGLES) {
+        if (type==Far::PatchTables::QUADS or type==Far::PatchTables::TRIANGLES) {
 
 
             // if necessary, reset all normal values to 0
@@ -177,7 +177,7 @@ void OsdTbbSmoothNormalController::_smootheNormals(
             }
 
             {
-                int nv = FarPatchTables::Descriptor::GetNumControlVertices(type);
+                int nv = Far::PatchTables::Descriptor::GetNumControlVertices(type);
                 TBBSmoothNormalKernel smoothNormalkernel( iBuffer,
                                                           iDesc.stride,
                                                           oBuffer,

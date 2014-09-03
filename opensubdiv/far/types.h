@@ -32,14 +32,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 //
 //  Typedef's for indices we want at the Far level -- need to go elsewhere eventually...
 //
-typedef Vtr::Index       FarIndex;
-typedef Vtr::LocalIndex  FarLocalIndex;
+typedef Vtr::Index       Index;
+typedef Vtr::LocalIndex  LocalIndex;
 
-typedef Vtr::IndexArray       FarIndexArray;
-typedef Vtr::LocalIndexArray  FarLocalIndexArray;
+typedef Vtr::IndexArray       IndexArray;
+typedef Vtr::LocalIndexArray  LocalIndexArray;
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

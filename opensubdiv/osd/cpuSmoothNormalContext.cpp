@@ -28,7 +28,7 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 OsdCpuSmoothNormalContext::OsdCpuSmoothNormalContext(
-    FarPatchTables const *patchTables, bool resetMemory) :
+    Far::PatchTables const *patchTables, bool resetMemory) :
         _numVertices(0), _resetMemory(resetMemory) {
 
     // copy the data from the FarTables
@@ -38,7 +38,7 @@ OsdCpuSmoothNormalContext::OsdCpuSmoothNormalContext(
 }
 
 OsdCpuSmoothNormalContext *
-OsdCpuSmoothNormalContext::Create(FarPatchTables const *patchTables, bool resetMemory) {
+OsdCpuSmoothNormalContext::Create(Far::PatchTables const *patchTables, bool resetMemory) {
 
     return new OsdCpuSmoothNormalContext(patchTables, resetMemory);
 }

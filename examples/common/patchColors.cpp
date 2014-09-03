@@ -48,7 +48,7 @@ static float _colors[4][5][4] = {{{1.0f,  1.0f,  1.0f,  1.0f},   // regular
                                   {0.25f, 0.25f, 0.25f, 1.0f},   // corner pattern 3
                                   {0.25f, 0.25f, 0.25f, 1.0f}}}; // corner pattern 4
 
-typedef OpenSubdiv::FarPatchTables FarPatchTables;
+typedef OpenSubdiv::Far::PatchTables FarPatchTables;
 
 
 float const *

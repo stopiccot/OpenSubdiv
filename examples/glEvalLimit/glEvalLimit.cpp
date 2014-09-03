@@ -181,9 +181,9 @@ createRandomVaryingColors(int nverts, std::vector<float> & colors) {
 
 //------------------------------------------------------------------------------
 static void
-createCoarseMesh(OpenSubdiv::FarTopologyRefiner const & refiner) {
+createCoarseMesh(OpenSubdiv::Far::TopologyRefiner const & refiner) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // save coarse topology (used for coarse mesh drawing)
     int nedges = refiner.GetNumEdges(0),
@@ -211,11 +211,11 @@ createCoarseMesh(OpenSubdiv::FarTopologyRefiner const & refiner) {
 
 //------------------------------------------------------------------------------
 static int
-getNumPtexFaces(OpenSubdiv::FarTopologyRefiner const & refiner) {
+getNumPtexFaces(OpenSubdiv::Far::TopologyRefiner const & refiner) {
 
     int result = 0;
     for (int face=0; face<refiner.GetNumFaces(0); ++face) {
-        OpenSubdiv::FarIndexArray fverts = refiner.GetFaceVertices(0, face);
+        OpenSubdiv::Far::IndexArray fverts = refiner.GetFaceVertices(0, face);
         result += fverts.size()==4 ? 1 : fverts.size();
     }
     return result;
@@ -229,7 +229,7 @@ OsdCpuComputeContext * g_computeCtx = 0;
 
 OsdCpuComputeController g_computeCtrl;
 
-FarKernelBatchVector  g_kernelBatches;
+Far::KernelBatchVector  g_kernelBatches;
 
 OsdCpuEvalLimitContext * g_evalCtx = 0;
 
@@ -357,8 +357,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     g_orgPositions=shape->verts;
     g_positions.resize(g_orgPositions.size(),0.0f);
@@ -376,25 +376,25 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
 
         nverts = refiner->GetNumVerticesTotal();
 
-        FarStencilTablesFactory::Options options;
+        Far::StencilTablesFactory::Options options;
         options.generateOffsets=true;
         options.generateAllLevels=true;
 
         // Generate stencil tables
-        FarStencilTables const * vertexStencils =
-            FarStencilTablesFactory::Create(*refiner, options);
+        Far::StencilTables const * vertexStencils =
+            Far::StencilTablesFactory::Create(*refiner, options);
 
-        options.interpolationMode = FarStencilTablesFactory::INTERPOLATE_VARYING;
-        FarStencilTables const * varyingStencils =
-            FarStencilTablesFactory::Create(*refiner, options);
+        options.interpolationMode = Far::StencilTablesFactory::INTERPOLATE_VARYING;
+        Far::StencilTables const * varyingStencils =
+            Far::StencilTablesFactory::Create(*refiner, options);
 
         g_kernelBatches.clear();
-        g_kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+        g_kernelBatches.push_back(Far::StencilTablesFactory::Create(*vertexStencils));
 
 
         // Generate adaptive patch tables
-        FarPatchTables const * patchTables =
-             FarPatchTablesFactory::Create(*refiner);
+        Far::PatchTables const * patchTables =
+             Far::PatchTablesFactory::Create(*refiner);
 
         // Create a Compute context, used to "pose" the vertices
         delete g_computeCtx;

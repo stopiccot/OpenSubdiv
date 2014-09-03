@@ -153,7 +153,7 @@ public:
     }
 
     void ApplyStencilTableKernel(ID3D11DeviceContext *deviceContext,
-        FarKernelBatch const &batch, int offset, int numCVs) {
+        Far::KernelBatch const &batch, int offset, int numCVs) {
 
         KernelUniformArgs args;
         args.uniformStart = batch.start;
@@ -297,7 +297,7 @@ OsdD3D11ComputeController::unbindBuffer() {
 
 void
 OsdD3D11ComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+    Far::KernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
 
     assert(context);
 

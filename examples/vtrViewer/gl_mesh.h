@@ -184,9 +184,9 @@ public:
 
     // -----------------------------------------------------
     // Vtr initialization
-    typedef OpenSubdiv::FarTopologyRefiner TopologyRefiner;
+    typedef OpenSubdiv::Far::TopologyRefiner TopologyRefiner;
 
-    typedef OpenSubdiv::FarPatchTables PatchTables;
+    typedef OpenSubdiv::Far::PatchTables PatchTables;
 
     void Initialize(Options options, TopologyRefiner const & refiner,
         PatchTables const * patchTables, float const * vertexData);

@@ -27,12 +27,12 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCpuEvalStencilsContext::OsdCpuEvalStencilsContext(FarStencilTables const *stencils) :
+OsdCpuEvalStencilsContext::OsdCpuEvalStencilsContext(Far::StencilTables const *stencils) :
     _stencils(stencils) {
 }
 
 OsdCpuEvalStencilsContext *
-OsdCpuEvalStencilsContext::Create(FarStencilTables const *stencils) {
+OsdCpuEvalStencilsContext::Create(Far::StencilTables const *stencils) {
     return new OsdCpuEvalStencilsContext(stencils);
 }
 

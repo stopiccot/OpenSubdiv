@@ -42,7 +42,7 @@ OsdOmpEvalStencilsController::_UpdateValues( OsdCpuEvalStencilsContext * context
 
     int result=0;
 
-    FarStencilTables const * stencils = context->GetStencilTables();
+    Far::StencilTables const * stencils = context->GetStencilTables();
 
     int nstencils = stencils->GetNumStencils();
     if (not nstencils)
@@ -92,7 +92,7 @@ OsdOmpEvalStencilsController::_UpdateDerivs( OsdCpuEvalStencilsContext * context
 
     int result=0;
 
-    FarStencilTables const * stencils = context->GetStencilTables();
+    Far::StencilTables const * stencils = context->GetStencilTables();
 
     int nstencils = stencils->GetNumStencils();
     if (not nstencils)

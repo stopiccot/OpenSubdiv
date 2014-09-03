@@ -35,7 +35,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarStencilTables;
+class Far::StencilTables;
 
 ///
 /// \brief OpenCL Refine Context
@@ -53,15 +53,15 @@ public:
     ///
     /// @param clContext             An active OpenCL compute context
     ///
-    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
     ///
-    /// @param varyingStencilTables  The FarStencilTables used for varying
+    /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
     static OsdCLComputeContext * Create(cl_context clContext,
-                                        FarStencilTables const * vertexStencilTables,
-                                        FarStencilTables const * varyingStencilTables=0);
+                                        Far::StencilTables const * vertexStencilTables,
+                                        Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdCLComputeContext();
@@ -105,8 +105,8 @@ public:
 
 
 protected:
-    explicit OsdCLComputeContext(FarStencilTables const * vertexStencilTables,
-                                 FarStencilTables const * varyingStencilTables,
+    explicit OsdCLComputeContext(Far::StencilTables const * vertexStencilTables,
+                                 Far::StencilTables const * varyingStencilTables,
                                  cl_context clContext);
 
 private:

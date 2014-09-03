@@ -35,7 +35,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarStencilTables;
+class Far::StencilTables;
 
 ///
 /// \brief GLSL-Compute(transform-feedback) Refine Context
@@ -50,14 +50,14 @@ class OsdGLSLTransformFeedbackComputeContext {
 public:
     /// Creates an OsdGLSLTransformFeedbackComputeContext instance
     ///
-    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
     ///
-    /// @param varyingStencilTables  The FarStencilTables used for varying
+    /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
-    static OsdGLSLTransformFeedbackComputeContext * Create(FarStencilTables const * vertexStencilTables,
-                                                           FarStencilTables const * varyingStencilTables=0);
+    static OsdGLSLTransformFeedbackComputeContext * Create(Far::StencilTables const * vertexStencilTables,
+                                                           Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdGLSLTransformFeedbackComputeContext();
@@ -101,8 +101,8 @@ public:
 
 protected:
 
-    explicit OsdGLSLTransformFeedbackComputeContext(FarStencilTables const * vertexStencilTables,
-                                                    FarStencilTables const * varyingStencilTables);
+    explicit OsdGLSLTransformFeedbackComputeContext(Far::StencilTables const * vertexStencilTables,
+                                                    Far::StencilTables const * varyingStencilTables);
 
 private:
 

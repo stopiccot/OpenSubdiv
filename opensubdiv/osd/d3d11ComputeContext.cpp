@@ -109,7 +109,7 @@ class OsdD3D11ComputeContext::D3D11StencilTables {
 
 public:
 
-    D3D11StencilTables(FarStencilTables const & stencilTables,
+    D3D11StencilTables(Far::StencilTables const & stencilTables,
         ID3D11DeviceContext *deviceContext) {
 
         // convert unsigned char sizes buffer to ints (HLSL does not have uint8 type)
@@ -174,8 +174,8 @@ private:
 
 OsdD3D11ComputeContext::OsdD3D11ComputeContext(
     ID3D11DeviceContext *deviceContext,
-        FarStencilTables const * vertexStencilTables,
-            FarStencilTables const * varyingStencilTables) :
+        Far::StencilTables const * vertexStencilTables,
+            Far::StencilTables const * varyingStencilTables) :
                 _vertexStencilTables(0), _varyingStencilTables(0),
                     _numControlVertices(0) {
 
@@ -241,8 +241,8 @@ OsdD3D11ComputeContext::UnbindStencilTables(ID3D11DeviceContext *deviceContext) 
 
 OsdD3D11ComputeContext *
 OsdD3D11ComputeContext::Create(ID3D11DeviceContext *deviceContext,
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) {
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) {
 
     OsdD3D11ComputeContext *result =
         new OsdD3D11ComputeContext(deviceContext, vertexStencilTables, varyingStencilTables);

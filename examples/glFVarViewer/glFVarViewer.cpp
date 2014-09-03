@@ -234,10 +234,10 @@ linkDefaultProgram() {
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OpenSubdiv::FarTopologyRefiner const & refiner,
+calcNormals(OpenSubdiv::Far::TopologyRefiner const & refiner,
     std::vector<float> const & pos, std::vector<float> & normals) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // calc normal vectors
     int nverts = (int)pos.size()/3;
@@ -310,7 +310,7 @@ updateGeom() {
 static void
 createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
@@ -320,8 +320,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
 
     sdcoptions.SetFVarBoundaryInterpolation(g_fvarBoundary);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
     int nedges = refiner->GetNumEdges(0),
@@ -566,8 +566,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc) {
     const char *glslVersion = "#version 330\n";
 #endif
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS or
-        desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS or
+        desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         sconfig->vertexShader.source = shaderSource;
         sconfig->vertexShader.version = glslVersion;
         sconfig->vertexShader.AddDefine("VERTEX_SHADER");
@@ -586,12 +586,12 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc) {
     sconfig->commonShader.AddDefine("OSD_FVAR_WIDTH", "2");
 
 
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS) {
         // uniform catmark, bilinear
         sconfig->geometryShader.AddDefine("PRIM_QUAD");
         sconfig->fragmentShader.AddDefine("PRIM_QUAD");
         sconfig->commonShader.AddDefine("UNIFORM_SUBDIVISION");
-    } else if (desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    } else if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         // uniform loop
         sconfig->geometryShader.AddDefine("PRIM_TRI");
         sconfig->fragmentShader.AddDefine("PRIM_TRI");
@@ -818,15 +818,15 @@ display() {
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
 
         OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        OpenSubdiv::FarPatchTables::Type patchType = desc.GetType();
+        OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
 
         switch (patchType) {
-        case OpenSubdiv::FarPatchTables::QUADS:
+        case OpenSubdiv::Far::PatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case OpenSubdiv::FarPatchTables::TRIANGLES:
+        case OpenSubdiv::Far::PatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:
@@ -883,15 +883,15 @@ display() {
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
 
         OpenSubdiv::OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        OpenSubdiv::FarPatchTables::Type patchType = desc.GetType();
+        OpenSubdiv::Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
 
         switch (patchType) {
-        case OpenSubdiv::FarPatchTables::QUADS:
+        case OpenSubdiv::Far::PatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case OpenSubdiv::FarPatchTables::TRIANGLES:
+        case OpenSubdiv::Far::PatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:

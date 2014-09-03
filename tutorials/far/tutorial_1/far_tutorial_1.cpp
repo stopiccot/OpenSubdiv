@@ -225,10 +225,12 @@ private:
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 template <>
 void
-FarTopologyRefinerFactory<Converter>::resizeComponentTopology(
-    FarTopologyRefiner & refiner, Converter const & conv) {
+TopologyRefinerFactory<Converter>::resizeComponentTopology(
+    TopologyRefiner & refiner, Converter const & conv) {
 
     // Faces and face-verts
     int nfaces = conv.GetNumFaces();
@@ -262,11 +264,11 @@ FarTopologyRefinerFactory<Converter>::resizeComponentTopology(
 
 template <>
 void
-FarTopologyRefinerFactory<Converter>::assignComponentTopology(
-    FarTopologyRefiner & refiner, Converter const & conv) {
+TopologyRefinerFactory<Converter>::assignComponentTopology(
+    TopologyRefiner & refiner, Converter const & conv) {
 
-    typedef FarTopologyRefiner::IndexArray      IndexArray;
-    typedef FarTopologyRefiner::LocalIndexArray LocalIndexArray;
+    typedef Far::TopologyRefiner::IndexArray      IndexArray;
+    typedef Far::TopologyRefiner::LocalIndexArray LocalIndexArray;
 
     { // Face relations:
         int nfaces = conv.GetNumFaces();
@@ -332,14 +334,16 @@ FarTopologyRefinerFactory<Converter>::assignComponentTopology(
 
 template <>
 void
-FarTopologyRefinerFactory<Converter>::assignComponentTags(
-    FarTopologyRefiner & refiner, Converter const & conv) {
+TopologyRefinerFactory<Converter>::assignComponentTags(
+    TopologyRefiner & refiner, Converter const & conv) {
 
     // arbitrarily sharpen the 4 bottom edges of the pyramid to 2.5f
     for (int edge=0; edge<conv.GetNumEdges(); ++edge) {
         refiner.baseEdgeSharpness(edge) = g_edgeCreases[edge];
     }
 }
+
+} // namespace Far
 
 } // namespace OPENSUBDIV_VERSION
 } // namespace OpenSubdiv
@@ -391,7 +395,7 @@ int main(int, char **) {
 
     Converter conv;
 
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Converter>::Create(
+    Far::TopologyRefiner * refiner = Far::TopologyRefinerFactory<Converter>::Create(
         conv.GetType(), conv.GetOptions(), conv);
 
 
@@ -437,7 +441,7 @@ int main(int, char **) {
         // Print faces
         for (int face=0; face<refiner->GetNumFaces(maxlevel); ++face) {
 
-            FarIndexArray fverts = refiner->GetFaceVertices(maxlevel, face);
+            Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, face);
 
             // all refined Catmark faces should be quads
             assert(fverts.size()==4);

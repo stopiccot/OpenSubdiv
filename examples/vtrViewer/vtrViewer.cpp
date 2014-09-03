@@ -116,7 +116,7 @@ int   g_displayPatchColor    = 1,
       g_currentPatch         = 0,
       g_Adaptive             = false;
 
-OpenSubdiv::FarPatchTables::Descriptor g_currentPatchDesc;
+OpenSubdiv::Far::PatchTables::Descriptor g_currentPatchDesc;
 
 float g_rotate[2] = {0, 0},
       g_dolly = 5,
@@ -157,8 +157,8 @@ static GLMesh g_base_glmesh,
 
 //------------------------------------------------------------------------------
 
-typedef OpenSubdiv::FarTopologyRefiner               FTopologyRefiner;
-typedef OpenSubdiv::FarTopologyRefinerFactory<Shape> FTopologyRefinerFactory;
+typedef OpenSubdiv::Far::TopologyRefiner               FTopologyRefiner;
+typedef OpenSubdiv::Far::TopologyRefinerFactory<Shape> FTopologyRefinerFactory;
 
 //------------------------------------------------------------------------------
 // generate display IDs for Hbr faces
@@ -305,7 +305,7 @@ createHbrMesh(Shape * shape, int maxlevel) {
     { // create maxlevel refined GL mesh
         s.Start();
 
-        OpenSubdiv::FarPatchTables const * patchTables = 0;
+        OpenSubdiv::Far::PatchTables const * patchTables = 0;
 
         if (g_Adaptive) {
             int maxvalence = RefineAdaptive(*hmesh, maxlevel, refinedFaces);
@@ -358,7 +358,7 @@ createHbrMesh(Shape * shape, int maxlevel) {
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr verts
 static void
-createVertNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
+createVertNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer) {
 
     int maxlevel = refiner.GetMaxLevel(),
@@ -390,7 +390,7 @@ createVertNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr edges
 static void
-createEdgeNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
+createEdgeNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer, bool ids=false, bool sharpness=false) {
 
     if (ids or sharpness) {
@@ -407,7 +407,7 @@ createEdgeNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+            OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
                 refiner.GetEdgeVertices(maxlevel, i);
             assert(verts.size()==2);
 
@@ -433,7 +433,7 @@ createEdgeNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr faces
 static void
-createFaceNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
+createFaceNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
     std::vector<Vertex> const & vertexBuffer) {
 
     static char buf[16];
@@ -450,7 +450,7 @@ createFaceNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+            OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
                 refiner.GetFaceVertices(maxlevel, face);
 
             float weight = 1.0f / (float)verts.size();
@@ -475,7 +475,7 @@ createFaceNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 
                 Vertex center(0.0f, 0.0f, 0.0f);
 
-                OpenSubdiv::FarTopologyRefiner::IndexArray const verts =
+                OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
                     refiner.GetFaceVertices(level, face);
 
                 float weight = 1.0f / (float)verts.size();
@@ -494,7 +494,7 @@ createFaceNumbers(OpenSubdiv::FarTopologyRefiner const & refiner,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr faces
 static void
-createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
+createPatchNumbers(OpenSubdiv::Far::PatchTables const & patchTables,
     std::vector<Vertex> const & vertexBuffer) {
 
     if (not g_currentPatch)
@@ -502,11 +502,11 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
 
     int patchID = g_currentPatch-1;
 
-    OpenSubdiv::FarPatchTables::PatchArrayVector const & parrays =
+    OpenSubdiv::Far::PatchTables::PatchArrayVector const & parrays =
          patchTables.GetPatchArrayVector();
 
     // Find PatchArray containing our patch
-    OpenSubdiv::FarPatchTables::PatchArray const * pa=0;
+    OpenSubdiv::Far::PatchTables::PatchArray const * pa=0;
     for (int i=0; i<(int)parrays.size(); ++i) {
         int npatches = parrays[i].GetNumPatches();
         if (patchID >= npatches) {
@@ -520,7 +520,7 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
         return;
     }
 
-    OpenSubdiv::FarPatchTables::PTable const & ptable =
+    OpenSubdiv::Far::PatchTables::PTable const & ptable =
         patchTables.GetPatchTable();
 
     g_currentPatchDesc = pa->GetDescriptor();
@@ -539,10 +539,10 @@ createPatchNumbers(OpenSubdiv::FarPatchTables const & patchTables,
 //------------------------------------------------------------------------------
 // generate display IDs for Vtr faces
 static void
-createPtexNumbers(OpenSubdiv::FarPatchTables const & patchTables,
+createPtexNumbers(OpenSubdiv::Far::PatchTables const & patchTables,
     std::vector<Vertex> const & vertexBuffer) {
 
-    typedef OpenSubdiv::FarPatchTables FPatchTables;
+    typedef OpenSubdiv::Far::PatchTables FPatchTables;
 
     FPatchTables::PatchParamTable const & pparams =
          patchTables.GetPatchParamTable();
@@ -603,16 +603,16 @@ createVtrMesh(Shape * shape, int maxlevel) {
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
-    OpenSubdiv::FarPatchTables * patchTables = 0;
+    OpenSubdiv::Far::PatchTables * patchTables = 0;
 
     if (g_Adaptive) {
 
         refiner->RefineAdaptive(maxlevel, /*fullTopology*/true);
 
-        patchTables = OpenSubdiv::FarPatchTablesFactory::Create(*refiner);
+        patchTables = OpenSubdiv::Far::PatchTablesFactory::Create(*refiner);
 
         g_numPatches = patchTables->GetNumPatches();
     } else {
@@ -645,13 +645,13 @@ createVtrMesh(Shape * shape, int maxlevel) {
     }
 #else
     {
-        OpenSubdiv::FarStencilTablesFactory::Options options;
+        OpenSubdiv::Far::StencilTablesFactory::Options options;
         options.generateOffsets=true;
         options.generateAllLevels=true;
         options.sortBySize=false;
 
-        OpenSubdiv::FarStencilTables const * stencilTables =
-            OpenSubdiv::FarStencilTablesFactory::Create(*refiner, options);
+        OpenSubdiv::Far::StencilTables const * stencilTables =
+            OpenSubdiv::Far::StencilTablesFactory::Create(*refiner, options);
 
         stencilTables->UpdateValues(verts, verts + ncoarseverts);
     }

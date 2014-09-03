@@ -44,7 +44,7 @@ namespace OPENSUBDIV_VERSION {
 
 void
 OsdCudaComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, ComputeContext const *context) const {
+    Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
 

@@ -34,7 +34,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarStencilTables;
+namespace Far{ class StencilTables; }
 
 ///
 /// \brief CPU Compute Context
@@ -52,36 +52,36 @@ class OsdCpuComputeContext : private OsdNonCopyable<OsdCpuComputeContext> {
 public:
     /// Creates an OsdCpuComputeContext instance
     ///
-    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
     ///
-    /// @param varyingStencilTables  The FarStencilTables used for varying
+    /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
-    static OsdCpuComputeContext * Create(FarStencilTables const * vertexStencilTables,
-                                         FarStencilTables const * varyingStencilTables=0);
+    static OsdCpuComputeContext * Create(Far::StencilTables const * vertexStencilTables,
+                                         Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdCpuComputeContext();
 
     /// Returns the stencils data applied by this context for vertex interpolation
-    FarStencilTables const * GetVertexStencilTables() const {
+    Far::StencilTables const * GetVertexStencilTables() const {
         return _vertexStencilTables;
     }
 
     /// Returns the stencils data applied by this context for varying interpolation
-    FarStencilTables const * GetVaryingStencilTables() const {
+    Far::StencilTables const * GetVaryingStencilTables() const {
         return _varyingStencilTables;
     }
 
 protected:
 
-    explicit OsdCpuComputeContext(FarStencilTables const * vertexStencilTables,
-                                  FarStencilTables const * varyingStencilTables=0);
+    explicit OsdCpuComputeContext(Far::StencilTables const * vertexStencilTables,
+                                  Far::StencilTables const * varyingStencilTables=0);
 
 private:
 
-    FarStencilTables const * _vertexStencilTables,
+    Far::StencilTables const * _vertexStencilTables,
                            * _varyingStencilTables;
 };
 

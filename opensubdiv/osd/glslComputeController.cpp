@@ -136,7 +136,7 @@ public:
         return true;
     }
 
-    void ApplyStencilTableKernel(FarKernelBatch const &batch, int offset, int numCVs) const {
+    void ApplyStencilTableKernel(Far::KernelBatch const &batch, int offset, int numCVs) const {
 
         // select stencil GLSL subroutine
         glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &_subStencilKernel);
@@ -212,7 +212,7 @@ private:
 
 void
 OsdGLSLComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, ComputeContext const *context) const {
+    Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
     

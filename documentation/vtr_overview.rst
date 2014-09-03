@@ -56,7 +56,7 @@ representation of vertices, faces, etc. than Hbr in that they are not even
 parameterized by an interface to such components.  So the same set of Vtr
 objects can eventually be used to serve more than one representation of these
 components.  The primary requirement is that a mesh be expressable as an
-indexable set (i.e. a vector or array) of vertices, edges and faces.  The index
+indexable set (i.e. a vector or array) of vertices, edges and faces. The index
 of a component uniquely identifies it and properties are retrieved by referring
 to it by index.
 
@@ -167,7 +167,7 @@ data in subsequent levels is typically 4x its predecessor, we can minimize what
 we either generate or keep around at each level. For instance, if only a
 face-list is required at the finest level, we only need to generate one of the
 six topological relations: the vertices incident each face. When we do keep
-Vtr::Levels around in memory (as is the case with the `FarTopologyRefiner
+Vtr::Levels around in memory (as is the case with the `Far::TopologyRefiner
 <far_overview.html>`__) we do have do have the opportunity to prune what is not
 strictly necessary after the refinement. Just as with construction, whatever
 classes are privileged to construct a *Vtr::Level* are likely those that will be

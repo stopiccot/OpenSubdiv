@@ -80,7 +80,7 @@ class OsdGLSLTransformFeedbackComputeContext::GLStencilTables {
 
 public:
 
-    GLStencilTables(FarStencilTables const & stencilTables) {
+    GLStencilTables(Far::StencilTables const & stencilTables) {
         _sizes = createGLTextureBuffer(stencilTables.GetSizes(), GL_R8UI);
         _offsets = createGLTextureBuffer(stencilTables.GetOffsets(), GL_R32I);
         _indices = createGLTextureBuffer(stencilTables.GetControlIndices(), GL_R32I);
@@ -125,8 +125,8 @@ private:
 // -----------------------------------------------------------------------------
 
 OsdGLSLTransformFeedbackComputeContext::OsdGLSLTransformFeedbackComputeContext(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) :
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0),
                 _numControlVertices(0) {
 
@@ -212,8 +212,8 @@ OsdGLSLTransformFeedbackComputeContext::GetVaryingStencilTablesWeights() const {
 
 OsdGLSLTransformFeedbackComputeContext *
 OsdGLSLTransformFeedbackComputeContext::Create(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) {
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) {
 
     OsdGLSLTransformFeedbackComputeContext *result =
         new OsdGLSLTransformFeedbackComputeContext(

@@ -42,7 +42,7 @@ namespace OPENSUBDIV_VERSION {
 ///
 /// Current specificiation GPU hardware tessellation limitations require transition
 /// patches to be split-up into several triangular bi-cubic sub-patches.
-/// OsdDrawContext processes FarPatchArrays from FarPatchTables and generates the
+/// OsdDrawContext processes FarPatchArrays from Far::PatchTables and generates the
 /// additional sets of sub-patches.
 ///
 /// Contexts interface the serialized topological data pertaining to the
@@ -69,18 +69,18 @@ public:
         /// @param numElements  The size of the vertex and varying data per-vertex
         ///                     (in floats)
         ///
-        PatchDescriptor(FarPatchTables::Descriptor farDesc, unsigned char maxValence,
+        PatchDescriptor(Far::PatchTables::Descriptor farDesc, unsigned char maxValence,
                     unsigned char subPatch, unsigned char numElements) :
             _farDesc(farDesc), _maxValence(maxValence), _subPatch(subPatch), _numElements(numElements) { }
 
 
         /// Returns the type of the patch
-        FarPatchTables::Type GetType() const {
+        Far::PatchTables::Type GetType() const {
             return _farDesc.GetType();
         }
 
         /// Returns the transition pattern of the patch if any (5 types)
-        FarPatchTables::TransitionPattern GetPattern() const {
+        Far::PatchTables::TransitionPattern GetPattern() const {
             return _farDesc.GetPattern();
         }
 
@@ -122,7 +122,7 @@ public:
         bool operator == ( PatchDescriptor const other ) const;
 
     private:
-        FarPatchTables::Descriptor _farDesc;
+        Far::PatchTables::Descriptor _farDesc;
         unsigned char _maxValence;
         unsigned char _subPatch;
         unsigned char _numElements;
@@ -137,7 +137,7 @@ public:
         ///
         /// @param range  The range of vertex indices
         ///
-        PatchArray(PatchDescriptor desc, FarPatchTables::PatchArray::ArrayRange const & range) :
+        PatchArray(PatchDescriptor desc, Far::PatchTables::PatchArray::ArrayRange const & range) :
             _desc(desc), _range(range) { }
 
         /// Returns a patch descriptor defining the type of patches in the array
@@ -151,7 +151,7 @@ public:
         }
 
         /// Returns a array range struct
-        FarPatchTables::PatchArray::ArrayRange const & GetArrayRange() const {
+        Far::PatchTables::PatchArray::ArrayRange const & GetArrayRange() const {
             return _range;
         }
 
@@ -189,7 +189,7 @@ public:
 
     private:
         PatchDescriptor _desc;
-        FarPatchTables::PatchArray::ArrayRange _range;
+        Far::PatchTables::PatchArray::ArrayRange _range;
     };
 
     /// Constructor
@@ -212,7 +212,7 @@ public:
 
     // processes FarPatchArrays and inserts requisite sub-patches for the arrays
     // containing transition patches
-    static void ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPatchArrays,
+    static void ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &farPatchArrays,
                                    OsdDrawContext::PatchArrayVector &osdPatchArrays,
                                    int maxValence, int numElements);
 
@@ -221,7 +221,7 @@ public:
 
 protected:
 
-     static void packFVarData(FarPatchTables const & patchTables,
+     static void packFVarData(Far::PatchTables const & patchTables,
                               int fvarWidth, FVarData const & src, FVarData & dst);
 
     // XXXX: move to private member

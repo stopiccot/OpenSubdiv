@@ -139,14 +139,14 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarTopologyRefiner * createFarTopologyRefiner();
+static Far::TopologyRefiner * createFarTopologyRefiner();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
     int maxlevel = 5;
 
-    FarTopologyRefiner * refiner = createFarTopologyRefiner();
+    Far::TopologyRefiner * refiner = createFarTopologyRefiner();
 
     // Uniformly refine the topolgy up to 'maxlevel'
     refiner->RefineUniform( maxlevel );
@@ -208,16 +208,16 @@ int main(int, char **) {
 }
 
 //------------------------------------------------------------------------------
-// Creates FarTopologyRefiner from raw geometry
+// Creates Far::TopologyRefiner from raw geometry
 //
 // see far_tutorial_0 for more details
 //
-static FarTopologyRefiner *
+static Far::TopologyRefiner *
 createFarTopologyRefiner() {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -230,8 +230,8 @@ createFarTopologyRefiner() {
     desc.vertsPerFace = g_vertsperface;
     desc.vertIndices  = g_vertIndices;
 
-    // Instantiate a FarTopologyRefiner from the descriptor
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    // Instantiate a Far::TopologyRefiner from the descriptor
+    Far::TopologyRefiner * refiner = Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     return refiner;
 }

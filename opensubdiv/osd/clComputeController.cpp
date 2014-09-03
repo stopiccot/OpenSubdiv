@@ -137,7 +137,7 @@ private:
 
 void
 OsdCLComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, ComputeContext const *context) {
+    Far::KernelBatch const &batch, ComputeContext const *context) {
 
     assert(context);
 

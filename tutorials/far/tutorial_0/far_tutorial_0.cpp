@@ -105,7 +105,7 @@ int main(int, char **) {
 
     // Populate a topology descriptor with our raw data
 
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -120,7 +120,7 @@ int main(int, char **) {
 
 
     // Instantiate a FarTopologyRefiner from the descriptor
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    Far::TopologyRefiner * refiner = Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     int maxlevel = 2;
 
@@ -164,7 +164,7 @@ int main(int, char **) {
         // Print faces
         for (int face=0; face<refiner->GetNumFaces(maxlevel); ++face) {
 
-            FarIndexArray fverts = refiner->GetFaceVertices(maxlevel, face);
+            Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, face);
 
             // all refined Catmark faces should be quads
             assert(fverts.size()==4);

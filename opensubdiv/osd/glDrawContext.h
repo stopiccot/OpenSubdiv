@@ -55,13 +55,13 @@ public:
 
     virtual ~OsdGLDrawContext();
 
-    /// \brief Create an OsdGLDraContext from FarPatchTables
+    /// \brief Create an OsdGLDraContext from Far::PatchTables
     ///
-    /// @param patchTables          a valid set of FarPatchTables
+    /// @param patchTables          a valid set of Far::PatchTables
     ///
     /// @param numVertexElements    the number of vertex elements
     ///
-    static OsdGLDrawContext * Create(FarPatchTables const * patchTables, int numVertexElements);
+    static OsdGLDrawContext * Create(Far::PatchTables const * patchTables, int numVertexElements);
 
     /// Set vbo as a vertex texture (for gregory patch drawing)
     ///
@@ -111,7 +111,7 @@ public:
 
     /// Sets face-varying data buffer
     ///
-    /// @param patchTables      A valid set of FarPatchTables
+    /// @param patchTables      A valid set of Far::PatchTables
     ///
     /// @param fvarWidth        Total face-varying primvar data width in fvarData
     ///
@@ -119,7 +119,7 @@ public:
     ///
     /// @return                 True if the operation was successful
     ///
-    bool SetFVarDataTexture(FarPatchTables const & patchTables,
+    bool SetFVarDataTexture(Far::PatchTables const & patchTables,
                             int fvarWidth, FVarData const & fvarData);
 
 protected:
@@ -136,7 +136,7 @@ protected:
     OsdGLDrawContext();
 
     // allocate buffers from patchTables
-    bool create(FarPatchTables const & patchTables, int numElements);
+    bool create(Far::PatchTables const & patchTables, int numElements);
 
     void updateVertexTexture(GLuint vbo);
 };

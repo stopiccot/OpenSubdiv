@@ -39,8 +39,10 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarTopologyRefiner;
-class FarPatchTablesFactory;
+namespace Far {
+    class TopologyRefiner;
+    class PatchTablesFactory;
+}
 
 namespace Vtr {
 
@@ -144,10 +146,12 @@ public:
 //  Non-public methods:
 //
 protected:
+
     friend class FVarRefinement;
     friend class SparseSelector;
-    friend class FarTopologyRefiner;
-    friend class FarPatchTablesFactory;
+
+    friend class Far::TopologyRefiner;
+    friend class Far::PatchTablesFactory;
 
 
     IndexArray getFaceChildFaces(Index parentFace);

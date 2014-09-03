@@ -27,7 +27,7 @@
 // Tutorial description:
 //
 // This tutorial shows how to create and manipulate both 'vertex' and 'varying'
-// FarStencilTables to interpolate 2 primvar data buffers: vertex positions and
+// Far::StencilTables to interpolate 2 primvar data buffers: vertex positions and
 // vertex colors.
 //
 
@@ -108,13 +108,13 @@ static int g_vertIndices[24] = { 0, 1, 3, 2,
 
 using namespace OpenSubdiv;
 
-static FarTopologyRefiner * createTopologyRefiner();
+static Far::TopologyRefiner * createTopologyRefiner();
 
 //------------------------------------------------------------------------------
 int main(int, char **) {
 
     // Generate some FarTopologyRefiner (see far_tutorial_0 for details).
-    FarTopologyRefiner * refiner = createTopologyRefiner();
+    Far::TopologyRefiner * refiner = createTopologyRefiner();
 
 
     // Uniformly refine the topolgy up to 'maxlevel'.
@@ -123,8 +123,8 @@ int main(int, char **) {
 
     int nverts = refiner->GetNumVertices(maxlevel);
 
-    // Use the FarStencilTables factory to create discrete stencil tables
-    FarStencilTablesFactory::Options options;
+    // Use the Far::StencilTables factory to create discrete stencil tables
+    Far::StencilTablesFactory::Options options;
     options.generateAllLevels=false; // only the highest refinement level.
     options.generateOffsets=true;
 
@@ -133,10 +133,10 @@ int main(int, char **) {
     //
 
         // Create stencils table for 'vertex' interpolation
-        options.interpolationMode=FarStencilTablesFactory::INTERPOLATE_VERTEX;
+        options.interpolationMode=Far::StencilTablesFactory::INTERPOLATE_VERTEX;
 
-        FarStencilTables const * vertexStencils =
-            FarStencilTablesFactory::Create(*refiner, options);
+        Far::StencilTables const * vertexStencils =
+            Far::StencilTablesFactory::Create(*refiner, options);
         assert(nverts==vertexStencils->GetNumStencils());
 
         // Allocate vertex primvar buffer (1 stencil for each vertex)
@@ -150,10 +150,10 @@ int main(int, char **) {
     //
 
         // Create stencils table for 'varying' interpolation
-        options.interpolationMode=FarStencilTablesFactory::INTERPOLATE_VARYING;
+        options.interpolationMode=Far::StencilTablesFactory::INTERPOLATE_VARYING;
 
-        FarStencilTables const * varyingStencils =
-            FarStencilTablesFactory::Create(*refiner, options);
+        Far::StencilTables const * varyingStencils =
+            Far::StencilTablesFactory::Create(*refiner, options);
         assert(nverts==varyingStencils->GetNumStencils());
 
         // Allocate varying primvar buffer (1 stencil for each vertex)
@@ -209,12 +209,12 @@ int main(int, char **) {
 }
 
 //------------------------------------------------------------------------------
-static FarTopologyRefiner *
+static Far::TopologyRefiner *
 createTopologyRefiner() {
 
     // Populate a topology descriptor with our raw data.
 
-    typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+    typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
     Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
@@ -228,7 +228,8 @@ createTopologyRefiner() {
     desc.vertIndices  = g_vertIndices;
 
     // Instantiate a FarTopologyRefiner from the descriptor.
-    FarTopologyRefiner * refiner = FarTopologyRefinerFactory<Descriptor>::Create(type, options, desc);
+    Far::TopologyRefiner * refiner =
+        Far::TopologyRefinerFactory<Descriptor>::Create(type, options, desc);
 
     return refiner;
 }

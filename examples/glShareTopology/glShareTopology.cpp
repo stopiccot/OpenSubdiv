@@ -259,7 +259,7 @@ public:
 
 protected:
 
-    TopologyBase(FarPatchTables const * patchTables) {
+    TopologyBase(Far::PatchTables const * patchTables) {
 
         _drawContext = OsdGLDrawContext::Create(patchTables, 7);
     }
@@ -288,14 +288,14 @@ public:
 
     typedef typename COMPUTE_CONTROLLER::ComputeContext ComputeContext;
 
-    Topology(FarPatchTables const * patchTables,
-        FarStencilTables const * vertexStencils,
-            FarStencilTables const * varyingStencils)
+    Topology(Far::PatchTables const * patchTables,
+        Far::StencilTables const * vertexStencils,
+            Far::StencilTables const * varyingStencils)
                 : TopologyBase(patchTables) {
 
         _computeContext = ComputeContext::Create(vertexStencils, varyingStencils);
 
-        _kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+        _kernelBatches.push_back(Far::StencilTablesFactory::Create(*vertexStencils));
 
         _numVertices = vertexStencils->GetNumStencils() +
             vertexStencils->GetNumControlVertices();
@@ -364,7 +364,7 @@ public:
 private:
     COMPUTE_CONTROLLER _computeController;
     ComputeContext *_computeContext;
-    FarKernelBatchVector _kernelBatches;
+    Far::KernelBatchVector _kernelBatches;
 };
 
 // ---------------------------------------------------------------------------
@@ -388,13 +388,13 @@ Instances<OsdCLGLVertexBuffer>::updateVertexBuffer(
 
 template<>
 Topology<OsdCLComputeController, OsdCLGLVertexBuffer>::
-Topology(FarPatchTables const * patchTables,
-    FarStencilTables const * vertexStencils, FarStencilTables const * varyingStencils) :
+Topology(Far::PatchTables const * patchTables,
+    Far::StencilTables const * vertexStencils, Far::StencilTables const * varyingStencils) :
         TopologyBase(patchTables), _computeController(g_clContext, g_clQueue) {
 
     _computeContext = ComputeContext::Create(g_clContext, vertexStencils, varyingStencils);
 
-    _kernelBatches.push_back(FarStencilTablesFactory::Create(*vertexStencils));
+    _kernelBatches.push_back(Far::StencilTablesFactory::Create(*vertexStencils));
 
     _numVertices = vertexStencils->GetNumStencils() +
         vertexStencils->GetNumControlVertices();
@@ -571,12 +571,12 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
 
     std::vector<float> restPosition(shape->verts);
 
-    FarTopologyRefiner * refiner = 0;
+    Far::TopologyRefiner * refiner = 0;
     {
         Sdc::Type type = GetSdcType(*shape);
         Sdc::Options options = GetSdcOptions(*shape);
 
-        refiner = FarTopologyRefinerFactory<Shape>::Create(type, options, *shape);
+        refiner = Far::TopologyRefinerFactory<Shape>::Create(type, options, *shape);
 
         assert(refiner);
     }
@@ -602,7 +602,7 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
         for (int face=0; face < numFaces; ++face) {
 
             ptexIndexToFaceMapping[ptexIndex++] = face;
-            FarIndexArray fverts = refiner->GetFaceVertices(0, face);
+            Far::IndexArray fverts = refiner->GetFaceVertices(0, face);
             if ( (scheme==kCatmark or scheme==kBilinear) and fverts.size() != 4 ) {
                 for (int j = 0; j < (fverts.size()-1); ++j) {
                     ptexIndexToFaceMapping[ptexIndex++] = face;
@@ -625,23 +625,23 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
         refiner->RefineUniform(level);
     }
 
-    FarStencilTables const * vertexStencils=0, * varyingStencils=0;
+    Far::StencilTables const * vertexStencils=0, * varyingStencils=0;
     {
-        FarStencilTablesFactory::Options options;
+        Far::StencilTablesFactory::Options options;
         options.generateOffsets = true;
         options.generateAllLevels = doAdaptive ? true : false;
 
-        vertexStencils = FarStencilTablesFactory::Create(*refiner, options);
+        vertexStencils = Far::StencilTablesFactory::Create(*refiner, options);
 
         if (g_displayStyle==kVarying or g_displayStyle==kVaryingInterleaved) {
-            varyingStencils = FarStencilTablesFactory::Create(*refiner, options);
+            varyingStencils = Far::StencilTablesFactory::Create(*refiner, options);
         }
 
         assert(vertexStencils);
     }
 
-    FarPatchTables const * patchTables =
-        FarPatchTablesFactory::Create(*refiner);
+    Far::PatchTables const * patchTables =
+        Far::PatchTablesFactory::Create(*refiner);
 
 
     // create partitioned patcharray
@@ -765,8 +765,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     const char *glslVersion = "#version 330\n";
 #endif
 
-    if (desc.first.GetType() == FarPatchTables::QUADS or
-        desc.first.GetType() == FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == Far::PatchTables::QUADS or
+        desc.first.GetType() == Far::PatchTables::TRIANGLES) {
         sconfig->vertexShader.source = shaderSource;
         sconfig->vertexShader.version = glslVersion;
         sconfig->vertexShader.AddDefine("VERTEX_SHADER");
@@ -782,12 +782,12 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc)
     sconfig->fragmentShader.version = glslVersion;
     sconfig->fragmentShader.AddDefine("FRAGMENT_SHADER");
 
-    if (desc.first.GetType() == FarPatchTables::QUADS) {
+    if (desc.first.GetType() == Far::PatchTables::QUADS) {
         // uniform catmark, bilinear
         sconfig->geometryShader.AddDefine("PRIM_QUAD");
         sconfig->fragmentShader.AddDefine("PRIM_QUAD");
         sconfig->commonShader.AddDefine("UNIFORM_SUBDIVISION");
-    } else if (desc.first.GetType() == FarPatchTables::TRIANGLES) {
+    } else if (desc.first.GetType() == Far::PatchTables::TRIANGLES) {
         // uniform loop
         sconfig->geometryShader.AddDefine("PRIM_TRI");
         sconfig->fragmentShader.AddDefine("PRIM_TRI");
@@ -1020,15 +1020,15 @@ drawPatches(OsdDrawContext::PatchArrayVector const &patches,
         OsdDrawContext::PatchArray const & patch = patches[i];
 
         OsdDrawContext::PatchDescriptor desc = patch.GetDescriptor();
-        FarPatchTables::Type patchType = desc.GetType();
+        Far::PatchTables::Type patchType = desc.GetType();
 
         GLenum primType;
 
         switch(patchType) {
-        case FarPatchTables::QUADS:
+        case Far::PatchTables::QUADS:
             primType = GL_LINES_ADJACENCY;
             break;
-        case FarPatchTables::TRIANGLES:
+        case Far::PatchTables::TRIANGLES:
             primType = GL_TRIANGLES;
             break;
         default:

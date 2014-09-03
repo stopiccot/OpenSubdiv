@@ -34,7 +34,7 @@ struct ID3D11DeviceContext;
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarStencilTables;
+class Far::StencilTables;
 
 ///
 /// \brief D3D Refine Context
@@ -50,17 +50,17 @@ public:
 
     /// Creates an OsdD3D11ComputeContext instance
     ///
-    /// @param vertexStencilTables   The FarStencilTables used for vertex
+    /// @param vertexStencilTables   The Far::StencilTables used for vertex
     ///                              interpolation
     ///
-    /// @param varyingStencilTables  The FarStencilTables used for varying
+    /// @param varyingStencilTables  The Far::StencilTables used for varying
     ///                              interpolation
     ///
     /// @param deviceContext         The D3D device
     ///
     static OsdD3D11ComputeContext * Create(ID3D11DeviceContext *deviceContext,
-                                           FarStencilTables const * vertexStencilTables,
-                                           FarStencilTables const * varyingStencilTables=0);
+                                           Far::StencilTables const * vertexStencilTables,
+                                           Far::StencilTables const * varyingStencilTables=0);
 
     /// Destructor
     virtual ~OsdD3D11ComputeContext();
@@ -97,8 +97,8 @@ public:
 protected:
 
     explicit OsdD3D11ComputeContext(ID3D11DeviceContext *deviceContext,
-                                    FarStencilTables const * vertexStencilTables,
-                                    FarStencilTables const * varyingStencilTables);
+                                    Far::StencilTables const * vertexStencilTables,
+                                    Far::StencilTables const * varyingStencilTables);
 
 private:
 

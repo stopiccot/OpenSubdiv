@@ -33,10 +33,12 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
+
 //
-//  FarTopologyRefinerFactoryBase:
+//  TopologyRefinerFactoryBase:
 //      This is an abstract base class for subclasses that are intended to construct
-//  FarTopologyRefiner from a mesh class that defines the subclass.  The subclasses are
+//  TopologyRefiner from a mesh class that defines the subclass.  The subclasses are
 //  parameterized by the mesh type <class MESH>.  The base class provides all
 //  implementation details related to assembly and validation that are independent
 //  of the subclass' mesh type.
@@ -48,12 +50,12 @@ namespace OPENSUBDIV_VERSION {
 //  and other data, but refining differently) are also possibilities.
 //
 //  The subdiv type/options are specified on construction of the factory and are passed
-//  on to each instance of FarTopologyRefiner that it creates.  They can be modified as
+//  on to each instance of TopologyRefiner that it creates.  They can be modified as
 //  there is nothing in the Factory tied to these properties.  Consider overloading
 //  the Create() method (defined by subclasses) to vary these if greater flexibility
 //  per instance is desired.
 //
-class FarTopologyRefinerFactoryBase {
+class TopologyRefinerFactoryBase {
 
 public:
 
@@ -94,37 +96,37 @@ public:
 
 protected:
 
-    static void validateComponentTopologySizing(FarTopologyRefiner& refiner);
-    static void validateVertexComponentTopologyAssignment(FarTopologyRefiner& refiner);
-    static void validateFaceVaryingComponentTopologyAssignment(FarTopologyRefiner& refiner);
+    static void validateComponentTopologySizing(TopologyRefiner& refiner);
+    static void validateVertexComponentTopologyAssignment(TopologyRefiner& refiner);
+    static void validateFaceVaryingComponentTopologyAssignment(TopologyRefiner& refiner);
 
-    static void applyComponentTagsAndBoundarySharpness(FarTopologyRefiner& refiner);
+    static void applyComponentTagsAndBoundarySharpness(TopologyRefiner& refiner);
 };
 
 
 //
-//  FarTopologyRefinerFactory<MESH>:
-//      The factory class template to convert and refine an instance of FarTopologyRefiner
+//  TopologyRefinerFactory<MESH>:
+//      The factory class template to convert and refine an instance of TopologyRefiner
 //  from an arbitrary mesh class.  While a class template, the implementation is not
 //  (cannot) be complete, so specialization of a few methods is required.
 //      This template provides both the interface and high level assembly for the
-//  construction of the FarTopologyRefiner instance.  The high level construction executes
-//  a specific set of operations to convert the client's MESH into FarTopologyRefiner,
+//  construction of the TopologyRefiner instance.  The high level construction executes
+//  a specific set of operations to convert the client's MESH into TopologyRefiner,
 //  using methods independent of MESH from the base class and those specialized for
 //  class MESH appropriately.
 //
 template <class MESH>
-class FarTopologyRefinerFactory : public FarTopologyRefinerFactoryBase {
+class TopologyRefinerFactory : public TopologyRefinerFactoryBase {
 
 public:
 
     /// \brief Constructor
-    FarTopologyRefinerFactory() : FarTopologyRefinerFactoryBase() { }
+    TopologyRefinerFactory() : TopologyRefinerFactoryBase() { }
 
     /// \brief Destructor
-    ~FarTopologyRefinerFactory() { }
+    ~TopologyRefinerFactory() { }
 
-    /// \brief Instantiates FarTopologyRefiner from client-provided topological
+    /// \brief Instantiates TopologyRefiner from client-provided topological
     ///        representation.
     ///
     ///  If only the face-vertices topological relationships are specified
@@ -138,14 +140,14 @@ public:
     ///
     /// @param mesh          Client topological representation (or a converter)
     ///
-    /// return               An instance of FarTopologyRefiner or NULL for failure
+    /// return               An instance of TopologyRefiner or NULL for failure
     ///
-    static FarTopologyRefiner* Create(Sdc::Type type, Sdc::Options options, MESH const& mesh);
+    static TopologyRefiner* Create(Sdc::Type type, Sdc::Options options, MESH const& mesh);
 
 protected:
     //
     //  Methods to be specialized that implement all details specific to class MESH required
-    //  to convert MESH data to FarTopologyRefiner.  Note that some of these *must* be specialized
+    //  to convert MESH data to TopologyRefiner.  Note that some of these *must* be specialized
     //  in order to complete construction.
     //
     //  There are two minimal construction requirements and one optional.
@@ -153,17 +155,17 @@ protected:
     //  See the comments in the generic stubs for details on how to write these.
     //
     //  Required:
-    static void resizeComponentTopology(FarTopologyRefiner& refiner, MESH const& mesh);
-    static void assignComponentTopology(FarTopologyRefiner& refiner, MESH const& mesh);
+    static void resizeComponentTopology(TopologyRefiner& refiner, MESH const& mesh);
+    static void assignComponentTopology(TopologyRefiner& refiner, MESH const& mesh);
 
     //  Optional:
-    static void assignFaceVaryingTopology(FarTopologyRefiner& refiner, MESH const& mesh);
-    static void assignComponentTags(FarTopologyRefiner& refiner, MESH const& mesh);
+    static void assignFaceVaryingTopology(TopologyRefiner& refiner, MESH const& mesh);
+    static void assignComponentTags(TopologyRefiner& refiner, MESH const& mesh);
 
 protected:
 
     //  Other protected details -- not to be specialized:
-    static void populateBaseLevel(FarTopologyRefiner& refiner, MESH const& mesh);
+    static void populateBaseLevel(TopologyRefiner& refiner, MESH const& mesh);
 };
 
 
@@ -171,10 +173,10 @@ protected:
 //  Generic implementations:
 //
 template <class MESH>
-FarTopologyRefiner*
-FarTopologyRefinerFactory<MESH>::Create(Sdc::Type type, Sdc::Options options, MESH const& mesh) {
+TopologyRefiner*
+TopologyRefinerFactory<MESH>::Create(Sdc::Type type, Sdc::Options options, MESH const& mesh) {
 
-    FarTopologyRefiner *refiner = new FarTopologyRefiner(type, options);
+    TopologyRefiner *refiner = new TopologyRefiner(type, options);
 
     populateBaseLevel(*refiner, mesh);
 
@@ -183,7 +185,7 @@ FarTopologyRefinerFactory<MESH>::Create(Sdc::Type type, Sdc::Options options, ME
 
 template <class MESH>
 void
-FarTopologyRefinerFactory<MESH>::populateBaseLevel(FarTopologyRefiner& refiner, MESH const& mesh) {
+TopologyRefinerFactory<MESH>::populateBaseLevel(TopologyRefiner& refiner, MESH const& mesh) {
 
     //
     //  The following three methods may end up virtual:
@@ -219,9 +221,9 @@ FarTopologyRefinerFactory<MESH>::populateBaseLevel(FarTopologyRefiner& refiner, 
 
 template <class MESH>
 void
-FarTopologyRefinerFactory<MESH>::resizeComponentTopology(FarTopologyRefiner& /* refiner */, MESH const& /* mesh */) {
+TopologyRefinerFactory<MESH>::resizeComponentTopology(TopologyRefiner& /* refiner */, MESH const& /* mesh */) {
 
-    assert("Missing specialization for FarTopologyRefinerFactory<MESH>::resizeComponentTopology()" == 0);
+    assert("Missing specialization for TopologyRefinerFactory<MESH>::resizeComponentTopology()" == 0);
 
     //
     //  Sizing the topology tables:
@@ -232,16 +234,16 @@ FarTopologyRefinerFactory<MESH>::resizeComponentTopology(FarTopologyRefiner& /* 
     //  The following methods should be called -- first those to specify the number of faces,
     //  edges and vertices in the mesh:
     //
-    //      void FarTopologyRefiner::setBaseFaceCount(int count)
-    //      void FarTopologyRefiner::setBaseEdgeCount(int count)
-    //      void FarTopologyRefiner::setBaseVertexCount(int count)
+    //      void TopologyRefiner::setBaseFaceCount(int count)
+    //      void TopologyRefiner::setBaseEdgeCount(int count)
+    //      void TopologyRefiner::setBaseVertexCount(int count)
     //
     //  and then for each face, edge and vertex, the number of its incident components:
     //
-    //      void FarTopologyRefiner::setBaseFaceVertexCount(Index face, int count)
-    //      void FarTopologyRefiner::setBaseEdgeFaceCount(  Index edge, int count)
-    //      void FarTopologyRefiner::setBaseVertexFaceCount(Index vertex, int count)
-    //      void FarTopologyRefiner::setBaseVertexEdgeCount(Index vertex, int count)
+    //      void TopologyRefiner::setBaseFaceVertexCount(Index face, int count)
+    //      void TopologyRefiner::setBaseEdgeFaceCount(  Index edge, int count)
+    //      void TopologyRefiner::setBaseVertexFaceCount(Index vertex, int count)
+    //      void TopologyRefiner::setBaseVertexEdgeCount(Index vertex, int count)
     //
     //  The count/size for a component type must be set before indices associated with that
     //  component type can be used.
@@ -258,23 +260,23 @@ FarTopologyRefinerFactory<MESH>::resizeComponentTopology(FarTopologyRefiner& /* 
 
 template <class MESH>
 void
-FarTopologyRefinerFactory<MESH>::assignComponentTopology(FarTopologyRefiner& /* refiner */, MESH const& /* mesh */) {
+TopologyRefinerFactory<MESH>::assignComponentTopology(TopologyRefiner& /* refiner */, MESH const& /* mesh */) {
 
-    assert("Missing specialization for FarTopologyRefinerFactory<MESH>::assignComponentTopology()" == 0);
+    assert("Missing specialization for TopologyRefinerFactory<MESH>::assignComponentTopology()" == 0);
 
     //
     //  Assigning the topology tables:
     //      Once the topology tables have been allocated, the six required topological
     //  relations can be directly populated using the following methods:
     //
-    //      void IndexArray FarTopologyRefiner::baseFaceVertices(Index face)
-    //      void IndexArray FarTopologyRefiner::baseFaceEdges(Index face)
+    //      void IndexArray TopologyRefiner::baseFaceVertices(Index face)
+    //      void IndexArray TopologyRefiner::baseFaceEdges(Index face)
     //
-    //      void IndexArray FarTopologyRefiner::baseEdgeVertices(Index edge)
-    //      void IndexArray FarTopologyRefiner::baseEdgeFaces(Index edge)
+    //      void IndexArray TopologyRefiner::baseEdgeVertices(Index edge)
+    //      void IndexArray TopologyRefiner::baseEdgeFaces(Index edge)
     //
-    //      void IndexArray FarTopologyRefiner::baseVertexEdges(Index vertex)
-    //      void IndexArray FarTopologyRefiner::baseVertexFaces(Index vertex)
+    //      void IndexArray TopologyRefiner::baseVertexEdges(Index vertex)
+    //      void IndexArray TopologyRefiner::baseVertexFaces(Index vertex)
     //
     //  For the last two relations -- the faces and edges incident a vertex -- there are
     //  also "local indices" that must be specified (considering doing this internally),
@@ -282,8 +284,8 @@ FarTopologyRefinerFactory<MESH>::assignComponentTopology(FarTopologyRefiner& /* 
     //  within that face or edge, and so ranging from 0-3 for incident quads and 0-1 for
     //  incident edges.  These are assigned through similarly retrieved arrays:
     //
-    //      LocalIndexArray FarTopologyRefiner::baseVertexFaceLocalIndices(Index vertex)
-    //      LocalIndexArray FarTopologyRefiner::baseVertexEdgeLocalIndices(Index vertex)
+    //      LocalIndexArray TopologyRefiner::baseVertexFaceLocalIndices(Index vertex)
+    //      LocalIndexArray TopologyRefiner::baseVertexEdgeLocalIndices(Index vertex)
     //
     //  As noted, we are considering determining these internally to avoid this complexity,
     //  but that will require iteration through the sets of vertex-faces and edges to find
@@ -298,30 +300,30 @@ FarTopologyRefinerFactory<MESH>::assignComponentTopology(FarTopologyRefiner& /* 
 
 template <class MESH>
 void
-FarTopologyRefinerFactory<MESH>::assignFaceVaryingTopology(FarTopologyRefiner& /* refiner */, MESH const& /* mesh */) {
+TopologyRefinerFactory<MESH>::assignFaceVaryingTopology(TopologyRefiner& /* refiner */, MESH const& /* mesh */) {
 
     //
     //  Optional assigning face-varying topology tables:
     //
     //  Create independent face-varying primitive variable channels:
-    //      int FarTopologyRefiner::createFVarChannel(int numValues)
+    //      int TopologyRefiner::createFVarChannel(int numValues)
     //
     //  For each channel, populate the face-vertex values:
-    //      IndexArray FarTopologyRefiner::getBaseFVarFaceValues(Index face, int channel = 0)
+    //      IndexArray TopologyRefiner::getBaseFVarFaceValues(Index face, int channel = 0)
     //
 }
 
 template <class MESH>
 void
-FarTopologyRefinerFactory<MESH>::assignComponentTags(FarTopologyRefiner& /* refiner */, MESH const& /* mesh */) {
+TopologyRefinerFactory<MESH>::assignComponentTags(TopologyRefiner& /* refiner */, MESH const& /* mesh */) {
 
     //
     //  Optional tagging:
     //      This is where any additional feature tags -- sharpness, holes, etc. -- can be
     //  specified.  For now, this is limited to sharpness using the following:
     //
-    //      float& FarTopologyRefiner::baseEdgeSharpness(Index edge)
-    //      float& FarTopologyRefiner::baseVertexSharpness(Index vertex)
+    //      float& TopologyRefiner::baseEdgeSharpness(Index edge)
+    //      float& TopologyRefiner::baseVertexSharpness(Index vertex)
     //
     //  which can be used on the LHS of assignments.
     //
@@ -331,6 +333,8 @@ FarTopologyRefinerFactory<MESH>::assignComponentTags(FarTopologyRefiner& /* refi
 }
 
 #endif
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

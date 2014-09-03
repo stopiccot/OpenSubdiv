@@ -241,7 +241,7 @@ public:
         //OSD_DEBUG_CHECK_GL_ERROR("TransformPrimvarBuffer\n");
     }
 
-    void ApplyStencilTableKernel(FarKernelBatch const &batch,
+    void ApplyStencilTableKernel(Far::KernelBatch const &batch,
         GLuint primvarBuffer, int offset, int numCVs) const {
 
         glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &_subStencilKernel);
@@ -380,7 +380,7 @@ OsdGLSLTransformFeedbackComputeController::getKernel(
 
 void
 OsdGLSLTransformFeedbackComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch,
+    Far::KernelBatch const &batch,
         OsdGLSLTransformFeedbackComputeContext const *context) const {
 
     assert(context);

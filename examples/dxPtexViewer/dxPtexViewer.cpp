@@ -242,10 +242,10 @@ bool g_bDone = false;
 
 //------------------------------------------------------------------------------
 static void
-calcNormals(OpenSubdiv::FarTopologyRefiner * refiner,
+calcNormals(OpenSubdiv::Far::TopologyRefiner * refiner,
     std::vector<float> const & pos, std::vector<float> & result ) {
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // calc normal vectors
     int nverts = refiner->GetNumVertices(0),
@@ -467,8 +467,8 @@ EffectDrawRegistry::_CreateDrawSourceConfig(DescType const & desc, ID3D11Device 
         sconfig->commonShader.AddDefine("OSD_FRACTIONAL_ODD_SPACING");
 
     bool quad = true;
-    if (desc.first.GetType() == OpenSubdiv::FarPatchTables::QUADS ||
-        desc.first.GetType() == OpenSubdiv::FarPatchTables::TRIANGLES) {
+    if (desc.first.GetType() == OpenSubdiv::Far::PatchTables::QUADS ||
+        desc.first.GetType() == OpenSubdiv::Far::PatchTables::TRIANGLES) {
         sconfig->vertexShader.source = g_shaderSource;
         sconfig->vertexShader.target = "vs_5_0";
         sconfig->vertexShader.entry = "vs_main";
@@ -654,14 +654,14 @@ createOsdMesh(int level, int kernel) {
 
     g_positions=shape->verts;
 
-    typedef OpenSubdiv::FarIndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     // create Vtr mesh (topology)
     OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
     OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
-    OpenSubdiv::FarTopologyRefiner * refiner =
-        OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
+    OpenSubdiv::Far::TopologyRefiner * refiner =
+        OpenSubdiv::Far::TopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
 
     // save coarse topology (used for coarse mesh drawing)
 
@@ -961,7 +961,7 @@ drawModel() {
         OpenSubdiv::OsdDrawContext::PatchArray const & patch = patches[i];
 
         D3D11_PRIMITIVE_TOPOLOGY topology;
-        // if (patch.GetDescriptor().GetType() != OpenSubdiv::FarPatchTables::REGULAR) continue;
+        // if (patch.GetDescriptor().GetType() != OpenSubdiv::Far::PatchTables::REGULAR) continue;
 
         if (g_mesh->GetDrawContext()->IsAdaptive()) {
             switch (patch.GetDescriptor().GetNumControlVertices()) {

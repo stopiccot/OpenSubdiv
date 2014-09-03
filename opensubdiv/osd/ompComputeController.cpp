@@ -39,11 +39,11 @@ OsdOmpComputeController::OsdOmpComputeController(int numThreads) {
 
 void
 OsdOmpComputeController::ApplyStencilTableKernel(
-    FarKernelBatch const &batch, ComputeContext const *context) const {
+    Far::KernelBatch const &batch, ComputeContext const *context) const {
 
     assert(context);
 
-    FarStencilTables const * vertexStencils = context->GetVertexStencilTables();
+    Far::StencilTables const * vertexStencils = context->GetVertexStencilTables();
 
     if (vertexStencils and _currentBindState.vertexBuffer) {
 
@@ -64,7 +64,7 @@ OsdOmpComputeController::ApplyStencilTableKernel(
                               batch.end);
     }
 
-    FarStencilTables const * varyingStencils = context->GetVaryingStencilTables();
+    Far::StencilTables const * varyingStencils = context->GetVaryingStencilTables();
 
     if (varyingStencils and _currentBindState.varyingBuffer) {
 

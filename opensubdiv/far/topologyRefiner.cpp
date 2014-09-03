@@ -31,12 +31,13 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
 
 //
 //  Relatively trivial construction/destruction -- the base level (level[0]) needs
 //  to be explicitly initialized after construction and refinement then applied
 //
-FarTopologyRefiner::FarTopologyRefiner(Sdc::Type schemeType, Sdc::Options schemeOptions) :
+TopologyRefiner::TopologyRefiner(Sdc::Type schemeType, Sdc::Options schemeOptions) :
     _subdivType(schemeType),
     _subdivOptions(schemeOptions),
     _isUniform(true),
@@ -48,10 +49,10 @@ FarTopologyRefiner::FarTopologyRefiner(Sdc::Type schemeType, Sdc::Options scheme
     _levels.resize(1);
 }
 
-FarTopologyRefiner::~FarTopologyRefiner() { }
+TopologyRefiner::~TopologyRefiner() { }
 
 void
-FarTopologyRefiner::Unrefine() {
+TopologyRefiner::Unrefine() {
     if (_levels.size()) {
         _levels.resize(1);
     }
@@ -59,7 +60,7 @@ FarTopologyRefiner::Unrefine() {
 }
 
 void
-FarTopologyRefiner::Clear() {
+TopologyRefiner::Clear() {
     _levels.clear();
     _refinements.clear();
 }
@@ -69,7 +70,7 @@ FarTopologyRefiner::Clear() {
 //  Accessors to the topology information:
 //
 int
-FarTopologyRefiner::GetNumVerticesTotal() const {
+TopologyRefiner::GetNumVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumVertices();
@@ -77,7 +78,7 @@ FarTopologyRefiner::GetNumVerticesTotal() const {
     return sum;
 }
 int
-FarTopologyRefiner::GetNumEdgesTotal() const {
+TopologyRefiner::GetNumEdgesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumEdges();
@@ -85,7 +86,7 @@ FarTopologyRefiner::GetNumEdgesTotal() const {
     return sum;
 }
 int
-FarTopologyRefiner::GetNumFacesTotal() const {
+TopologyRefiner::GetNumFacesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaces();
@@ -93,7 +94,7 @@ FarTopologyRefiner::GetNumFacesTotal() const {
     return sum;
 }
 int
-FarTopologyRefiner::GetNumFaceVerticesTotal() const {
+TopologyRefiner::GetNumFaceVerticesTotal() const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFaceVerticesTotal();
@@ -101,7 +102,7 @@ FarTopologyRefiner::GetNumFaceVerticesTotal() const {
     return sum;
 }
 int
-FarTopologyRefiner::GetNumFVarValuesTotal(int channel) const {
+TopologyRefiner::GetNumFVarValuesTotal(int channel) const {
     int sum = 0;
     for (int i = 0; i < (int)_levels.size(); ++i) {
         sum += _levels[i].getNumFVarValues(channel);
@@ -124,7 +125,7 @@ computePtexIndices(Vtr::Level const & coarseLevel, std::vector<int> & ptexIndice
     ptexIndices[nfaces]=ptexID;
 }
 void
-FarTopologyRefiner::initializePtexIndices() const {
+TopologyRefiner::initializePtexIndices() const {
     std::vector<int> & indices = const_cast<std::vector<int> &>(_ptexIndices);
     switch (GetSchemeType()) {
         case Sdc::TYPE_BILINEAR:
@@ -136,7 +137,7 @@ FarTopologyRefiner::initializePtexIndices() const {
     }
 }
 int
-FarTopologyRefiner::GetNumPtexFaces() const {
+TopologyRefiner::GetNumPtexFaces() const {
     if (_ptexIndices.empty()) {
         initializePtexIndices();
     }
@@ -144,7 +145,7 @@ FarTopologyRefiner::GetNumPtexFaces() const {
     return _ptexIndices.back();
 }
 int
-FarTopologyRefiner::GetPtexIndex(Index f) const {
+TopologyRefiner::GetPtexIndex(Index f) const {
     if (_ptexIndices.empty()) {
         initializePtexIndices();
     }
@@ -159,7 +160,7 @@ FarTopologyRefiner::GetPtexIndex(Index f) const {
 //  Main refinement method -- allocating and initializing levels and refinements:
 //
 void
-FarTopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
+TopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == Sdc::TYPE_CATMARK);
@@ -190,7 +191,7 @@ FarTopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
 
 
 void
-FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
+TopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
     assert(_subdivType == Sdc::TYPE_CATMARK);
@@ -297,7 +298,7 @@ FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 //  that work should be minimal.
 //
 void
-FarTopologyRefiner::catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector) {
+TopologyRefiner::catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector) {
 
     Vtr::Level const& level = selector.getRefinement().parent();
 
@@ -319,7 +320,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector
     //       o ........ o ........ o ........ o
     //
     //  ... presumably because this type of "incomplete" B-spline patch is not supported by
-    //  the set of patch types in FarPatchTables (though it is regular).
+    //  the set of patch types in PatchTables (though it is regular).
     //
     //  And additionally we must isolate sharp corners if they are on a face with any
     //  more boundary edges (than the two defining the corner).  So in the above diagram,
@@ -489,7 +490,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(Vtr::SparseSelector& selector
 }
 
 void
-FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(Vtr::SparseSelector& selector) {
+TopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(Vtr::SparseSelector& selector) {
 
     Vtr::Level const& level = selector.getRefinement().parent();
 
@@ -549,7 +550,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(Vtr::SparseSelector& se
 
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
 void
-FarTopologyRefiner::ComputeMaskWeights() {
+TopologyRefiner::ComputeMaskWeights() {
 
     assert(_subdivType == Sdc::TYPE_CATMARK);
 
@@ -558,6 +559,8 @@ FarTopologyRefiner::ComputeMaskWeights() {
     }
 }
 #endif
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

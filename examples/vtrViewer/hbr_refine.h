@@ -103,7 +103,7 @@ void RefineUniform(Hmesh & mesh, int maxlevel, std::vector<Hface const *> & refi
 // refine the Hbr mesh adaptively
 int RefineAdaptive(Hmesh & mesh, int maxlevel, std::vector<Hface const *> & refinedFaces);
 
-OpenSubdiv::FarPatchTables const * CreatePatchTables(Hmesh & mesh, int maxvalence);
+OpenSubdiv::Far::PatchTables const * CreatePatchTables(Hmesh & mesh, int maxvalence);
 
 //------------------------------------------------------------------------------
 

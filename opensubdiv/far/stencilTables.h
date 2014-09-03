@@ -33,17 +33,18 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
 
 /// \brief Vertex stencil descriptor
 ///
-/// Allows access and manipulation of a single stencil in a FarStencilTables.
+/// Allows access and manipulation of a single stencil in a StencilTables.
 ///
-class FarStencil {
+class Stencil {
 
 public:
 
     /// \brief Default constructor
-    FarStencil() {}
+    Stencil() {}
 
     /// \brief Constructor
     ///
@@ -53,7 +54,7 @@ public:
     ///
     /// @param weights  Table pointer to the vertex weights of the stencil
     ///
-    FarStencil(unsigned char * size,
+    Stencil(unsigned char * size,
                int * indices,
                float * weights)
         : _size(size),
@@ -62,7 +63,7 @@ public:
     }
 
     /// \brief Copy constructor
-    FarStencil(FarStencil const & other) {
+    Stencil(Stencil const & other) {
         _size = other._size;
         _indices = other._indices;
         _weights = other._weights;
@@ -91,7 +92,7 @@ public:
     }
 
 protected:
-    friend class FarStencilTablesFactory;
+    friend class StencilTablesFactory;
 
     unsigned char * _size;
     int           * _indices;
@@ -110,7 +111,7 @@ protected:
 /// recomputed simply by applying the blending weights to the series of coarse
 /// control vertices.
 ///
-class FarStencilTables {
+class StencilTables {
 
 public:
 
@@ -123,8 +124,8 @@ public:
         return _numControlVertices;
     }
 
-    /// \brief Returns a FarStencil at index i in the tables
-    FarStencil GetStencil(int i) const;
+    /// \brief Returns a Stencil at index i in the tables
+    Stencil GetStencil(int i) const;
 
     /// \brief Returns the number of control vertices of each stencil in the table
     std::vector<unsigned char> const & GetSizes() const {
@@ -174,7 +175,7 @@ private:
 
 private:
 
-    friend class FarStencilTablesFactory;
+    friend class StencilTablesFactory;
 
     int _numControlVertices;              // number of control vertices
 
@@ -187,7 +188,7 @@ private:
 
 /// \brief Limit point stencil descriptor
 ///
-class FarLimitStencil : public FarStencil {
+class LimitStencil : public Stencil {
 
 public:
 
@@ -203,12 +204,12 @@ public:
     ///
     /// @param dvWeights Table pointer to the 'v' derivative weights
     ///
-    FarLimitStencil( unsigned char * size,
+    LimitStencil( unsigned char * size,
                      int * indices,
                      float * weights,
                      float * duWeights,
                      float * dvWeights )
-        : FarStencil(size, indices, weights),
+        : Stencil(size, indices, weights),
           _duWeights(duWeights),
           _dvWeights(dvWeights) {
     }
@@ -241,7 +242,7 @@ private:
 /// \brief Table of limit subdivision stencils.
 ///
 ///
-class FarLimitStencilTables : public FarStencilTables {
+class LimitStencilTables : public StencilTables {
 
 public:
 
@@ -289,7 +290,7 @@ private:
 
 // Update values by appling cached stencil weights to new control values
 template <class T> void
-FarStencilTables::_Update(T const *controlValues, T *values,
+StencilTables::_Update(T const *controlValues, T *values,
     std::vector<float> const &valueWeights, int start, int end) const {
 
     int const * indices = &_indices.at(0);
@@ -319,18 +320,18 @@ FarStencilTables::_Update(T const *controlValues, T *values,
     }
 }
 
-// Returns a FarStencil at index i in the table
-inline FarStencil
-FarStencilTables::GetStencil(int i) const {
+// Returns a Stencil at index i in the table
+inline Stencil
+StencilTables::GetStencil(int i) const {
 
     int ofs = _offsets[i];
 
-    return FarStencil( const_cast<unsigned char *>(&_sizes[i]),
+    return Stencil( const_cast<unsigned char *>(&_sizes[i]),
                        const_cast<int *>(&_indices[ofs]),
                        const_cast<float *>(&_weights[ofs]) );
 }
 
-
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

@@ -34,17 +34,20 @@ namespace OPENSUBDIV_VERSION {
 
 //  Forward declarations (for internal implementation purposes):
 namespace Vtr { class Level; }
-class FarTopologyRefiner;
+
+namespace Far {
+
+class TopologyRefiner;
 template <typename T> struct PatchTypes;
 struct PatchFaceTag;
 
 
-/// \brief A specialized factory for feature adaptive FarPatchTables
+/// \brief A specialized factory for feature adaptive PatchTables
 ///
-/// FarPatchTables contain the lists of vertices for each patch of an adaptive
+/// PatchTables contain the lists of vertices for each patch of an adaptive
 /// mesh representation.
 ///
-class FarPatchTablesFactory {
+class PatchTablesFactory {
 
 public:
 
@@ -59,53 +62,55 @@ public:
             generateFVarTables : 1; ///< Generate face-varying patch tables
     };
 
-    /// \brief Factory constructor for FarPatchTables
+    /// \brief Factory constructor for PatchTables
     ///
-    /// @param refiner  FarTopologyRefiner from which to generate patches
+    /// @param refiner  TopologyRefiner from which to generate patches
     ///
     /// @param options       Options controlling the creation of the tables
     ///
-    /// @return              A new instance of FarPatchTables
+    /// @return              A new instance of PatchTables
     ///
-    static FarPatchTables * Create(FarTopologyRefiner const & refiner, Options options=Options());
+    static PatchTables * Create(TopologyRefiner const & refiner, Options options=Options());
 
 private:
 
-    typedef FarPatchTables::Descriptor Descriptor;
-    typedef FarPatchTables::FVarPatchTables FVarPatchTables;
+    typedef PatchTables::Descriptor Descriptor;
+    typedef PatchTables::FVarPatchTables FVarPatchTables;
 
-    static FarPatchTables * createUniform( FarTopologyRefiner const & refiner, Options options );
+    static PatchTables * createUniform( TopologyRefiner const & refiner, Options options );
 
-    static FarPatchTables * createAdaptive( FarTopologyRefiner const & refiner, Options options );
+    static PatchTables * createAdaptive( TopologyRefiner const & refiner, Options options );
 
     //  High-level methods for identifying and populating patches associated with faces:
-    static void identifyAdaptivePatches( FarTopologyRefiner const &     refiner,
+    static void identifyAdaptivePatches( TopologyRefiner const &     refiner,
                                          PatchTypes<int> &           patchInventory,
                                          std::vector<PatchFaceTag> & patchTags);
 
-    static void populateAdaptivePatches( FarTopologyRefiner const &           refiner,
+    static void populateAdaptivePatches( TopologyRefiner const &           refiner,
                                          PatchTypes<int> const &           patchInventory,
                                          std::vector<PatchFaceTag> const & patchTags,
-                                         FarPatchTables *                  tables);
+                                         PatchTables *                  tables);
 
     //  Methods for allocating and managing the patch table data arrays:
-    static void allocateTables( FarPatchTables * tables, int nlevels );
+    static void allocateTables( PatchTables * tables, int nlevels );
 
-    static FVarPatchTables * allocateFVarTables( FarTopologyRefiner const & refiner,
-                                                 FarPatchTables const & tables,
+    static FVarPatchTables * allocateFVarTables( TopologyRefiner const & refiner,
+                                                 PatchTables const & tables,
                                                  Options options );
 
-    static void pushPatchArray( FarPatchTables::Descriptor desc,
-                                FarPatchTables::PatchArrayVector & parray,
+    static void pushPatchArray( PatchTables::Descriptor desc,
+                                PatchTables::PatchArrayVector & parray,
                                 int npatches, int * voffset, int * poffset, int * qoffset );
 
-    static FarPatchParam * computePatchParam( FarTopologyRefiner const & refiner, int level,
-                                              int face, int rotation, FarPatchParam * coord );
+    static PatchParam * computePatchParam( TopologyRefiner const & refiner, int level,
+                                              int face, int rotation, PatchParam * coord );
 
     static void getQuadOffsets(Vtr::Level const & level, int face, unsigned int * result);
 
 private:
 };
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

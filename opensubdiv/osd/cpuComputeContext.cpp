@@ -36,18 +36,18 @@ namespace OPENSUBDIV_VERSION {
 // ----------------------------------------------------------------------------
 
 OsdCpuComputeContext::OsdCpuComputeContext(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) :
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) :
             _vertexStencilTables(0), _varyingStencilTables(0) {
 
     // XXXX manuelk we do not own the tables, so use copy-constructor for now
     //              smart pointers eventually
     if (vertexStencilTables) {
-        _vertexStencilTables = new FarStencilTables(*vertexStencilTables);
+        _vertexStencilTables = new Far::StencilTables(*vertexStencilTables);
     }
 
     if (varyingStencilTables) {
-        _varyingStencilTables = new FarStencilTables(*varyingStencilTables);
+        _varyingStencilTables = new Far::StencilTables(*varyingStencilTables);
     }
 }
 
@@ -63,8 +63,8 @@ OsdCpuComputeContext::~OsdCpuComputeContext() {
 
 OsdCpuComputeContext *
 OsdCpuComputeContext::Create(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) {
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) {
 
     return new OsdCpuComputeContext(vertexStencilTables, varyingStencilTables);
 }

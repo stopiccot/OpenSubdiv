@@ -42,7 +42,7 @@ public:
 
     /// Creates an OsdCpuComputeContext instance
     ///
-    /// @param patchTables  The FarPatchTables used for this Context.
+    /// @param patchTables  The Far::PatchTables used for this Context.
     ///
     /// @param resetMemory  Set to true if the target vertex buffer needs its
     ///                     memory reset before accumulating the averaged normals.
@@ -51,7 +51,7 @@ public:
     ///                     been reset and this step can be skipped to save time.
     ///
     static OsdCpuSmoothNormalContext * Create(
-        FarPatchTables const *patchTables, bool resetMemory=false);
+        Far::PatchTables const *patchTables, bool resetMemory=false);
 
     /// Binds a vertex and a varying data buffers to the context. Binding ensures
     /// that data buffers are properly inter-operated between Contexts and
@@ -92,7 +92,7 @@ public:
     }
 
     /// Returns the vector of patch arrays
-    const FarPatchTables::PatchArrayVector & GetPatchArrayVector() const {
+    const Far::PatchTables::PatchArrayVector & GetPatchArrayVector() const {
         return _patchArrays;
     }
 
@@ -142,13 +142,13 @@ public:
 protected:
     // Constructor
     explicit OsdCpuSmoothNormalContext(
-        FarPatchTables const *patchTables, bool resetMemory);
+        Far::PatchTables const *patchTables, bool resetMemory);
 
 private:
 
     // Topology data for a mesh
-    FarPatchTables::PatchArrayVector     _patchArrays;    // patch descriptor for each patch in the mesh
-    FarPatchTables::PTable               _patches;        // patch control vertices
+    Far::PatchTables::PatchArrayVector     _patchArrays;    // patch descriptor for each patch in the mesh
+    Far::PatchTables::PTable               _patches;        // patch control vertices
 
     OsdVertexBufferDescriptor _iDesc,
                               _oDesc;

@@ -34,7 +34,7 @@ namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
 OsdCpuEvalLimitContext *
-OsdCpuEvalLimitContext::Create(FarPatchTables const & patchTables, bool requireFVarData) {
+OsdCpuEvalLimitContext::Create(Far::PatchTables const & patchTables, bool requireFVarData) {
 
     // there is no limit with uniform subdivision
     if (not patchTables.IsFeatureAdaptive())
@@ -43,7 +43,7 @@ OsdCpuEvalLimitContext::Create(FarPatchTables const & patchTables, bool requireF
     return new OsdCpuEvalLimitContext(patchTables, requireFVarData);
 }
 
-OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const & patchTables, bool requireFVarData) :
+OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(Far::PatchTables const & patchTables, bool requireFVarData) :
     OsdEvalLimitContext(patchTables) {
     
     // copy the data from the FarTables
@@ -62,16 +62,16 @@ OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const & patchTable
     
     _patchBitFields.reserve(npatches);
 
-    FarPatchTables::PatchParamTable const & ptxTable =
+    Far::PatchTables::PatchParamTable const & ptxTable =
         patchTables.GetPatchParamTable();
 
     if ( not ptxTable.empty() ) {
 
-        FarPatchParam const * pptr = &ptxTable[0];
+        Far::PatchParam const * pptr = &ptxTable[0];
 
         for (int arrayId = 0; arrayId < (int)_patchArrays.size(); ++arrayId) {
 
-            FarPatchTables::PatchArray const & pa = _patchArrays[arrayId];
+            Far::PatchTables::PatchArray const & pa = _patchArrays[arrayId];
 
             for (unsigned int j=0; j < pa.GetNumPatches(); ++j) {
                 _patchBitFields.push_back( pptr++->bitField );
@@ -89,7 +89,7 @@ OsdCpuEvalLimitContext::OsdCpuEvalLimitContext(FarPatchTables const & patchTable
 */        
     }
     
-    _patchMap = new FarPatchMap( patchTables );
+    _patchMap = new Far::PatchMap( patchTables );
 }
 
 OsdCpuEvalLimitContext::~OsdCpuEvalLimitContext() {

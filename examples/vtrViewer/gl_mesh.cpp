@@ -177,7 +177,7 @@ void
 GLMesh::initializeBuffers(Options options,
     TopologyRefiner const & refiner, float const * vertexData) {
 
-    typedef OpenSubdiv::FarTopologyRefiner::IndexArray IndexArray;
+    typedef OpenSubdiv::Far::TopologyRefiner::IndexArray IndexArray;
 
     int maxlevel = refiner.GetMaxLevel(),
         nverts = refiner.GetNumVertices(maxlevel),
@@ -414,7 +414,7 @@ GLMesh::initializeBuffers(Options options, TopologyRefiner const & refiner,
         }
     }
 
-    typedef OpenSubdiv::FarPatchTables PatchTables;
+    typedef OpenSubdiv::Far::PatchTables PatchTables;
 
     PatchTables::PTable const & ptable =
         patchTables.GetPatchTable();

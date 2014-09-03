@@ -39,7 +39,7 @@ struct FVarVertex {
 };
 
 void
-InterpolateFVarData(OpenSubdiv::FarTopologyRefiner & refiner,
+InterpolateFVarData(OpenSubdiv::Far::TopologyRefiner & refiner,
     Shape const & shape, std::vector<float> & fvarData) {
 
     int channel = 0,    // shapes only have 1 UV channel

@@ -32,6 +32,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Far {
 
 /// \brief A GP Compute Kernel descriptor.
 ///
@@ -40,7 +41,7 @@ namespace OPENSUBDIV_VERSION {
 /// in batches based on their topology in order to minimize the number of kernel
 /// switches to process a given primitive.
 ///
-struct FarKernelBatch {
+struct KernelBatch {
 
 public:
 
@@ -60,7 +61,7 @@ public:
     ///
     /// @param end           index of the last vertex in the batch
     ///
-    FarKernelBatch( int kernelType, int level, int start, int end ) :
+    KernelBatch( int kernelType, int level, int start, int end ) :
         kernelType(kernelType), level(level), start(start), end(end) { }
 
     int kernelType,   // the type of compute kernel kernel
@@ -69,7 +70,9 @@ public:
         end;          // index of the last vertex in the batch
 };
 
-typedef std::vector<FarKernelBatch> FarKernelBatchVector;
+typedef std::vector<KernelBatch> KernelBatchVector;
+
+} // end namespace Far
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

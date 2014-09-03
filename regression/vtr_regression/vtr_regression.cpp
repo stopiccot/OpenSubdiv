@@ -141,8 +141,8 @@ interpolateHbrVertexData(ShapeDesc const & desc, int maxlevel) {
 }
 
 //------------------------------------------------------------------------------
-typedef OpenSubdiv::FarTopologyRefiner               FarTopoloyRefiner;
-typedef OpenSubdiv::FarTopologyRefinerFactory<Shape> FarTopoloyRefinerFactory;
+typedef OpenSubdiv::Far::TopologyRefiner               FarTopoloyRefiner;
+typedef OpenSubdiv::Far::TopologyRefinerFactory<Shape> FarTopoloyRefinerFactory;
 
 static FarTopoloyRefiner *
 interpolateVtrVertexData(ShapeDesc const & desc, int maxlevel, std::vector<xyzVV> & data) {
@@ -208,8 +208,8 @@ struct Mapper {
 
         maps.resize(refiner->GetMaxLevel()+1);
 
-        typedef OpenSubdiv::FarTopologyRefiner::Index      Index;
-        typedef OpenSubdiv::FarTopologyRefiner::IndexArray IndexArray;
+        typedef OpenSubdiv::Far::TopologyRefiner::Index      Index;
+        typedef OpenSubdiv::Far::TopologyRefiner::IndexArray IndexArray;
 
         {   // Populate base level
             // note : topological ordering is identical between Hbr and Vtr for the

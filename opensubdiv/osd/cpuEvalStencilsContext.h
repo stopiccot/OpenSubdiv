@@ -44,22 +44,22 @@ class OsdCpuEvalStencilsContext : private OsdNonCopyable<OsdCpuEvalStencilsConte
 public:
     /// \brief Creates an OsdCpuEvalStencilsContext instance
     ///
-    /// @param stencils  a pointer to the FarStencilTables
+    /// @param stencils  a pointer to the Far::StencilTables
     ///
-    static OsdCpuEvalStencilsContext * Create(FarStencilTables const *stencils);
+    static OsdCpuEvalStencilsContext * Create(Far::StencilTables const *stencils);
 
-    /// \brief Returns the FarStencilTables applied
-    FarStencilTables const * GetStencilTables() const {
+    /// \brief Returns the Far::StencilTables applied
+    Far::StencilTables const * GetStencilTables() const {
         return _stencils;
     }
 
 protected:
 
-    OsdCpuEvalStencilsContext(FarStencilTables const *stencils);
+    OsdCpuEvalStencilsContext(Far::StencilTables const *stencils);
 
 private:
     
-    FarStencilTables const * _stencils;
+    Far::StencilTables const * _stencils;
 };
 
 } // end namespace OPENSUBDIV_VERSION

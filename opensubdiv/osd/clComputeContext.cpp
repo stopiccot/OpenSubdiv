@@ -53,7 +53,7 @@ class OsdCLComputeContext::CLStencilTables {
 
 public:
 
-    CLStencilTables(FarStencilTables const & stencilTables, cl_context clContext) {
+    CLStencilTables(Far::StencilTables const & stencilTables, cl_context clContext) {
         _sizes = createCLBuffer(stencilTables.GetSizes(), clContext);
         _offsets = createCLBuffer(stencilTables.GetOffsets(), clContext);
         _indices = createCLBuffer(stencilTables.GetControlIndices(), clContext);
@@ -98,8 +98,8 @@ private:
 // -----------------------------------------------------------------------------
 
 OsdCLComputeContext::OsdCLComputeContext(
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables,
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables,
             cl_context clContext) :
                 _vertexStencilTables(0), _varyingStencilTables(0),
                      _numControlVertices(0) {
@@ -186,8 +186,8 @@ OsdCLComputeContext::GetVaryingStencilTablesWeights() const {
 
 OsdCLComputeContext *
 OsdCLComputeContext::Create(cl_context clContext,
-    FarStencilTables const * vertexStencilTables,
-        FarStencilTables const * varyingStencilTables) {
+    Far::StencilTables const * vertexStencilTables,
+        Far::StencilTables const * varyingStencilTables) {
 
     OsdCLComputeContext *result =
         new OsdCLComputeContext(

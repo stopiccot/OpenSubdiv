@@ -32,7 +32,7 @@ namespace OPENSUBDIV_VERSION {
 OsdDrawContext::~OsdDrawContext() {}
 
 void
-OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPatchArrays,
+OsdDrawContext::ConvertPatchArrays(Far::PatchTables::PatchArrayVector const &farPatchArrays,
                                    OsdDrawContext::PatchArrayVector &osdPatchArrays,
                                    int maxValence, int numElements) {
 
@@ -41,7 +41,7 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
 
     int numTotalPatchArrays = 0;
     for (int i = 0; i < (int)farPatchArrays.size(); ++i) {
-        FarPatchTables::TransitionPattern pattern = farPatchArrays[i].GetDescriptor().GetPattern();
+        Far::PatchTables::TransitionPattern pattern = farPatchArrays[i].GetDescriptor().GetPattern();
         numTotalPatchArrays += subPatchCounts[(int)pattern];
     }
 
@@ -50,11 +50,11 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
     osdPatchArrays.reserve(numTotalPatchArrays);
 
     for (int i = 0; i < (int)farPatchArrays.size(); ++i) {
-        FarPatchTables::TransitionPattern pattern = farPatchArrays[i].GetDescriptor().GetPattern();
+        Far::PatchTables::TransitionPattern pattern = farPatchArrays[i].GetDescriptor().GetPattern();
         int numSubPatches = subPatchCounts[(int)pattern];
 
-        FarPatchTables::PatchArray const &parray = farPatchArrays[i];
-        FarPatchTables::Descriptor srcDesc = parray.GetDescriptor();
+        Far::PatchTables::PatchArray const &parray = farPatchArrays[i];
+        Far::PatchTables::Descriptor srcDesc = parray.GetDescriptor();
 
         for (int j = 0; j < numSubPatches; ++j) {
             PatchDescriptor desc(srcDesc, maxValence, j, numElements);
@@ -65,12 +65,12 @@ OsdDrawContext::ConvertPatchArrays(FarPatchTables::PatchArrayVector const &farPa
 }
 
 void
-OsdDrawContext::packFVarData(FarPatchTables const & patchTables,
+OsdDrawContext::packFVarData(Far::PatchTables const & patchTables,
                              int fvarWidth, FVarData const & src, FVarData & dst) {
 
     assert(fvarWidth and (not src.empty()));
 
-    FarPatchTables::FVarPatchTables const * fvarPatchTables =
+    Far::PatchTables::FVarPatchTables const * fvarPatchTables =
         patchTables.GetFVarPatchTables();
     assert(fvarPatchTables);
 

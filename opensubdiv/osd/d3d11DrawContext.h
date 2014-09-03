@@ -64,15 +64,15 @@ public:
 
     virtual ~OsdD3D11DrawContext();
 
-    /// \brief Create an OsdD3D11DrawContext from FarPatchTables
+    /// \brief Create an OsdD3D11DrawContext from Far::PatchTables
     ///
-    /// @param patchTables          A valid set of FarPatchTables
+    /// @param patchTables          A valid set of Far::PatchTables
     ///
     /// @param pd3d11DeviceContext  A device context
     ///
     /// @param numVertexElements    The number of vertex elements
     ///
-    static OsdD3D11DrawContext *Create(FarPatchTables const *patchTables,
+    static OsdD3D11DrawContext *Create(Far::PatchTables const *patchTables,
                                        ID3D11DeviceContext *pd3d11DeviceContext,
                                        int numVertexElements);
 
@@ -107,7 +107,7 @@ public:
 
     /// Sets face-varying data buffer
     ///
-    /// @param patchTables          A valid set of FarPatchTables
+    /// @param patchTables          A valid set of Far::PatchTables
     ///
     /// @param pd3d11DeviceContext  A device context
     ///
@@ -117,7 +117,7 @@ public:
     ///
     /// @return                     True if the operation was successful
     ///
-    bool SetFVarDataTexture(FarPatchTables const & patchTables,
+    bool SetFVarDataTexture(Far::PatchTables const & patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int fvarWidth, FVarData const & fvarData);
 
@@ -126,7 +126,7 @@ private:
 
 
     // allocate buffers from patchTables
-    bool create(FarPatchTables const &patchTables,
+    bool create(Far::PatchTables const &patchTables,
                 ID3D11DeviceContext *pd3d11DeviceContext,
                 int numVertexElements);
 

@@ -29,7 +29,7 @@
 
 // !!! WARNING !!!
 //
-// The FarPatchTablesFactory code duplicated in this file is for debugging
+// The Far::PatchTablesFactory code duplicated in this file is for debugging
 // puproses only ! 
 //
 // Do *NOT* use, duplicate or rely on this code.
@@ -413,15 +413,15 @@ RefineAdaptive(Hmesh & mesh, int maxlevel,
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class FarPatchTablesFactory {
+class Far::PatchTablesFactory {
 
 public:
 
-    static FarPatchTables const * Create(Hmesh & mesh, int maxvalence);
+    static Far::PatchTables const * Create(Hmesh & mesh, int maxvalence);
 
 private:
 
-    typedef FarPatchTables::Descriptor Descriptor;
+    typedef Far::PatchTables::Descriptor Descriptor;
 
     // Returns true if one of v's neighboring faces has vertices carrying the tag "wasTagged"
     static bool vertexHasTaggedNeighbors(Hvertex * v);
@@ -434,7 +434,7 @@ private:
 
     // Populates the patch parametrization descriptor 'coord' for the given face
     // returns a pointer to the next descriptor
-    static OpenSubdiv::FarPatchParam * computePatchParam(Hface const *f, OpenSubdiv::FarPatchParam *coord);
+    static OpenSubdiv::Far::PatchParam * computePatchParam(Hface const *f, OpenSubdiv::Far::PatchParam *coord);
 
     // Populates an array of indices with the "one-ring" vertices for the given face
     static unsigned int * getOneRing( Hface const * f, int ringsize, unsigned int const * remap, unsigned int * result );
@@ -443,10 +443,10 @@ private:
     static void getQuadOffsets( Hface const * f, unsigned int * result );
 
     // The number of patches in the mesh
-    static int getNumPatches( FarPatchTables::PatchArrayVector const & parrays );
+    static int getNumPatches( Far::PatchTables::PatchArrayVector const & parrays );
 
     // Reserves tables based on the contents of the PatchArrayVector
-    static void allocateTables( FarPatchTables * tables, int nlevels, int fvarwidth );
+    static void allocateTables( Far::PatchTables * tables, int nlevels, int fvarwidth );
 
     // A convenience container for the different types of feature adaptive patches
     template<class TYPE> struct PatchTypes {
@@ -463,14 +463,14 @@ private:
         PatchTypes() { memset(this, 0, sizeof(PatchTypes<TYPE>)); }
 
         // Returns the number of patches based on the patch type in the descriptor
-        TYPE & getValue( FarPatchTables::Descriptor desc );
+        TYPE & getValue( Far::PatchTables::Descriptor desc );
 
         // Counts the number of arrays required to store each type of patch used
         // in the primitive
         int getNumPatchArrays() const;
     };
 
-    typedef PatchTypes<OpenSubdiv::FarPatchParam *> ParamPointers;
+    typedef PatchTypes<OpenSubdiv::Far::PatchParam *> ParamPointers;
     typedef PatchTypes<unsigned int*>               CVPointers;
     typedef PatchTypes<float *>                     FVarPointers;
     typedef PatchTypes<int>                         Counter;
@@ -478,21 +478,21 @@ private:
     // Creates a PatchArray and appends it to a vector and keeps track of both
     // vertex and patch offsets
     static void pushPatchArray( Descriptor desc,
-                                FarPatchTables::PatchArrayVector & parray,
+                                Far::PatchTables::PatchArrayVector & parray,
                                 int npatches, int * voffset, int * poffset, int * qoffset );
 
 };
 
 //------------------------------------------------------------------------------
 template <class TYPE> TYPE &
-FarPatchTablesFactory::PatchTypes<TYPE>::getValue( FarPatchTables::Descriptor desc ) {
+Far::PatchTablesFactory::PatchTypes<TYPE>::getValue( Far::PatchTables::Descriptor desc ) {
 
     switch (desc.GetType()) {
-        case FarPatchTables::REGULAR          : return R[desc.GetPattern()];
-        case FarPatchTables::BOUNDARY         : return B[desc.GetPattern()][desc.GetRotation()];
-        case FarPatchTables::CORNER           : return C[desc.GetPattern()][desc.GetRotation()];
-        case FarPatchTables::GREGORY          : return G;
-        case FarPatchTables::GREGORY_BOUNDARY : return GB;
+        case Far::PatchTables::REGULAR          : return R[desc.GetPattern()];
+        case Far::PatchTables::BOUNDARY         : return B[desc.GetPattern()][desc.GetRotation()];
+        case Far::PatchTables::CORNER           : return C[desc.GetPattern()][desc.GetRotation()];
+        case Far::PatchTables::GREGORY          : return G;
+        case Far::PatchTables::GREGORY_BOUNDARY : return GB;
         default : assert(0);
     }
     // can't be reached (suppress compiler warning)
@@ -500,7 +500,7 @@ FarPatchTablesFactory::PatchTypes<TYPE>::getValue( FarPatchTables::Descriptor de
 }
 
 template <class TYPE> int
-FarPatchTablesFactory::PatchTypes<TYPE>::getNumPatchArrays() const {
+Far::PatchTablesFactory::PatchTypes<TYPE>::getNumPatchArrays() const {
 
     int result=0;
 
@@ -525,7 +525,7 @@ FarPatchTablesFactory::PatchTypes<TYPE>::getNumPatchArrays() const {
 // True if the surrounding faces are "tagged" (unsupported feature : watertight
 // critical patches)
 bool
-FarPatchTablesFactory::vertexHasTaggedNeighbors(Hvertex * v) {
+Far::PatchTablesFactory::vertexHasTaggedNeighbors(Hvertex * v) {
 
     assert(v);
 
@@ -549,7 +549,7 @@ FarPatchTablesFactory::vertexHasTaggedNeighbors(Hvertex * v) {
 
 // Returns a rotation index for boundary patches (range [0-3])
 unsigned char
-FarPatchTablesFactory::computeBoundaryPatchRotation( Hface * f ) {
+Far::PatchTablesFactory::computeBoundaryPatchRotation( Hface * f ) {
     unsigned char rot=0;
     for (unsigned char i=0; i<4;++i) {
         if (f->GetVertex(i)->OnBoundary() and
@@ -562,7 +562,7 @@ FarPatchTablesFactory::computeBoundaryPatchRotation( Hface * f ) {
 
 // Returns a rotation index for corner patches (range [0-3])
 unsigned char
-FarPatchTablesFactory::computeCornerPatchRotation( Hface * f ) {
+Far::PatchTablesFactory::computeCornerPatchRotation( Hface * f ) {
     unsigned char rot=0;
     for (unsigned char i=0; i<4; ++i) {
         if (not f->GetVertex((i+3)%4)->OnBoundary())
@@ -573,7 +573,7 @@ FarPatchTablesFactory::computeCornerPatchRotation( Hface * f ) {
 }
 
 int
-FarPatchTablesFactory::getNumPatches( FarPatchTables::PatchArrayVector const & parrays ) {
+Far::PatchTablesFactory::getNumPatches( Far::PatchTables::PatchArrayVector const & parrays ) {
 
     int result=0;
     for (int i=0; i<(int)parrays.size(); ++i) {
@@ -585,7 +585,7 @@ FarPatchTablesFactory::getNumPatches( FarPatchTables::PatchArrayVector const & p
 
 //------------------------------------------------------------------------------
 void
-FarPatchTablesFactory::allocateTables( FarPatchTables * tables, int /* nlevels */, int fvarwidth ) {
+Far::PatchTablesFactory::allocateTables( Far::PatchTables * tables, int /* nlevels */, int fvarwidth ) {
 
     int nverts = tables->GetNumControlVertices(),
         npatches = getNumPatches(tables->GetPatchArrayVector());
@@ -598,11 +598,11 @@ FarPatchTablesFactory::allocateTables( FarPatchTables * tables, int /* nlevels *
     tables->_paramTable.resize( npatches );
 
     if (fvarwidth>0) {
-        FarPatchTables::PatchArrayVector const & parrays = tables->GetPatchArrayVector();
+        Far::PatchTables::PatchArrayVector const & parrays = tables->GetPatchArrayVector();
         int nfvarverts = 0;
         for (int i=0; i<(int)parrays.size(); ++i) {
             nfvarverts += parrays[i].GetNumPatches() *
-                          (parrays[i].GetDescriptor().GetType() == FarPatchTables::TRIANGLES ? 3 : 4);
+                          (parrays[i].GetDescriptor().GetType() == Far::PatchTables::TRIANGLES ? 3 : 4);
         }
 
         //tables->_fvarData._data.resize( nfvarverts * fvarwidth );
@@ -614,8 +614,8 @@ FarPatchTablesFactory::allocateTables( FarPatchTables * tables, int /* nlevels *
 }
 
 //------------------------------------------------------------------------------
-FarPatchTables const *
-FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
+Far::PatchTables const *
+Far::PatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
 
     int nfaces = mesh.GetNumFaces();
 
@@ -695,17 +695,17 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
                     switch (boundaryVerts) {
 
                         case 0 : {   // Regular patch
-                                     patchCtr.R[FarPatchTables::NON_TRANSITION]++;
+                                     patchCtr.R[Far::PatchTables::NON_TRANSITION]++;
                                  } break;
 
                         case 2 : {   // Boundary patch
                                      f->_adaptiveFlags.rots=computeBoundaryPatchRotation(f);
-                                     patchCtr.B[FarPatchTables::NON_TRANSITION][0]++;
+                                     patchCtr.B[Far::PatchTables::NON_TRANSITION][0]++;
                                  } break;
 
                         case 3 : {   // Corner patch
                                      f->_adaptiveFlags.rots=computeCornerPatchRotation(f);
-                                     patchCtr.C[FarPatchTables::NON_TRANSITION][0]++;
+                                     patchCtr.C[Far::PatchTables::NON_TRANSITION][0]++;
                                  } break;
 
                         default : break;
@@ -823,10 +823,10 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
 
     int fvarwidth=0;
 
-    FarPatchTables * result = new FarPatchTables(maxvalence);
+    Far::PatchTables * result = new Far::PatchTables(maxvalence);
 
     // Populate the patch array descriptors
-    FarPatchTables::PatchArrayVector & parray = result->_patchArrays;
+    Far::PatchTables::PatchArrayVector & parray = result->_patchArrays;
     parray.reserve( patchCtr.getNumPatchArrays() );
 
     int voffset=0, poffset=0, qoffset=0;
@@ -857,7 +857,7 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
     for (Descriptor::iterator it=Descriptor::begin(Descriptor::FEATURE_ADAPTIVE_CATMARK);
         it!=Descriptor::end(); ++it) {
 
-        FarPatchTables::PatchArray * pa = result->findPatchArray(*it);
+        Far::PatchTables::PatchArray * pa = result->findPatchArray(*it);
 
         if (not pa)
             continue;
@@ -869,8 +869,8 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
         //    fptrs.getValue( *it ) = &result->_fvarData._data[pa->GetPatchIndex() * 4 * fvarwidth];
     }
 
-    FarPatchTables::QuadOffsetTable::value_type *quad_G_C0_P = patchCtr.G>0 ? &result->_quadOffsetTable[0] : 0;
-    FarPatchTables::QuadOffsetTable::value_type *quad_G_C1_P = patchCtr.GB>0 ? &result->_quadOffsetTable[patchCtr.G*4] : 0;
+    Far::PatchTables::QuadOffsetTable::value_type *quad_G_C0_P = patchCtr.G>0 ? &result->_quadOffsetTable[0] : 0;
+    Far::PatchTables::QuadOffsetTable::value_type *quad_G_C1_P = patchCtr.GB>0 ? &result->_quadOffsetTable[patchCtr.G*4] : 0;
 
     // Populate patch index tables with vertex indices
     for (int i=0; i<nfaces; ++i) {
@@ -884,7 +884,7 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
             if (f->_adaptiveFlags.patchType==Hface::kFull) {
                 if (not f->_adaptiveFlags.isExtraordinary and f->_adaptiveFlags.bverts!=1) {
 
-                    int pattern = FarPatchTables::NON_TRANSITION,
+                    int pattern = Far::PatchTables::NON_TRANSITION,
                         rot = 0;
 
                     switch (f->_adaptiveFlags.bverts) {
@@ -982,16 +982,16 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
 
         const int nverts = mesh.GetNumVertices();
 
-        FarPatchTables::VertexValenceTable & table = result->_vertexValenceTable;
+        Far::PatchTables::VertexValenceTable & table = result->_vertexValenceTable;
         table.resize(nverts * perVertexValenceSize);
 
         class GatherNeighborsOperator : public OpenSubdiv::HbrVertexOperator<Vertex> {
         public:
             Hvertex * center;
-            FarPatchTables::VertexValenceTable & table;
+            Far::PatchTables::VertexValenceTable & table;
             int offset, valence;
 
-            GatherNeighborsOperator(FarPatchTables::VertexValenceTable & itable, int ioffset, Hvertex * v) :
+            GatherNeighborsOperator(Far::PatchTables::VertexValenceTable & itable, int ioffset, Hvertex * v) :
                 center(v), table(itable), offset(ioffset), valence(0) { }
 
             ~GatherNeighborsOperator() { }
@@ -1073,7 +1073,7 @@ FarPatchTablesFactory::Create(Hmesh & mesh, int maxvalence) {
 //------------------------------------------------------------------------------
 // The One Ring vertices to rule them all !
 unsigned int *
-FarPatchTablesFactory::getOneRing(Hface const * f,
+Far::PatchTablesFactory::getOneRing(Hface const * f,
     int ringsize, unsigned int const * remap, unsigned int * result) {
 
     assert( f and f->GetNumVertices()==4 and ringsize >=4 );
@@ -1204,7 +1204,7 @@ FarPatchTablesFactory::getOneRing(Hface const * f,
 //------------------------------------------------------------------------------
 // Populate the quad-offsets table used by Gregory patches
 void
-FarPatchTablesFactory::getQuadOffsets(Hface const * f, unsigned int * result) {
+Far::PatchTablesFactory::getQuadOffsets(Hface const * f, unsigned int * result) {
 
     assert(result and f and f->GetNumVertices()==4);
 
@@ -1279,8 +1279,8 @@ FarPatchTablesFactory::getQuadOffsets(Hface const * f, unsigned int * result) {
 
 //------------------------------------------------------------------------------
 // Computes per-face or per-patch local ptex texture coordinates.
-OpenSubdiv::FarPatchParam *
-FarPatchTablesFactory::computePatchParam(Hface const * f, OpenSubdiv::FarPatchParam *coord) {
+OpenSubdiv::Far::PatchParam *
+Far::PatchTablesFactory::computePatchParam(Hface const * f, OpenSubdiv::Far::PatchParam *coord) {
 
     unsigned short u, v, ofs = 1;
     unsigned char depth;
@@ -1328,10 +1328,10 @@ using namespace OPENSUBDIV_VERSION;
 } // end namespace OpenSubdiv
 
 
-OpenSubdiv::FarPatchTables const *
+OpenSubdiv::Far::PatchTables const *
 CreatePatchTables(Hmesh & mesh, int maxvalence) {
 
-    return OpenSubdiv::FarPatchTablesFactory::Create(mesh, maxvalence);
+    return OpenSubdiv::Far::PatchTablesFactory::Create(mesh, maxvalence);
 }
 
 //------------------------------------------------------------------------------

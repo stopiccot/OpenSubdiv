@@ -30,8 +30,6 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-template <class T> class HbrVertexEdit;
-template <class T> class HbrMovingVertexEdit;
 class FarVertexEdit;
 
 //!
@@ -51,11 +49,7 @@ public:
 
     void Clear(void * = 0) {}
 
-    void ApplyVertexEdit(HbrVertexEdit<OsdVertex> const &) { }
-
     void ApplyVertexEdit(FarVertexEdit const &) { }
-
-    void ApplyMovingVertexEdit(HbrMovingVertexEdit<OsdVertex> const &) { }
 };
 
 }  // end namespace OPENSUBDIV_VERSION

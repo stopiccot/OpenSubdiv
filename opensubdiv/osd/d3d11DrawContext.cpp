@@ -60,7 +60,7 @@ OsdD3D11DrawContext::~OsdD3D11DrawContext()
 };
 
 OsdD3D11DrawContext *
-OsdD3D11DrawContext::Create(FarPatchTables const *patchTables,
+OsdD3D11DrawContext::Create(Far::PatchTables const *patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int numVertexElements)
 {
@@ -73,7 +73,7 @@ OsdD3D11DrawContext::Create(FarPatchTables const *patchTables,
 }
 
 bool
-OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
+OsdD3D11DrawContext::create(Far::PatchTables const &patchTables,
                             ID3D11DeviceContext *pd3d11DeviceContext,
                             int numVertexElements)
 {
@@ -86,8 +86,8 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
 
     ConvertPatchArrays(patchTables.GetPatchArrayVector(), _patchArrays, patchTables.GetMaxValence(), numVertexElements);
 
-    FarPatchTables::PTable const & ptables = patchTables.GetPatchTable();
-    FarPatchTables::PatchParamTable const & ptexCoordTables = patchTables.GetPatchParamTable();
+    Far::PatchTables::PTable const & ptables = patchTables.GetPatchTable();
+    Far::PatchTables::PatchParamTable const & ptexCoordTables = patchTables.GetPatchParamTable();
     int totalPatchIndices = (int)ptables.size();
     int totalPatches = (int)ptexCoordTables.size();
 
@@ -115,7 +115,7 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
     pd3d11DeviceContext->Unmap(patchIndexBuffer, 0);
 
     // create patch param buffer
-    bd.ByteWidth = totalPatches * sizeof(FarPatchParam);
+    bd.ByteWidth = totalPatches * sizeof(Far::PatchParam);
     bd.Usage = D3D11_USAGE_DYNAMIC;
     bd.BindFlags = D3D11_BIND_SHADER_RESOURCE;
     bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -142,11 +142,11 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
         return false;
     }
     unsigned int * ptexBuffer = (unsigned int *) mappedResource.pData;
-    memcpy(ptexBuffer, &ptexCoordTables[0], totalPatches * sizeof(FarPatchParam));
+    memcpy(ptexBuffer, &ptexCoordTables[0], totalPatches * sizeof(Far::PatchParam));
     pd3d11DeviceContext->Unmap(ptexCoordinateBuffer, 0);
 
     // create vertex valence buffer and vertex texture
-    FarPatchTables::VertexValenceTable const &
+    Far::PatchTables::VertexValenceTable const &
         valenceTable = patchTables.GetVertexValenceTable();
 
     if (not valenceTable.empty()) {
@@ -176,7 +176,7 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
         }
     }
 
-    FarPatchTables::QuadOffsetTable const &
+    Far::PatchTables::QuadOffsetTable const &
         quadOffsetTable = patchTables.GetQuadOffsetTable();
 
     if (not quadOffsetTable.empty()) {
@@ -210,7 +210,7 @@ OsdD3D11DrawContext::create(FarPatchTables const &patchTables,
 }
 
 bool
-OsdD3D11DrawContext::SetFVarDataTexture(FarPatchTables const & patchTables,
+OsdD3D11DrawContext::SetFVarDataTexture(Far::PatchTables const & patchTables,
                                         ID3D11DeviceContext *pd3d11DeviceContext,
                                         int fvarWidth, FVarData const & fvarData) {
 

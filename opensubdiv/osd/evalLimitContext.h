@@ -70,7 +70,7 @@ public:
     virtual ~OsdEvalLimitContext();
 
 protected:
-    explicit OsdEvalLimitContext(FarPatchTables const & patchTables);
+    explicit OsdEvalLimitContext(Far::PatchTables const & patchTables);
 
 private:
     bool _adaptive;
