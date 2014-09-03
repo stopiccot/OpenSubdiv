@@ -166,10 +166,10 @@ createTopologyRefiner() {
     // Populate a topology descriptor with our raw data.
     typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
-    SdcType type = OpenSubdiv::TYPE_CATMARK;
+    Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
-    SdcOptions options;
-    options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+    Sdc::Options options;
+    options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
 
     Descriptor desc;
     desc.numVertices  = g_nverts;

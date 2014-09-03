@@ -39,7 +39,7 @@ namespace OPENSUBDIV_VERSION {
 //  both VtrLevel and VtrRefinement and are often present in their
 //  interfaces.
 //
-//  Is the sharpness overkill -- perhaps Sdc should define this...
+//  Is the sharpness overkill -- perhaps sdc should define this...
 //
 typedef float VtrSharpness;
 

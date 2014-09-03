@@ -53,8 +53,8 @@ namespace OPENSUBDIV_VERSION {
 //  is essential in Refinement (i.e. the parent-to-child mapping and vice versa).
 //
 
-class VtrFVarRefinement
-{
+class VtrFVarRefinement {
+
 public:
     VtrFVarRefinement(VtrRefinement const& refinement, VtrFVarLevel& parent, VtrFVarLevel& child);
     ~VtrFVarRefinement();

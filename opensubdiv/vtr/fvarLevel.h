@@ -73,10 +73,10 @@ namespace OPENSUBDIV_VERSION {
 //  clearer how this functionality will be provided.
 //
 
-class VtrFVarLevel
-{
+class VtrFVarLevel {
+
 public:
-    typedef SdcOptions::FVarBoundaryInterpolation   BoundaryInterpolation;
+    typedef Sdc::Options::FVarBoundaryInterpolation   BoundaryInterpolation;
 
     typedef VtrLocalIndex      Sibling;
     typedef VtrLocalIndexArray SiblingArray;
@@ -172,7 +172,7 @@ public:
     VtrIndexArray getFaceValues(VtrIndex fIndex);
     SiblingArray  getVertexFaceSiblings(VtrIndex vIndex);
 
-    void setOptions(SdcOptions const& options);
+    void setOptions(Sdc::Options const& options);
     void resizeValues(int numValues);
     void resizeComponents();
 
@@ -202,7 +202,7 @@ public:
     //  default the options member is initialized from whatever contains it --
     //  which may apply a common set to all channels or vary them individually.
     //
-    SdcOptions _options;
+    Sdc::Options _options;
     bool       _isLinear;
 
     int _valueCount;
@@ -315,30 +315,30 @@ public:
 //  Access/modify the values associated with each face:
 //
 inline VtrIndexArray const
-VtrFVarLevel::getFaceValues(VtrIndex fIndex) const
-{
+VtrFVarLevel::getFaceValues(VtrIndex fIndex) const {
+
     int vCount  = _level._faceVertCountsAndOffsets[fIndex*2];
     int vOffset = _level._faceVertCountsAndOffsets[fIndex*2+1];
     return VtrIndexArray(&_faceVertValues[vOffset], vCount);
 }
 inline VtrIndexArray
-VtrFVarLevel::getFaceValues(VtrIndex fIndex)
-{
+VtrFVarLevel::getFaceValues(VtrIndex fIndex) {
+
     int vCount  = _level._faceVertCountsAndOffsets[fIndex*2];
     int vOffset = _level._faceVertCountsAndOffsets[fIndex*2+1];
     return VtrIndexArray(&_faceVertValues[vOffset], vCount);
 }
 
 inline VtrFVarLevel::SiblingArray const
-VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) const
-{
+VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) const {
+
     int vCount  = _level._vertFaceCountsAndOffsets[vIndex*2];
     int vOffset = _level._vertFaceCountsAndOffsets[vIndex*2+1];
     return SiblingArray(&_vertFaceSiblings[vOffset], vCount);
 }
 inline VtrFVarLevel::SiblingArray
-VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex)
-{
+VtrFVarLevel::getVertexFaceSiblings(VtrIndex vIndex) {
+
     int vCount  = _level._vertFaceCountsAndOffsets[vIndex*2];
     int vOffset = _level._vertFaceCountsAndOffsets[vIndex*2+1];
     return SiblingArray(&_vertFaceSiblings[vOffset], vCount);
@@ -362,18 +362,15 @@ VtrFVarLevel::getVertexSiblingValues(VtrIndex vIndex) const
 }
 */
 inline int
-VtrFVarLevel::getNumVertexValues(VtrIndex vertexIndex) const
-{
+VtrFVarLevel::getNumVertexValues(VtrIndex vertexIndex) const {
     return 1 + _vertSiblingCounts[vertexIndex];
 }
 inline VtrIndex
-VtrFVarLevel::getVertexValueIndex(VtrIndex vIndex, Sibling vSibling) const
-{
+VtrFVarLevel::getVertexValueIndex(VtrIndex vIndex, Sibling vSibling) const {
     return vSibling ? (_vertSiblingOffsets[vIndex] + vSibling - 1) : vIndex;
 }
 inline VtrIndex
-VtrFVarLevel::getVertexValue(VtrIndex vIndex, Sibling vSibling) const
-{
+VtrFVarLevel::getVertexValue(VtrIndex vIndex, Sibling vSibling) const {
     return _vertValueIndices[getVertexValueIndex(vIndex, vSibling)];
 }
 

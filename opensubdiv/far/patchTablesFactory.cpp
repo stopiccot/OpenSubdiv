@@ -547,7 +547,7 @@ FarPatchTablesFactory::createUniform( FarTopologyRefiner const & refiner, Option
     assert(refiner.IsUniform());
 
     bool triangulateQuads = (options.triangulateQuads and
-        refiner.GetSchemeType()==TYPE_LOOP);
+        refiner.GetSchemeType()==Sdc::TYPE_LOOP);
 
     int maxvalence = refiner.getLevel(0).getMaxValence(),
         maxlevel = refiner.GetMaxLevel(),
@@ -557,9 +557,9 @@ FarPatchTablesFactory::createUniform( FarTopologyRefiner const & refiner, Option
 
     FarPatchTables::Type ptype = FarPatchTables::NON_PATCH;
     switch (refiner.GetSchemeType()) {
-        case TYPE_BILINEAR :
-        case TYPE_CATMARK  : ptype = FarPatchTables::QUADS; break;
-        case TYPE_LOOP     : ptype = FarPatchTables::TRIANGLES; break;
+        case Sdc::TYPE_BILINEAR :
+        case Sdc::TYPE_CATMARK  : ptype = FarPatchTables::QUADS; break;
+        case Sdc::TYPE_LOOP     : ptype = FarPatchTables::TRIANGLES; break;
     }
     assert(ptype!=FarPatchTables::NON_PATCH);
 

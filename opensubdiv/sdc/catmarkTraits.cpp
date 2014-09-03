@@ -26,45 +26,43 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
 
 //
-//  Specializations for SdcTypeTraits<TYPE_CATMARK>:
+//  Specializations for TypeTraits<TYPE_CATMARK>:
 //
 template <>
-SdcSplit
-SdcTypeTraits<TYPE_CATMARK>::TopologicalSplitType()
-{
+Split
+TypeTraits<TYPE_CATMARK>::TopologicalSplitType() {
     return SPLIT_TO_QUADS;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_CATMARK>::LocalNeighborhoodSize()
-{
+TypeTraits<TYPE_CATMARK>::LocalNeighborhoodSize() {
     return 1;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_CATMARK>::RegularVertexValence()
-{
+TypeTraits<TYPE_CATMARK>::RegularVertexValence() {
     return 4;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_CATMARK>::RegularFaceValence()
-{
+TypeTraits<TYPE_CATMARK>::RegularFaceValence() {
     return 4;
 }
 
 template <>
 char const*
-SdcTypeTraits<TYPE_CATMARK>::Label()
-{
+TypeTraits<TYPE_CATMARK>::Label() {
     //  Might need to declare static here to keep all compilers happy...
     return "catmark";
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

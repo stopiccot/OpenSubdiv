@@ -26,45 +26,43 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
 
 //
-//  Specializations for SdcTypeTraits<TYPE_BILINEAR>:
+//  Specializations for TypeTraits<TYPE_BILINEAR>:
 //
 template <>
-SdcSplit
-SdcTypeTraits<TYPE_BILINEAR>::TopologicalSplitType()
-{
+Split
+TypeTraits<TYPE_BILINEAR>::TopologicalSplitType() {
     return SPLIT_TO_QUADS;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_BILINEAR>::LocalNeighborhoodSize()
-{
+TypeTraits<TYPE_BILINEAR>::LocalNeighborhoodSize() {
     return 0;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_BILINEAR>::RegularVertexValence()
-{
+TypeTraits<TYPE_BILINEAR>::RegularVertexValence() {
     return 0;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_BILINEAR>::RegularFaceValence()
-{
+TypeTraits<TYPE_BILINEAR>::RegularFaceValence() {
     return 0;
 }
 
 template <>
 char const*
-SdcTypeTraits<TYPE_BILINEAR>::Label()
-{
+TypeTraits<TYPE_BILINEAR>::Label() {
     //  Might need to declare static here to keep all compilers happy...
     return "bilinear";
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

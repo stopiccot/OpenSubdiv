@@ -102,10 +102,10 @@ enum CreaseMethod {
     k_creaseMethod_chaikin = 1
 };
 
-static OpenSubdiv::SdcOptions::VVarBoundaryInterpolation
+static OpenSubdiv::Sdc::Options::VVarBoundaryInterpolation
 ConvertMayaVVarBoundary(short boundaryMethod) {
 
-    typedef OpenSubdiv::SdcOptions Sdc;
+    typedef OpenSubdiv::Sdc::Options Sdc;
 
     switch (boundaryMethod) {
         case k_BoundaryMethod_InterpolateBoundaryNone          : return Sdc::VVAR_BOUNDARY_NONE;
@@ -117,10 +117,10 @@ ConvertMayaVVarBoundary(short boundaryMethod) {
     return Sdc::VVAR_BOUNDARY_NONE;
 }
 
-static OpenSubdiv::SdcOptions::FVarBoundaryInterpolation
+static OpenSubdiv::Sdc::Options::FVarBoundaryInterpolation
 ConvertMayaFVarBoundary(short boundaryMethod) {
 
-    typedef OpenSubdiv::SdcOptions Sdc;
+    typedef OpenSubdiv::Sdc::Options Sdc;
 
     switch (boundaryMethod) {
         case k_BoundaryMethod_InterpolateBoundaryNone          : return Sdc::FVAR_BOUNDARY_BILINEAR;
@@ -303,8 +303,8 @@ getMayaFvarFieldParams(
 static OpenSubdiv::FarTopologyRefiner *
 gatherTopology( MFnMesh const & inMeshFn,
                 MItMeshPolygon & inMeshItPolygon,
-                OpenSubdiv::SdcType type,
-                OpenSubdiv::SdcOptions options,
+                OpenSubdiv::Sdc::Type type,
+                OpenSubdiv::Sdc::Options options,
                 float * maxCreaseSharpness=0 ) {
 
     MStatus returnStatus;
@@ -572,9 +572,11 @@ convertToMayaMeshData(OpenSubdiv::FarTopologyRefiner const & refiner,
         status = getMayaFvarFieldParams(inMeshFn, uvSetNames, colorSetNames,
             colorSetChannels, colorSetReps, totalColorSetChannels);
 
+#if defined(DEBUG) or defined(_DEBUG)
         int numUVSets = uvSetNames.length();
         int expectedFvarTotalWidth = numUVSets*2 + totalColorSetChannels;
         assert(fvarTotalWidth == expectedFvarTotalWidth);
+#endif
 
 // XXXX fvar stuff here
 
@@ -619,18 +621,18 @@ MayaPolySmooth::compute( const MPlug& plug, MDataBlock& data ) {
             MCHECKERR(status, "ERROR getting inMeshItPolygon\n");
 
             // Convert attr values to OSD enums
-            OpenSubdiv::SdcType type = OpenSubdiv::TYPE_CATMARK;
+            OpenSubdiv::Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
             //
             // Create Far topology
             //
-            OpenSubdiv::SdcOptions options;
+            OpenSubdiv::Sdc::Options options;
             options.SetVVarBoundaryInterpolation(ConvertMayaVVarBoundary(vertBoundaryMethod));
             options.SetFVarBoundaryInterpolation(ConvertMayaFVarBoundary(fvarBoundaryMethod));
             options.SetCreasingMethod(creaseMethodVal ?
-                 OpenSubdiv::SdcOptions::CREASE_CHAIKIN : OpenSubdiv::SdcOptions::CREASE_UNIFORM);
+                 OpenSubdiv::Sdc::Options::CREASE_CHAIKIN : OpenSubdiv::Sdc::Options::CREASE_UNIFORM);
             options.SetTriangleSubdivision(smoothTriangles ?
-                 OpenSubdiv::SdcOptions::TRI_SUB_NEW : OpenSubdiv::SdcOptions::TRI_SUB_OLD);
+                 OpenSubdiv::Sdc::Options::TRI_SUB_NEW : OpenSubdiv::Sdc::Options::TRI_SUB_OLD);
 
             float maxCreaseSharpness=0.0f;
             OpenSubdiv::FarTopologyRefiner * refiner =

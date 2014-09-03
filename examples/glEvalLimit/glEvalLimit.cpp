@@ -354,8 +354,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level) {
     Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
     // create Vtr mesh (topology)
-    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
-    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+    OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
+    OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
     OpenSubdiv::FarTopologyRefiner * refiner =
         OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);

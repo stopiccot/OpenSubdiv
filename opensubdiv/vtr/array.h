@@ -46,8 +46,8 @@ namespace OPENSUBDIV_VERSION {
 //  own memory and is simply an interface to memory stored elsewhere.
 //
 template <typename TYPE>
-class VtrArray
-{
+class VtrArray {
+
 public:
     typedef TYPE value_type;
     typedef int  size_type;

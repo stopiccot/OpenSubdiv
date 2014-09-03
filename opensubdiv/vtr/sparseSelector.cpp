@@ -41,8 +41,8 @@ namespace OPENSUBDIV_VERSION {
 //  level in order to fully define supported further refinement of selected components.
 //
 inline void
-VtrSparseSelector::markSelection()
-{
+VtrSparseSelector::markSelection() {
+
     if (!_selected) {
         _refine->initializeSparseSelectionTags();
     }
@@ -50,8 +50,8 @@ VtrSparseSelector::markSelection()
 }
 
 void
-VtrSparseSelector::selectVertex(VtrIndex parentVertex)
-{
+VtrSparseSelector::selectVertex(VtrIndex parentVertex) {
+
     markSelection();
 
     //  Don't bother to test-and-set here, just set
@@ -59,8 +59,8 @@ VtrSparseSelector::selectVertex(VtrIndex parentVertex)
 }
 
 void
-VtrSparseSelector::selectEdge(VtrIndex parentEdge)
-{
+VtrSparseSelector::selectEdge(VtrIndex parentEdge) {
+
     markSelection();
 
     if (!wasEdgeSelected(parentEdge)) {
@@ -74,8 +74,8 @@ VtrSparseSelector::selectEdge(VtrIndex parentEdge)
 }
 
 void
-VtrSparseSelector::selectFace(VtrIndex parentFace)
-{
+VtrSparseSelector::selectFace(VtrIndex parentFace) {
+
     markSelection();
 
     if (!wasFaceSelected(parentFace)) {
@@ -92,8 +92,8 @@ VtrSparseSelector::selectFace(VtrIndex parentFace)
 }
 
 void
-VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex)
-{
+VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex) {
+
     markSelection();
 
     //
@@ -104,7 +104,7 @@ VtrSparseSelector::selectVertexFaces(VtrIndex parentVertex)
     VtrIndexArray const vertFaces = _refine->parent().getVertexFaces(parentVertex);
     for (int i = 0; i < vertFaces.size(); ++i) {
         if (wasFaceSelected(vertFaces[i])) continue;
-        
+
         selectFace(vertFaces[i]);
     }
 }

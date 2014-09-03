@@ -55,8 +55,8 @@ class VtrRefinement;
 //  Since it is expected this will be protected or integrated elsewhere into another Vtr class --
 //  which will be similarly protected -- all methods intentionally begin with lower case.
 //
-class VtrSparseSelector
-{
+class VtrSparseSelector {
+
 public:
     VtrSparseSelector(VtrRefinement& refine) : _refine(&refine), _prevRefine(0), _selected(false) { }
     ~VtrSparseSelector() { }

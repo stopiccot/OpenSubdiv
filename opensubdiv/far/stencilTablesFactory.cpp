@@ -332,13 +332,13 @@ StencilAllocator::StencilAllocator( FarTopologyRefiner const & refiner,
 
     // Make an educated guess as to what the max size should be
 
-    SdcType type = refiner.GetSchemeType();
+    Sdc::Type type = refiner.GetSchemeType();
     switch (type) {
-        case TYPE_BILINEAR :
+        case Sdc::TYPE_BILINEAR :
             _maxsize = _interpolateVarying ? 5 : 5; break;
-        case TYPE_CATMARK :
+        case Sdc::TYPE_CATMARK :
             _maxsize = _interpolateVarying ? 5 : 10; break;
-        case TYPE_LOOP :
+        case Sdc::TYPE_LOOP :
             _maxsize = _interpolateVarying ? 5 : 10; break;
         default:
             assert(0);

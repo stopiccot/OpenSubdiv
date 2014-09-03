@@ -51,27 +51,24 @@ VtrFVarLevel::VtrFVarLevel(VtrLevel const& level) :
     _level(level), _isLinear(false), _valueCount(0) {
 }
 
-VtrFVarLevel::~VtrFVarLevel()
-{
+VtrFVarLevel::~VtrFVarLevel() {
 }
 
 //
 //  Initialization and sizing methods to allocate space:
 //
 void
-VtrFVarLevel::setOptions(SdcOptions const& options)
-{
+VtrFVarLevel::setOptions(Sdc::Options const& options) {
     _options = options;
 }
 void
-VtrFVarLevel::resizeValues(int valueCount)
-{
+VtrFVarLevel::resizeValues(int valueCount) {
     _valueCount = valueCount;
 }
 
 void
-VtrFVarLevel::resizeComponents()
-{
+VtrFVarLevel::resizeComponents() {
+
     //  Per-face members:
     _faceVertValues.resize(_level.getNumFaceVerticesTotal());
 
@@ -152,8 +149,8 @@ VtrFVarLevel::resizeComponents()
 //          - second (sparse) will analyze local topology
 //
 void
-VtrFVarLevel::completeTopologyFromFaceValues()
-{
+VtrFVarLevel::completeTopologyFromFaceValues() {
+
     //
     //  REMEMBER!!!
     //      .... that "mismatches" may also occur where the topology matches, but options
@@ -167,10 +164,10 @@ VtrFVarLevel::completeTopologyFromFaceValues()
     //  Not sure what the precedence is here, particuarly "propagate corner" vs the choice
     //  of "fvar boundary interpolation" -- will need to check with Hbr.
     //
-    _isLinear = (_options.GetFVarBoundaryInterpolation() == SdcOptions::FVAR_BOUNDARY_BILINEAR);
+    _isLinear = (_options.GetFVarBoundaryInterpolation() == Sdc::Options::FVAR_BOUNDARY_BILINEAR);
 
-    bool geomCornersAreSharp = (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
-    bool fvarCornersAreSharp = (_options.GetFVarBoundaryInterpolation() != SdcOptions::FVAR_BOUNDARY_EDGE_ONLY);
+    bool geomCornersAreSharp = (_options.GetVVarBoundaryInterpolation() == Sdc::Options::VVAR_BOUNDARY_EDGE_AND_CORNER);
+    bool fvarCornersAreSharp = (_options.GetFVarBoundaryInterpolation() != Sdc::Options::FVAR_BOUNDARY_EDGE_ONLY);
     bool fvarPropagateCorner = false;
 
     fvarCornersAreSharp = fvarPropagateCorner ? geomCornersAreSharp : fvarCornersAreSharp;
@@ -431,8 +428,8 @@ VtrFVarLevel::completeTopologyFromFaceValues()
 //  Debugging aids...
 //
 bool
-VtrFVarLevel::validate() const
-{
+VtrFVarLevel::validate() const {
+
     //
     //  Verify that member sizes match sizes for the associated level:
     //
@@ -519,8 +516,8 @@ VtrFVarLevel::validate() const
 }
 
 void
-VtrFVarLevel::print() const
-{
+VtrFVarLevel::print() const {
+
     std::vector<Sibling> fvSiblingVector;
     buildFaceVertexSiblingsFromVertexFaceSiblings(fvSiblingVector);
 
@@ -581,8 +578,8 @@ VtrFVarLevel::print() const
 
 
 void
-VtrFVarLevel::initializeFaceValuesFromFaceVertices()
-{
+VtrFVarLevel::initializeFaceValuesFromFaceVertices() {
+
     VtrIndex const* srcFaceVerts  = &_level._faceVertIndices[0];
     VtrIndex *      dstFaceValues = &_faceVertValues[0];
 
@@ -629,8 +626,8 @@ VtrFVarLevel::initializeFaceValuesFromVertexFaceSiblings(int vFirstSibling)
 }
 
 void
-VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>& fvSiblings) const
-{
+VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>& fvSiblings) const {
+
     fvSiblings.resize(_level.getNumFaceVerticesTotal());
     std::memset(&fvSiblings[0], 0, _level.getNumFaceVerticesTotal() * sizeof(Sibling));
 
@@ -657,8 +654,8 @@ VtrFVarLevel::buildFaceVertexSiblingsFromVertexFaceSiblings(std::vector<Sibling>
 //    - given a vertex, return values corresponding to verts at the ends of its edges
 //
 void
-VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex valuesPerVert[2]) const
-{
+VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex valuesPerVert[2]) const {
+
     VtrIndexArray const eVerts = _level.getEdgeVertices(eIndex);
     if (_vertSiblingCounts[eVerts[0]] || _vertSiblingCounts[eVerts[1]]) {
         VtrIndex eFace = _level.getEdgeFaces(eIndex)[fIncToEdge];
@@ -727,8 +724,8 @@ VtrFVarLevel::getEdgeFaceValues(VtrIndex eIndex, int fIncToEdge, VtrIndex values
 }
 
 void
-VtrFVarLevel::getVertexEdgeValues(VtrIndex vIndex, VtrIndex valuesPerEdge[]) const
-{
+VtrFVarLevel::getVertexEdgeValues(VtrIndex vIndex, VtrIndex valuesPerEdge[]) const {
+
     VtrIndexArray const      vEdges  = _level.getVertexEdges(vIndex);
     VtrLocalIndexArray const vInEdge = _level.getVertexEdgeLocalIndices(vIndex);
 

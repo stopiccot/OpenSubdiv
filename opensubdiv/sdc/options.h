@@ -29,6 +29,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
+
 //
 //  This header contains all supported options that can be applied to a subdivision
 //  scheme to affect the shape of the limit surface.  These differ from approximations
@@ -51,9 +53,10 @@ namespace OPENSUBDIV_VERSION {
 //  possibility of circular dependencies (nesting types in classes inhibits forward
 //  declaration).
 //
-class SdcOptions {
+class Options {
 public:
-    //
+
+    //  XXXX
     //  Manuel suggested "VertexBoundaryInterpolation" here, but when used, that sounded
     //  too much like boundary interpolation specific to a vertex -- I went with the VVar
     //  and FVar naming here instead (abbreviating the FaceVaryingBoundaryInterpolation
@@ -64,6 +67,7 @@ public:
         VVAR_BOUNDARY_EDGE_ONLY,
         VVAR_BOUNDARY_EDGE_AND_CORNER
     };
+
     enum FVarBoundaryInterpolation {
         FVAR_BOUNDARY_BILINEAR = 0,
         FVAR_BOUNDARY_EDGE_ONLY,
@@ -105,14 +109,15 @@ public:
     };
 
 public:
+
     //  Trivial constructor and destructor:
-    SdcOptions() : _vvarBoundInterp(VVAR_BOUNDARY_NONE),
+    Options() : _vvarBoundInterp(VVAR_BOUNDARY_NONE),
                    _fvarBoundInterp(FVAR_BOUNDARY_BILINEAR),
                    _nonManInterp(NON_MANIFOLD_NONE),
                    _creasingMethod(CREASE_UNIFORM),
                    _triangleSub(TRI_SUB_NORMAL),
                    _hbrCompatible(false) { }
-    ~SdcOptions() { }
+    ~Options() { }
 
     //
     //  Trivial get/set methods:
@@ -149,6 +154,8 @@ private:
     unsigned int _triangleSub     : 2;
     unsigned int _hbrCompatible   : 1;
 };
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

@@ -26,45 +26,47 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
+
 //
 //  Declarations of creasing constants and non-inline methods:
 //
-float const SdcCrease::SHARPNESS_SMOOTH   =  0.0f;
-float const SdcCrease::SHARPNESS_INFINITE = 10.0f;
+float const Crease::SHARPNESS_SMOOTH   =  0.0f;
+float const Crease::SHARPNESS_INFINITE = 10.0f;
 
 
 //
 //  Creasing queries dependent on sharpness values:
 //
-SdcCrease::Rule
-SdcCrease::DetermineVertexVertexRule(float vertexSharpness, int sharpEdgeCount) const
-{
-    if (IsSharp(vertexSharpness)) return SdcCrease::RULE_CORNER;
+Crease::Rule
+Crease::DetermineVertexVertexRule(float vertexSharpness, int sharpEdgeCount) const {
 
-    return (sharpEdgeCount > 2) ? SdcCrease::RULE_CORNER : (SdcCrease::Rule)(1 << sharpEdgeCount);
+    if (IsSharp(vertexSharpness)) return Crease::RULE_CORNER;
+
+    return (sharpEdgeCount > 2) ? Crease::RULE_CORNER : (Crease::Rule)(1 << sharpEdgeCount);
 }
 
-SdcCrease::Rule
-SdcCrease::DetermineVertexVertexRule(float        vertexSharpness,
+Crease::Rule
+Crease::DetermineVertexVertexRule(float        vertexSharpness,
                                      int          incidentEdgeCount,
-                                     float const* incidentEdgeSharpness) const
-{
-    if (IsSharp(vertexSharpness)) return SdcCrease::RULE_CORNER;
+                                     float const* incidentEdgeSharpness) const {
+
+    if (IsSharp(vertexSharpness)) return Crease::RULE_CORNER;
 
     int sharpEdgeCount = 0;
     for (int i = 0; i < incidentEdgeCount; ++i) {
         sharpEdgeCount += IsSharp(incidentEdgeSharpness[i]);
     }
-    return (sharpEdgeCount > 2) ? SdcCrease::RULE_CORNER : (SdcCrease::Rule)(1 << sharpEdgeCount);
+    return (sharpEdgeCount > 2) ? Crease::RULE_CORNER : (Crease::Rule)(1 << sharpEdgeCount);
 }
 
 float
-SdcCrease::ComputeFractionalWeightAtVertex(float        parentVertexSharpness,
+Crease::ComputeFractionalWeightAtVertex(float        parentVertexSharpness,
                                            float        childVertexSharpness,
                                            int          incidentEdgeCount,
                                            float const* parentSharpness,
-                                           float const* childSharpness) const
-{
+                                           float const* childSharpness) const {
+
     int   transitionCount = 0;
     float transitionSum   = 0.0f;
 
@@ -102,16 +104,16 @@ SdcCrease::ComputeFractionalWeightAtVertex(float        parentVertexSharpness,
 //  Subdividing edge sharpness values (vertex sharpness is inline):
 //
 float
-SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
-                                          int           incEdgeCountAtVertex,
-                                          float const * incEdgeSharpness) const
-{
+Crease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
+                                       int           incEdgeCountAtVertex,
+                                       float const * incEdgeSharpness) const {
+
     if (IsUniform() || (incEdgeCountAtVertex < 2)) {
         return decrementSharpness(edgeSharpness);
     }
 
-    if (IsSmooth(edgeSharpness)) return SdcCrease::SHARPNESS_SMOOTH;
-    if (IsInfinite(edgeSharpness)) return SdcCrease::SHARPNESS_INFINITE;
+    if (IsSmooth(edgeSharpness)) return Crease::SHARPNESS_SMOOTH;
+    if (IsInfinite(edgeSharpness)) return Crease::SHARPNESS_INFINITE;
 
     float sharpSum   = 0.0f;
     int   sharpCount = 0;
@@ -127,14 +129,14 @@ SdcCrease::SubdivideEdgeSharpnessAtVertex(float         edgeSharpness,
         edgeSharpness = (0.75f * edgeSharpness) + (0.25f * avgSharpnessAtVertex);
     }
     edgeSharpness -= 1.0f;
-    return IsSharp(edgeSharpness) ? edgeSharpness : SdcCrease::SHARPNESS_SMOOTH;
+    return IsSharp(edgeSharpness) ? edgeSharpness : Crease::SHARPNESS_SMOOTH;
 }
 
 void
-SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
+Crease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
                                                 float const* parentSharpness,
-                                                float *      childSharpness) const
-{
+                                                float *      childSharpness) const {
+
     if (IsUniform() || (edgeCount < 2)) {
         for (int i = 0; i < edgeCount; ++i) {
             childSharpness[i] = decrementSharpness(parentSharpness[i]);
@@ -149,7 +151,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
     //  vertex once and use that for each edge, rather than iterating around the vertex
     //  for each incident edge.
     //
-    if (_options.GetCreasingMethod() == SdcOptions::CREASE_CHAIKIN) {
+    if (_options.GetCreasingMethod() == Options::CREASE_CHAIKIN) {
         float sharpSum   = 0.0f;
         int   sharpCount = 0;
         for (int i = 0; i < edgeCount; ++i) {
@@ -162,7 +164,7 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
         //
         if (sharpCount == 0) {
             for (int i = 0; i < edgeCount; ++i) {
-                childSharpness[i] = SdcCrease::SHARPNESS_SMOOTH;
+                childSharpness[i] = Crease::SHARPNESS_SMOOTH;
             }
         } else {
             for (int i = 0; i < edgeCount; ++i) {
@@ -170,9 +172,9 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
                 float&       cSharp = childSharpness[i];
 
                 if (IsSmooth(pSharp)) {
-                    cSharp = SdcCrease::SHARPNESS_SMOOTH;
+                    cSharp = Crease::SHARPNESS_SMOOTH;
                 } else if (IsInfinite(pSharp)) {
-                    cSharp = SdcCrease::SHARPNESS_INFINITE;
+                    cSharp = Crease::SHARPNESS_INFINITE;
                 } else if (sharpCount == 1) {
                     //  Need special case here anyway to avoid divide by zero below...
                     cSharp = decrementSharpness(pSharp);
@@ -181,12 +183,14 @@ SdcCrease::SubdivideEdgeSharpnessesAroundVertex(int          edgeCount,
 
                     //  Chaikin rule is 3/4 original sharpness + 1/4 average of the others
                     cSharp = ((0.75f * pSharp) + (0.25f * pOtherAverage)) - 1.0f;
-                    if (IsSmooth(cSharp)) cSharp = SdcCrease::SHARPNESS_SMOOTH;
+                    if (IsSmooth(cSharp)) cSharp = Crease::SHARPNESS_SMOOTH;
                 }
             }
         }
     }
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

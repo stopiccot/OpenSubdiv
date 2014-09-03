@@ -90,6 +90,8 @@ static const char *g_shaderSource =
 #include <cfloat>
 #include <fstream>
 #include <string>
+#include <iostream>
+#include <iterator>
 #include <sstream>
 #include <vector>
 
@@ -655,8 +657,8 @@ createOsdMesh(int level, int kernel) {
     typedef OpenSubdiv::FarIndexArray IndexArray;
 
     // create Vtr mesh (topology)
-    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
-    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+    OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
+    OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
     OpenSubdiv::FarTopologyRefiner * refiner =
         OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);

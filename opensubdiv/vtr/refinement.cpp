@@ -59,7 +59,7 @@ namespace OPENSUBDIV_VERSION {
 VtrRefinement::VtrRefinement() :
     _parent(0),
     _child(0),
-    _schemeType(TYPE_CATMARK),
+    _schemeType(Sdc::TYPE_CATMARK),
     _schemeOptions(),
     _quadSplit(true),
     _childFaceFromFaceCount(0),
@@ -67,12 +67,11 @@ VtrRefinement::VtrRefinement() :
     _childEdgeFromEdgeCount(0),
     _childVertFromFaceCount(0),
     _childVertFromEdgeCount(0),
-    _childVertFromVertCount(0)
-{
+    _childVertFromVertCount(0) {
 }
 
-VtrRefinement::~VtrRefinement()
-{
+VtrRefinement::~VtrRefinement() {
+
     for (int i = 0; i < (int)_fvarChannels.size(); ++i) {
         delete _fvarChannels[i];
     }
@@ -80,8 +79,8 @@ VtrRefinement::~VtrRefinement()
 
 
 void
-VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
-{
+VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child) {
+
     //  Make sure we are getting a fresh child...
     assert((child.getDepth() == 0) && (child.getNumVertices() == 0));
 
@@ -96,8 +95,8 @@ VtrRefinement::initialize(VtrLevel& parent, VtrLevel& child)
 }
 
 void
-VtrRefinement::setScheme(SdcType const& schemeType, SdcOptions const& schemeOptions)
-{
+VtrRefinement::setScheme(Sdc::Type const& schemeType, Sdc::Options const& schemeOptions) {
+
     _schemeType = schemeType;
     _schemeOptions = schemeOptions;
 }
@@ -107,8 +106,8 @@ VtrRefinement::setScheme(SdcType const& schemeType, SdcOptions const& schemeOpti
 //  Methods for preparing for refinement:
 //
 void
-VtrRefinement::allocateParentToChildMapping()
-{
+VtrRefinement::allocateParentToChildMapping() {
+
     //
     //  Initialize the vectors of indices mapping parent components to those child components
     //  that will originate from each.
@@ -160,8 +159,8 @@ VtrRefinement::allocateParentToChildMapping()
 }
 
 void
-VtrRefinement::printParentToChildMapping() const
-{
+VtrRefinement::printParentToChildMapping() const {
+
     printf("Parent-to-child component mapping:\n");
     for (VtrIndex pFace = 0; pFace < _parent->getNumFaces(); ++pFace) {
         printf("  Face %d:\n", pFace);
@@ -199,8 +198,7 @@ namespace {
     inline bool isSparseIndexMarked(VtrIndex index)   { return index != 0; }
 
     inline int
-    sequenceSparseIndexVector(VtrIndexVector& indexVector, int baseValue = 0)
-    {
+    sequenceSparseIndexVector(VtrIndexVector& indexVector, int baseValue = 0) {
         int validCount = 0;
         for (int i = 0; i < (int) indexVector.size(); ++i) {
             indexVector[i] = isSparseIndexMarked(indexVector[i])
@@ -210,8 +208,7 @@ namespace {
         return validCount;
     }
     inline int
-    sequenceFullIndexVector(VtrIndexVector& indexVector, int baseValue = 0)
-    {
+    sequenceFullIndexVector(VtrIndexVector& indexVector, int baseValue = 0) {
         int indexCount = (int) indexVector.size();
         for (int i = 0; i < indexCount; ++i) {
             indexVector[i] = baseValue++;
@@ -221,16 +218,16 @@ namespace {
 }
 
 void
-VtrRefinement::initializeSparseSelectionTags()
-{
+VtrRefinement::initializeSparseSelectionTags() {
+
     _parentFaceTag.resize(_parent->getNumFaces());
     _parentEdgeTag.resize(_parent->getNumEdges());
     _parentVertexTag.resize(_parent->getNumVertices());
 }
 
 void
-VtrRefinement::populateParentToChildMapping()
-{
+VtrRefinement::populateParentToChildMapping() {
+
     allocateParentToChildMapping();
 
     if (_uniform) {
@@ -285,8 +282,8 @@ VtrRefinement::populateParentToChildMapping()
 }
 
 void
-VtrRefinement::createChildComponents()
-{
+VtrRefinement::createChildComponents() {
+
     //
     //  Assign the child's component counts/inventory based on the child components identified:
     //
@@ -315,8 +312,8 @@ VtrRefinement::createChildComponents()
 //  pass through them to assemble the offsets?
 //
 void
-VtrRefinement::initializeFaceVertexCountsAndOffsets()
-{
+VtrRefinement::initializeFaceVertexCountsAndOffsets() {
+
     VtrLevel& child = *_child;
 
     //
@@ -331,8 +328,8 @@ VtrRefinement::initializeFaceVertexCountsAndOffsets()
     }
 }
 void
-VtrRefinement::initializeEdgeFaceCountsAndOffsets()
-{
+VtrRefinement::initializeEdgeFaceCountsAndOffsets() {
+
     //
     //  Be aware of scheme-specific decisions here, e.g.:
     //      - inspection of sparse child faces for edges from faces
@@ -350,8 +347,8 @@ VtrRefinement::initializeEdgeFaceCountsAndOffsets()
     //
 }
 void
-VtrRefinement::initializeVertexFaceCountsAndOffsets()
-{
+VtrRefinement::initializeVertexFaceCountsAndOffsets() {
+
     //
     //  Be aware of scheme-specific decisions here, e.g.:
     //      - no verts from parent faces for Loop
@@ -370,8 +367,8 @@ VtrRefinement::initializeVertexFaceCountsAndOffsets()
     //
 }
 void
-VtrRefinement::initializeVertexEdgeCountsAndOffsets()
-{
+VtrRefinement::initializeVertexEdgeCountsAndOffsets() {
+
     //
     //  Be aware of scheme-specific decisions here, e.g.:
     //      - no verts from parent faces for Loop
@@ -398,8 +395,8 @@ VtrRefinement::initializeVertexEdgeCountsAndOffsets()
 //  Face-vert and face-edge topology propagation -- faces only originate from faces:
 //
 void
-VtrRefinement::populateFaceVerticesFromParentFaces()
-{
+VtrRefinement::populateFaceVerticesFromParentFaces() {
+
     //
     //  Algorithm:
     //    - iterate through parent face-child-face vector (could use back-vector)
@@ -446,8 +443,8 @@ VtrRefinement::populateFaceVerticesFromParentFaces()
 }
 
 void
-VtrRefinement::populateFaceEdgesFromParentFaces()
-{
+VtrRefinement::populateFaceEdgesFromParentFaces() {
+
     //
     //  Algorithm:
     //    - iterate through parent face-child-face vector (could use back-vector)
@@ -520,8 +517,8 @@ VtrRefinement::populateFaceEdgesFromParentFaces()
 //  Edge-vert topology propagation -- two functions for face or edge origin:
 //
 void
-VtrRefinement::populateEdgeVerticesFromParentFaces()
-{
+VtrRefinement::populateEdgeVerticesFromParentFaces() {
+
     //
     //  For each parent face's edge-children:
     //    - identify parent face's vert-child (note it is shared by all)
@@ -546,8 +543,8 @@ VtrRefinement::populateEdgeVerticesFromParentFaces()
 }
 
 void
-VtrRefinement::populateEdgeVerticesFromParentEdges()
-{
+VtrRefinement::populateEdgeVerticesFromParentEdges() {
+
     //
     //  For each parent edge's edge-children:
     //    - identify parent edge's vert-child (potentially shared by both)
@@ -576,8 +573,8 @@ VtrRefinement::populateEdgeVerticesFromParentEdges()
 //  Edge-face topology propagation -- two functions for face or edge origin:
 //
 void
-VtrRefinement::populateEdgeFacesFromParentFaces()
-{
+VtrRefinement::populateEdgeFacesFromParentFaces() {
+
     //
     //  Note -- the edge-face counts/offsets vector is not known
     //  ahead of time and is populated incrementally, so we cannot
@@ -616,8 +613,8 @@ VtrRefinement::populateEdgeFacesFromParentFaces()
 }
 
 void
-VtrRefinement::populateEdgeFacesFromParentEdges()
-{
+VtrRefinement::populateEdgeFacesFromParentEdges() {
+
     //
     //  Note -- the edge-face counts/offsets vector is not known
     //  ahead of time and is populated incrementally, so we cannot
@@ -701,8 +698,8 @@ VtrRefinement::populateEdgeFacesFromParentEdges()
 //  ordering requirement here and inhibits concurrency.
 //
 void
-VtrRefinement::populateVertexFacesFromParentFaces()
-{
+VtrRefinement::populateVertexFacesFromParentFaces() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -740,9 +737,10 @@ VtrRefinement::populateVertexFacesFromParentFaces()
         child.trimVertexFaces(cVertIndex, cVertFaceCount);
     }
 }
+
 void
-VtrRefinement::populateVertexFacesFromParentEdges()
-{
+VtrRefinement::populateVertexFacesFromParentEdges() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -804,9 +802,10 @@ VtrRefinement::populateVertexFacesFromParentEdges()
         child.trimVertexFaces(cVertIndex, cVertFaceCount);
     }
 }
+
 void
-VtrRefinement::populateVertexFacesFromParentVertices()
-{
+VtrRefinement::populateVertexFacesFromParentVertices() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -851,8 +850,8 @@ VtrRefinement::populateVertexFacesFromParentVertices()
 //  Vert-edge topology propagation -- three functions for face, edge or vert origin:
 //
 void
-VtrRefinement::populateVertexEdgesFromParentFaces()
-{
+VtrRefinement::populateVertexEdgesFromParentFaces() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -887,8 +886,8 @@ VtrRefinement::populateVertexEdgesFromParentFaces()
     }
 }
 void
-VtrRefinement::populateVertexEdgesFromParentEdges()
-{
+VtrRefinement::populateVertexEdgesFromParentEdges() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -969,8 +968,8 @@ VtrRefinement::populateVertexEdgesFromParentEdges()
     }
 }
 void
-VtrRefinement::populateVertexEdgesFromParentVertices()
-{
+VtrRefinement::populateVertexEdgesFromParentVertices() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -1063,8 +1062,8 @@ VtrRefinement::populateVertexEdgesFromParentVertices()
 //    * interpolate -- now deferred externally
 //
 void
-VtrRefinement::refine(Options refineOptions)
-{
+VtrRefinement::refine(Options refineOptions) {
+
     assert(_parent && _child);
 
     _uniform = !refineOptions._sparse;
@@ -1140,8 +1139,8 @@ VtrRefinement::refine(Options refineOptions)
 //  child topology vectors and then appropriate assignment of them.
 //
 void
-VtrRefinement::subdivideTopology(Relations const& applyTo)
-{
+VtrRefinement::subdivideTopology(Relations const& applyTo) {
+
     const VtrLevel& parent = *_parent;
           VtrLevel& child  = *_child;
 
@@ -1366,12 +1365,12 @@ VtrRefinement::subdivideTopology(Relations const& applyTo)
 //  the edge sharpness given its varying computation methods.
 //
 void
-VtrRefinement::subdivideEdgeSharpness()
-{
-    SdcCrease creasing(_schemeOptions);
+VtrRefinement::subdivideEdgeSharpness() {
+
+    Sdc::Crease creasing(_schemeOptions);
 
     _child->_edgeSharpness.clear();
-    _child->_edgeSharpness.resize(_child->getNumEdges(), SdcCrease::SHARPNESS_SMOOTH);
+    _child->_edgeSharpness.resize(_child->getNumEdges(), Sdc::Crease::SHARPNESS_SMOOTH);
 
     //
     //  Edge sharpness is passed to child-edges using the parent edge and the
@@ -1402,7 +1401,7 @@ VtrRefinement::subdivideEdgeSharpness()
         VtrLevel::ETag& cEdgeTag   = _child->_edgeTags[cEdge];
 
         if (cEdgeTag._infSharp) {
-            cSharpness = SdcCrease::SHARPNESS_INFINITE;
+            cSharpness = Sdc::Crease::SHARPNESS_INFINITE;
         } else if (cEdgeTag._semiSharp) {
             VtrIndex       pEdge      = _childEdgeParentIndex[cEdge];
             VtrSharpness   pSharpness = _parent->_edgeSharpness[pEdge];
@@ -1420,18 +1419,18 @@ VtrRefinement::subdivideEdgeSharpness()
                 cSharpness = creasing.SubdivideEdgeSharpnessAtVertex(pSharpness, pVertEdges.size(),
                                                                          pVertEdgeSharpness);
             }
-            cEdgeTag._semiSharp = SdcCrease::IsSharp(cSharpness);
+            cEdgeTag._semiSharp = Sdc::Crease::IsSharp(cSharpness);
         }
     }
 }
 
 void
-VtrRefinement::subdivideVertexSharpness()
-{
-    SdcCrease creasing(_schemeOptions);
+VtrRefinement::subdivideVertexSharpness() {
+
+    Sdc::Crease creasing(_schemeOptions);
 
     _child->_vertSharpness.clear();
-    _child->_vertSharpness.resize(_child->getNumVertices(), SdcCrease::SHARPNESS_SMOOTH);
+    _child->_vertSharpness.resize(_child->getNumVertices(), Sdc::Crease::SHARPNESS_SMOOTH);
 
     //
     //  All child-verts originating from faces or edges are initialized as smooth
@@ -1446,14 +1445,14 @@ VtrRefinement::subdivideVertexSharpness()
         VtrLevel::VTag& cVertTag   = _child->_vertTags[cVert];
 
         if (cVertTag._infSharp) {
-            cSharpness = SdcCrease::SHARPNESS_INFINITE;
+            cSharpness = Sdc::Crease::SHARPNESS_INFINITE;
         } else if (cVertTag._semiSharp) {
             VtrIndex       pVert      = _childVertexParentIndex[cVert];
             VtrSharpness   pSharpness = _parent->_vertSharpness[pVert];
 
             cSharpness = creasing.SubdivideVertexSharpness(pSharpness);
 
-            if (!SdcCrease::IsSharp(cSharpness)) {
+            if (!Sdc::Crease::IsSharp(cSharpness)) {
                 //  Need to visit edge neighborhood to determine if still semisharp...
                 //      cVertTag._infSharp = ...?
                 //  See the "reclassify" method below...
@@ -1463,11 +1462,11 @@ VtrRefinement::subdivideVertexSharpness()
 }
 
 void
-VtrRefinement::reclassifySemisharpVertices()
-{
+VtrRefinement::reclassifySemisharpVertices() {
+
     typedef VtrLevel::VTag::VTagSize VTagSize;
 
-    SdcCrease creasing(_schemeOptions);
+    Sdc::Crease creasing(_schemeOptions);
 
     //
     //  Inspect all vertices derived from edges -- for those whose parent edges were semisharp,
@@ -1489,7 +1488,7 @@ VtrRefinement::reclassifySemisharpVertices()
             //  One child edge likely missing -- assume Crease if remaining edge semi-sharp:
             cVertTag._semiSharp = (VtrIndexIsValid(cEdges[0]) && _child->_edgeTags[cEdges[0]]._semiSharp) ||
                                   (VtrIndexIsValid(cEdges[1]) && _child->_edgeTags[cEdges[1]]._semiSharp);
-            cVertTag._rule      = (VTagSize)(cVertTag._semiSharp ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH);
+            cVertTag._rule      = (VTagSize)(cVertTag._semiSharp ? Sdc::Crease::RULE_CREASE : Sdc::Crease::RULE_SMOOTH);
         } else {
             int sharpEdgeCount = _child->_edgeTags[cEdges[0]]._semiSharp + _child->_edgeTags[cEdges[1]]._semiSharp;
 
@@ -1561,8 +1560,8 @@ VtrRefinement::reclassifySemisharpVertices()
 }
 
 void
-VtrRefinement::subdivideFVarChannels()
-{
+VtrRefinement::subdivideFVarChannels() {
+
 //printf("VtrRefinement::subdivideFVarChannels() -- level %d...\n", _child->_depth);
     assert(_child->_fvarChannels.size() == 0);
     assert(this->_fvarChannels.size() == 0);
@@ -1587,8 +1586,8 @@ VtrRefinement::subdivideFVarChannels()
 //  Methods to propagate/initialize component tags according to their parent component:
 //
 void
-VtrRefinement::propagateFaceTagsFromParentFaces()
-{
+VtrRefinement::propagateFaceTagsFromParentFaces() {
+
     //
     //  Tags for faces originating from faces are inherited from the parent face:
     //
@@ -1609,8 +1608,8 @@ VtrRefinement::propagateFaceTagsFromParentFaces()
     */
 }
 void
-VtrRefinement::propagateEdgeTagsFromParentFaces()
-{
+VtrRefinement::propagateEdgeTagsFromParentFaces() {
+
     //
     //  Tags for edges originating from faces are all constant:
     //
@@ -1625,8 +1624,8 @@ VtrRefinement::propagateEdgeTagsFromParentFaces()
     }
 }
 void
-VtrRefinement::propagateVertexTagsFromParentFaces()
-{
+VtrRefinement::propagateVertexTagsFromParentFaces() {
+
     //
     //  Similarly, tags for vertices originating from faces are all constant -- with the
     //  unfortunate exception of refining level 0, where the faces may be N-sided and so
@@ -1638,7 +1637,7 @@ VtrRefinement::propagateVertexTagsFromParentFaces()
     vTag._boundary    = 0;
     vTag._infSharp    = 0;
     vTag._semiSharp   = 0;
-    vTag._rule        = SdcCrease::RULE_SMOOTH;
+    vTag._rule        = Sdc::Crease::RULE_SMOOTH;
 
     if (_parent->_depth > 0) {
         for (VtrIndex cVert = 0; cVert < _childVertFromFaceCount; ++cVert) {
@@ -1654,8 +1653,8 @@ VtrRefinement::propagateVertexTagsFromParentFaces()
     }
 }
 void
-VtrRefinement::propagateEdgeTagsFromParentEdges()
-{
+VtrRefinement::propagateEdgeTagsFromParentEdges() {
+
     //
     //  Tags for edges originating from edges are inherited from the parent edge:
     //
@@ -1673,8 +1672,8 @@ VtrRefinement::propagateEdgeTagsFromParentEdges()
     */
 }
 void
-VtrRefinement::propagateVertexTagsFromParentEdges()
-{
+VtrRefinement::propagateVertexTagsFromParentEdges() {
+
     //
     //  Tags for vertices originating from edges are initialized according to the tags
     //  of the parent edge:
@@ -1693,12 +1692,12 @@ VtrRefinement::propagateVertexTagsFromParentEdges()
 
         cVertTag._semiSharp = pEdgeTag._semiSharp;
         cVertTag._rule = (VtrLevel::VTag::VTagSize)((pEdgeTag._semiSharp || pEdgeTag._infSharp)
-                       ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH);
+                       ? Sdc::Crease::RULE_CREASE : Sdc::Crease::RULE_SMOOTH);
     }
 }
 void
-VtrRefinement::propagateVertexTagsFromParentVertices()
-{
+VtrRefinement::propagateVertexTagsFromParentVertices() {
+
     //
     //  Tags for vertices originating from vertices are inherited from the parent vertex:
     //
@@ -1716,8 +1715,8 @@ VtrRefinement::propagateVertexTagsFromParentVertices()
 }
 
 void
-VtrRefinement::propagateComponentTags()
-{
+VtrRefinement::propagateComponentTags() {
+
     _child->_faceTags.resize(_child->getNumFaces());
     _child->_edgeTags.resize(_child->getNumEdges());
     _child->_vertTags.resize(_child->getNumVertices());
@@ -1733,8 +1732,8 @@ VtrRefinement::propagateComponentTags()
 }
 
 void
-VtrRefinement::populateChildToParentTags()
-{
+VtrRefinement::populateChildToParentTags() {
+
     ChildTag childTags[2][4];
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -1912,13 +1911,11 @@ VtrRefinement::populateChildToParentTags()
 }
 
 void
-VtrRefinement::populateChildToParentIndices()
-{
+VtrRefinement::populateChildToParentIndices() {
 }
 
 void
-VtrRefinement::populateChildToParentMapping()
-{
+VtrRefinement::populateChildToParentMapping() {
     assert(_quadSplit);
 
     _childVertexParentIndex.resize(_child->getNumVertices());
@@ -1936,8 +1933,8 @@ VtrRefinement::populateChildToParentMapping()
 
 #ifdef _VTR_COMPUTE_MASK_WEIGHTS_ENABLED
 void
-VtrRefinement::computeMaskWeights()
-{
+VtrRefinement::computeMaskWeights() {
+
     const VtrLevel& parent = *this->_parent;
           VtrLevel& child  = *this->_child;
 
@@ -1953,9 +1950,9 @@ VtrRefinement::computeMaskWeights()
     //
     //  Hard-coding this for Catmark temporarily for testing...
     //
-    assert(_schemeType == TYPE_CATMARK);
+    assert(_schemeType == Sdc::TYPE_CATMARK);
 
-    SdcScheme<TYPE_CATMARK> scheme(_schemeOptions);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_schemeOptions);
 
     if (_childVertFromFaceCount) {
         for (int pFace = 0; pFace < parent.getNumFaces(); ++pFace) {
@@ -1995,8 +1992,8 @@ VtrRefinement::computeMaskWeights()
             //
             eHood.SetIndex(pEdge);
 
-            SdcRule pRule = (parent._edgeSharpness[pEdge] > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-            SdcRule cRule = child.getVertexRule(cVert);
+            Sdc::Rule pRule = (parent._edgeSharpness[pEdge] > 0.0) ? Sdc::Crease::RULE_CREASE : Sdc::Crease::RULE_SMOOTH;
+            Sdc::Rule cRule = child.getVertexRule(cVert);
 
             scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
 
@@ -2032,8 +2029,8 @@ VtrRefinement::computeMaskWeights()
             //
             vHood.SetIndex(pVert, cVert);
 
-            SdcRule pRule = parent.vertRule(pVert);
-            SdcRule cRule = child.vertRule(cVert);
+            Sdc::Rule pRule = parent.vertRule(pVert);
+            Sdc::Rule cRule = child.vertRule(cVert);
 
             scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
 
@@ -2108,8 +2105,8 @@ namespace {
 }
 
 void
-VtrRefinement::markSparseChildComponents()
-{
+VtrRefinement::markSparseChildComponents() {
+
     assert(_parentEdgeTag.size() > 0);
     assert(_parentFaceTag.size() > 0);
     assert(_parentVertexTag.size() > 0);

@@ -127,11 +127,11 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
     assert((int)baseLevel._vertTags.size() == baseLevel.getNumVertices());
     assert((int)baseLevel._faceTags.size() == baseLevel.getNumFaces());
 
-    SdcOptions options = refiner.GetSchemeOptions();
-    SdcCrease  creasing(options);
+    Sdc::Options options = refiner.GetSchemeOptions();
+    Sdc::Crease  creasing(options);
 
-    bool sharpenCornerVerts    = (options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER);
-    bool sharpenNonManFeatures = (options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP);
+    bool sharpenCornerVerts    = (options.GetVVarBoundaryInterpolation() == Sdc::Options::VVAR_BOUNDARY_EDGE_AND_CORNER);
+    bool sharpenNonManFeatures = (options.GetNonManifoldInterpolation() == Sdc::Options::NON_MANIFOLD_SHARP);
 
     //
     //  Process the Edge tags first, as Vertex tags (notably the Rule) are dependent on
@@ -143,10 +143,10 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
 
         eTag._boundary = (baseLevel._edgeFaceCountsAndOffsets[eIndex*2 + 0] < 2);
         if (eTag._boundary || (eTag._nonManifold && sharpenNonManFeatures)) {
-            eSharpness = SdcCrease::SHARPNESS_INFINITE;
+            eSharpness = Sdc::Crease::SHARPNESS_INFINITE;
         }
-        eTag._infSharp  = SdcCrease::IsInfinite(eSharpness);
-        eTag._semiSharp = SdcCrease::IsSharp(eSharpness) && !eTag._infSharp;
+        eTag._infSharp  = Sdc::Crease::IsInfinite(eSharpness);
+        eTag._semiSharp = Sdc::Crease::IsSharp(eSharpness) && !eTag._infSharp;
     }
 
     //
@@ -181,25 +181,25 @@ FarTopologyRefinerFactoryBase::applyComponentTagsAndBoundarySharpness(FarTopolog
         //
         bool isCorner = (vFaces.size() == 1) && (vEdges.size() == 2);
         if (isCorner && sharpenCornerVerts) {
-            vSharpness = SdcCrease::SHARPNESS_INFINITE;
+            vSharpness = Sdc::Crease::SHARPNESS_INFINITE;
         } else if (vTag._nonManifold && sharpenNonManFeatures) {
             //  Don't sharpen the vertex if a non-manifold crease:
             if (nonManifoldEdgeCount != 2) {
-                vSharpness = SdcCrease::SHARPNESS_INFINITE;
+                vSharpness = Sdc::Crease::SHARPNESS_INFINITE;
             }
         }
 
-        vTag._infSharp = SdcCrease::IsInfinite(vSharpness);
+        vTag._infSharp = Sdc::Crease::IsInfinite(vSharpness);
 
-        vTag._semiSharp = SdcCrease::IsSemiSharp(vSharpness) || (semiSharpEdgeCount > 0);
+        vTag._semiSharp = Sdc::Crease::IsSemiSharp(vSharpness) || (semiSharpEdgeCount > 0);
 
         vTag._rule = (VtrLevel::VTag::VTagSize)creasing.DetermineVertexVertexRule(vSharpness, sharpEdgeCount);
 
         //
         //  Assign topological tags -- note that the "xordinary" (or conversely a "regular")
-        //  tag is still being considered, but regardless, it depends on the SdcScheme...
+        //  tag is still being considered, but regardless, it depends on the Sdc::Scheme...
         //
-        assert(refiner.GetSchemeType() == TYPE_CATMARK);
+        assert(refiner.GetSchemeType() == Sdc::TYPE_CATMARK);
 
         vTag._boundary = (vFaces.size() < vEdges.size());
         if (isCorner) {
@@ -263,9 +263,12 @@ FarTopologyRefinerFactory<FarTopologyRefinerFactoryBase::TopologyDescriptor>::as
             int        channelSize    = desc.fvarChannels[channel].numValues;
             int const* channelIndices = desc.fvarChannels[channel].valueIndices;
 
+#if defined(DEBUG) or defined(_DEBUG)
             int channelIndex = refiner.createFVarChannel(channelSize);
             assert(channelIndex == channel);
-
+#else
+            refiner.createFVarChannel(channelSize);
+#endif
             for (int face=0, idx=0; face<desc.numFaces; ++face) {
 
                 FarIndexArray dstFaceValues = refiner.getBaseFVarFaceValues(face, channel);

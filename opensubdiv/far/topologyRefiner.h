@@ -63,16 +63,16 @@ public:
 public:
 
     /// \brief Constructor
-    FarTopologyRefiner(SdcType type, SdcOptions options = SdcOptions());
+    FarTopologyRefiner(Sdc::Type type, Sdc::Options options = Sdc::Options());
 
     /// \brief Destructor
     ~FarTopologyRefiner();
 
     /// \brief Returns the subdivision scheme
-    SdcType    GetSchemeType() const    { return _subdivType; }
+    Sdc::Type    GetSchemeType() const    { return _subdivType; }
 
     /// \brief Returns the subdivision options
-    SdcOptions GetSchemeOptions() const { return _subdivOptions; }
+    Sdc::Options GetSchemeOptions() const { return _subdivOptions; }
 
     /// \brief Returns true if uniform subdivision has been applied
     bool IsUniform() const   { return _isUniform; }
@@ -241,7 +241,7 @@ public:
     }
 
     /// \brief Returns the subdivision rule of a given vertex (at 'level' of refinement)
-    SdcRule GetVertexRule(int level, Index vert) const {
+    Sdc::Crease::Rule GetVertexRule(int level, Index vert) const {
         return _levels[level].getVertexRule(vert);
     }
 
@@ -436,7 +436,7 @@ protected:
     int createFVarChannel(int numValues) {
         return _levels[0].createFVarChannel(numValues, _subdivOptions);
     }
-    int createFVarChannel(int numValues, SdcOptions const& options) {
+    int createFVarChannel(int numValues, Sdc::Options const& options) {
         return _levels[0].createFVarChannel(numValues, options);
     }
     void completeFVarChannelTopology(int channel = 0) { _levels[0].completeFVarChannelTopology(channel); }
@@ -466,8 +466,8 @@ private:
 
 private:
     //  The following should be private but leaving it open while still early...
-    SdcType    _subdivType;
-    SdcOptions _subdivOptions;
+    Sdc::Type    _subdivType;
+    Sdc::Options _subdivOptions;
 
     bool _isUniform;
     int  _maxLevel;
@@ -482,7 +482,7 @@ template <class T, class U>
 inline void
 FarTopologyRefiner::Interpolate(T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
@@ -511,7 +511,7 @@ inline void
 FarTopologyRefiner::interpolateChildVertsFromFaces(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
 
@@ -552,8 +552,8 @@ inline void
 FarTopologyRefiner::interpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
     const VtrLevel& child  = refinement.child();
@@ -577,8 +577,8 @@ FarTopologyRefiner::interpolateChildVertsFromEdges(
 
         eHood.SetIndex(edge);
 
-        SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-        SdcRule cRule = child.getVertexRule(cVert);
+        Sdc::Crease::Rule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? Sdc::Crease::RULE_CREASE : Sdc::Crease::RULE_SMOOTH;
+        Sdc::Crease::Rule cRule = child.getVertexRule(cVert);
 
         scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
 
@@ -610,8 +610,8 @@ inline void
 FarTopologyRefiner::interpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
     const VtrLevel& child  = refinement.child();
@@ -638,8 +638,8 @@ FarTopologyRefiner::interpolateChildVertsFromVerts(
 
         vHood.SetIndex(vert, cVert);
 
-        SdcRule pRule = parent.getVertexRule(vert);
-        SdcRule cRule = child.getVertexRule(cVert);
+        Sdc::Crease::Rule pRule = parent.getVertexRule(vert);
+        Sdc::Crease::Rule cRule = child.getVertexRule(cVert);
 
         scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
 
@@ -681,7 +681,7 @@ template <class T, class U>
 inline void
 FarTopologyRefiner::InterpolateVarying(T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
@@ -738,7 +738,7 @@ inline void
 FarTopologyRefiner::varyingInterpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     const VtrLevel& parent = refinement.parent();
 
@@ -766,7 +766,7 @@ inline void
 FarTopologyRefiner::varyingInterpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst) const {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     const VtrLevel& parent = refinement.parent();
 
@@ -793,7 +793,7 @@ template <class T, class U>
 inline void
 FarTopologyRefiner::InterpolateFaceVarying(T const * src, U * dst, int channel) const {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     for (int level=1; level<=GetMaxLevel(); ++level) {
 
@@ -822,7 +822,7 @@ inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromFaces(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
 
@@ -863,8 +863,8 @@ inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
-    assert(_subdivType == TYPE_CATMARK);
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
     const VtrLevel& child  = refinement.child();
@@ -908,8 +908,8 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromEdges(
             if (!isLinearFVar) {
                 eHood.SetIndex(edge);
 
-                SdcRule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? SdcCrease::RULE_CREASE : SdcCrease::RULE_SMOOTH;
-                SdcRule cRule = child.getVertexRule(cVert);
+                Sdc::Crease::Rule pRule = (parent.getEdgeSharpness(edge) > 0.0) ? Sdc::Crease::RULE_CREASE : Sdc::Crease::RULE_SMOOTH;
+                Sdc::Crease::Rule cRule = child.getVertexRule(cVert);
 
                 scheme.ComputeEdgeVertexMask(eHood, eMask, pRule, cRule);
             }
@@ -994,8 +994,8 @@ inline void
 FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
     VtrRefinement const & refinement, T const * src, U * dst, int channel) const {
 
-    assert(_subdivType == TYPE_CATMARK);
-    SdcScheme<TYPE_CATMARK> scheme(_subdivOptions);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
 
     const VtrLevel& parent = refinement.parent();
     const VtrLevel& child  = refinement.child();
@@ -1047,8 +1047,8 @@ FarTopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
 
             vHood.SetIndex(vert, cVert);
 
-            SdcRule pRule = parent.getVertexRule(vert);
-            SdcRule cRule = child.getVertexRule(cVert);
+            Sdc::Crease::Rule pRule = parent.getVertexRule(vert);
+            Sdc::Crease::Rule cRule = child.getVertexRule(cVert);
 
             scheme.ComputeVertexVertexMask(vHood, vMask, pRule, cRule);
 

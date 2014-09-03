@@ -31,12 +31,14 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
+
 //
 //  Types, constants and utilities related to semi-sharp creasing -- whose implementation is
 //  independent of the subdivision scheme.
 //
-//  SdcCrease is intended to be a light-weight, trivially constructed class that computes
-//  crease-related properties.  An instance of an SdcCrease is defined with a set of options
+//  Crease is intended to be a light-weight, trivially constructed class that computes
+//  crease-related properties.  An instance of an Crease is defined with a set of options
 //  that include current and future variations that will impact computations involving
 //  sharpness values.
 //
@@ -57,7 +59,7 @@ namespace OPENSUBDIV_VERSION {
 //  the sharpness values first, so keeping them available for re-use is a worthwhile consideration.
 //
 
-class SdcCrease {
+class Crease {
 public:
     //
     //  Constants and related queries of sharpness values:
@@ -84,9 +86,9 @@ public:
     };
 
 public:
-    SdcCrease() : _options() { }
-    SdcCrease(SdcOptions const& options) : _options(options) { }
-    ~SdcCrease() { }
+    Crease() : _options() { }
+    Crease(Options const& options) : _options(options) { }
+    ~Crease() { }
 
     //
     //  Considering labeling the current/default/normal creasing method as "simple" in contrast
@@ -94,7 +96,7 @@ public:
     //  and take some "simple" action in some cases to avoid the higher costs of dealing with
     //  more complex implementations.
     //
-    bool IsUniform() const { return _options.GetCreasingMethod() == SdcOptions::CREASE_UNIFORM; }
+    bool IsUniform() const { return _options.GetCreasingMethod() == Options::CREASE_UNIFORM; }
 
     //
     //  Optional sharp features:
@@ -185,7 +187,7 @@ protected:
     float decrementSharpness(float sharpness) const;
 
 private:
-    SdcOptions _options;
+    Options _options;
 };
 
 
@@ -193,65 +195,61 @@ private:
 //  Non-trivial inline declarations:
 //
 inline float
-SdcCrease::SharpenBoundaryEdge(float edgeSharpness) const
-{
-    return (_options.GetVVarBoundaryInterpolation() != SdcOptions::VVAR_BOUNDARY_NONE) ?
+Crease::SharpenBoundaryEdge(float edgeSharpness) const {
+
+    return (_options.GetVVarBoundaryInterpolation() != Options::VVAR_BOUNDARY_NONE) ?
             SHARPNESS_INFINITE : edgeSharpness;
 }
+
 inline float
-SdcCrease::SharpenBoundaryVertex(float vertexSharpness) const
-{
-    return (_options.GetVVarBoundaryInterpolation() == SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER) ?
+Crease::SharpenBoundaryVertex(float vertexSharpness) const {
+
+    return (_options.GetVVarBoundaryInterpolation() == Options::VVAR_BOUNDARY_EDGE_AND_CORNER) ?
             SHARPNESS_INFINITE : vertexSharpness;
 }
 
 inline float
-SdcCrease::SharpenNonManifoldEdge(float edgeSharpness) const
-{
-    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
-    //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
+Crease::SharpenNonManifoldEdge(float edgeSharpness) const {
 
-    return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
+    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
+    //  assert(_options.GetNonManifoldInterpolation() != Options::NON_MANIFOLD_NONE);
+
+    return (_options.GetNonManifoldInterpolation() == Options::NON_MANIFOLD_SHARP) ?
             SHARPNESS_INFINITE : edgeSharpness;
 }
 inline float
-SdcCrease::SharpenNonManifoldVertex(float vertexSharpness) const
-{
-    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
-    //  assert(_options.GetNonManifoldInterpolation() != SdcOptions::NON_MANIFOLD_NONE);
+Crease::SharpenNonManifoldVertex(float vertexSharpness) const {
 
-    return (_options.GetNonManifoldInterpolation() == SdcOptions::NON_MANIFOLD_SHARP) ?
+    //  Shouldn't we error/assert somehow if indicated that non-manifold not supported?
+    //  assert(_options.GetNonManifoldInterpolation() != Options::NON_MANIFOLD_NONE);
+
+    return (_options.GetNonManifoldInterpolation() == Options::NON_MANIFOLD_SHARP) ?
             SHARPNESS_INFINITE : vertexSharpness;
 }
 
 
 inline float
-SdcCrease::decrementSharpness(float sharpness) const
-{
-    if (IsSmooth(sharpness)) return SdcCrease::SHARPNESS_SMOOTH;  // redundant but most common
-    if (IsInfinite(sharpness)) return SdcCrease::SHARPNESS_INFINITE;
+Crease::decrementSharpness(float sharpness) const {
+
+    if (IsSmooth(sharpness)) return Crease::SHARPNESS_SMOOTH;  // redundant but most common
+    if (IsInfinite(sharpness)) return Crease::SHARPNESS_INFINITE;
     if (sharpness > 1.0f) return (sharpness - 1.0f);
-    return SdcCrease::SHARPNESS_SMOOTH;
+    return Crease::SHARPNESS_SMOOTH;
 }
 
 inline float
-SdcCrease::SubdivideUniformSharpness(float vertexOrEdgeSharpness) const
-{
+Crease::SubdivideUniformSharpness(float vertexOrEdgeSharpness) const {
+
     return decrementSharpness(vertexOrEdgeSharpness);
 }
 
 inline float
-SdcCrease::SubdivideVertexSharpness(float vertexSharpness) const
-{
+Crease::SubdivideVertexSharpness(float vertexSharpness) const {
+
     return decrementSharpness(vertexSharpness);
 }
 
-
-//
-//  For temporary backward compatibility in the existing body of code that already uses
-//  them -- unless we decide they are worth keeping:
-//
-typedef SdcCrease::Rule  SdcRule;
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

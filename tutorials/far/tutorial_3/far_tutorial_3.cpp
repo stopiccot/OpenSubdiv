@@ -164,11 +164,11 @@ int main(int, char **) {
 
     typedef FarTopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
-    SdcType type = OpenSubdiv::TYPE_CATMARK;
+    Sdc::Type type = OpenSubdiv::Sdc::TYPE_CATMARK;
 
-    SdcOptions options;
-    options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
-    options.SetFVarBoundaryInterpolation(SdcOptions::FVAR_BOUNDARY_BILINEAR);
+    Sdc::Options options;
+    options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
+    options.SetFVarBoundaryInterpolation(Sdc::Options::FVAR_BOUNDARY_BILINEAR);
 
     // Populate a topology descriptor with our raw data
     Descriptor desc;

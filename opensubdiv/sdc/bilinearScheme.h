@@ -31,6 +31,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
 
 //
 //  Current specializations:
@@ -38,9 +39,8 @@ namespace OPENSUBDIV_VERSION {
 template <>
 template <typename EDGE, typename MASK>
 void
-SdcScheme<TYPE_BILINEAR>::ComputeEdgeVertexMask(EDGE const& edge, MASK& mask,
-                                                SdcCrease::Rule, SdcCrease::Rule) const
-{
+Scheme<TYPE_BILINEAR>::ComputeEdgeVertexMask(EDGE const& edge, MASK& mask,
+                                                Crease::Rule, Crease::Rule) const {
     //  This should be inline, otherwise trivially replicate it:
     assignCreaseMaskForEdge(edge, mask);
 }
@@ -48,12 +48,13 @@ SdcScheme<TYPE_BILINEAR>::ComputeEdgeVertexMask(EDGE const& edge, MASK& mask,
 template <>
 template <typename VERTEX, typename MASK>
 void
-SdcScheme<TYPE_BILINEAR>::ComputeVertexVertexMask(VERTEX const& vertex, MASK& mask,
-                                                  SdcCrease::Rule, SdcCrease::Rule) const
-{
+Scheme<TYPE_BILINEAR>::ComputeVertexVertexMask(VERTEX const& vertex, MASK& mask,
+                                                  Crease::Rule, Crease::Rule) const {
     //  This should be inline, otherwise trivially replicate it:
     assignCornerMaskForVertex(vertex, mask);
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

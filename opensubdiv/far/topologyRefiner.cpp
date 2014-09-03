@@ -36,7 +36,7 @@ namespace OPENSUBDIV_VERSION {
 //  Relatively trivial construction/destruction -- the base level (level[0]) needs
 //  to be explicitly initialized after construction and refinement then applied
 //
-FarTopologyRefiner::FarTopologyRefiner(SdcType schemeType, SdcOptions schemeOptions) :
+FarTopologyRefiner::FarTopologyRefiner(Sdc::Type schemeType, Sdc::Options schemeOptions) :
     _subdivType(schemeType),
     _subdivOptions(schemeOptions),
     _isUniform(true),
@@ -110,7 +110,7 @@ FarTopologyRefiner::GetNumFVarValuesTotal(int channel) const {
 }
 
 
-template <SdcType SCHEME_TYPE> void
+template <Sdc::Type SCHEME_TYPE> void
 computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices) {
     int nfaces = coarseLevel.getNumFaces();
     ptexIndices.resize(nfaces+1);
@@ -118,7 +118,7 @@ computePtexIndices(VtrLevel const & coarseLevel, std::vector<int> & ptexIndices)
     for (int i = 0; i < nfaces; ++i) {
         ptexIndices[i] = ptexID;
         VtrIndexArray fverts = coarseLevel.getFaceVertices(i);
-        ptexID += fverts.size()==SdcTypeTraits<SCHEME_TYPE>::RegularFaceValence() ? 1 : fverts.size();
+        ptexID += fverts.size()==Sdc::TypeTraits<SCHEME_TYPE>::RegularFaceValence() ? 1 : fverts.size();
     }
     // last entry contains the number of ptex texture faces
     ptexIndices[nfaces]=ptexID;
@@ -127,12 +127,12 @@ void
 FarTopologyRefiner::initializePtexIndices() const {
     std::vector<int> & indices = const_cast<std::vector<int> &>(_ptexIndices);
     switch (GetSchemeType()) {
-        case TYPE_BILINEAR:
-            computePtexIndices<TYPE_BILINEAR>(_levels[0], indices); break;
-        case TYPE_CATMARK :
-            computePtexIndices<TYPE_CATMARK>(_levels[0], indices); break;
-        case TYPE_LOOP    :
-            computePtexIndices<TYPE_LOOP>(_levels[0], indices); break;
+        case Sdc::TYPE_BILINEAR:
+            computePtexIndices<Sdc::TYPE_BILINEAR>(_levels[0], indices); break;
+        case Sdc::TYPE_CATMARK :
+            computePtexIndices<Sdc::TYPE_CATMARK>(_levels[0], indices); break;
+        case Sdc::TYPE_LOOP    :
+            computePtexIndices<Sdc::TYPE_LOOP>(_levels[0], indices); break;
     }
 }
 int
@@ -162,7 +162,7 @@ void
 FarTopologyRefiner::RefineUniform(int maxLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     //
     //  Allocate the stack of levels and the refinements between them:
@@ -193,7 +193,7 @@ void
 FarTopologyRefiner::RefineAdaptive(int subdivLevel, bool fullTopology) {
 
     assert(_levels[0].getNumVertices() > 0);  //  Make sure the base level has been initialized
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     //
     //  Allocate the stack of levels and the refinements between them:
@@ -393,8 +393,8 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
 
         float vertSharpness = level.getVertexSharpness(vert);
         if (vertSharpness > 0.0) {
-            selectVertex = (level.getVertexFaces(vert).size() != 1) || (vertSharpness < SdcCrease::SHARPNESS_INFINITE);
-        } else if (level.getVertexRule(vert) == SdcCrease::RULE_DART) {
+            selectVertex = (level.getVertexFaces(vert).size() != 1) || (vertSharpness < Sdc::Crease::SHARPNESS_INFINITE);
+        } else if (level.getVertexRule(vert) == Sdc::Crease::RULE_DART) {
             selectVertex = true;
         } else {
             VtrIndexArray const vertFaces = level.getVertexFaces(vert);
@@ -435,7 +435,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
 
         if ((edgeSharpness <= 0.0) || (edgeFaces.size() < 2)) continue;
 
-        if (edgeSharpness < SdcCrease::SHARPNESS_INFINITE) {
+        if (edgeSharpness < Sdc::Crease::SHARPNESS_INFINITE) {
             //
             //  Semi-sharp -- definitely mark both end vertices (will have been marked above
             //  in future when semi-sharp vertex tag in place):
@@ -459,10 +459,10 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
 
                 bool edgeFaceIsRegular = false;
                 if (faceEdges.size() == 4) {
-                    int singularEdgeSum = (level.getEdgeSharpness(faceEdges[0]) >= SdcCrease::SHARPNESS_INFINITE) +
-                                          (level.getEdgeSharpness(faceEdges[1]) >= SdcCrease::SHARPNESS_INFINITE) +
-                                          (level.getEdgeSharpness(faceEdges[2]) >= SdcCrease::SHARPNESS_INFINITE) +
-                                          (level.getEdgeSharpness(faceEdges[3]) >= SdcCrease::SHARPNESS_INFINITE);
+                    int singularEdgeSum = (level.getEdgeSharpness(faceEdges[0]) >= Sdc::Crease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[1]) >= Sdc::Crease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[2]) >= Sdc::Crease::SHARPNESS_INFINITE) +
+                                          (level.getEdgeSharpness(faceEdges[3]) >= Sdc::Crease::SHARPNESS_INFINITE);
                     edgeFaceIsRegular = (singularEdgeSum == 1);
                 } else {
                     edgeFaceIsRegular = false;
@@ -479,7 +479,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelector(VtrSparseSelector& selector) 
                 VtrIndexArray const edgeVerts = level.getEdgeVertices(edge);
                 for (int i = 0; i < 2; ++i) {
                     if (!selector.isVertexIncomplete(edgeVerts[i]) &&
-                        (level.getVertexRule(edgeVerts[i]) != SdcCrease::RULE_CREASE)) {
+                        (level.getVertexRule(edgeVerts[i]) != Sdc::Crease::RULE_CREASE)) {
                         selector.selectVertexFaces(edgeVerts[i]);
                     }
                 }
@@ -517,14 +517,14 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& sele
 
             if (compFaceTag._xordinary || compFaceTag._semiSharp) {
                 selectFace = true;
-            } else if (compFaceTag._rule & SdcCrease::RULE_DART) {
+            } else if (compFaceTag._rule & Sdc::Crease::RULE_DART) {
                 //  Get this case out of the way before testing hard features
                 selectFace = true;
             } else if (compFaceTag._nonManifold) {
                 //  Warrants further inspection -- isolate for now
                 //    - will want to defer inf-sharp treatment to below
                 selectFace = true;
-            } else if (!(compFaceTag._rule & SdcCrease::RULE_SMOOTH)) {
+            } else if (!(compFaceTag._rule & Sdc::Crease::RULE_SMOOTH)) {
                 //  None of the vertices is Smooth, so we have all vertices
                 //  either Crease or Corner -- though some may be regular
                 //  patches, this currently warrants isolation as we only
@@ -551,7 +551,7 @@ FarTopologyRefiner::catmarkFeatureAdaptiveSelectorByFace(VtrSparseSelector& sele
 void
 FarTopologyRefiner::ComputeMaskWeights() {
 
-    assert(_subdivType == TYPE_CATMARK);
+    assert(_subdivType == Sdc::TYPE_CATMARK);
 
     for (int i = 0; i < _maxLevel; ++i) {
         _refinements[i].computeMaskWeights();

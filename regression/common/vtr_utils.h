@@ -31,30 +31,30 @@
 
 //------------------------------------------------------------------------------
 
-inline OpenSubdiv::SdcType
+inline OpenSubdiv::Sdc::Type
 GetSdcType(Shape const & shape) {
 
-    OpenSubdiv::SdcType type=OpenSubdiv::TYPE_CATMARK;
+    OpenSubdiv::Sdc::Type type=OpenSubdiv::Sdc::TYPE_CATMARK;
 
     switch (shape.scheme) {
-        case kBilinear: type = OpenSubdiv::TYPE_BILINEAR; break;
-        case kCatmark : type = OpenSubdiv::TYPE_CATMARK; break;
-        case kLoop    : type = OpenSubdiv::TYPE_LOOP; break;
+        case kBilinear: type = OpenSubdiv::Sdc::TYPE_BILINEAR; break;
+        case kCatmark : type = OpenSubdiv::Sdc::TYPE_CATMARK; break;
+        case kLoop    : type = OpenSubdiv::Sdc::TYPE_LOOP; break;
     }
     return type;
 }
 
-inline OpenSubdiv::SdcOptions
+inline OpenSubdiv::Sdc::Options
 GetSdcOptions(Shape const & shape) {
 
-    typedef OpenSubdiv::SdcOptions SdcOptions;
+    typedef OpenSubdiv::Sdc::Options Options;
 
-    SdcOptions result;
+    Options result;
 
-    result.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
-    result.SetCreasingMethod(SdcOptions::CREASE_UNIFORM);
-    result.SetTriangleSubdivision(SdcOptions::TRI_SUB_NORMAL);
-    result.SetNonManifoldInterpolation(SdcOptions::NON_MANIFOLD_SHARP);
+    result.SetVVarBoundaryInterpolation(Options::VVAR_BOUNDARY_EDGE_ONLY);
+    result.SetCreasingMethod(Options::CREASE_UNIFORM);
+    result.SetTriangleSubdivision(Options::TRI_SUB_NORMAL);
+    result.SetNonManifoldInterpolation(Options::NON_MANIFOLD_SHARP);
 
     for (int i=0; i<(int)shape.tags.size(); ++i) {
 
@@ -66,9 +66,9 @@ GetSdcOptions(Shape const & shape) {
                 continue;
             }
             switch( t->intargs[0] ) {
-                case 0 : result.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_NONE); break;
-                case 1 : result.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_AND_CORNER); break;
-                case 2 : result.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY); break;
+                case 0 : result.SetVVarBoundaryInterpolation(Options::VVAR_BOUNDARY_NONE); break;
+                case 1 : result.SetVVarBoundaryInterpolation(Options::VVAR_BOUNDARY_EDGE_AND_CORNER); break;
+                case 2 : result.SetVVarBoundaryInterpolation(Options::VVAR_BOUNDARY_EDGE_ONLY); break;
                 default: printf("unknown interpolate boundary : %d\n", t->intargs[0] ); break;
             }
         } else if (t->name=="facevaryinginterpolateboundary") {
@@ -77,15 +77,15 @@ GetSdcOptions(Shape const & shape) {
                 continue;
             }
             switch( t->intargs[0] ) {
-                case 0 : result.SetFVarBoundaryInterpolation(SdcOptions::FVAR_BOUNDARY_BILINEAR); break;
-                case 1 : result.SetFVarBoundaryInterpolation(SdcOptions::FVAR_BOUNDARY_EDGE_AND_CORNER); break;
-                case 2 : result.SetFVarBoundaryInterpolation(SdcOptions::FVAR_BOUNDARY_EDGE_ONLY); break;
-                case 3 : result.SetFVarBoundaryInterpolation(SdcOptions::FVAR_BOUNDARY_ALWAYS_SHARP); break;
+                case 0 : result.SetFVarBoundaryInterpolation(Options::FVAR_BOUNDARY_BILINEAR); break;
+                case 1 : result.SetFVarBoundaryInterpolation(Options::FVAR_BOUNDARY_EDGE_AND_CORNER); break;
+                case 2 : result.SetFVarBoundaryInterpolation(Options::FVAR_BOUNDARY_EDGE_ONLY); break;
+                case 3 : result.SetFVarBoundaryInterpolation(Options::FVAR_BOUNDARY_ALWAYS_SHARP); break;
                 default: printf("unknown interpolate boundary : %d\n", t->intargs[0] ); break;
             }
         } else if (t->name=="facevaryingpropagatecorners") {
             if ((int)t->intargs.size()==1) {
-                // XXXX no propagate corners in SdcOptions
+                // XXXX no propagate corners in Options
                 assert(0);
             } else
                 printf( "expecting single int argument for \"facevaryingpropagatecorners\"\n" );
@@ -103,9 +103,9 @@ GetSdcOptions(Shape const & shape) {
             }
 
             if( t->stringargs[0]=="normal" )
-                result.SetCreasingMethod(SdcOptions::CREASE_UNIFORM);
+                result.SetCreasingMethod(Options::CREASE_UNIFORM);
             else if( t->stringargs[0]=="chaikin" )
-                result.SetCreasingMethod(SdcOptions::CREASE_CHAIKIN);
+                result.SetCreasingMethod(Options::CREASE_CHAIKIN);
             else
                 printf("the \"creasemethod\" tag only accepts \"normal\" or \"chaikin\" as value (%s)\n", t->stringargs[0].c_str());
         }

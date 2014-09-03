@@ -85,8 +85,8 @@ int g_currentShape = 0;
 int   g_frame = 0,
       g_repeatCount = 0;
 
-OpenSubdiv::SdcOptions::FVarBoundaryInterpolation  g_fvarBoundary =
-    OpenSubdiv::SdcOptions::FVAR_BOUNDARY_BILINEAR;
+OpenSubdiv::Sdc::Options::FVarBoundaryInterpolation  g_fvarBoundary =
+    OpenSubdiv::Sdc::Options::FVAR_BOUNDARY_BILINEAR;
 
 int   g_fvarPropagateCorners = 0;
 
@@ -315,8 +315,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, Scheme scheme = kCatmark) 
     Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
     // create Vtr mesh (topology)
-    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
-    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+    OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
+    OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
     sdcoptions.SetFVarBoundaryInterpolation(g_fvarBoundary);
 
@@ -1093,7 +1093,7 @@ callbackAdaptive(bool checked, int /* a */) {
 static void
 callbackBoundary(int b) {
 
-    typedef OpenSubdiv::SdcOptions SdcOptions;
+    typedef OpenSubdiv::Sdc::Options SdcOptions;
 
     switch (b) {
         case 0 : g_fvarBoundary = SdcOptions::FVAR_BOUNDARY_BILINEAR; break;
@@ -1135,7 +1135,7 @@ initHUD() {
         g_hud.AddRadioButton(3, level, i == 2, 10, 270 + i*20, callbackLevel, i, '0'+(i%10));
     }
 
-    typedef OpenSubdiv::SdcOptions SdcOptions;
+    typedef OpenSubdiv::Sdc::Options SdcOptions;
 
     g_hud.AddRadioButton(2, "Boundary none (B)",
                          g_fvarBoundary == SdcOptions::FVAR_BOUNDARY_BILINEAR,

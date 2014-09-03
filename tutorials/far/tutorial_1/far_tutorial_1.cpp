@@ -162,13 +162,13 @@ struct Converter {
 
 public:
 
-    SdcType GetType() const {
-        return TYPE_CATMARK;
+    Sdc::Type GetType() const {
+        return Sdc::TYPE_CATMARK;
     }
 
-    SdcOptions GetOptions() const {
-        SdcOptions options;
-        options.SetVVarBoundaryInterpolation(SdcOptions::VVAR_BOUNDARY_EDGE_ONLY);
+    Sdc::Options GetOptions() const {
+        Sdc::Options options;
+        options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
         return options;
     }
 

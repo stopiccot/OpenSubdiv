@@ -59,8 +59,7 @@ VtrFVarRefinement::VtrFVarRefinement(VtrRefinement const& refinement,
     _childSiblingFromVertCount(0) {
 }
 
-VtrFVarRefinement::~VtrFVarRefinement()
-{
+VtrFVarRefinement::~VtrFVarRefinement() {
 }
 
 
@@ -70,8 +69,8 @@ VtrFVarRefinement::~VtrFVarRefinement()
 //  fully refined child components.
 //
 void
-VtrFVarRefinement::applyRefinement()
-{
+VtrFVarRefinement::applyRefinement() {
+
     //
     //  Transfer basic properties from the parent to child level:
     //
@@ -115,8 +114,8 @@ VtrFVarRefinement::applyRefinement()
 //  sparse boundary components generally occur where face-varying data is continuous.
 //
 void
-VtrFVarRefinement::estimateAndAllocateChildValues()
-{
+VtrFVarRefinement::estimateAndAllocateChildValues() {
+
     int maxVertexValueCount = _refinement._childVertFromFaceCount;
 
     VtrIndex cVert = _refinement._childVertFromFaceCount;
@@ -157,8 +156,8 @@ VtrFVarRefinement::estimateAndAllocateChildValues()
 }
 
 void
-VtrFVarRefinement::trimAndFinalizeChildValues()
-{
+VtrFVarRefinement::trimAndFinalizeChildValues() {
+
     _child->_valueCount = _child->getNumVertices() + _childSiblingFromEdgeCount + _childSiblingFromVertCount;
 
     _child->_vertValueTags.resize(_child->_valueCount);
@@ -175,8 +174,8 @@ VtrFVarRefinement::trimAndFinalizeChildValues()
 }
 
 inline int
-VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEdge, int siblingOffset)
-{
+VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEdge, int siblingOffset) {
+
     //  If we have a boundary edge with a mismatched end vertex, we only have one
     //  value and such cases were already initialized on construction, so return:
     //
@@ -227,8 +226,8 @@ VtrFVarRefinement::populateChildValuesForEdgeVertex(VtrIndex cVert, VtrIndex pEd
 }
 
 inline int
-VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex pVert, int siblingOffset)
-{
+VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex pVert, int siblingOffset) {
+
     //
     //  We should not be getting incomplete vertex-vertices from feature-adaptive
     //  refinement (as neighboring vertices will be face-vertices or edge-vertices).
@@ -258,8 +257,8 @@ VtrFVarRefinement::populateChildValuesForVertexVertex(VtrIndex cVert, VtrIndex p
 }
 
 void
-VtrFVarRefinement::populateChildValues()
-{
+VtrFVarRefinement::populateChildValues() {
+
     //  For values from face-vertices, they are guaranteed to be continuous, so there is
     //  nothing we need do here -- other than skipping them and starting with the first
     //  child vertex after all face vertices.
@@ -297,8 +296,8 @@ VtrFVarRefinement::populateChildValues()
 }
 
 void
-VtrFVarRefinement::propagateEdgeTags()
-{
+VtrFVarRefinement::propagateEdgeTags() {
+
     //
     //  Edge tags correspond to child edges and originate from faces or edges:
     //      Face-edges:
@@ -323,8 +322,8 @@ VtrFVarRefinement::propagateEdgeTags()
 }
 
 void
-VtrFVarRefinement::propagateValueTags()
-{
+VtrFVarRefinement::propagateValueTags() {
+
     //
     //  Value tags correspond to vertex-values and originate from all three sources:
     //      Face-values:

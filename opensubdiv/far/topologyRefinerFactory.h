@@ -140,7 +140,7 @@ public:
     ///
     /// return               An instance of FarTopologyRefiner or NULL for failure
     ///
-    static FarTopologyRefiner* Create(SdcType type, SdcOptions options, MESH const& mesh);
+    static FarTopologyRefiner* Create(Sdc::Type type, Sdc::Options options, MESH const& mesh);
 
 protected:
     //
@@ -172,7 +172,7 @@ protected:
 //
 template <class MESH>
 FarTopologyRefiner*
-FarTopologyRefinerFactory<MESH>::Create(SdcType type, SdcOptions options, MESH const& mesh) {
+FarTopologyRefinerFactory<MESH>::Create(Sdc::Type type, Sdc::Options options, MESH const& mesh) {
 
     FarTopologyRefiner *refiner = new FarTopologyRefiner(type, options);
 

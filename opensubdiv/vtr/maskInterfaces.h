@@ -116,14 +116,12 @@ public:  //  Generic interface expected of <typename EDGE>:
     int   GetNumFaces() const { return _level->getEdgeFaces(_eIndex).size(); }
     float GetSharpness() const { return _level->getEdgeSharpness(_eIndex); }
 
-    void GetChildSharpnesses(SdcCrease const&, float s[2]) const
-    {
+    void GetChildSharpnesses(Sdc::Crease const&, float s[2]) const {
         //  Need to use the VtrRefinement here to identify the two child edges:
         s[0] = s[1] = GetSharpness() - 1.0f;
     }
 
-    void GetNumVerticesPerFace(int vertsPerFace[]) const
-    {
+    void GetNumVerticesPerFace(int vertsPerFace[]) const {
         VtrIndexArray const eFaces = _level->getEdgeFaces(_eIndex);
         for (int i = 0; i < eFaces.size(); ++i) {
             vertsPerFace[i] = _level->getFaceVertices(eFaces[i]).size();
@@ -158,8 +156,7 @@ public:  //  Generic interface expected of <typename VERT>:
     int GetNumFaces() const { return _fCount; }
 
     float  GetSharpness() const { return _parent->getVertexSharpness(_pIndex); }
-    float* GetSharpnessPerEdge(float pSharpness[]) const
-    {
+    float* GetSharpnessPerEdge(float pSharpness[]) const {
         VtrIndexArray const pEdges = _parent->getVertexEdges(_pIndex);
         for (int i = 0; i < _eCount; ++i) {
             pSharpness[i] = _parent->getEdgeSharpness(pEdges[i]);
@@ -167,9 +164,8 @@ public:  //  Generic interface expected of <typename VERT>:
         return pSharpness;
     }
 
-    float  GetChildSharpness(SdcCrease const&) const { return _child->getVertexSharpness(_cIndex); }
-    float* GetChildSharpnessPerEdge(SdcCrease const& crease, float cSharpness[]) const
-    {
+    float  GetChildSharpness(Sdc::Crease const&) const { return _child->getVertexSharpness(_cIndex); }
+    float* GetChildSharpnessPerEdge(Sdc::Crease const& crease, float cSharpness[]) const {
         float * pSharpness = (float *)alloca(_eCount*sizeof(float));
         GetSharpnessPerEdge(pSharpness);
         crease.SubdivideEdgeSharpnessesAroundVertex(_eCount, pSharpness, cSharpness);

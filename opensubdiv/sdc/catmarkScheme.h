@@ -33,9 +33,10 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
 
 //
-//  Specializations for SdcScheme<TYPE_CATMARK>:
+//  Specializations for Scheme<TYPE_CATMARK>:
 //
 
 //
@@ -50,8 +51,8 @@ namespace OPENSUBDIV_VERSION {
 template <>
 template <typename EDGE, typename MASK>
 inline void
-SdcScheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) const
-{
+Scheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) const {
+
     typedef typename MASK::Weight Weight;
 
     int faceCount = edge.GetNumFaces();
@@ -68,7 +69,7 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) c
     //
     bool face0IsTri = false;
     bool face1IsTri = false;
-    bool useTriangleOption = (_options.GetTriangleSubdivision() != SdcOptions::TRI_SUB_NORMAL);
+    bool useTriangleOption = (_options.GetTriangleSubdivision() != Options::TRI_SUB_NORMAL);
     if (useTriangleOption) {
         if (faceCount == 2) {
             //
@@ -122,8 +123,8 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForEdge(EDGE const& edge, MASK& mask) c
 template <>
 template <typename VERTEX, typename MASK>
 inline void
-SdcScheme<TYPE_CATMARK>::assignCreaseMaskForVertex(VERTEX const& vertex, MASK& mask, float const edgeSharpness[]) const
-{
+Scheme<TYPE_CATMARK>::assignCreaseMaskForVertex(VERTEX const& vertex, MASK& mask, float const edgeSharpness[]) const {
+
     typedef typename MASK::Weight Weight;
 
     int valence = vertex.GetNumEdges();
@@ -160,8 +161,8 @@ SdcScheme<TYPE_CATMARK>::assignCreaseMaskForVertex(VERTEX const& vertex, MASK& m
 template <>
 template <typename VERTEX, typename MASK>
 inline void
-SdcScheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& mask) const
-{
+Scheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& mask) const {
+
     typedef typename MASK::Weight Weight;
 
     //
@@ -193,6 +194,8 @@ SdcScheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& m
         mask.FaceWeight(i) = fWeight;
     }
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

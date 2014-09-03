@@ -40,6 +40,11 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
     OpenSubdiv::OsdOmpComputeController * g_ompComputeController = NULL;
 #endif
 
+#ifdef OPENSUBDIV_HAS_TBB
+    #include <osd/tbbComputeController.h>
+    OpenSubdiv::OsdTbbComputeController *g_tbbComputeController = NULL;
+#endif
+
 #undef OPENSUBDIV_HAS_OPENCL    // XXX: dyu OpenCL D3D11 interop needs work...
 #ifdef OPENSUBDIV_HAS_OPENCL
     #include <osd/clD3D11VertexBuffer.h>
@@ -86,6 +91,8 @@ static const char *shaderSource =
 #include <algorithm>
 #include <cfloat>
 #include <fstream>
+#include <iostream>
+#include <iterator>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -271,8 +278,8 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
     Shape * shape = Shape::parseObj(shapeDesc.data.c_str(), shapeDesc.scheme);
 
     // create Vtr mesh (topology)
-    OpenSubdiv::SdcType       sdctype = GetSdcType(*shape);
-    OpenSubdiv::SdcOptions sdcoptions = GetSdcOptions(*shape);
+    OpenSubdiv::Sdc::Type       sdctype = GetSdcType(*shape);
+    OpenSubdiv::Sdc::Options sdcoptions = GetSdcOptions(*shape);
 
     OpenSubdiv::FarTopologyRefiner * refiner =
         OpenSubdiv::FarTopologyRefinerFactory<Shape>::Create(sdctype, sdcoptions, *shape);
@@ -345,14 +352,14 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
         if (not g_tbbComputeController) {
             g_tbbComputeController = new OpenSubdiv::OsdTbbComputeController();
         }
-        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuGLVertexBuffer,
+        g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCpuD3D11VertexBuffer,
                                          OpenSubdiv::OsdTbbComputeController,
-                                         OpenSubdiv::OsdGLDrawContext>(
+                                         OpenSubdiv::OsdD3D11DrawContext>(
                                                 g_tbbComputeController,
                                                 refiner,
                                                 numVertexElements,
                                                 numVaryingElements,
-                                                level, bits);
+                                                level, bits, g_pd3dDeviceContext);
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     } else if(kernel == kCL) {
@@ -945,6 +952,10 @@ quit() {
 
 #ifdef OPENSUBDIV_HAS_OPENMP
     delete g_ompComputeController;
+#endif
+
+#ifdef OPENSUBDIV_HAS_TBB
+    delete g_tbbComputeController;
 #endif
 
 #ifdef OPENSUBDIV_HAS_OPENCL

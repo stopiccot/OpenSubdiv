@@ -29,6 +29,8 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
+
 //
 //  Enumerated type for all subdivisions schemes supported by OpenSubdiv:
 //
@@ -40,7 +42,7 @@ namespace OPENSUBDIV_VERSION {
 //  Note there is a similar Scheme enum in FarSubdivisionTables that includes UNKNOWN=0
 //  along with the same three constants.
 //
-enum SdcType {
+enum Type {
     TYPE_BILINEAR,
     TYPE_CATMARK,
     TYPE_LOOP
@@ -60,28 +62,32 @@ enum SdcType {
 //
 //  Question:
 //      Do we really need/want these TypeTraits, or will static methods on another
-//  class specialized for the type suffice, i.e. SdcScheme<SCHEME_TYPE>?
-//      If yes, there will be little in here other than SdcType, which we may want
+//  class specialized for the type suffice, i.e. Scheme<SCHEME_TYPE>?
+//      If yes, there will be little in here other than Sdc::Type, which we may want
 //  to merge into <sdc/options.h>.
 //
-enum SdcSplit {
+enum Split {
     SPLIT_TO_QUADS,  // used by Catmark and Bilinear
     SPLIT_TO_TRIS,   // used by Loop
     SPLIT_HYBRID     // not currently used (potential future extension)
 };
 
-template <SdcType SCHEME_TYPE>
-struct SdcTypeTraits
-{
-    static SdcType Type() { return SCHEME_TYPE; }
+template <Type SCHEME_TYPE>
+struct TypeTraits {
 
-    static SdcSplit    TopologicalSplitType();
+    static Type GetType() {
+        return SCHEME_TYPE;
+    }
+
+    static Split       TopologicalSplitType();
     static int         LocalNeighborhoodSize();
     static int         RegularVertexValence();
     static int         RegularFaceValence();
     static char const* Label();
 };
 
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 using namespace OPENSUBDIV_VERSION;

@@ -26,45 +26,43 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
+namespace Sdc {
 
 //
-//  Specializations for SdcTypeTraits<TYPE_LOOP>:
+//  Specializations for TypeTraits<TYPE_LOOP>:
 //
 template <>
-SdcSplit
-SdcTypeTraits<TYPE_LOOP>::TopologicalSplitType()
-{
+Split
+TypeTraits<TYPE_LOOP>::TopologicalSplitType() {
     return SPLIT_TO_TRIS;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_LOOP>::LocalNeighborhoodSize()
-{
+TypeTraits<TYPE_LOOP>::LocalNeighborhoodSize() {
     return 1;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_LOOP>::RegularVertexValence()
-{
+TypeTraits<TYPE_LOOP>::RegularVertexValence() {
     return 6;
 }
 
 template <>
 int
-SdcTypeTraits<TYPE_LOOP>::RegularFaceValence()
-{
+TypeTraits<TYPE_LOOP>::RegularFaceValence() {
     return 3;
 }
 
 template <>
 char const*
-SdcTypeTraits<TYPE_LOOP>::Label()
-{
+TypeTraits<TYPE_LOOP>::Label() {
     //  Might need to declare static here to keep all compilers happy...
     return "loop";
 }
+
+} // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
 } // end namespace OpenSubdiv

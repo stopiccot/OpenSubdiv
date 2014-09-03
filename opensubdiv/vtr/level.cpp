@@ -58,12 +58,10 @@ VtrLevel::VtrLevel() :
     _vertCount(0),
     _depth(0),
     _maxEdgeFaces(0),
-    _maxValence(0)
-{
+    _maxValence(0) {
 }
 
-VtrLevel::~VtrLevel()
-{
+VtrLevel::~VtrLevel() {
     for (int i = 0; i < (int)_fvarChannels.size(); ++i) {
         delete _fvarChannels[i];
     }
@@ -97,8 +95,8 @@ VtrLevel::~VtrLevel()
 //          - bool validate(ValidateOptions const& options) const;
 //
 bool
-VtrLevel::validateTopology() const
-{
+VtrLevel::validateTopology() const {
+
     //
     //  Verify internal topological consistency (eventually a Level method?):
     //      - each face-vert has corresponding vert-face (and child)
@@ -251,8 +249,8 @@ VtrLevel::validateTopology() const
 namespace {
     template <typename INT_TYPE>
     void
-    printIndexArray(VtrArray<INT_TYPE> const& array)
-    {
+    printIndexArray(VtrArray<INT_TYPE> const& array) {
+
         printf("%d [%d", array.size(), array[0]);
         for (int i = 1; i < array.size(); ++i) {
             printf(" %d", array[i]);
@@ -261,14 +259,13 @@ namespace {
     }
 
     const char*
-    ruleString(SdcRule rule)
-    {
+    ruleString(Sdc::Crease::Rule rule) {
         switch (rule) {
-            case SdcCrease::RULE_UNKNOWN: return "<uninitialized>";
-            case SdcCrease::RULE_SMOOTH:  return "Smooth";
-            case SdcCrease::RULE_DART:    return "Dart";
-            case SdcCrease::RULE_CREASE:  return "Crease";
-            case SdcCrease::RULE_CORNER:  return "Corner";
+            case Sdc::Crease::RULE_UNKNOWN: return "<uninitialized>";
+            case Sdc::Crease::RULE_SMOOTH:  return "Smooth";
+            case Sdc::Crease::RULE_DART:    return "Dart";
+            case Sdc::Crease::RULE_CREASE:  return "Crease";
+            case Sdc::Crease::RULE_CORNER:  return "Corner";
             default:
                 assert(0);
         }
@@ -277,8 +274,8 @@ namespace {
 }
 
 void
-VtrLevel::print(const VtrRefinement* pRefinement) const
-{
+VtrLevel::print(const VtrRefinement* pRefinement) const {
+
     bool printFaceVerts      = true;
     bool printFaceEdges      = true;
     bool printFaceChildVerts = false;
@@ -399,7 +396,7 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
     for (int i = 0; printVertTags && i < (int)_vertTags.size(); ++i) {
         VTag const& vTag = _vertTags[i];
         printf("        vert %4d:", i);
-        printf("  rule = %s",      ruleString((SdcRule)vTag._rule));
+        printf("  rule = %s",      ruleString((Sdc::Crease::Rule)vTag._rule));
         printf(", boundary = %d",  (int)vTag._boundary);
         printf(", xordinary = %d", (int)vTag._xordinary);
         printf(", semiSharp = %d", (int)vTag._semiSharp);
@@ -413,8 +410,7 @@ VtrLevel::print(const VtrRefinement* pRefinement) const
 namespace {
     template <typename TAG_TYPE, typename INT_TYPE>
     void
-    combineTags(TAG_TYPE& dstTag, TAG_TYPE const& srcTag)
-    {
+    combineTags(TAG_TYPE& dstTag, TAG_TYPE const& srcTag) {
         INT_TYPE const* srcInt = reinterpret_cast<INT_TYPE const*>(&srcTag);
         INT_TYPE *      dstInt = reinterpret_cast<INT_TYPE *>     (&dstTag);
 
@@ -423,8 +419,8 @@ namespace {
 }
 
 VtrLevel::VTag
-VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
-{
+VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const {
+
     VTag compTag = _vertTags[faceVerts[0]];
 
     for (int i = 1; i < faceVerts.size(); ++i) {
@@ -447,7 +443,7 @@ VtrLevel::getFaceCompositeVTag(VtrIndexArray const& faceVerts) const
 //  patch tables factory is preferable.
 //
 //  Note a couple of nuisances...
-//      - these are currently specialized methods for quad-meshes 
+//      - these are currently specialized methods for quad-meshes
 //      - debatable whether we should include the four face-verts in the face functions
 //          - we refer to the result as a "patch" when we do
 //          - otherwise a "ring" of vertices is more appropriate
@@ -458,8 +454,8 @@ namespace {
     inline INT_TYPE fastMod4(INT_TYPE value) { return (value & 0x3); }
 
     inline int
-    fastFindIn4(VtrIndex value, VtrIndexArray const& array)
-    {
+    fastFindIn4(VtrIndex value, VtrIndexArray const& array) {
+
         if (value == array[0]) return 0;
         if (value == array[1]) return 1;
         if (value == array[2]) return 2;
@@ -480,8 +476,8 @@ namespace {
 //  the last face.
 //
 int
-VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int vOffset, int ringVerts[]) const
-{
+VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int vOffset, int ringVerts[]) const {
+
     VtrLevel const& level = *this;
 
     VtrIndexArray vEdges = level.getVertexEdges(vIndex);
@@ -539,8 +535,9 @@ VtrLevel::gatherManifoldVertexRingFromIncidentQuads(VtrIndex vIndex, int vOffset
 //         |     |     |     |
 //
 int
-VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int ringVerts[], int rotation) const
-{
+VtrLevel::gatherQuadRegularInteriorPatchVertices(
+    VtrIndex thisFace, unsigned int ringVerts[], int rotation) const {
+
     VtrLevel const& level = *this;
 
     //
@@ -608,8 +605,9 @@ VtrLevel::gatherQuadRegularInteriorPatchVertices(VtrIndex thisFace, unsigned int
 //         |     |     |     |
 //
 int
-VtrLevel::gatherQuadRegularBoundaryPatchVertices(VtrIndex face, int unsigned ringVerts[], int boundaryEdgeInFace) const
-{
+VtrLevel::gatherQuadRegularBoundaryPatchVertices(
+    VtrIndex face, int unsigned ringVerts[], int boundaryEdgeInFace) const {
+
     VtrLevel const& level = *this;
 
     int interiorEdgeInFace = fastMod4(boundaryEdgeInFace + 2);
@@ -709,8 +707,9 @@ VtrLevel::gatherQuadRegularBoundaryPatchVertices(VtrIndex face, int unsigned rin
 //      |     |     |
 //
 int
-VtrLevel::gatherQuadRegularCornerPatchVertices(VtrIndex face, unsigned int ringVerts[], int cornerVertInFace) const
-{
+VtrLevel::gatherQuadRegularCornerPatchVertices(
+    VtrIndex face, unsigned int ringVerts[], int cornerVertInFace) const {
+
     VtrLevel const& level = *this;
 
     int interiorFaceVert = fastMod4(cornerVertInFace + 2);
@@ -829,8 +828,8 @@ namespace {
             _compCount(0),
             _memberCountPerComp(membersPerComp),
             _countsAndOffsets(countAndOffsets),
-            _regIndices(indices)
-    {
+            _regIndices(indices) {
+
         _compCount = (int) _countsAndOffsets.size() / 2;
 
         for (int i = 0; i < _compCount; ++i) {
@@ -841,8 +840,8 @@ namespace {
     }
 
     inline VtrIndexArray
-    DynamicRelation::getCompMembers(VtrIndex compIndex)
-    {
+    DynamicRelation::getCompMembers(VtrIndex compIndex) {
+
         int count = _countsAndOffsets[2*compIndex];
         if (count > _memberCountPerComp) {
             VtrIndexVector & irregMembers = _irregIndices[compIndex];
@@ -853,8 +852,8 @@ namespace {
         }
     }
     inline void
-    DynamicRelation::appendCompMember(VtrIndex compIndex, VtrIndex memberValue)
-    {
+    DynamicRelation::appendCompMember(VtrIndex compIndex, VtrIndex memberValue) {
+
         int count  = _countsAndOffsets[2*compIndex];
         int offset = _countsAndOffsets[2*compIndex+1];
 
@@ -874,8 +873,8 @@ namespace {
         _countsAndOffsets[2*compIndex] ++;
     }
     inline void
-    DynamicRelation::appendComponent()
-    {
+    DynamicRelation::appendComponent() {
+
         _countsAndOffsets.push_back(0);
         _countsAndOffsets.push_back(_compCount * _memberCountPerComp);
 
@@ -883,8 +882,8 @@ namespace {
         _regIndices.resize(_compCount * _memberCountPerComp);
     }
     void
-    DynamicRelation::compressMemberIndices()
-    {
+    DynamicRelation::compressMemberIndices() {
+
         if (_irregIndices.size() == 0) {
             int memberCount = _countsAndOffsets[0];
             for (int i = 1; i < _compCount; ++i) {
@@ -940,8 +939,8 @@ namespace {
 //  Methods to populate the missing topology relations of the VtrLevel:
 //
 inline VtrIndex
-VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Edges) const
-{
+VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Edges) const {
+
     if (v0Index != v1Index) {
         for (int j = 0; j < v0Edges.size(); ++j) {
             VtrIndexArray eVerts = this->getEdgeVertices(v0Edges[j]);
@@ -961,17 +960,16 @@ VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index, VtrIndexArray const& v0Ed
 }
 
 VtrIndex
-VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index) const
-{
+VtrLevel::findEdge(VtrIndex v0Index, VtrIndex v1Index) const {
     return this->findEdge(v0Index, v1Index, this->getVertexEdges(v0Index));
 }
 
 void
-VtrLevel::completeTopologyFromFaceVertices()
-{
+VtrLevel::completeTopologyFromFaceVertices() {
+
     //
     //  Its assumed (a pre-condition) that face-vertices have been fully specified and that we
-    //  are to construct the remaining relations:  including the edge list.  We may want to 
+    //  are to construct the remaining relations:  including the edge list.  We may want to
     //  support the existence of the edge list too in future:
     //
     int vCount = this->getNumVertices();
@@ -1092,8 +1090,8 @@ VtrLevel::completeTopologyFromFaceVertices()
 }
 
 void
-VtrLevel::populateLocalIndices()
-{
+VtrLevel::populateLocalIndices() {
+
     //
     //  We have two sets of local indices -- vert-faces and vert-edges:
     //
@@ -1128,8 +1126,8 @@ VtrLevel::populateLocalIndices()
 }
 
 void
-VtrLevel::orientIncidentComponents()
-{
+VtrLevel::orientIncidentComponents() {
+
     int vCount = this->getNumVertices();
 
     for (VtrIndex vIndex = 0; vIndex < vCount; ++vIndex) {
@@ -1145,15 +1143,14 @@ VtrLevel::orientIncidentComponents()
 
 namespace {
     inline int
-    findInArray(VtrIndexArray const& array, VtrIndex value)
-    {
+    findInArray(VtrIndexArray const& array, VtrIndex value) {
         return (int)(std::find(array.begin(), array.end(), value) - array.begin());
     }
 }
 
 bool
-VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
-{
+VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex) {
+
     VtrIndexArray vEdges = this->getVertexEdges(vIndex);
     VtrIndexArray vFaces = this->getVertexFaces(vIndex);
 
@@ -1161,7 +1158,7 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
     int eCount = vEdges.size();
 
     if ((fCount == 0) || (eCount < 2) || ((eCount - fCount) > 1)) return false;
-    
+
     //
     //  Note we have already eliminated the possibility of incident degenerate edges
     //  and other bad edges earlier -- marking its vertices non-manifold as a result
@@ -1227,7 +1224,7 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
         //      - two subsequent edges the same, i.e. a "repeated edge" in a face
         //      - back at the start before all edges processed
         if ((eNext == eStart) || (eNext == eFirst)) return false;
-        
+
         //
         //  Add the next edge and if more faces to visit (not at the end of
         //  a boundary) look to its opposite face:
@@ -1236,7 +1233,7 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
 
         if (orderedFacesCount < fCount) {
             VtrIndexArray const eFaces = this->getEdgeFaces(eNext);
-            
+
             if (eFaces.size() == 0) return false;
             if ((eFaces.size() == 1) && (eFaces[0] == fStart)) return false;
 
@@ -1261,8 +1258,8 @@ VtrLevel::orderVertexFacesAndEdges(VtrIndex vIndex)
 //  In development -- methods for accessing face-varying data channels...
 //
 int
-VtrLevel::createFVarChannel(int fvarValueCount, SdcOptions const& fvarOptions)
-{
+VtrLevel::createFVarChannel(int fvarValueCount, Sdc::Options const& fvarOptions) {
+
     VtrFVarLevel* fvarLevel = new VtrFVarLevel(*this);
 
     fvarLevel->setOptions(fvarOptions);
@@ -1274,33 +1271,29 @@ VtrLevel::createFVarChannel(int fvarValueCount, SdcOptions const& fvarOptions)
 }
 
 void
-VtrLevel::destroyFVarChannel(int channel)
-{
+VtrLevel::destroyFVarChannel(int channel) {
+
     delete _fvarChannels[channel];
     _fvarChannels.erase(_fvarChannels.begin() + channel);
 }
 
 int
-VtrLevel::getNumFVarValues(int channel) const
-{
+VtrLevel::getNumFVarValues(int channel) const {
     return _fvarChannels[channel]->getNumValues();
 }
 
 VtrIndexArray const
-VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel) const
-{
+VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel) const {
     return _fvarChannels[channel]->getFaceValues(faceIndex);
 }
 
 VtrIndexArray
-VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel)
-{
+VtrLevel::getFVarFaceValues(VtrIndex faceIndex, int channel) {
     return _fvarChannels[channel]->getFaceValues(faceIndex);
 }
 
 void
-VtrLevel::completeFVarChannelTopology(int channel)
-{
+VtrLevel::completeFVarChannelTopology(int channel) {
     return _fvarChannels[channel]->completeTopologyFromFaceValues();
 }
 
