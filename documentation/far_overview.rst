@@ -32,15 +32,13 @@ FAR Overview
 Feature Adaptive Representation (Far)
 =====================================
 
-This document is written to accompany the opensubdiv/`vtr <vtr_overview.html>`__
-source.  It is intended to give a high level overview of the organization of
-the source, the rationale for various decisions, as well as highlight open
-issues or situations where the choices made thus far warrant further
-deliberation.
+XXXX <need broader description of Far here -- more than just TopologyRefiner>
 
 The Far classes package up the functionality provided in Vtr for public use,
 either directly within Far or indirectly eventually though Osd. The two classes
 classes are as follows:
+
+XXXX <is the intent to extend this table to include other classes?>
 
 +-------------------------------+---------------------------------------------------+
 | TopologyRefiner               | A class encapsulating the topology of a refined   |
@@ -48,7 +46,7 @@ classes are as follows:
 +-------------------------------+---------------------------------------------------+
 | TopologyRefinerFactory<MESH>  | A factory class template specialized by users (in |
 |                               | terms of their mesh class) to construct           |
-|                               | FarTopologyRefiner as quickly as possible.        |
+|                               | TopologyRefiner as quickly as possible.           |
 +-------------------------------+---------------------------------------------------+
 
 These classes are the least well defined of the API, but given they provide the
@@ -56,11 +54,28 @@ public interface to all of the improvements proposed, they potentially warrant
 the most attention. Far::TopologyRefiner is purely topological and it is the
 backbone used to construct or be associated with the other table classes in Far.
 
-Topology Refiner
-================
 
-Synopsis
-********
+.. container:: notebox
+
+    **Alpha Issues**
+
+    Interface issues needing attention:
+
+        * TopologyRefiner::Refine() needs more options (bundled in struct)
+        * TopologyRefiner::Interpolate() methods need revisiting
+        * considering simplifying TopologyRefiner interface overall -- may expose
+          TopologyLevel for public inspection
+        * specialization of TopologyRefinerFactory<MESH> needs more work
+
+
+Refining Topology
+=================
+
+XXXX <insert blurb about uniform / adaptive refinement>
+
+
+Far::TopologyRefiner
+********************
 
 TopologyRefiner is the building block for many other useful classes in
 OpenSubdiv, but its purpose is more specific.  It is intended to store the
@@ -73,8 +88,11 @@ internally where simple specifications of refinement (currently uniform or
 feature-adaptive with a level argument) will be translated into refinement
 operations within Vtr. Feature-adaptive refinement is a special case of
 *"sparse"* or *"selective"* refinement, and so the feature-adaptive logic
-exists internal to TopologyRefiner and translate the feature-analysis into a
+exists internal to TopologyRefiner and translates the feature-analysis into a
 simpler topological specification of refinement to Vtr.
+
+.. image:: images/topology_refiner.png
+   :align: center
 
 The longer term intent is that the public Refine(...) operation eventually be
 overloaded to allow clients more selective control of refinement. While
@@ -82,49 +100,55 @@ TopologyRefiner is a purely topological class, and so free of any definitions
 of vertex data, the public inteface has been extended to include templated
 functors that allow clients to interpolate primitive variable data. 
 
-Topology Refiner Factory
-========================
+Far::TopologyRefinerFactory
+***************************
 
-Synopsis
-********
-
-This is one of the most important aspects of the Far API, as it is the
-entry-point to OpenSubdiv. Its task is to map/convert data in a client's mesh
-into the internal `Vtr <vtr_overview.html>`__ representation as quickly as
-possible. Since a client's boundary-rep knows best how to identify the data it
-wants, it seems best to leave it to the client to gather that data and simply
-provide a location to store it, rather than trying to define a suite of mesh
-traversal utilities that the client would need to define to do so.
-
-So the approach taken was to follow a common pattern in OpenSubdiv, and use
-Factory classes to construct instances of TopologyRefiner and provide some
-kind of derivation or specialization by the client to optimize the process for
-their representation. The TopologyRefiner's Factory class will construct its
-instances from a client's mesh (of unknown type). Given the need to manage an
-instance of a client's mesh type in the Factory, the simplest solution is for
-client-code to specialize a templated interface in the Factory.
+Consistent with other classes in Far instances of TopologyRefiner are created
+by a factory class -- in this case Far::TopologyRefinerFactory.  This class
+is an important entry point for clients its task is to map/convert data in a
+client's mesh into the internal `Vtr <vtr_overview.html>`__ representation as
+quickly as possible.
 
 The TopologyRefinerFactory class is a class template parameterized by and
 specialized for the client's mesh class, i.e. TopologyRefinerFactory<MESH>.
-The template provides the high-level construction of the tables, with the
-requirement that two methods will be specialized.  These two methods serve the
-following two purposes:
+Since a client' mesh representation knows best how to identify the topological
+neighborhoods required, no generic implementation would provide the most
+direct means of conversion possible, and so we rely on specialization.  For
+situations where mesh data is not defined in a boundary representation, a
+simple container for raw mesh data is provided along with a Factory
+specialized to construct TopologyRefiners from it.
 
-    * specify the sizes of topological data so that tables can be pre-allocated
-    * assign the topological data to the newly allocated tables
+So there are two ways to create TopologyRefiners:
+
+    * use the existing TopologyRefinerFactory<TopologyDescriptor> with a
+      populated instance of TopologyDescriptor
+    * specialize TopologyRefinerFactory<class MESH> for more efficient
+      conversion
+
+XXXX <insert blurb about Descriptor>
+
+Specialization of TopologyRefinerFactory<class MESH> should be done with care
+as the goal here is to maximize the performance of the conversion and so
+minimize overhead due to runtime validation.  The template provides the
+high-level construction of the required topology vectors of the underlying
+Vtr, with the requirement that two methods will be specialized with the
+following purpose:
+
+    * specify the sizes of topological data so that vectors can be pre-allocated
+    * assign the topological data to the newly allocated vectors
 
 As noted above, the assumption here is that the client's boundary-rep knows best
-how to retrieve the data that we require most efficiently, so that interference
-with it is kept to a minimum. After the factory class gathers sizing
-information and allocates appropriate memory, the factory provides the client
-with locations of the appropriate tables to be populated (using the same `Array
-<vtr_overview.html#arry-type>`__ classes and interface used to access the
-tables).  The client is expected to load a complete topological description and
-can optionally load other tables, i.e.:
+how to retrieve the data that we require most efficiently. After the factory class
+gathers sizing information and allocates appropriate memory, the factory provides
+the client with locations of the appropriate tables to be populated (using the
+same `Array <vtr_overview.html#arry-type>`__ classes and interface used to access
+the tables).  The client is expected to load a complete topological description
+along with additional optional data, i.e.:
 
     * the six topological relations required by Vtr, oriented when manifold
     * sharpness values for edges and/or vertices (optional)
     * additional tags related to the components, e.g. holes (optional)
+    * values-per-face for face-varying channels (optional)
 
 While there is plenty of opportunity for user error here, that is no different
 from any other conversion process.  Given that Far controls the construction
@@ -141,17 +165,6 @@ A common base class has been created for the factory class, i.e.:
 
 both to provide common code independent of <MESH> and also potentially to
 protect core code from unwanted specialization.
-
-XXXX <insert blurb about Descriptor>
-
-Refining Topology
-*****************
-
-XXXX <insert blurb about uniform / adaptive refinement>
-
-.. image:: images/topology_refiner.png
-   :align: center
-
 
 Patch Tables
 ============
