@@ -124,8 +124,6 @@ if (NOT NO_LIB)
 
     add_subdirectory(osd)
 
-#    add_subdirectory(osdutil)
-
     #---------------------------------------------------------------------------
 
     install( FILES version.h
