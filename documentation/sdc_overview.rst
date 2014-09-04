@@ -67,13 +67,12 @@ a general framework for defining customized subdivision schemes.
 
         * note change in creasing method from *"Normal"* to *"Uniform"* and
           related use of *"Uniform"*
-        * all boundary interpolation choices in Sdc::Options are subject to change
+        * all boundary interpolation choices in *Sdc::Options* are subject to change
 
     Other changes under consideration:
 
         * *<MASK>* face-weights to support face-centers and/or original vertices
         * merging *Sdc::TypeTraits<T>* into *Sdc::Scheme<T>* as static methods
-        * should we nest the various enums of Sdc::Options within Sdc::Options?
         * static initialization of creasing constants (for smooth and
           infinitely sharp)
         * how to document template paremeter interfaces, e.g. *<MASK>*,
@@ -83,12 +82,13 @@ a general framework for defining customized subdivision schemes.
 Types, Traits and Options
 =========================
 
-The most basic type is the enum that identifies the fixed set of subdivision
-schemes supported by OpenSubdiv:  *Bilinear*, *Catmark* and *Loop*.  With this
-alone, we intend to avoid all dynamic casting issues related to the scheme by
-simply adding members to the associated subclasses for inspection.  In addition
-to the type enum itself, a class defining a set of *TypeTraits<TYPE>* for each
-scheme is provided along with the required specializations for each scheme.
+The most basic type is the enum *Sdc::Type* that identifies the fixed set of
+subdivision schemes supported by OpenSubdiv:  *Bilinear*, *Catmark* and *Loop*.
+With this alone, we intend to avoid all dynamic casting issues related to the
+scheme by simply adding members to the associated subclasses for inspection.
+In addition to the type enum itself, a class defining a set of
+*TypeTraits<Type TYPE>* for each scheme is provided along with the required
+specializations for each scheme.
 
 The second contribution is the collection of all variations in one place that can
 be applied to the subdivision schemes, i.e. the boundary interpolation rules,
@@ -165,8 +165,8 @@ a single vertex at a new subdivision level is typically referred to as a
 manner both general and efficient.
 
 Each subdivision scheme has its own values for its masks, and each are provided
-as specializations of the template class *Sdc::Scheme<Sdc::Type TYPE>*. The
-intent is to minimize the amount of code specific to each scheme.
+as specializations of the template class *Scheme<Type TYPE>*. The intent is to
+minimize the amount of code specific to each scheme.
 
 The computation of mask weights for subdivided vertices is the most significant
 contribution of Sdc. The use of semi-sharp creasing with each
@@ -195,19 +195,17 @@ for immediate inline retrieval.
 In general, the set of weights for a subdivided vertex is dependent on the following:
 
     * the topology around the parent component from which the vertex originates
+    * the type of subdivision *Rule* applicable to the parent component
+    * the type of subdivision *Rule* applicable to the new child vertex
+    * a transitional weight blending the effect between differing parent and child rules
 
-    * the type of subdivision *Rule* applicable to the parent component:
+This seems fairly straight-forward, until we look at some of the dependencies involved:
 
-        * requiring the sharpness values at and around that component
-
-    * the type of subdivision *Rule* applicable to the new child vertex:
-
-        * requiring the subdivided sharpness values at and around the new vertex
-        * sometimes trivially inferred from the parent rule
-
-    * a weight blending the effect between differing rules for parent and child:
-
-        * requiring all parent and child sharpness values
+    * the parent *Rule* requires the sharpness values at and around the parent component
+    * the child *Rule* requires the subdivided sharpness values at and around the new
+      child vertex (though it can sometimes be trivially inferred from the parent)
+    * the transitional weight between differing rules requires all parent and child
+      sharpness values
 
 Clearly the sharpness values are inspected multiple times and so it pays to have
 them available for retrieval.  Computing them on an as-needed basis may be simple

@@ -99,6 +99,30 @@ As a result, Hbr is no longer a core API of OpenSubdiv. While the code is marked
 as deprecated, it will remain in the source distribution for legacy and
 regression purposes.
 
+New treatment of face-varying data
+**********************************
+
+With Hbr no longer the entry point for clients, OpenSubdiv 3.0 provides a new
+interface to face-varying data.  Previous versions required FVar data to be
+assigned by value to the vertex for each face, and whether or not the set of
+values around a vertex was continuous was determined by comparing these values
+later.  In some cases this could result in two values that were not meant to be
+shared being "welded" together.
+
+Face-varying data is now specified topologically.  Just as the vertex topology
+is defined from a set of vertices and integer references to these vertices for
+the vertex of each face, face-varying topology is defined from a set of values
+and integer references to these values for the vertex of each face.  So if
+values are to be considered distinct around a vertex, they are given distinct
+indices and no comparison of values is ever performed.
+
+This ensures that OpenSubdiv's face-varying topology matches what is specified
+in common geometry container formats like Obj or Alembic.  It also allows for
+more efficient processing of face-varying values during refinement, and so the
+cost of interpolating a set of face-varying data should now be little more than
+the cost of interpolating a similar set of vertex data (depending on the number
+of distinct face-varying values versus the number of vertices).
+
 Subdivision Core
 ****************
 
@@ -178,7 +202,7 @@ the alpha cycle:
     #. Arbitrary-location limit stencils
     #. Limit Masks
     #. Tagging and recognition of faces as Holes
-    #. Complete the accelerated conversion from client mesh to FarTopologyRefiner
+    #. Complete the accelerated conversion from client mesh to Far::TopologyRefiner
     #. Misc Sdc / Vtr / Far code cleanup & documentation
 
 
