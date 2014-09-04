@@ -56,7 +56,7 @@ ol {
         background:none;
 }
 ol li {
-        list-style-type: decimal-leading-zero;
+        list-style-type: decimal;
         font-weight: bold;
         font-size: 14px!important;
         color: #CCC!important;
