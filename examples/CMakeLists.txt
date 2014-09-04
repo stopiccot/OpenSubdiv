@@ -42,8 +42,6 @@ if (NOT NO_OPENGL)
         add_subdirectory(glShareTopology)
         add_subdirectory(glFVarViewer)
     #    add_subdirectory(glStencilViewer)
-    #    add_subdirectory(tessellateObjFile)
-    #    add_subdirectory(facePartition)
         add_subdirectory(vtrViewer)
 
         if (OPENGL_4_3_FOUND AND (NOT APPLE))
