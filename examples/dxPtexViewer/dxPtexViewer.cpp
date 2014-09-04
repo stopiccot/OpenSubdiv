@@ -750,7 +750,7 @@ createOsdMesh(int level, int kernel) {
         if (not g_d3d11ComputeController) {
             g_d3d11ComputeController = new OpenSubdiv::Osd::D3D11ComputeController(g_pd3dDeviceContext);
         }
-        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::OsdD3D11VertexBuffer,
+        g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::D3D11VertexBuffer,
                                          OpenSubdiv::Osd::D3D11ComputeController,
                                          OpenSubdiv::Osd::D3D11DrawContext>(
                                                 g_d3d11ComputeController,

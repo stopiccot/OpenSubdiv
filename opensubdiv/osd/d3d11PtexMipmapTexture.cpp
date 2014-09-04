@@ -98,7 +98,7 @@ D3D11PtexMipmapTexture::Create(ID3D11DeviceContext *deviceContext,
     int maxNumPages = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
 
     // Read the ptex data and pack the texels
-    OsdPtexMipmapTextureLoader loader(reader, maxNumPages, maxLevels);
+    Osd::PtexMipmapTextureLoader loader(reader, maxNumPages, maxLevels);
 
     int numFaces = loader.GetNumFaces();
 
