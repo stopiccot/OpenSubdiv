@@ -43,7 +43,7 @@
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-class Vtr::SparseSelector;
+namespace Vtr { class SparseSelector; }
 
 namespace Far {
 
@@ -53,15 +53,6 @@ template <class MESH> class TopologyRefinerFactory;
 ///  \brief Stores topology data for a specified set of refinement options.
 ///
 class TopologyRefiner {
-
-public:
-
-    //  Local typedef's for local notational convenience:
-    typedef Index       Index;
-    typedef LocalIndex  LocalIndex;
-
-    typedef IndexArray      IndexArray;
-    typedef LocalIndexArray LocalIndexArray;
 
 public:
 

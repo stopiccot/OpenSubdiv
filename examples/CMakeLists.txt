@@ -41,8 +41,13 @@ if (NOT NO_OPENGL)
         add_subdirectory(glEvalLimit)
         add_subdirectory(glShareTopology)
         add_subdirectory(glFVarViewer)
-    #    add_subdirectory(glStencilViewer)
-        add_subdirectory(vtrViewer)
+        #add_subdirectory(glStencilViewer)
+
+        if (CMAKE_COMPILER_IS_CLANGCC)
+            # This code is intended for debugging only
+            # and currently only compiles with Clang.
+            add_subdirectory(vtrViewer)
+        endif()
 
         if (OPENGL_4_3_FOUND AND (NOT APPLE))
             add_subdirectory(glPaintTest)

@@ -177,7 +177,7 @@ void
 GLMesh::initializeBuffers(Options options,
     TopologyRefiner const & refiner, float const * vertexData) {
 
-    typedef OpenSubdiv::Far::TopologyRefiner::IndexArray IndexArray;
+    typedef OpenSubdiv::Far::IndexArray IndexArray;
 
     int maxlevel = refiner.GetMaxLevel(),
         nverts = refiner.GetNumVertices(maxlevel),

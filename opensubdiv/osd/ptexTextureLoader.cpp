@@ -73,10 +73,10 @@ struct PtexTextureLoader::block {
 
     // returns a "distance" metric from the native texel resolution
     int8_t distanceFromNative( ) const {
-        int8_t udist = native.ulog2-current.ulog2,
-               vdist = native.vlog2-current.vlog2;
+        int8_t udist = (int8_t)(native.ulog2-current.ulog2),
+               vdist = (int8_t)(native.vlog2-current.vlog2);
 
-        return udist * udist + vdist * vdist;
+        return (int8_t)(udist * udist + vdist * vdist);
     }
 
     // desirability predicates for resolution scaling optimizations

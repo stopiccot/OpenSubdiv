@@ -26,6 +26,7 @@
 #define VTR_UTILS_H
 
 #include <far/topologyRefinerFactory.h>
+#include <far/types.h>
 
 #include "../../regression/common/shape_utils.h"
 
@@ -147,14 +148,12 @@ inline void
 TopologyRefinerFactory<Shape>::assignComponentTopology(
     Far::TopologyRefiner & refiner, Shape const & shape) {
 
-    typedef Far::TopologyRefiner::IndexArray IndexArray;
-
     { // Face relations:
         int nfaces = refiner.getNumBaseFaces();
 
         for (int i=0, ofs=0; i < nfaces; ++i) {
 
-            IndexArray dstFaceVerts = refiner.setBaseFaceVertices(i);
+            Far::IndexArray dstFaceVerts = refiner.setBaseFaceVertices(i);
             //IndexArray dstFaceEdges = refiner.setBaseFaceEdges(i);
 
             for (int j=0; j<dstFaceVerts.size(); ++j) {
@@ -170,8 +169,6 @@ inline void
 TopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
     Far::TopologyRefiner & refiner, Shape const & shape) {
 
-    typedef Far::TopologyRefiner::IndexArray IndexArray;
-
     // UV layyout (we only parse 1 channel)
     if (not shape.faceuvs.empty()) {
 
@@ -180,7 +177,8 @@ TopologyRefinerFactory<Shape>::assignFaceVaryingTopology(
 
         for (int i=0, ofs=0; i < nfaces; ++i) {
 
-            IndexArray dstFaceUVs = refiner.getBaseFVarFaceValues(i, channel);
+            Far::IndexArray dstFaceUVs =
+                refiner.getBaseFVarFaceValues(i, channel);
 
             for (int j=0; j<dstFaceUVs.size(); ++j) {
                 dstFaceUVs[j] = shape.faceuvs[ofs++];

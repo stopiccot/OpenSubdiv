@@ -407,7 +407,7 @@ createEdgeNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
+            OpenSubdiv::Far::IndexArray const verts =
                 refiner.GetEdgeVertices(maxlevel, i);
             assert(verts.size()==2);
 
@@ -450,7 +450,7 @@ createFaceNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
 
             Vertex center(0.0f, 0.0f, 0.0f);
 
-            OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
+            OpenSubdiv::Far::IndexArray const verts =
                 refiner.GetFaceVertices(maxlevel, face);
 
             float weight = 1.0f / (float)verts.size();
@@ -475,7 +475,7 @@ createFaceNumbers(OpenSubdiv::Far::TopologyRefiner const & refiner,
 
                 Vertex center(0.0f, 0.0f, 0.0f);
 
-                OpenSubdiv::Far::TopologyRefiner::IndexArray const verts =
+                OpenSubdiv::Far::IndexArray const verts =
                     refiner.GetFaceVertices(level, face);
 
                 float weight = 1.0f / (float)verts.size();

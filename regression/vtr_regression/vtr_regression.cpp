@@ -201,22 +201,22 @@ struct Mapper {
     };
 
     std::vector<LevelMap> maps;
-    
+
     Mapper(FarTopoloyRefiner * refiner, Hmesh * hmesh) {
 
         assert(refiner and hmesh);
 
         maps.resize(refiner->GetMaxLevel()+1);
 
-        typedef OpenSubdiv::Far::TopologyRefiner::Index      Index;
-        typedef OpenSubdiv::Far::TopologyRefiner::IndexArray IndexArray;
+        typedef OpenSubdiv::Far::Index      Index;
+        typedef OpenSubdiv::Far::IndexArray IndexArray;
 
         {   // Populate base level
             // note : topological ordering is identical between Hbr and Vtr for the
             // base level
 
             int nfaces = refiner->GetNumFaces(0),
-                nedges = refiner->GetNumEdges(0), 
+                nedges = refiner->GetNumEdges(0),
                 nverts = refiner->GetNumVertices(0);
 
             maps[0].faces.resize(nfaces, 0);
@@ -352,7 +352,7 @@ checkMesh(ShapeDesc const & desc, int maxlevel) {
                 hbrVertexData[ofs++] = v->GetData();
            }
         }
-        
+
         //printVertexData(hbrVertexData, vtrVertexData);
     }
 

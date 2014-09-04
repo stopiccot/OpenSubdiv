@@ -54,7 +54,7 @@ OpenSubdiv::Osd::CpuComputeController *g_cpuComputeController = NULL;
 
 #ifdef OPENSUBDIV_HAS_OPENMP
     #include <osd/ompComputeController.h>
-    OpenSubdiv::OsdOmpComputeController *g_ompComputeController = NULL;
+    OpenSubdiv::Osd::OmpComputeController *g_ompComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_TBB
@@ -549,10 +549,10 @@ createOsdMesh(ShapeDesc const & shapeDesc, int level, int kernel, Scheme scheme=
 #ifdef OPENSUBDIV_HAS_OPENMP
     } else if (kernel == kOPENMP) {
         if (not g_ompComputeController) {
-            g_ompComputeController = new OpenSubdiv::OsdOmpComputeController();
+            g_ompComputeController = new OpenSubdiv::Osd::OmpComputeController();
         }
         g_mesh = new OpenSubdiv::Osd::Mesh<OpenSubdiv::Osd::CpuGLVertexBuffer,
-                                         OpenSubdiv::OsdOmpComputeController,
+                                         OpenSubdiv::Osd::OmpComputeController,
                                          OpenSubdiv::Osd::GLDrawContext>(
                                                 g_ompComputeController,
                                                 refiner,

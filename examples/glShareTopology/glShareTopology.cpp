@@ -652,7 +652,7 @@ createOsdMesh( const std::string &shapeStr, int level, Scheme scheme=kCatmark ) 
             Osd::CpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #ifdef OPENSUBDIV_HAS_OPENMP
     } else if (g_kernel == kOPENMP) {
-        topology = new Topology<OsdOmpComputeController,
+        topology = new Topology<Osd::OmpComputeController,
             Osd::CpuGLVertexBuffer>(patchTables, vertexStencils, varyingStencils);
 #endif
 #ifdef OPENSUBDIV_HAS_TBB

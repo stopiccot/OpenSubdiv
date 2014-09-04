@@ -53,16 +53,16 @@ public:
 
     /// \brief Constructor.
     /// 
-    /// @param kernelType    the type of compute kernel kernel
+    /// @param _kernelType    The type of compute kernel kernel
     ///
-    /// @param level         the level of subdivision of the vertices in the batch
+    /// @param _level         The level of subdivision of the vertices in the batch
     ///
-    /// @param start         index of the first vertex in the batch
+    /// @param _start         Index of the first vertex in the batch
     ///
-    /// @param end           index of the last vertex in the batch
+    /// @param _end           Index of the last vertex in the batch
     ///
-    KernelBatch( int kernelType, int level, int start, int end ) :
-        kernelType(kernelType), level(level), start(start), end(end) { }
+    KernelBatch( int _kernelType, int _level, int _start, int _end ) :
+        kernelType(_kernelType), level(_level), start(_start), end(_end) { }
 
     int kernelType,   // the type of compute kernel kernel
         level,        // the level of subdivision of the vertices in the batch

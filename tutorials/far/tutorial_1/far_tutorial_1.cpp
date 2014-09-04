@@ -267,8 +267,8 @@ void
 TopologyRefinerFactory<Converter>::assignComponentTopology(
     TopologyRefiner & refiner, Converter const & conv) {
 
-    typedef Far::TopologyRefiner::IndexArray      IndexArray;
-    typedef Far::TopologyRefiner::LocalIndexArray LocalIndexArray;
+    typedef Far::IndexArray      IndexArray;
+    typedef Far::LocalIndexArray LocalIndexArray;
 
     { // Face relations:
         int nfaces = conv.GetNumFaces();
