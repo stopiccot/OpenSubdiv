@@ -31,15 +31,12 @@ Release Notes
 
 ----
 
-.. include:: under_development.rst
-
-
-General 3.x RoadMap 
+General 3.x RoadMap
 ===================
 
 Within the 3.x release cycle we would like to address first and foremost many of
 the issues related to scaling the application of subdivision surfaces to large
-volumes of primitives within typical graphics pipelines. 
+amounts of primitives within typical graphics pipelines.
 
 Enabling workflows at larger scales will require improvements on several fronts:
 
@@ -67,10 +64,10 @@ code releases.
 Improved performance
 ********************
 
-OpenSubdiv 3.0 introduces new data structures and algorithms that greatly enhance
-performance over previous versions. The 3.0 release focuses mostly on the CPU
-side, and  should provide "out-of-the-box" speed-ups close to an order of
-magnitude for topology refinement and analysis (both uniform and adaptive).
+OpenSubdiv 3.0 introduces new data structures and algorithms that greatly
+enhance performance over previous versions. The 3.0 release focuses mostly on
+the CPU side, and  should provide "out-of-the-box" speed-ups close to an order
+of magnitude for topology refinement and analysis (both uniform and adaptive).
 
 On the GPU side, the replacement of subdivision tables with stencils allows
 us to remove several bottlenecks in the Compute area that can yield as much as
@@ -99,6 +96,8 @@ As a result, Hbr is no longer a core API of OpenSubdiv. While the code is marked
 as deprecated, it will remain in the source distribution for legacy and
 regression purposes.
 
+The documentation for Vtr can be found `here <vtr_overview.html>`__
+
 New treatment of face-varying data
 **********************************
 
@@ -106,10 +105,10 @@ With Hbr no longer the entry point for clients, OpenSubdiv 3.0 provides a new
 interface to face-varying data.  Previous versions required FVar data to be
 assigned by value to the vertex for each face, and whether or not the set of
 values around a vertex was continuous was determined by comparing these values
-later.  In some cases this could result in two values that were not meant to be
+later. In some cases this could result in two values that were not meant to be
 shared being "welded" together.
 
-Face-varying data is now specified topologically.  Just as the vertex topology
+Face-varying data is now specified topologically. Just as the vertex topology
 is defined from a set of vertices and integer references to these vertices for
 the vertex of each face, face-varying topology is defined from a set of values
 and integer references to these values for the vertex of each face.  So if
@@ -117,56 +116,46 @@ values are to be considered distinct around a vertex, they are given distinct
 indices and no comparison of values is ever performed.
 
 This ensures that OpenSubdiv's face-varying topology matches what is specified
-in common geometry container formats like Obj or Alembic.  It also allows for
+in common geometry container formats like Obj or Alembic. It also allows for
 more efficient processing of face-varying values during refinement, and so the
 cost of interpolating a set of face-varying data should now be little more than
 the cost of interpolating a similar set of vertex data (depending on the number
 of distinct face-varying values versus the number of vertices).
 
-Subdivision Core
-****************
+Subdivision Core (Sdc)
+**********************
 
-In consideration of the existing representations, Hbr and Vtr, all low-level
+In consideration of the existing representations (Hbr and Vtr), all low-level
 details fundamental to subdivision and the specific subdivision schemes has been
-factored into a new low-level layer (the lowest) called Sdc.  This layer
+factored into a new low-level layer (the lowest) called Sdc. This layer
 encapsulates the full set of applicable options, the formulae required to
 support semi-sharp creasing, the formulae for the refinement masks of each
 subdivision scheme, etc.
 
-Sdc provides the low-level nuts and bolts to provide a subdivision implementation
-consistent with OpenSubdiv.  It is used internally by Vtr but can also provide
-clients with an existing implementation of their own with the details to make
-that implementation consistent with OpenSubdiv.
+Sdc provides the low-level nuts and bolts to provide a subdivision
+implementation consistent with OpenSubdiv. It is used internally by Vtr but
+can also provide clients with an existing implementation of their own with the
+details to make that implementation consistent with OpenSubdiv.
 
-Stencil Tables
-**************
+The documentation for Sdc can be found `here <sdc_overview.html>`__
 
-OpenSubdiv 3.0 replaces the serialized subdivision tables with factorized stencil
-tables. Subdivision tables as implemented in 2.x releases still contain a fairly
-large amount of data inter-dependencies which incur pernalties for using more
-fences or kernel launches. Most of these dependencies have now been factorised
-away in the pre-computation stage, yielding *stencil tables* instead.
-
-Stencils remove all data dependencies and simplify all the computations into a
-single trivial kernel. This simplification results in a faster pre-computation
-stage, faster execution on GPU, and fewer driver overheads. The new stencil
-tables Compute back-end is supported on all the same platforms as previous
-releases.
-
-Subdivision Specification Changes
-*********************************
+Changes to the Subdivision Specification
+****************************************
 
 The refactoring of OpenSubdiv 3.0 data representations presents a unique
 opportunity to revisit some corners of the subdivision specification and
 remove or update some legacy features.
 
+Interpolation Rules
++++++++++++++++++++
+
 Since the various options are now presented through a new API (Sdc rather than
 Hbr), based on the history of some of these options and input from interested
-parties, some of these are being reconsidered:
+parties, the following changes are being investigated:
 
     * the creasing method 'Normal' has been renamed 'Uniform'
-    * considering the renaming of the 'boundary interpolation' enum and its choices
-    * same as above for 'face varying boundary interpolation'
+    * considering renaming the Sdc 'boundary interpolation' enum and its choices
+    * same as above for the 'face varying boundary interpolation' enum in Sdc
 
 In these cases, features are not being removed but simply re-expressed in what
 is hoped to be a clearer interface.
@@ -181,11 +170,42 @@ algorithms. If we can identify legitimate use cases for hierarchical tags, we
 will consider re-implementing them in future releases, as time and resources
 allow.
 
+Introducing Stencil Tables
+**************************
+
+OpenSubdiv 3.0 replaces the serialized subdivision tables with factorized stencil
+tables. Subdivision tables as implemented in 2.x releases still contain a fairly
+large amount of data inter-dependencies which incur penalties for using more
+fences or kernel launches. Most of these dependencies have now been factorized
+away in the pre-computation stage, yielding *stencil tables* instead.
+
+Stencils remove all data dependencies and simplify all the computations into a
+single trivial kernel. This simplification results in a faster pre-computation
+stage, faster execution on GPU, and fewer driver overheads. The new stencil
+tables Compute back-end is supported on all the same platforms as previous
+releases.
+
+New Source-Code Style
+*********************
+
+OpenSubdiv 3.0 replaces naming prefixes with C++ namespaces for all API layers,
+bringing the source style more in line with contemporary and specifications
+(mostly inspired from the `Google C++ Style Guide
+<http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml>`__).
+
+The large-scale changes introduced in this release generally breaks
+compatibility with existing client-code. This gives us the opportunity to
+effect some much needed updates to our code-style guidelines and general
+conventions, throughout the entire OpenSubdiv code-base. We are hoping to
+drastically improve the quality, consistency and readability of the source
+code.
+
 Alpha Release Notes
 ===================
 
-Our intentions as open-source developpers is to give as much access to our code,
-as early as possible, because we value and welcome the feedback from the community.
+Our intentions as open-source developers is to give as much access to our code,
+as early as possible, because we value and welcome the feedback from the
+community.
 
 The 'alpha' release moniker means to us that our code is still far from being
 finalized. Although we are now close from being feature complete, our
@@ -193,17 +213,68 @@ public-facing interfaces are still subject to change. Therefore, we do not
 recommend this version of OpenSubdiv be used in client applications until both
 features and interfaces have been finalized in an official 'Beta' Release.
 
-The following is a short list of featurs and issues that will be addressed during
-the alpha cycle:
+.. container:: notebox
 
-    #. Support for Loop and Bilinear schemes (consistent with 2.x)
-    #. Refactor Interpolate<>(), InterpolateFaceVarying<>() et al
-    #. Complete all face-varying boundary interpolation interpolation rules
-    #. Arbitrary-location limit stencils
-    #. Limit Masks
-    #. Tagging and recognition of faces as Holes
-    #. Complete the accelerated conversion from client mesh to Far::TopologyRefiner
-    #. Misc Sdc / Vtr / Far code cleanup & documentation
+    **Alpha Issues**
+
+    The following is a short list of features and issues that are still in
+    development or are likely to change during the alpha cycle:
+
+        #. Support for Loop and Bilinear schemes (consistent with 2.x):
+           Currently only the Catmull-Clark subdivision scheme is supported.
+           Parity of support with 2.x versions for the Loop and Bilinear schemes
+           will be re-established before Beta release.
+
+        #. Refactor Far::TopologyRefiner interpolation functions:
+           Templated interpolation methods such as Interpolate<T>(),
+           InterpolateFaceVarying<T>(), Limit<T>() are not finalized yet. Both
+           the methods prototypes as well the interface required for T are
+           likely to change before Beta release.
+
+        #. Face-varying interpolation rules:
+           Currently, all 4 legacy modes of face-varying interpolation are
+           supported for *interior* vertices, but not for *boundary* vertices.
+           Work is currently underway to match and extend Hbr's boundary
+           interpolation rules as implemented in 2.x. The new code will need
+           to be tested and validated.
+
+        #. Limit Masks:
+           Currently, Sdc generates weighted masks to interpolate *vertex* and
+           *face-varying* primvar data between subdivision levels. We want to
+           add functionality to evaluate closed-form evaluation of weight masks
+           to interpolate primvar data at the limit.
+
+        #. Implement arbitrary and discrete limit stencils:
+           Subdivision tables have been replaced with discrete vertex stencils.
+           We would like to add functionality for stencils that push these
+           vertices to the limit, as well as generate stencils for arbitrary
+           locations on the limit surface (a feature currently available in
+           2.x). This work is contingent on the implementation of limit masks.
+
+        #. Tagging and recognition of faces as Holes:
+           A solution for tagging faces as *"holes"* needs to be implemented to
+           match functionality from 2.x releases.
+
+        #. Topology entry-point API:
+           The *advanced* topology entry point interface in
+           Far::TopologyRefinerFactory is not final yet. Some protected
+           accessors are likely to be renamed, added or removed before Beta
+           release.
+
+        #. *"Chaikin"* Rule:
+           The current implementation of the *Chaikin* rule shows small
+           numerical differences with results obtained from Hbr in 2.x releases.
+           Considering that the feature is rarely used and that the current
+           implementation is likely the more correct one, we are considering
+           declaring the current implementation as *the standard*. We will
+           review input from the community on this matter during Alpha and Beta
+           release cycles.
+
+        #. Code Style & Refactoring:
+           While the bulk of code refactoring is mostly in place, we are still
+           tweaking some of the finer details. Further changes to code styling
+           and conventions should be expected throughout the Alpha release
+           cycle.
 
 
 Release 2.x

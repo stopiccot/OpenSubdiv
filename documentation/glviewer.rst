@@ -35,7 +35,12 @@ SYNOPSIS
 .. parsed-literal:: 
    :class: codefhead
 
-   **glViewer** [**-d** *isolation level*] [**-c** *animation loops*] [**-f**] *objfile(s)*
+   **glViewer**
+   [**-d** *isolation level*]
+   [**-c** *animation loops*]
+   [**-f**]
+   [**-axis**]
+   *objfile(s)*
 
 DESCRIPTION
 ===========
@@ -62,5 +67,12 @@ OPTIONS
 **-f**
   Launches the application in full-screen mode (if is supported by GLFW on the
   OS)
+
+**-axis**
+  Swap Y-up / Z-up axis when loading obj files
+
+*objfile(s)*
+  A sequence of obj files used as an animation loop (the topology has to match
+  the data contained in all the ptex files !)
 
 .. include:: examples_see_also.rst
