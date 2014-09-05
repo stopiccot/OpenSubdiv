@@ -606,7 +606,7 @@ void
 Scheme<SCHEME>::ComputeVertexLimitMask(VERTEX const& vertex,
                                        MASK&         posMask,
                                        MASK&         tan1Mask,
-                                       MASK&         tan1Mask) const
+                                       MASK&         tan2Mask) const
 {
     if (vertex.GetNumFaces() == vertex.GetNumEdges()) {
         assignInteriorLimitMask(vertex, posMask);

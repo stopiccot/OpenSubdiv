@@ -29,6 +29,7 @@
 #include "../sdc/scheme.h"
 
 #include <cassert>
+#include <cmath>
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -201,8 +202,8 @@ Scheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& mask
 template <>
 template <typename VERTEX, typename MASK>
 inline void
-Scheme<TYPE_CATMARK>::assignBoundaryLimitMask(VERTEX const& vertex, MASK& posMask) const
-{
+Scheme<TYPE_CATMARK>::assignBoundaryLimitMask(VERTEX const& vertex, MASK& posMask) const {
+
     typedef typename MASK::Weight Weight;
 
     int valence = vertex.GetNumEdges();
@@ -225,8 +226,8 @@ Scheme<TYPE_CATMARK>::assignBoundaryLimitMask(VERTEX const& vertex, MASK& posMas
 template <>
 template <typename VERTEX, typename MASK>
 inline void
-Scheme<TYPE_CATMARK>::assignInteriorLimitMask(VERTEX const& vertex, MASK& posMask) const
-{
+Scheme<TYPE_CATMARK>::assignInteriorLimitMask(VERTEX const& vertex, MASK& posMask) const {
+
     typedef typename MASK::Weight Weight;
 
     int valence = vertex.GetNumFaces();
@@ -257,8 +258,8 @@ template <>
 template <typename VERTEX, typename MASK>
 inline void
 Scheme<TYPE_CATMARK>::assignBoundaryLimitTangentMasks(VERTEX const& vertex,
-        MASK& tan1, MASK& tan2) const
-{
+        MASK& tan1Mask, MASK& tan2Mask) const {
+
     tan1Mask.SetNumVertexWeights(1);
     tan1Mask.SetNumEdgeWeights(0);
     tan1Mask.SetNumFaceWeights(0);
@@ -274,8 +275,10 @@ template <>
 template <typename VERTEX, typename MASK>
 inline void
 Scheme<TYPE_CATMARK>::assignInteriorLimitTangentMasks(VERTEX const& vertex,
-        MASK& tan1, MASK& tan2) const
-{
+        MASK& tan1Mask, MASK& tan2Mask) const {
+
+    typedef typename MASK::Weight Weight;
+
     int valence = vertex.GetNumFaces();
     assert(valence != 2);
 
