@@ -54,6 +54,58 @@ Scheme<TYPE_BILINEAR>::ComputeVertexVertexMask(VERTEX const& vertex, MASK& mask,
     assignCornerMaskForVertex(vertex, mask);
 }
 
+
+//
+//  Limit masks for any bilinear vertex are the vertex itself, with all tangents being
+//  zero for now as tangents are not unique (what did Hbr do?):
+//
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_BILINEAR>::assignInteriorLimitMask(VERTEX const& vertex, MASK& posMask) const {
+
+    posMask.SetNumVertexWeights(1);
+    posMask.SetNumEdgeWeights(0);
+    posMask.SetNumFaceWeights(0);
+
+    posMask.VertexWeight(0) = 1.0f;
+}
+
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_BILINEAR>::assignBoundaryLimitMask(VERTEX const& vertex, MASK& posMask) const {
+
+    assignInteriorLimitMask(vertex, posMask);
+}
+
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_BILINEAR>::assignInteriorLimitTangentMasks(VERTEX const& vertex,
+        MASK& tan1Mask, MASK& tan2Mask) const {
+
+    tan1Mask.SetNumVertexWeights(1);
+    tan1Mask.SetNumEdgeWeights(0);
+    tan1Mask.SetNumFaceWeights(0);
+
+    tan2Mask.SetNumVertexWeights(1);
+    tan2Mask.SetNumEdgeWeights(0);
+    tan2Mask.SetNumFaceWeights(0);
+
+    tan1Mask.VertexWeight(0) = 0.0f;
+    tan2Mask.VertexWeight(0) = 0.0f;
+}
+
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_BILINEAR>::assignBoundaryLimitTangentMasks(VERTEX const& vertex,
+        MASK& tan1Mask, MASK& tan2Mask) const {
+
+    assignInteriorLimitTangentMasks(vertex, tan1Mask, tan2Mask);
+}
+
 } // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
