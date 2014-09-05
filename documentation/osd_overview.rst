@@ -29,11 +29,15 @@ OSD Overview
    :local:
    :backlinks: none
 
+.. image:: images/api_layers_3_0.png
+   :width: 100px
+   :target: images/api_layers_3_0.png
+
 OpenSubdiv (Osd)
 ================
 
 **Osd** contains client-level code that uses *Far* to create concrete instances of
-meshes. These meshes use precomputed tables from *Hbr* to perform table-driven
+meshes. These meshes use precomputed tables from *Far* to perform table-driven
 subdivision steps with a variety of massively parallel computational backend
 technologies. **Osd** supports both `uniform subdivision <subdivision_surfaces.html#uniform-subdivision>`__
 and `adaptive refinement <subdivision_surfaces.html#feature-adaptive-subdivision>`__

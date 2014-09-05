@@ -29,16 +29,42 @@ FAR Overview
    :local:
    :backlinks: none
 
+.. image:: images/api_layers_3_0.png
+   :width: 100px
+   :target: images/api_layers_3_0.png
+
 Feature Adaptive Representation (Far)
 =====================================
 
-XXXX <need broader description of Far here -- more than just TopologyRefiner>
+The *Far* API layer is the central interface that processes client-supplied
+geometry and turns it into a `serialized data representation
+<api_overview.html#multiple-representations>`__ ready for parallel processing.
 
-The Far classes package up the functionality provided in Vtr for public use,
-either directly within Far or indirectly eventually though Osd. The two classes
-classes are as follows:
+First, *Far* provides the tools to refine subidivision topology
+(`Far::TopologyRefiner <#far-topologyrefiner>`__). Topology refinement can be
+either uniform or sparse, where extraordinary features are automatically
+isolated (see `feature adaptive subdivision <subdivision_surfaces.html#feature-adaptive-subdivision>`__).
 
-XXXX <is the intent to extend this table to include other classes?>
+As a geometry representation, *Far* also provides a set of *"Tables"* classes.
+These tables are designed to be static containers for the refined topology
+data, after it has been serialized and factorized. This represnetation is
+embodied in the `Far::PatchTables <#far-patchtables>`__  and the
+`Far::StencilTables <#far-patchtables>`__ classes.
+
+*Far* is also a fully featured API. Typically *Far* tabular data is targetted at
+*Osd*, where it can be processed by an implementation optimized for a specific
+hardware. However, for client-code that does not require a dedicated
+implementation, *Far* itself provides a fully-featured single-threaded
+implementation of subdivision interpolation algorithms, both discrete and at
+the limit.
+
+Refining Topology
+=================
+
+The *Far* topology classes present a public interface for the refinement
+functionality provided in *Vtr*, either directly within Far or indirectly
+eventually though *Osd*. The two main topology refinement classes are as
+follows:
 
 +-------------------------------+---------------------------------------------------+
 | TopologyRefiner               | A class encapsulating the topology of a refined   |
@@ -54,7 +80,6 @@ public interface to all of the improvements proposed, they potentially warrant
 the most attention. Far::TopologyRefiner is purely topological and it is the
 backbone used to construct or be associated with the other table classes in Far.
 
-
 .. container:: notebox
 
     **Alpha Issues**
@@ -66,13 +91,6 @@ backbone used to construct or be associated with the other table classes in Far.
         * considering simplifying TopologyRefiner interface overall -- may expose
           TopologyLevel for public inspection
         * specialization of TopologyRefinerFactory<MESH> needs more work
-
-
-Refining Topology
-=================
-
-XXXX <insert blurb about uniform / adaptive refinement>
-
 
 Far::TopologyRefiner
 ********************
@@ -98,7 +116,7 @@ The longer term intent is that the public Refine(...) operation eventually be
 overloaded to allow clients more selective control of refinement. While
 TopologyRefiner is a purely topological class, and so free of any definitions
 of vertex data, the public inteface has been extended to include templated
-functors that allow clients to interpolate primitive variable data. 
+functors that allow clients to interpolate primitive variable data.
 
 Far::TopologyRefinerFactory
 ***************************
@@ -166,14 +184,14 @@ A common base class has been created for the factory class, i.e.:
 both to provide common code independent of <MESH> and also potentially to
 protect core code from unwanted specialization.
 
-Patch Tables
-============
+Far::PatchTables
+================
 
 .. include:: under_development.rst
 
 
-Stencil Tables
-==============
+Far::StencilTables
+==================
 
 .. include:: under_development.rst
 
