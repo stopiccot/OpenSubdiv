@@ -150,12 +150,13 @@ public:
                                     Crease::Rule childRule = Crease::RULE_UNKNOWN) const;
 
     //
-    //  UNDER CONSIDERATION -- NOT YET IMPLEMENTED...
+    //  IN PROGRESS -- NOT YET FULLY FUNCTIONAL...
     //
     //  Masks for limit points and tangents -- note that these require the vertex be
-    //  suitably isolated such that its limit is well-defined.  These will also require
-    //  internal methods for the boundary and interior cases to be specialized for each
-    //  scheme.
+    //  suitably isolated such that its limit is well-defined.
+    //
+    //  These are stubs that are still being completed.  The position masks are now
+    //  supported but tangent masks need work.
     //
     template <typename VERTEX, typename MASK>
     void ComputeVertexLimitMask(VERTEX const& vertexNeighborhood, MASK& positionMask) const;
@@ -164,7 +165,6 @@ public:
     void ComputeVertexLimitMask(VERTEX const& vertexNeighborhood, MASK& positionMask,
                                                                   MASK& tangent1Mask,
                                                                   MASK& tangent2Mask) const;
-
 protected:
     //
     //  Supporting internal methods -- optionally implemented, depending on specialization:
@@ -186,6 +186,20 @@ protected:
 
     template <typename VERTEX, typename MASK>
     void assignSmoothMaskForVertex(VERTEX const& edge, MASK& mask) const;
+
+    //  Limit masks for position and tangents -- boundary and interior cases:
+    //      - may want to consolidate these into fewer methods
+    template <typename VERTEX, typename MASK>
+    void assignBoundaryLimitMask(VERTEX const& vertex, MASK& pos) const;
+
+    template <typename VERTEX, typename MASK>
+    void assignInteriorLimitMask(VERTEX const& vertex, MASK& pos) const;
+
+    template <typename VERTEX, typename MASK>
+    void assignBoundaryLimitTangentMasks(VERTEX const& vertex, MASK& tan1, MASK& tan2) const;
+
+    template <typename VERTEX, typename MASK>
+    void assignInteriorLimitTangentMasks(VERTEX const& vertex, MASK& tan1, MASK& tan2) const;
 
 protected:
     //
@@ -569,6 +583,40 @@ Scheme<SCHEME>::ComputeVertexVertexMask(VERTEX const&   vertex,
 
     cMask.CombineVertexVertexMasks(cWeight, pWeight, mask);
 }
+
+//
+//  The computation of limit masks for vertices:
+//
+template <Type SCHEME>
+template <typename VERTEX, typename MASK>
+void
+Scheme<SCHEME>::ComputeVertexLimitMask(VERTEX const& vertex,
+                                       MASK&         mask) const
+{
+    if (vertex.GetNumFaces() == vertex.GetNumEdges()) {
+        assignInteriorLimitMask(vertex, mask);
+    } else {
+        assignBoundaryLimitMask(vertex, mask);
+    }
+}
+
+template <Type SCHEME>
+template <typename VERTEX, typename MASK>
+void
+Scheme<SCHEME>::ComputeVertexLimitMask(VERTEX const& vertex,
+                                       MASK&         posMask,
+                                       MASK&         tan1Mask,
+                                       MASK&         tan1Mask) const
+{
+    if (vertex.GetNumFaces() == vertex.GetNumEdges()) {
+        assignInteriorLimitMask(vertex, posMask);
+        assignInteriorLimitTangentMasks(vertex, tan1Mask, tan2Mask);
+    } else {
+        assignBoundaryLimitMask(vertex, posMask);
+        assignBoundaryLimitTangentMasks(vertex, tan1Mask, tan2Mask);
+    }
+}
+
 
 } // end namespace sdc
 

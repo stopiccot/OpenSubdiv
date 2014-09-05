@@ -199,6 +199,20 @@ public:
     template <class T, class U> void InterpolateFaceVarying(int level, T const * src, U * dst, int channel = 0) const;
 
 
+    /// \brief Apply vertex interpolation limit weights to a primvar buffer
+    ///
+    /// The source buffer must refer to an array of previously interpolated
+    /// vertex data for the last refinement level.  The destination buffer
+    /// must allocate an array for all vertices at the last refinement level
+    /// (at least GetNumVertices(GetMaxLevel()))
+    ///
+    /// @param src  Source primvar buffer (refined vertex data) for last level
+    ///
+    /// @param dst  Destination primvar buffer (vertex data at the limit)
+    ///
+    template <class T, class U> void Limit(T const * src, U * dst) const;
+
+
     //
     //  Inspection of components per level:
     //
@@ -1124,6 +1138,76 @@ TopologyRefiner::faceVaryingInterpolateChildVertsFromVerts(
 
                 vdst.Clear();
                 vdst.AddWithWeight(src[pVertValue], 1.0);
+            }
+        }
+    }
+}
+
+template <class T, class U>
+inline void
+TopologyRefiner::Limit(T const * src, U * dst) const {
+
+    //
+    //  Work in progress...
+    //      - does not support tangents yet (unclear how)
+    //      - need to verify that each vertex is "limitable", i.e.:
+    //          - is not semi-sharp, inf-sharp or non-manifold
+    //          - is "complete" wrt its parent (if refinement is sparse)
+    //      - copy (or weight by 1.0) src to dst when not "limitable"
+    //      - currently requires one refinement to get rid of N-sided faces:
+    //          - could limit regular vertices from level 0
+    //
+
+    assert(_subdivType == Sdc::TYPE_CATMARK);
+    Sdc::Scheme<Sdc::TYPE_CATMARK> scheme(_subdivOptions);
+
+    assert(GetMaxLevel() > 0);
+    Vtr::Level const & level = _levels[GetMaxLevel()];
+
+    int maxWeightsPerMask = 1 + 2 * level.getMaxValence();
+
+    float * weightBuffer = (float *)alloca(maxWeightsPerMask * sizeof(float));
+
+    //  This is a bit obscure -- assign both parent and child as last level
+    Vtr::VertexInterface vHood(level, level);
+
+    for (int vert = 0; vert < level.getNumVertices(); ++vert) {
+        IndexArray const vEdges = level.getVertexEdges(vert);
+
+        float * vWeights = weightBuffer,
+              * eWeights = vWeights + 1,
+              * fWeights = eWeights + vEdges.size();
+
+        Vtr::MaskInterface vMask(vWeights, eWeights, fWeights);
+
+        //  This is a bit obscure -- child vertex index will be ignored here
+        vHood.SetIndex(vert, vert);
+
+        scheme.ComputeVertexLimitMask(vHood, vMask);
+
+        //  Apply the weights to the vertex, the vertices opposite its incident
+        //  edges, and the opposite vertices of its incident faces:
+        U & vdst = dst[vert];
+
+        vdst.Clear();
+        vdst.AddWithWeight(src[vert], vWeights[0]);
+
+        if (vMask.GetNumEdgeWeights() > 0) {
+            for (int i = 0; i < vEdges.size(); ++i) {
+                IndexArray const eVerts = level.getEdgeVertices(vEdges[i]);
+                Index vertOppositeEdge = (eVerts[0] == vert) ? eVerts[1] : eVerts[0];
+
+                vdst.AddWithWeight(src[vertOppositeEdge], eWeights[i]);
+            }
+        }
+        if (vMask.GetNumFaceWeights() > 0) {
+            IndexArray const      vFaces = level.getVertexFaces(vert);
+            LocalIndexArray const vInFace = level.getVertexFaceLocalIndices(vert);
+            for (int i = 0; i < vFaces.size(); ++i) {
+                LocalIndex vOppInFace = (vInFace[i] + 2) & 3;
+                Index      vertOppositeFace = level.getFaceVertices(vFaces[i])[vOppInFace];
+
+                vdst.AddWithWeight(src[vertOppositeFace], fWeights[i]);
             }
         }
     }

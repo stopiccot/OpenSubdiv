@@ -195,6 +195,110 @@ Scheme<TYPE_CATMARK>::assignSmoothMaskForVertex(VERTEX const& vertex, MASK& mask
     }
 }
 
+//
+//  Limit masks for position:
+//
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_CATMARK>::assignBoundaryLimitMask(VERTEX const& vertex, MASK& posMask) const
+{
+    typedef typename MASK::Weight Weight;
+
+    int valence = vertex.GetNumEdges();
+
+    posMask.SetNumVertexWeights(1);
+    posMask.SetNumEdgeWeights(valence);
+    posMask.SetNumFaceWeights(0);
+
+    Weight vWeight = 2.0f / 3.0f;
+    Weight eWeight = 1.0f / 6.0f;
+
+    posMask.VertexWeight(0) = vWeight;
+    posMask.EdgeWeight(0) = eWeight;
+    for (int i = 1; i < valence - 1; ++i) {
+        posMask.EdgeWeight(i) = 0.0f;
+    }
+    posMask.EdgeWeight(valence - 1) = eWeight;
+}
+
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_CATMARK>::assignInteriorLimitMask(VERTEX const& vertex, MASK& posMask) const
+{
+    typedef typename MASK::Weight Weight;
+
+    int valence = vertex.GetNumFaces();
+    assert(valence != 2);
+
+    posMask.SetNumVertexWeights(1);
+    posMask.SetNumEdgeWeights(valence);
+    posMask.SetNumFaceWeights(valence);
+
+    //  Probably a good idea to test for and assign the regular case as a special case:
+
+    Weight fWeight = 1.0f / (Weight)(valence * (valence + 5.0f));
+    Weight eWeight = 4.0f * fWeight;
+    Weight vWeight = (Weight)(1.0f - valence * (eWeight + fWeight));
+
+    posMask.VertexWeight(0) = vWeight;
+    for (int i = 0; i < valence; ++i) {
+        posMask.EdgeWeight(i) = eWeight;
+        posMask.FaceWeight(i) = fWeight;
+    }
+}
+
+//
+//  Limit masks for tangents -- these are stubs for now, or have a temporary
+//  implementation
+//
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_CATMARK>::assignBoundaryLimitTangentMasks(VERTEX const& vertex,
+        MASK& tan1, MASK& tan2) const
+{
+    tan1Mask.SetNumVertexWeights(1);
+    tan1Mask.SetNumEdgeWeights(0);
+    tan1Mask.SetNumFaceWeights(0);
+    tan1Mask.VertexWeight(0) = 0.0f;
+
+    tan2Mask.SetNumVertexWeights(1);
+    tan2Mask.SetNumEdgeWeights(0);
+    tan2Mask.SetNumFaceWeights(0);
+    tan2Mask.VertexWeight(0) = 0.0f;
+}
+
+template <>
+template <typename VERTEX, typename MASK>
+inline void
+Scheme<TYPE_CATMARK>::assignInteriorLimitTangentMasks(VERTEX const& vertex,
+        MASK& tan1, MASK& tan2) const
+{
+    int valence = vertex.GetNumFaces();
+    assert(valence != 2);
+
+    //  Using the Loop tangent masks for now...
+    tan1Mask.SetNumVertexWeights(1);
+    tan1Mask.SetNumEdgeWeights(valence);
+    tan1Mask.SetNumFaceWeights(0);
+
+    tan2Mask.SetNumVertexWeights(1);
+    tan2Mask.SetNumEdgeWeights(valence);
+    tan2Mask.SetNumFaceWeights(0);
+
+    tan1Mask.VertexWeight(0) = 0.0f;
+    tan2Mask.VertexWeight(0) = 0.0f;
+
+    Weight alpha = (Weight) (2.0f * M_PI / valence);
+    for (int i = 0; i < valence; ++i) {
+        double alphaI = alpha * i;
+        tan1Mask.EdgeWeight(i) = cos(alphaI);
+        tan2Mask.EdgeWeight(i) = sin(alphaI);
+    }
+}
+
 } // end namespace sdc
 
 } // end namespace OPENSUBDIV_VERSION
