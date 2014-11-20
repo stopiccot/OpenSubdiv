@@ -6,3 +6,10 @@
 *.pyc
 osdshim_wrap.cpp
 shim.py
+
+examples/unity3d/UnityProject/Library/
+examples/unity3d/UnityProject/Temp/
+*.csproj
+*.sln
+*.unityproj
+*.userprefs

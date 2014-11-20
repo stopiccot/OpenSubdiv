@@ -327,7 +327,7 @@ if (OPENGL_FOUND AND NOT IOS)
     if (APPLE)
         find_package(GLEW)
     else()
-        find_package(GLEW REQUIRED)
+        find_package(GLEW)
     endif()
 endif()
 

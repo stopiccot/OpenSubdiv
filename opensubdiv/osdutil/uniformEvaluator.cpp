@@ -179,6 +179,19 @@ OsdUtilUniformEvaluator::SetCoarsePositions(
         _vertexBuffer->UpdateData(pFloats, 0, numFloats / 3);
     }
 }
+    
+void
+OsdUtilUniformEvaluator::SetCoarsePositions(
+    const float* coords, int coordsCount, string* errorMessage )
+{
+    //XXX: should be >= num coarse vertices
+    if (coordsCount/3 >= _refiner->GetFarMesh()->GetNumVertices()) {
+        if (errorMessage)
+            *errorMessage = "Indexing error in tesselator";
+    } else {
+        _vertexBuffer->UpdateData(coords, 0, coordsCount / 3);
+    }
+}
 
 
 void

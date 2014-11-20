@@ -98,3 +98,5 @@ if(MAYA_FOUND AND (NOT NO_MAYA))
         #add_subdirectory(mayaPtexViewer)
     #endif()
 endif()
+
+add_subdirectory(unity3d)

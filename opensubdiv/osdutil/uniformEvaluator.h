@@ -81,6 +81,11 @@ class OsdUtilUniformEvaluator {
         const std::vector<float>& coords,
         std::string *errorMessage = NULL
         );
+    
+    void SetCoarsePositions(
+        const float* coords, int coordsCount,
+        std::string *errorMessage = NULL
+        );
 
     // Set new coarse-mesh vertex varying values, need to call Refine
     // before calling Get* methods    
