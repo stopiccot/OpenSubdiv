@@ -59,23 +59,23 @@ public class OpenSubdivScript : MonoBehaviour {
 			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
 			osdMesh.indices.Add(0); osdMesh.indices.Add(1); osdMesh.indices.Add(2); osdMesh.indices.Add(3);
 
-//			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
-//			osdMesh.indices.Add(4); osdMesh.indices.Add(5); osdMesh.indices.Add(6); osdMesh.indices.Add(7);
+			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
+			osdMesh.indices.Add(7); osdMesh.indices.Add(6); osdMesh.indices.Add(5); osdMesh.indices.Add(4);
 
 			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
-			osdMesh.indices.Add(0); osdMesh.indices.Add(1); osdMesh.indices.Add(5); osdMesh.indices.Add(4);
+			osdMesh.indices.Add(1); osdMesh.indices.Add(0); osdMesh.indices.Add(4); osdMesh.indices.Add(5);
 
-//			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
-//			osdMesh.indices.Add(2); osdMesh.indices.Add(3); osdMesh.indices.Add(7); osdMesh.indices.Add(6);
-//
-//			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
-//			osdMesh.indices.Add(0); osdMesh.indices.Add(1); osdMesh.indices.Add(2); osdMesh.indices.Add(3);
-//
-//			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
-//			osdMesh.indices.Add(0); osdMesh.indices.Add(1); osdMesh.indices.Add(2); osdMesh.indices.Add(3);
+			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
+			osdMesh.indices.Add(3); osdMesh.indices.Add(2); osdMesh.indices.Add(6); osdMesh.indices.Add(7);
+
+			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
+			osdMesh.indices.Add(0); osdMesh.indices.Add(3); osdMesh.indices.Add(7); osdMesh.indices.Add(4);
+
+			osdMesh.faces.Add(new OpenSubdiv.Face { startIndex = osdMesh.indices.Count, vertexCount = 4 });
+			osdMesh.indices.Add(2); osdMesh.indices.Add(1); osdMesh.indices.Add(5); osdMesh.indices.Add(6);
 		}
 
-		osdMesh.subdivisionLevel = 1;
+		osdMesh.subdivisionLevel = 3;
 		osdSubdividedMesh = osdMesh.Subdiv();
 	}
 
